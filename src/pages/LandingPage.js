@@ -575,6 +575,22 @@ function LiveTickerBar() {
     return price.toFixed(d);
   };
 
+  const handleCheckout = async (priceId) => {
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      });
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      // Fallback: ouvrir signup modal
+      onSignup?.();
+    }
+  };
+
+
   return (
     <div style={{
       overflow:'hidden',
@@ -681,6 +697,7 @@ const TESTIS = [
 export default function LandingPage({ onLogin, onSignup }) {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [billingCycle, setBillingCycle] = useState('monthly');
   const rootRef = useRef(null);
 
   // Scroll listener
@@ -1013,41 +1030,98 @@ export default function LandingPage({ onLogin, onSignup }) {
             <h2 className="fade-in">Simple. Transparent. <em>Honnête.</em></h2>
             <p className="lp-section-sub fade-in" style={{margin:'0 auto'}}>Aucun frais caché. Annule quand tu veux. 14 jours gratuits sur tous les plans.</p>
           </div>
+          {/* ── BILLING TOGGLE ── */}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:40}} className="fade-in">
+            <span style={{color: billingCycle==='monthly' ? '#fff' : '#7A90B8', fontWeight:600, fontSize:15}}>Mensuel</span>
+            <div
+              onClick={()=>setBillingCycle(b=>b==='monthly'?'annual':'monthly')}
+              style={{
+                width:52,height:28,borderRadius:14,cursor:'pointer',position:'relative',
+                background: billingCycle==='annual' ? 'linear-gradient(90deg,#06E6FF,#00FF88)' : 'rgba(255,255,255,0.1)',
+                transition:'background 0.3s',flexShrink:0,
+              }}
+            >
+              <div style={{
+                position:'absolute',top:3,
+                left: billingCycle==='annual' ? 26 : 3,
+                width:22,height:22,borderRadius:11,background:'#fff',
+                transition:'left 0.3s',boxShadow:'0 2px 6px rgba(0,0,0,0.3)',
+              }}/>
+            </div>
+            <span style={{color: billingCycle==='annual' ? '#fff' : '#7A90B8', fontWeight:600, fontSize:15}}>
+              Annuel
+            </span>
+            {billingCycle==='annual' && (
+              <span style={{
+                background:'linear-gradient(90deg,rgba(6,230,255,0.15),rgba(0,255,136,0.15))',
+                border:'1px solid rgba(0,255,136,0.3)',
+                color:'#00FF88',fontSize:12,fontWeight:700,
+                padding:'3px 10px',borderRadius:20,
+              }}>-30% 🎉</span>
+            )}
+          </div>
+
           <div className="lp-pricing-grid fade-in">
-            {/* FREE */}
+            {/* STARTER */}
             <div className="lp-pricing-card">
               <div className="lp-plan">Starter</div>
-              <div className="lp-price"><sup>€</sup>0</div>
-              <div className="lp-period">Pour toujours</div>
+              <div className="lp-price">
+                <sup>$</sup>{billingCycle==='monthly' ? 15 : 11}
+              </div>
+              <div className="lp-period">
+                {billingCycle==='monthly' ? 'par mois · sans engagement' : 'par mois · facturé $132/an'}
+              </div>
+              <div style={{height:20,marginBottom:4}}>
+                {billingCycle==='annual' && <div className="lp-save">Économise $48/an</div>}
+              </div>
               <div className="lp-divider" />
               <ul className="lp-price-feats">
-                {['Jusqu\'à 50 trades/mois','Dashboard de base','Import CSV manuel','Métriques essentielles'].map((f,i)=><li key={i}><span style={{color:'#00FF88'}}>✓</span><span>{f}</span></li>)}
+                {['Trades illimités','Dashboard complet','Import CSV manuel','Métriques essentielles','Essai 14 jours gratuits'].map((f,i)=><li key={i}><span style={{color:'#00FF88'}}>✓</span><span>{f}</span></li>)}
                 {['AI Coach','Backtesting','Export PDF'].map((f,i)=><li key={i} className="dim"><span>—</span><span>{f}</span></li>)}
               </ul>
-              <button className="btn-plan outline" onClick={onSignup}>Commencer gratuitement</button>
+              <button className="btn-plan outline" onClick={()=>handleCheckout(billingCycle==='monthly'?'price_1T97lcRrHTdWtpEZUhmUeTTk':'price_1T97mJRrHTdWtpEZAfccumX3')}>
+                Essayer 14 jours gratuits
+              </button>
             </div>
             {/* PRO */}
             <div className="lp-pricing-card popular">
               <div className="lp-popular-badge">⭐ Populaire</div>
               <div className="lp-plan">Pro</div>
-              <div className="lp-price"><sup>€</sup>19</div>
-              <div className="lp-period">par mois · facturé annuellement</div>
-              <div className="lp-save">Économise 40% vs mensuel</div>
+              <div className="lp-price">
+                <sup>$</sup>{billingCycle==='monthly' ? 22 : 15}
+              </div>
+              <div className="lp-period">
+                {billingCycle==='monthly' ? 'par mois · sans engagement' : 'par mois · facturé $184/an'}
+              </div>
+              <div style={{height:20,marginBottom:4}}>
+                {billingCycle==='annual' && <div className="lp-save">Économise $80/an</div>}
+              </div>
               <ul className="lp-price-feats">
-                {['Trades illimités','Import MT4/MT5 auto','Analytics Pro complètes','AI Trade Coach','Backtesting visuel','Psychology Tracker','Export PDF prop firm'].map((f,i)=><li key={i}><span style={{color:'#00FF88'}}>✓</span><span>{f}</span></li>)}
+                {['Trades illimités','Import MT4/MT5 auto','Analytics Pro complètes','AI Trade Coach','Backtesting visuel','Psychology Tracker','Export PDF prop firm','Essai 14 jours gratuits'].map((f,i)=><li key={i}><span style={{color:'#00FF88'}}>✓</span><span>{f}</span></li>)}
               </ul>
-              <button className="btn-plan filled" onClick={onSignup}>Essayer 14 jours gratuits</button>
+              <button className="btn-plan filled" onClick={()=>handleCheckout(billingCycle==='monthly'?'price_1T97psRrHTdWtpEZyNf4dG6a':'price_1T97qBRrHTdWtpEZJ6b8f3ga')}>
+                Essayer 14 jours gratuits
+              </button>
             </div>
             {/* ELITE */}
             <div className="lp-pricing-card">
               <div className="lp-plan">Elite</div>
-              <div className="lp-price"><sup>€</sup>49</div>
-              <div className="lp-period">par mois · facturé annuellement</div>
+              <div className="lp-price">
+                <sup>$</sup>{billingCycle==='monthly' ? 38 : 27}
+              </div>
+              <div className="lp-period">
+                {billingCycle==='monthly' ? 'par mois · sans engagement' : 'par mois · facturé $320/an'}
+              </div>
+              <div style={{height:20,marginBottom:4}}>
+                {billingCycle==='annual' && <div className="lp-save">Économise $136/an</div>}
+              </div>
               <div className="lp-divider" />
               <ul className="lp-price-feats">
-                {['Tout le plan Pro','Jusqu\'à 5 comptes','Accès API','Dashboard personnalisé','Support prioritaire 24/7','Coach call mensuel','Accès bêta features'].map((f,i)=><li key={i}><span style={{color:'#00FF88'}}>✓</span><span>{f}</span></li>)}
+                {['Tout le plan Pro','Jusqu\'à 5 comptes','Accès API','Dashboard personnalisé','Support prioritaire 24/7','Coach call mensuel','Accès bêta features','Essai 14 jours gratuits'].map((f,i)=><li key={i}><span style={{color:'#00FF88'}}>✓</span><span>{f}</span></li>)}
               </ul>
-              <button className="btn-plan outline">Contacter l'équipe</button>
+              <button className="btn-plan outline" onClick={()=>handleCheckout(billingCycle==='monthly'?'price_1T97qXRrHTdWtpEZnWH1JSb5':'price_1T97r3RrHTdWtpEZTCMcR9rb')}>
+                Essayer 14 jours gratuits
+              </button>
             </div>
           </div>
         </div>
