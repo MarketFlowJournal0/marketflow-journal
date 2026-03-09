@@ -329,7 +329,6 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
   const [forgotMode,   setForgotMode]   = useState(false);
   const [forgotSent,   setForgotSent]   = useState(false);
   const [forgotEmail,  setForgotEmail]  = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('starter');
 
   // Form fields
   const [form, setForm] = useState({
@@ -584,21 +583,6 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                 {/* ── SIGNUP FORM ── */}
                 {tab === 'signup' && (
                   <form onSubmit={handleSignup} noValidate>
-
-                    {/* Plan selector */}
-                    <div className="auth-plan-row">
-                      {PLANS.map(p => (
-                        <div
-                          key={p.id}
-                          className={`auth-plan-badge${selectedPlan===p.id?' selected':''}`}
-                          onClick={()=>setSelectedPlan(p.id)}
-                        >
-                          <div className="auth-plan-popular">{p.badge || ' '}</div>
-                          <div className="auth-plan-name">{p.name}</div>
-                          <div className="auth-plan-price">{p.price}</div>
-                        </div>
-                      ))}
-                    </div>
 
                     {/* Nom / Prénom */}
                     <div className="auth-row">
