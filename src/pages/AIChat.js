@@ -93,12 +93,12 @@ function AIChat() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-2">AI Trading Assistant</h1>
-        <p className="text-gray-400">Ask me anything about your trading performance</p>
+        <p className="text-[#A0AEC0]">Ask me anything about your trading performance</p>
       </div>
 
       <div className="flex-1 flex gap-6 overflow-hidden">
         {/* Chat Area */}
-        <div className="flex-1 bg-gray-800 rounded-xl border border-gray-700 flex flex-col">
+        <div className="flex-1 bg-[#1E2536] rounded-xl border border-[#2D3548] flex flex-col">
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {messages.map((message, index) => (
@@ -109,16 +109,16 @@ function AIChat() {
                 <div
                   className={`max-w-3xl ${
                     message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-100'
+                      ? 'bg-[#3B82F6] text-white'
+                      : 'bg-[#252D42] text-[#F7FAFC]'
                   } rounded-2xl px-5 py-3`}
                 >
                   {message.role === 'assistant' && (
                     <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-gradient-to-br from-[#3B82F6] to-[#7C3AED] rounded-full flex items-center justify-center">
                         <span className="text-white text-xs">🤖</span>
                       </div>
-                      <span className="text-xs text-gray-400">AI Assistant</span>
+                      <span className="text-xs text-[#A0AEC0]">AI Assistant</span>
                     </div>
                   )}
                   <p className="text-sm whitespace-pre-line">{message.content}</p>
@@ -129,7 +129,7 @@ function AIChat() {
 
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-gray-700 rounded-2xl px-5 py-3">
+                <div className="bg-[#252D42] rounded-2xl px-5 py-3">
                   <div className="flex space-x-2">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -141,7 +141,7 @@ function AIChat() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-gray-700">
+          <div className="p-4 border-t border-[#2D3548]">
             <div className="flex space-x-3">
               <input
                 type="text"
@@ -149,15 +149,15 @@ function AIChat() {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask me anything about your trading..."
-                className="flex-1 px-4 py-3 bg-gray-900 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-4 py-3 bg-[#1A1F2E] text-white rounded-lg border border-[#2D3548] focus:border-[#60A5FA] focus:outline-none"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim()}
                 className={`px-6 py-3 rounded-lg font-semibold transition ${
                   inputMessage.trim()
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    ? 'bg-[#3B82F6] text-white hover:bg-[#2563EB]'
+                    : 'bg-[#252D42] text-[#718096] cursor-not-allowed'
                 }`}
               >
                 Send
@@ -169,14 +169,14 @@ function AIChat() {
         {/* Sidebar */}
         <div className="w-80 space-y-6">
           {/* Quick Questions */}
-          <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+          <div className="bg-[#1E2536] rounded-xl p-5 border border-[#2D3548]">
             <h3 className="text-white font-bold mb-4">💡 Quick Questions</h3>
             <div className="space-y-2">
               {suggestedQuestions.map((question, index) => (
                 <button
                   key={index}
                   onClick={() => handleQuickQuestion(question)}
-                  className="w-full text-left px-4 py-3 bg-gray-900 text-gray-300 rounded-lg hover:bg-gray-700 transition text-sm"
+                  className="w-full text-left px-4 py-3 bg-[#1A1F2E] text-[#CBD5E0] rounded-lg hover:bg-[#252D42] transition text-sm"
                 >
                   {question}
                 </button>
@@ -212,24 +212,24 @@ function AIChat() {
           </div>
 
           {/* Stats */}
-          <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+          <div className="bg-[#1E2536] rounded-xl p-5 border border-[#2D3548]">
             <h3 className="text-white font-bold mb-4">📊 Quick Stats</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-400">Win Rate:</span>
+                <span className="text-[#A0AEC0]">Win Rate:</span>
                 <span className="text-white font-bold">67.8%</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Total Trades:</span>
+                <span className="text-[#A0AEC0]">Total Trades:</span>
                 <span className="text-white font-bold">230</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Profit Factor:</span>
+                <span className="text-[#A0AEC0]">Profit Factor:</span>
                 <span className="text-white font-bold">2.43</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Best Setup:</span>
-                <span className="text-green-500 font-bold">Breakout</span>
+                <span className="text-[#A0AEC0]">Best Setup:</span>
+                <span className="text-[#10B981] font-bold">Breakout</span>
               </div>
             </div>
           </div>

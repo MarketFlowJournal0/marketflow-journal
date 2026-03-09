@@ -1,96 +1,170 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
+import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import AllTrades from './pages/AllTrades';
-import Calendar from './pages/Calendar';
 import Analytics from './pages/Analytics';
+import AnalyticsPro from './pages/AnalyticsPro';
 import Backtest from './pages/Backtest';
-import Psychology from './pages/Psychology';
+import Calendar from './pages/Calendar';
 import Equity from './pages/Equity';
+import Psychology from './pages/Psychology';
 import AIChat from './pages/AIChat';
+import { TradingProvider } from './context/TradingContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import AuthModal from './components/AuthModal';
+import { Toaster, toast } from 'react-hot-toast';
+import './App.css';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('home');
-
-  const HomePage = () => (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-      <nav className="flex items-center justify-between px-8 py-4 bg-black bg-opacity-50">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg"></div>
-          <span className="text-white text-xl font-bold">MarketFlow</span>
-        </div>
-        
-        <div className="flex items-center space-x-8">
-          <a href="#" className="text-gray-300 hover:text-white">Features</a>
-          <a href="#" className="text-gray-300 hover:text-white">Pricing</a>
-          <a href="#" className="text-gray-300 hover:text-white">About</a>
-          <a href="#" className="text-gray-300 hover:text-white">Contact</a>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <button className="text-white px-4 py-2 rounded-lg hover:bg-gray-800">Sign In</button>
-          <button onClick={() => setCurrentPage('dashboard')} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Get Started</button>
-        </div>
-      </nav>
-
-      <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
-        <div className="mb-4">
-          <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm">🚀 AI-powered journal insights</span>
-        </div>
-        
-        <h1 className="text-6xl font-bold text-white mb-6">
-          Master Your Trading<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">Journey</span>
-        </h1>
-        
-        <p className="text-xl text-gray-300 mb-8 max-w-2xl">
-          The most advanced AI trading journal for professional traders. Track, analyze, and optimize your trading performance with powerful AI-driven insights.
-        </p>
-        
-        <div className="flex space-x-4 mb-16">
-          <button onClick={() => setCurrentPage('dashboard')} className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">Start Free Trial</button>
-          <button className="bg-white text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">Watch Demo</button>
-        </div>
-
-        <div className="grid grid-cols-4 gap-8 max-w-4xl">
-          <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6">
-            <div className="text-4xl font-bold text-white mb-2">50K+</div>
-            <div className="text-gray-400">Active traders</div>
-          </div>
-          <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6">
-            <div className="text-4xl font-bold text-white mb-2">10M+</div>
-            <div className="text-gray-400">Trades logged</div>
-          </div>
-          <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6">
-            <div className="text-4xl font-bold text-white mb-2">120+</div>
-            <div className="text-gray-400">Countries</div>
-          </div>
-          <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6">
-            <div className="text-4xl font-bold text-white mb-2">94%</div>
-            <div className="text-gray-400">Success rate</div>
-          </div>
-        </div>
+// ─── LOADING SCREEN ───────────────────────────────────────────────────────────
+function LoadingScreen() {
+  return (
+    <div style={{
+      position:'fixed',inset:0,
+      background:'#060912',
+      display:'flex',alignItems:'center',justifyContent:'center',
+      flexDirection:'column',gap:16,
+      zIndex:9999,
+    }}>
+      <div style={{
+        width:48,height:48,borderRadius:12,overflow:'hidden',
+        boxShadow:'0 0 30px rgba(6,230,255,0.4)',
+      }}>
+        <div style={{
+          width:48,height:48,
+          background:'linear-gradient(135deg,#06E6FF,#00FF88)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          fontSize:24,
+        }}>🧠</div>
       </div>
+      <div style={{
+        width:32,height:3,borderRadius:2,
+        background:'rgba(255,255,255,0.06)',
+        overflow:'hidden',
+      }}>
+        <div style={{
+          height:'100%',
+          background:'linear-gradient(90deg,#06E6FF,#00FF88)',
+          animation:'mf-load 1.2s ease-in-out infinite',
+          borderRadius:2,
+        }}/>
+      </div>
+      <style>{`
+        @keyframes mf-load {
+          0%   { width:0%;   margin-left:0; }
+          50%  { width:100%; margin-left:0; }
+          100% { width:0%;   margin-left:100%; }
+        }
+      `}</style>
     </div>
   );
-
-  const MainApp = () => (
-    <div className="flex min-h-screen bg-gray-950">
-      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
-      <div className="flex-1 ml-64">
-        {currentPage === 'dashboard' && <Dashboard />}
-        {currentPage === 'trades' && <AllTrades />}
-        {currentPage === 'calendar' && <Calendar />}
-        {currentPage === 'analytics' && <Analytics />}
-        {currentPage === 'backtest' && <Backtest />}
-        {currentPage === 'psychology' && <Psychology />}
-        {currentPage === 'equity' && <Equity />}
-        {currentPage === 'ai-chat' && <AIChat />}
-      </div>
-    </div>
-  );
-
-  return currentPage === 'home' ? <HomePage /> : <MainApp />;
 }
 
-export default App;
+// ─── APP INNER ────────────────────────────────────────────────────────────────
+function AppInner() {
+  const { user, loading, logout } = useAuth();
+
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [collapsed,   setCollapsed]   = useState(false);
+  const [authModal,   setAuthModal]   = useState(null); // null | 'login' | 'signup'
+
+  const openLogin  = () => setAuthModal('login');
+  const openSignup = () => setAuthModal('signup');
+  const closeAuth  = () => setAuthModal(null);
+
+  const handleAuthSuccess = () => {
+    setAuthModal(null);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    toast('À bientôt ! 👋', {
+      style: {
+        background:'#0D1627', color:'#fff',
+        border:'1px solid rgba(255,255,255,0.1)',
+        borderRadius:'12px',
+      },
+    });
+  };
+
+  // Vérification session en cours
+  if (loading) return <LoadingScreen />;
+
+  // ── Non connecté → Landing ────────────────────────────────────────────────
+  if (!user) {
+    return (
+      <>
+        <LandingPage onLogin={openLogin} onSignup={openSignup} />
+        {authModal && (
+          <AuthModal
+            defaultTab={authModal}
+            onClose={closeAuth}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
+      </>
+    );
+  }
+
+  // ── Connecté → App ────────────────────────────────────────────────────────
+  const sidebarWidth = collapsed ? 72 : 260;
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':     return <Dashboard />;
+      case 'all-trades':    return <AllTrades />;
+      case 'analytics':     return <Analytics />;
+      case 'analytics-pro': return <AnalyticsPro />;
+      case 'backtest':      return <Backtest />;
+      case 'calendar':      return <Calendar />;
+      case 'equity':        return <Equity />;
+      case 'psychology':    return <Psychology />;
+      case 'ai-chat':       return <AIChat />;
+      default:              return <Dashboard />;
+    }
+  };
+
+  return (
+    <TradingProvider>
+      <div style={{
+        display:'flex', minHeight:'100vh',
+        backgroundColor:'#0F1420',
+        fontFamily:"'Inter',sans-serif",
+      }}>
+        <div style={{
+          position:'fixed', top:0, left:0, bottom:0,
+          width:sidebarWidth, zIndex:100,
+          transition:'width 0.30s cubic-bezier(0.4,0,0.2,1)',
+        }}>
+          <Sidebar
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+            user={user}
+            onLogout={handleLogout}
+          />
+        </div>
+        <div style={{
+          marginLeft:sidebarWidth, flex:1,
+          minHeight:'100vh',
+          transition:'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)',
+          backgroundColor:'#0F1420',
+          overflow:'auto',
+        }}>
+          {renderPage()}
+        </div>
+      </div>
+    </TradingProvider>
+  );
+}
+
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+export default function App() {
+  return (
+    <AuthProvider>
+      <Toaster position="top-right" />
+      <AppInner />
+    </AuthProvider>
+  );
+}

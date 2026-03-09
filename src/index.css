@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+   🎨 MARKETFLOW JOURNAL — DESIGN SYSTEM
+   Palette logo : #0D1117 fond + #00D4FF cyan + #00E676 vert
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: #0D1117;
+  color: #E8EEFF;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI',
+    'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0D1117; }
+::-webkit-scrollbar-thumb { background: #1E2D45; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #243454; }
+
+/* ── Select options ── */
+option { background-color: #1A2235; color: #E8EEFF; }
+
+/* ── Inputs / Focus ── */
+input, select, textarea {
+  background-color: #0D1117;
+  color: #E8EEFF;
+  border-color: #1E2D45;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #00D4FF !important;
+  box-shadow: 0 0 0 1px rgba(0,212,255,0.2);
+}
+input::placeholder, textarea::placeholder { color: #4A5568; }
+
+/* ── Checkbox / Radio ── */
+input[type="checkbox"], input[type="radio"] { accent-color: #00D4FF; }
+
+/* ── Gradient text helper ── */
+.mf-gradient-text {
+  background: linear-gradient(135deg, #00D4FF, #00E676);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Card base ── */
+.mf-card {
+  background-color: #1A2235;
+  border: 1px solid #1E2D45;
+  border-radius: 10px;
+}
+
+/* ── Button primary (cyan→vert) ── */
+.mf-btn-primary {
+  background: linear-gradient(135deg, #00D4FF, #00C9A7);
+  color: #0D1117;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.mf-btn-primary:hover { opacity: 0.88; }
