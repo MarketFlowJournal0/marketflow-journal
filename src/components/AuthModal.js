@@ -43,7 +43,7 @@ const STYLES = `
 
   .auth-modal-inner {
     position:relative;z-index:1;
-    padding:40px 40px 36px;
+    padding:36px 40px 32px;
   }
 
   /* Close */
@@ -242,24 +242,37 @@ const STYLES = `
     display:flex;gap:8px;margin-bottom:20px;
   }
   .auth-plan-badge {
-    flex:1;padding:10px 8px;border-radius:10px;
+    flex:1;padding:14px 8px 12px;border-radius:14px;
     border:1px solid rgba(255,255,255,0.07);
     background:rgba(255,255,255,0.03);
-    cursor:pointer;text-align:center;transition:all 0.2s;
+    cursor:pointer;text-align:center;
+    transition:all 0.22s;position:relative;overflow:hidden;
+  }
+  .auth-plan-badge:hover {
+    border-color:rgba(6,230,255,0.2);
+    background:rgba(6,230,255,0.04);
+    transform:translateY(-1px);
   }
   .auth-plan-badge.selected {
-    border-color:rgba(6,230,255,0.35);
-    background:rgba(6,230,255,0.07);
+    border-color:rgba(6,230,255,0.5);
+    background:linear-gradient(135deg,rgba(6,230,255,0.1),rgba(0,255,136,0.05));
+    box-shadow:0 0 24px rgba(6,230,255,0.12),inset 0 1px 0 rgba(6,230,255,0.15);
+  }
+  .auth-plan-popular {
+    font-size:9px;font-weight:700;color:#06E6FF;
+    letter-spacing:0.8px;text-transform:uppercase;
+    margin-bottom:5px;height:12px;line-height:12px;
   }
   .auth-plan-name {
-    font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;
-    color:rgba(255,255,255,0.7);
+    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;
+    color:rgba(255,255,255,0.8);margin-bottom:5px;
   }
-  .auth-plan-badge.selected .auth-plan-name { color:#06E6FF; }
+  .auth-plan-badge.selected .auth-plan-name { color:#fff; }
   .auth-plan-price {
-    font-family:'JetBrains Mono',monospace;font-size:11px;
-    color:rgba(255,255,255,0.3);margin-top:3px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
+    color:rgba(255,255,255,0.35);margin-top:0;
   }
+  .auth-plan-badge.selected .auth-plan-price { color:#06E6FF; }
   .auth-plan-badge.selected .auth-plan-price { color:rgba(6,230,255,0.6); }
 
   /* Success state */
@@ -300,9 +313,9 @@ const STRENGTH_CLASSES = ['','s1','s2','s3','s4'];
 
 // ─── PLANS ────────────────────────────────────────────────────────────────────
 const PLANS = [
-  { id:'starter', name:'Starter', price:'Gratuit' },
-  { id:'pro',     name:'Pro',     price:'€19/mois' },
-  { id:'elite',   name:'Elite',   price:'€49/mois' },
+  { id:'starter', name:'Starter', price:'$15/mois', badge:null },
+  { id:'pro',     name:'Pro',     price:'$22/mois', badge:'⭐ Populaire' },
+  { id:'elite',   name:'Elite',   price:'$38/mois', badge:null },
 ];
 
 // ─── AUTH MODAL ───────────────────────────────────────────────────────────────
@@ -580,6 +593,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                           className={`auth-plan-badge${selectedPlan===p.id?' selected':''}`}
                           onClick={()=>setSelectedPlan(p.id)}
                         >
+                          <div className="auth-plan-popular">{p.badge || ' '}</div>
                           <div className="auth-plan-name">{p.name}</div>
                           <div className="auth-plan-price">{p.price}</div>
                         </div>
