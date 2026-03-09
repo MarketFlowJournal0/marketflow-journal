@@ -1,3 +1,14 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap
+Sitemap: https://marketflowjournal.com/sitemap.xml
+
+# Bloquer les pages app (pas utiles pour Google)
+Disallow: /dashboard
+Disallow: /all-trades
+Disallow: /analytics
+Disallow: /backtest
+Disallow: /psychology
+Disallow: /equity
+Disallow: /ai-chat
