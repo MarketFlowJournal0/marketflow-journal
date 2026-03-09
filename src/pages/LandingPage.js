@@ -575,21 +575,6 @@ function LiveTickerBar() {
     return price.toFixed(d);
   };
 
-  const handleCheckout = async (priceId) => {
-    try {
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId }),
-      });
-      const { url } = await res.json();
-      if (url) window.location.href = url;
-    } catch (err) {
-      // Fallback: ouvrir signup modal
-      onSignup?.();
-    }
-  };
-
 
   return (
     <div style={{
@@ -721,6 +706,20 @@ export default function LandingPage({ onLogin, onSignup }) {
   }, []);
 
   const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
+
+  const handleCheckout = async (priceId) => {
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      });
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      onSignup?.();
+    }
+  };
 
   return (
     <div className="lp-root" ref={rootRef} style={{ height:'100vh', overflowY:'auto', overflowX:'hidden' }}>
