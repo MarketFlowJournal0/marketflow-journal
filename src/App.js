@@ -14,6 +14,7 @@ import { TradingProvider } from './context/TradingContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
 import { Toaster, toast } from 'react-hot-toast';
+import PlanSelection from './pages/PlanSelection';
 import './App.css';
 
 // ─── LOADING SCREEN ───────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ function AppInner() {
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null); // null | 'login' | 'signup'
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPlanSelection, setShowPlanSelection] = useState(false);
 
   const openLogin  = () => setAuthModal('login');
   const openSignup = () => setAuthModal('signup');
@@ -100,10 +102,10 @@ function AppInner() {
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
-      // Petit délai pour laisser Supabase initialiser la session
-      setTimeout(() => {
-        launchCheckout(pendingPriceId, userData?.email);
-      }, 800);
+      setTimeout(() => launchCheckout(pendingPriceId, userData?.email), 800);
+    } else {
+      // Pas de plan en attente → afficher la page de sélection de plan
+      setShowPlanSelection(true);
     }
   };
 
@@ -165,6 +167,16 @@ function AppInner() {
           />
         )}
       </>
+    );
+  }
+
+  // ── Connecté mais pas encore de plan → Sélection plan ────────────────────
+  if (showPlanSelection) {
+    return (
+      <PlanSelection
+        user={user}
+        onSkip={() => setShowPlanSelection(false)}
+      />
     );
   }
 
