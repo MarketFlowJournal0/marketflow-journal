@@ -139,32 +139,36 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
   const applyTheme = (t) => {
     setTheme(t);
     localStorage.setItem('mf_theme', t);
-    document.documentElement.setAttribute('data-theme', t);
     const root = document.documentElement;
+    root.setAttribute('data-theme', t);
     if (t === 'light') {
-      root.style.setProperty('--bg',         '#F0F4FF');
+      root.style.setProperty('--bg',         '#F2F5FC');
       root.style.setProperty('--bg-sidebar', '#FFFFFF');
       root.style.setProperty('--bg-card',    '#FFFFFF');
-      root.style.setProperty('--bg-high',    '#E8EEFF');
+      root.style.setProperty('--bg-high',    '#EEF2FB');
       root.style.setProperty('--t0',         '#0A0F1E');
-      root.style.setProperty('--t1',         '#1A2340');
-      root.style.setProperty('--t2',         '#4A5880');
-      root.style.setProperty('--t3',         '#8A9AC0');
-      root.style.setProperty('--brd',        '#D0D8EE');
-      root.style.setProperty('--brd-hi',     '#B8C4E0');
-      document.body.style.background = '#F0F4FF';
+      root.style.setProperty('--t1',         '#1C2B4A');
+      root.style.setProperty('--t2',         '#4A5E80');
+      root.style.setProperty('--t3',         '#9AAAC8');
+      root.style.setProperty('--brd',        '#D8E2F0');
+      root.style.setProperty('--brd-hi',     '#BCC8E0');
+      root.style.setProperty('--green',      '#00AA55');
+      root.style.setProperty('--red',        '#E0243E');
+      document.body.style.background = '#F2F5FC';
       document.body.style.color = '#0A0F1E';
     } else {
       root.style.setProperty('--bg',         '#030508');
-      root.style.setProperty('--bg-sidebar', '#070C14');
+      root.style.setProperty('--bg-sidebar', '#060D1A');
       root.style.setProperty('--bg-card',    '#0C1422');
-      root.style.setProperty('--bg-high',    '#121C2E');
+      root.style.setProperty('--bg-high',    '#111B2E');
       root.style.setProperty('--t0',         '#FFFFFF');
       root.style.setProperty('--t1',         '#E8EEFF');
       root.style.setProperty('--t2',         '#7A90B8');
       root.style.setProperty('--t3',         '#334566');
       root.style.setProperty('--brd',        '#162034');
       root.style.setProperty('--brd-hi',     '#1E2E48');
+      root.style.setProperty('--green',      '#00FF88');
+      root.style.setProperty('--red',        '#FF3D57');
       document.body.style.background = '#030508';
       document.body.style.color = '#FFFFFF';
     }
