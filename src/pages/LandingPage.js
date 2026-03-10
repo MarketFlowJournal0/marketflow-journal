@@ -377,58 +377,39 @@ const STYLES = `
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Symboles Binance (WebSocket miniTicker 24h)
-const WS_SYMBOLS = {
-  'BTCUSDT' : 'BTC/USD',
-  'EURUSDT' : 'EUR/USD',
-  'GBPUSDT' : 'GBP/USD',
-  'USDTJPY' : 'USD/JPY',  // approx via USDT
-};
 
 // Paires forex réelles via frankfurter (refresh 10s)
-const FOREX_SYMS = {
-  EURUSD: 'EUR/USD',
-  GBPUSD: 'GBP/USD',
-  USDJPY: 'USD/JPY',
-  USDCHF: 'USD/CHF',
-  AUDUSD: 'AUD/USD',
-  USDCAD: 'USD/CAD',
-  GBPJPY: 'GBP/JPY',
-};
 
 // Indices US via Stooq
-const INDEX_SYMS = {
-  '^SPX' : 'S&P 500',
-  '^NDX' : 'NASDAQ',
-  '^DJI' : 'DOW JONES',
-  '^RUT' : 'RUSSELL 2K',
-};
 
 const DECIMALS_MAP = {
-  'BTC/USD':0,
+  'BTC/USD':0, 'ETH/USD':2, 'SOL/USD':2,
   'EUR/USD':4,'GBP/USD':4,'USD/JPY':2,'USD/CHF':4,'AUD/USD':4,'USD/CAD':4,'GBP/JPY':2,
   'S&P 500':2,'NASDAQ':2,'DOW JONES':2,'RUSSELL 2K':2,
 };
 
 // Fallback au cas où les APIs sont indisponibles
 const FALLBACK_PRICES = {
-  'BTC/USD' : { price:67420,  pct:+1.24  },
-  'EUR/USD' : { price:1.0842, pct:+0.12  },
-  'GBP/USD' : { price:1.2710, pct:+0.21  },
-  'USD/JPY' : { price:149.82, pct:-0.08  },
-  'USD/CHF' : { price:0.9012, pct:+0.04  },
-  'AUD/USD' : { price:0.6532, pct:-0.11  },
-  'USD/CAD' : { price:1.3590, pct:+0.07  },
-  'GBP/JPY' : { price:190.42, pct:+0.13  },
-  'S&P 500' : { price:5218.19,pct:+0.34  },
-  'NASDAQ'  : { price:18235.4,pct:+0.56  },
-  'DOW JONES':{ price:39127.8,pct:+0.22  },
-  'RUSSELL 2K':{ price:2056.3,pct:-0.14  },
+  'BTC/USD'   : { price:83200,   pct:+1.24  },
+  'ETH/USD'   : { price:2010,    pct:+0.87  },
+  'SOL/USD'   : { price:132,     pct:+1.45  },
+  'EUR/USD'   : { price:1.0842,  pct:+0.12  },
+  'GBP/USD'   : { price:1.2710,  pct:+0.21  },
+  'USD/JPY'   : { price:149.82,  pct:-0.08  },
+  'USD/CHF'   : { price:0.9012,  pct:+0.04  },
+  'AUD/USD'   : { price:0.6532,  pct:-0.11  },
+  'USD/CAD'   : { price:1.3590,  pct:+0.07  },
+  'GBP/JPY'   : { price:190.42,  pct:+0.13  },
+  'S&P 500'   : { price:5680,    pct:+0.34  },
+  'NASDAQ'    : { price:19800,   pct:+0.56  },
+  'DOW JONES' : { price:41500,   pct:+0.22  },
+  'RUSSELL 2K': { price:2100,    pct:-0.14  },
 };
 
 // ── ORDER d'affichage dans le ticker ──────────────────────────────────────────
 const TICKER_ORDER = [
   'S&P 500','NASDAQ','DOW JONES','RUSSELL 2K',
-  'BTC/USD',
+  'BTC/USD','ETH/USD','SOL/USD',
   'EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','GBP/JPY',
 ];
 
@@ -436,7 +417,6 @@ const TICKER_ORDER = [
 // Hook principal — gère toutes les sources de données
 // ─────────────────────────────────────────────────────────────────────────────
 function useLiveTicker() {
-  // state: { [displayName]: { price, pct, flash } }
   const [data, setData] = React.useState(() => {
     const d = {};
     TICKER_ORDER.forEach(name => {
@@ -455,16 +435,30 @@ function useLiveTicker() {
     });
   }, []);
 
-  // ── 1. BTC via Binance WebSocket (tick par tick) ──────────────────────────
+  // ── 1. CRYPTO via Binance WebSocket (tick par tick, <1s) ─────────────────
+  // BTC, ETH, BNB, SOL, XRP en simultané via stream combiné
   React.useEffect(() => {
     let ws, retryT;
+    const STREAMS = [
+      'btcusdt@miniTicker',
+      'ethusdt@miniTicker',
+      'solusdt@miniTicker',
+    ].join('/');
+    const CRYPTO_MAP = {
+      'btcusdt': 'BTC/USD',
+      'ethusdt': 'ETH/USD',
+      'solusdt': 'SOL/USD',
+    };
     const connect = () => {
       try {
-        ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@miniTicker');
+        ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${STREAMS}`);
         ws.onmessage = (e) => {
           try {
-            const d = JSON.parse(e.data);
-            update('BTC/USD', parseFloat(d.c), parseFloat(d.P));
+            const msg = JSON.parse(e.data);
+            const d = msg.data;
+            const name = CRYPTO_MAP[d?.s?.toLowerCase()];
+            if (!name) return;
+            update(name, parseFloat(d.c), parseFloat(d.P));
           } catch {}
         };
         ws.onerror = () => {};
@@ -475,87 +469,49 @@ function useLiveTicker() {
     return () => { try { ws.close(); } catch {} clearTimeout(retryT); };
   }, [update]);
 
-  // ── 2. Forex via Frankfurter (refresh 10s) ────────────────────────────────
+  // ── 2. Forex via API proxy Vercel (refresh 30s) ──────────────────────────
+  // Passe par /api/market-data pour éviter les problèmes CORS
   React.useEffect(() => {
     let prevRates = {};
-    const fetch_ = async () => {
+    const fetchForex = async () => {
       try {
-        const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,JPY,CHF,AUD,CAD');
+        const res = await fetch('/api/market-data?type=forex');
         const json = await res.json();
-        const r = json.rates;
-        // Calculer les paires et leur % vs valeur précédente
-        const pairs = {
-          'EUR/USD': r.EUR ? 1/r.EUR : null,
-          'GBP/USD': r.GBP ? 1/r.GBP : null,
-          'USD/JPY': r.JPY || null,
-          'USD/CHF': r.CHF || null,
-          'AUD/USD': r.AUD ? 1/r.AUD : null,
-          'USD/CAD': r.CAD || null,
-          'GBP/JPY': (r.GBP && r.JPY) ? r.JPY/r.GBP : null,
-        };
-        Object.entries(pairs).forEach(([name, price]) => {
+        if (!json.pairs) return;
+        Object.entries(json.pairs).forEach(([name, price]) => {
           if (!price) return;
           const prev = prevRates[name] || price;
-          const pct = prev ? ((price - prev) / prev) * 100 : 0;
+          const pct = prev ? +((price - prev) / prev * 100).toFixed(3) : 0;
           prevRates[name] = price;
-          update(name, +price.toFixed(DECIMALS_MAP[name] ?? 4), +pct.toFixed(3));
+          update(name, price, pct);
         });
       } catch {}
     };
-    fetch_();
-    const t = setInterval(fetch_, 10000);
+    fetchForex();
+    const t = setInterval(fetchForex, 30000);
     return () => clearInterval(t);
   }, [update]);
 
-  // ── 3. Indices US via Yahoo Finance WebSocket (csm) ───────────────────────
-  // Yahoo Finance a un endpoint non-officiel qui stream les quotes
+  // ── 3. Indices US via API proxy Vercel (refresh 20s) ─────────────────────
+  // Yahoo Finance côté serveur pour éviter le blocage CORS navigateur
   React.useEffect(() => {
-    let ws2, retryT2;
-    // Yahoo Finance streaming via their undocumented WS
-    const YH_SYMBOLS = ['^GSPC','^NDX','^DJI','^RUT'];
-    const YH_MAP = { '^GSPC':'S&P 500', '^NDX':'NASDAQ', '^DJI':'DOW JONES', '^RUT':'RUSSELL 2K' };
-
-    const fetchYahoo = async () => {
+    let prevPrices = {};
+    const fetchIndices = async () => {
       try {
-        // Use Yahoo Finance quote API (no API key needed, CORS OK from browser)
-        const syms = YH_SYMBOLS.join('%2C');
-        const url = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms}&range=1d&interval=1m`;
-        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const res = await fetch('/api/market-data?type=indices');
         const json = await res.json();
-        const spark = json?.spark?.result || [];
-        spark.forEach(item => {
-          const sym = item.symbol;
-          const name = YH_MAP[sym];
-          if (!name) return;
-          const closes = item?.response?.[0]?.indicators?.quote?.[0]?.close;
-          if (!closes || closes.length < 2) return;
-          const valid = closes.filter(v => v != null);
-          const price = valid[valid.length - 1];
-          const open  = valid[0];
-          const pct   = ((price - open) / open) * 100;
-          update(name, +price.toFixed(2), +pct.toFixed(2));
+        if (!json.indices) return;
+        Object.entries(json.indices).forEach(([name, { price, pct }]) => {
+          if (!price) return;
+          const prev = prevPrices[name];
+          const finalPct = prev ? +((price - prev) / prev * 100).toFixed(2) : pct;
+          prevPrices[name] = price;
+          update(name, price, finalPct);
         });
-      } catch {
-        // Fallback: Yahoo Finance v7 quotes
-        try {
-          const syms = YH_SYMBOLS.join(',');
-          const url2 = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(syms)}`;
-          const res2 = await fetch(url2);
-          const json2 = await res2.json();
-          const quotes = json2?.quoteResponse?.result || [];
-          quotes.forEach(q => {
-            const name = YH_MAP[q.symbol];
-            if (!name) return;
-            const price = q.regularMarketPrice;
-            const pct   = q.regularMarketChangePercent;
-            if (price) update(name, +price.toFixed(2), +pct.toFixed(2));
-          });
-        } catch {}
-      }
+      } catch {}
     };
-
-    fetchYahoo();
-    const t = setInterval(fetchYahoo, 15000);
+    fetchIndices();
+    const t = setInterval(fetchIndices, 20000);
     return () => clearInterval(t);
   }, [update]);
 
