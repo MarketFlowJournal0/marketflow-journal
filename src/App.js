@@ -67,10 +67,46 @@ function AppInner() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null); // null | 'login' | 'signup'
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const openLogin  = () => setAuthModal('login');
   const openSignup = () => setAuthModal('signup');
   const closeAuth  = () => setAuthModal(null);
+
+  // Détecter ?payment=success après retour Stripe
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      setShowSuccess(true);
+      // Nettoyer l'URL sans recharger la page
+      window.history.replaceState({}, '', window.location.pathname);
+      // Toast de bienvenue
+      setTimeout(() => {
+        toast.success('🎉 Paiement confirmé ! Bienvenue sur MarketFlow Journal !', {
+          duration: 6000,
+          style: {
+            background: '#0D1627',
+            color: '#fff',
+            border: '1px solid rgba(0,255,136,0.3)',
+            borderRadius: '12px',
+            fontSize: '15px',
+          },
+        });
+        setShowSuccess(false);
+      }, 500);
+    }
+    if (params.get('payment') === 'cancelled') {
+      window.history.replaceState({}, '', window.location.pathname);
+      toast('Paiement annulé. Tu peux réessayer quand tu veux ! 👋', {
+        style: {
+          background: '#0D1627',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '12px',
+        },
+      });
+    }
+  }, []);
 
   const handleAuthSuccess = () => {
     setAuthModal(null);
