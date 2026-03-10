@@ -1,98 +1,116 @@
-/* src/theme.css — Variables de thème MarketFlow Journal */
+/* src/theme.css — Système de thème MarketFlow Journal */
 
-/* ── Thème sombre (défaut) ─────────────────────────────────────────────────── */
-:root, [data-theme="dark"] {
+/* ─── POLICE ────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ─── VARIABLES DARK (défaut) ───────────────────────────────────────────────── */
+:root {
   --bg:           #030508;
-  --bg-sidebar:   #070C14;
+  --bg-sidebar:   #060D1A;
   --bg-card:      #0C1422;
-  --bg-high:      #121C2E;
+  --bg-high:      #111B2E;
+  --bg-input:     rgba(255,255,255,0.04);
   --accent:       #06E6FF;
+  --accent-rgb:   6,230,255;
+  --teal:         #00F5D4;
+  --green:        #00FF88;
+  --red:          #FF3D57;
+  --gold:         #FFD700;
   --t0:           #FFFFFF;
   --t1:           #E8EEFF;
   --t2:           #7A90B8;
   --t3:           #334566;
+  --t4:           #1A2440;
   --brd:          #162034;
   --brd-hi:       #1E2E48;
-  --red:          #FF4D6A;
-  --green:        #00FF88;
+  --shadow:       rgba(0,0,0,0.6);
 }
 
-/* ── Thème clair ───────────────────────────────────────────────────────────── */
+/* ─── VARIABLES LIGHT ───────────────────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg:           #F0F4FF;
-  --bg-sidebar:   #FFFFFF;
+  --bg:           #F2F5FC;
+  --bg-sidebar:   #0B1628;
   --bg-card:      #FFFFFF;
-  --bg-high:      #E8EEFF;
-  --t0:           #0A0F1E;
-  --t1:           #1A2340;
-  --t2:           #4A5880;
-  --t3:           #8A9AC0;
-  --brd:          #D0D8EE;
-  --brd-hi:       #B8C4E0;
-  --red:          #E0243E;
+  --bg-high:      #E8EFF8;
+  --bg-input:     rgba(0,0,0,0.03);
   --green:        #00AA55;
+  --red:          #E0243E;
+  --t0:           #0A0F1E;
+  --t1:           #1C2B4A;
+  --t2:           #4A5E80;
+  --t3:           #9AAAC8;
+  --t4:           #D0DAEA;
+  --brd:          #D8E2F0;
+  --brd-hi:       #BCC8E0;
+  --shadow:       rgba(0,0,0,0.12);
 }
 
-/* ── Transitions fluides sur tout ─────────────────────────────────────────── */
-*, *::before, *::after {
-  transition: background-color 0.25s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-/* ── Body ──────────────────────────────────────────────────────────────────── */
-body {
+/* ─── BASE ──────────────────────────────────────────────────────────────────── */
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'Inter', sans-serif;
   background: var(--bg) !important;
   color: var(--t0) !important;
 }
 
-/* ── Sidebar ───────────────────────────────────────────────────────────────── */
-[data-theme="light"] .mf-sidebar {
-  background: var(--bg-sidebar) !important;
-  border-right: 1px solid var(--brd) !important;
-  box-shadow: 2px 0 20px rgba(0,0,0,0.08) !important;
+/* Transitions thème */
+*, *::before, *::after {
+  transition: background-color 0.22s ease, border-color 0.18s ease !important;
+}
+/* Pas de transition sur les animations framer-motion */
+[style*="transform"], [style*="opacity"] {
+  transition: none !important;
 }
 
-/* ── Cards / panels ────────────────────────────────────────────────────────── */
-[data-theme="light"] .mf-card {
-  background: var(--bg-card) !important;
-  border-color: var(--brd) !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+/* ─── SIDEBAR — toujours dark comme TradeZella ──────────────────────────────── */
+.mf-sidebar {
+  background: linear-gradient(180deg, #060D1A 0%, #04080F 60%, #030608 100%) !important;
+  border-right: 1px solid rgba(6,230,255,0.08) !important;
+  box-shadow: 4px 0 30px rgba(0,0,0,0.5), inset -1px 0 0 rgba(6,230,255,0.06) !important;
 }
 
-/* ── Textes généraux ───────────────────────────────────────────────────────── */
-[data-theme="light"] h1,
-[data-theme="light"] h2,
-[data-theme="light"] h3 {
+/* ─── MAIN CONTENT en mode light ────────────────────────────────────────────── */
+[data-theme="light"] .mf-main {
+  background: var(--bg) !important;
   color: var(--t0) !important;
 }
 
-[data-theme="light"] p,
-[data-theme="light"] span,
-[data-theme="light"] div {
-  --text-secondary: var(--t2);
+/* Tous les fonds de cards dark → blanc en mode light */
+[data-theme="light"] .mf-card {
+  background: #FFFFFF !important;
+  border-color: #D8E2F0 !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07) !important;
 }
 
-/* ── Inputs ────────────────────────────────────────────────────────────────── */
-[data-theme="light"] input,
+/* Inputs */
+[data-theme="light"] input:not([type="color"]):not([type="range"]):not([type="checkbox"]),
 [data-theme="light"] textarea,
 [data-theme="light"] select {
-  background: #F8FAFF !important;
-  border-color: var(--brd) !important;
-  color: var(--t0) !important;
+  background: rgba(0,0,0,0.03) !important;
+  border-color: #D8E2F0 !important;
+  color: #0A0F1E !important;
 }
-
 [data-theme="light"] input::placeholder,
 [data-theme="light"] textarea::placeholder {
-  color: var(--t3) !important;
+  color: #9AAAC8 !important;
 }
 
-/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
-[data-theme="light"] ::-webkit-scrollbar-track {
-  background: #E8EEFF;
-}
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: #B8C4E0;
-  border-radius: 4px;
-}
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: #8A9AC0;
-}
+/* Tables */
+[data-theme="light"] thead { background: #EEF3FB !important; }
+[data-theme="light"] td, [data-theme="light"] th { border-color: #D8E2F0 !important; }
+[data-theme="light"] tr:hover { background: rgba(6,230,255,0.04) !important; }
+
+/* Recharts */
+[data-theme="light"] .recharts-cartesian-grid line { stroke: #D8E2F0 !important; }
+[data-theme="light"] .recharts-text tspan { fill: #4A5E80 !important; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--brd-hi); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--t3); }
+
+/* ─── UTILITAIRES ───────────────────────────────────────────────────────────── */
+.mf-badge-trial { background: rgba(0,255,136,0.10); color: #00FF88; border: 1px solid rgba(0,255,136,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mf-badge-pro   { background: rgba(6,230,255,0.12); color: #06E6FF; border: 1px solid rgba(6,230,255,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mf-badge-elite { background: rgba(255,215,0,0.12); color: #FFD700; border: 1px solid rgba(255,215,0,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }

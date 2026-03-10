@@ -209,7 +209,7 @@ function AppInner() {
     <TradingProvider>
       <div style={{
         display:'flex', minHeight:'100vh',
-        backgroundColor:'#0F1420',
+        backgroundColor:'var(--bg)',
         fontFamily:"'Inter',sans-serif",
       }}>
         <div style={{
@@ -226,13 +226,15 @@ function AppInner() {
             onLogout={handleLogout}
           />
         </div>
-        <div style={{
-          marginLeft:sidebarWidth, flex:1,
-          minHeight:'100vh',
-          transition:'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)',
-          backgroundColor:'#0F1420',
-          overflow:'auto',
-        }}>
+        <div
+          className="mf-main"
+          style={{
+            marginLeft:sidebarWidth, flex:1,
+            minHeight:'100vh',
+            transition:'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)',
+            backgroundColor:'var(--bg)',
+            overflow:'auto',
+          }}>
           {renderPage()}
         </div>
       </div>

@@ -194,9 +194,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         position: 'fixed', left: 0, top: 0,
         height: '100vh',
         display: 'flex', flexDirection: 'column',
-        background: 'linear-gradient(180deg,#080E19 0%,#050A10 100%)',
-        borderRight: '1px solid #162034',
-        boxShadow: '4px 0 40px rgba(0,0,0,0.65)',
+        background: 'linear-gradient(180deg, #060D1A 0%, #04080F 60%, #030608 100%)',
+        borderRight: '1px solid rgba(6,230,255,0.08)',
+        boxShadow: '4px 0 30px rgba(0,0,0,0.5), inset -1px 0 0 rgba(6,230,255,0.06)',
         zIndex: 100, overflow: 'hidden', flexShrink: 0,
         fontFamily: "'DM Sans','Segoe UI',sans-serif",
       }}
