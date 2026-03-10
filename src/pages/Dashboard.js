@@ -790,6 +790,239 @@ const JournalNote = () => (
 // ─────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// TRADING CALENDAR + MARKETFLOW RANK SCORE
+// ─────────────────────────────────────────────
+
+const MF_RANKS = [
+  { rank: 'Iron',     min: 0,   max: 19,  color: '#8B7355', icon: '🔩', desc: 'Débutant' },
+  { rank: 'Bronze',   min: 20,  max: 39,  color: '#CD7F32', icon: '🥉', desc: 'En progression' },
+  { rank: 'Silver',   min: 40,  max: 59,  color: '#C0C0C0', icon: '🥈', desc: 'Régulier' },
+  { rank: 'Gold',     min: 60,  max: 74,  color: '#FFD700', icon: '🥇', desc: 'Performant' },
+  { rank: 'Platinum', min: 75,  max: 84,  color: '#00F5D4', icon: '💎', desc: 'Expert' },
+  { rank: 'Diamond',  min: 85,  max: 92,  color: '#06E6FF', icon: '💠', desc: 'Élite' },
+  { rank: 'Master',   min: 93,  max: 97,  color: '#B06EFF', icon: '👑', desc: 'Master Trader' },
+  { rank: 'Grandmaster', min: 98, max: 100, color: '#FF4DC4', icon: '⚡', desc: 'Légende' },
+];
+
+function getRank(score) {
+  return MF_RANKS.find(r => score >= r.min && score <= r.max) || MF_RANKS[0];
+}
+
+function calcRegularityScore(trades) {
+  if (!trades || trades.length === 0) return 0;
+
+  // 1. Win rate (30pts)
+  const wins = trades.filter(t => t.pnl > 0).length;
+  const wr = wins / trades.length;
+  const wrScore = Math.min(30, wr * 40);
+
+  // 2. Régularité hebdo (20pts) — trades répartis sur plusieurs semaines
+  const weeks = new Set(trades.map(t => {
+    const d = new Date(t.date || t.entryDate || Date.now());
+    const start = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
+  }));
+  const weekScore = Math.min(20, weeks.size * 3);
+
+  // 3. Risk management (25pts) — pas de grosse perte unique
+  const pnls = trades.map(t => t.pnl || 0);
+  const maxLoss = Math.abs(Math.min(...pnls, 0));
+  const totalPnl = pnls.reduce((a,b) => a+b, 0);
+  const riskScore = totalPnl > 0 ? Math.min(25, 25 - (maxLoss / Math.max(totalPnl, 1)) * 10) : 10;
+
+  // 4. Profit factor (15pts)
+  const grossWin = pnls.filter(p => p > 0).reduce((a,b) => a+b, 0);
+  const grossLoss = Math.abs(pnls.filter(p => p < 0).reduce((a,b) => a+b, 0));
+  const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? 3 : 0;
+  const pfScore = Math.min(15, pf * 5);
+
+  // 5. Activité (10pts) — nb de trades
+  const actScore = Math.min(10, trades.length * 0.5);
+
+  return Math.round(wrScore + weekScore + riskScore + pfScore + actScore);
+}
+
+const TradingCalendar = () => {
+  const { trades = [] } = useTrades() || {};
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
+
+  const year  = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const DAYS   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+  // Calculer les jours du mois
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month + 1, 0);
+  const startPad = (firstDay.getDay() + 6) % 7; // Lundi = 0
+  const totalDays = lastDay.getDate();
+
+  // Grouper les trades par jour
+  const tradesByDay = {};
+  (trades || []).forEach(t => {
+    const d = new Date(t.date || t.entryDate || t.createdAt);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const key = d.getDate();
+      if (!tradesByDay[key]) tradesByDay[key] = [];
+      tradesByDay[key].push(t);
+    }
+  });
+
+  // Score de régularité
+  const score = calcRegularityScore(trades);
+  const rank  = getRank(score);
+  const nextRank = MF_RANKS[MF_RANKS.findIndex(r => r.rank === rank.rank) + 1];
+
+  // Stats du mois
+  const monthTrades = Object.values(tradesByDay).flat();
+  const monthPnl    = monthTrades.reduce((a, t) => a + (t.pnl || 0), 0);
+  const tradingDays = Object.keys(tradesByDay).length;
+
+  return (
+    <Card custom={18} glow={rank.color} hover={false} style={{padding:'20px 22px'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:12}}>
+        <SectionTitle color={rank.color} icon="📅">Calendrier de Trading</SectionTitle>
+
+        {/* Score MarketFlow Rank */}
+        <div style={{display:'flex',alignItems:'center',gap:12,background:'rgba(255,255,255,0.03)',border:`1px solid ${rank.color}30`,borderRadius:12,padding:'8px 14px'}}>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:22}}>{rank.icon}</div>
+            <div style={{fontSize:9,color:rank.color,fontWeight:800,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:2}}>{rank.rank}</div>
+          </div>
+          <div>
+            <div style={{display:'flex',alignItems:'baseline',gap:4}}>
+              <span style={{fontSize:28,fontWeight:900,color:rank.color,lineHeight:1}}>{score}</span>
+              <span style={{fontSize:12,color:C.t3}}>/100</span>
+            </div>
+            <div style={{fontSize:10,color:C.t2,marginTop:2}}>{rank.desc}</div>
+            {/* Barre de progression vers le prochain rang */}
+            {nextRank && (
+              <div style={{marginTop:6}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+                  <span style={{fontSize:9,color:C.t3}}>→ {nextRank.rank}</span>
+                  <span style={{fontSize:9,color:C.t3}}>{nextRank.min - score} pts</span>
+                </div>
+                <div style={{width:120,height:4,background:'rgba(255,255,255,0.06)',borderRadius:2,overflow:'hidden'}}>
+                  <div style={{
+                    width:`${((score - rank.min) / (rank.max - rank.min + 1)) * 100}%`,
+                    height:'100%',
+                    background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`,
+                    borderRadius:2,
+                    transition:'width 1s ease',
+                  }}/>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats rapides du mois */}
+      <div style={{display:'flex',gap:16,marginBottom:16,flexWrap:'wrap'}}>
+        {[
+          {l:'P&L du mois', v: monthPnl >= 0 ? `+$${monthPnl.toLocaleString()}` : `-$${Math.abs(monthPnl).toLocaleString()}`, c: monthPnl >= 0 ? C.green : C.danger},
+          {l:'Jours tradés', v: tradingDays, c: C.cyan},
+          {l:'Trades ce mois', v: monthTrades.length, c: C.purple},
+        ].map((s,i) => (
+          <div key={i} style={{background:'rgba(255,255,255,0.03)',borderRadius:8,padding:'8px 14px',border:`1px solid ${C.brd}`}}>
+            <div style={{fontSize:9,color:C.t3,fontWeight:600,marginBottom:3,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.l}</div>
+            <div style={{fontSize:16,fontWeight:800,color:s.c}}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation mois */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+        <button onClick={() => setCurrentMonth(new Date(year, month-1, 1))}
+          style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:8,color:C.t2,cursor:'pointer',padding:'5px 12px',fontSize:13}}>‹</button>
+        <span style={{fontSize:14,fontWeight:700,color:C.t0}}>{MONTHS[month]} {year}</span>
+        <button onClick={() => setCurrentMonth(new Date(year, month+1, 1))}
+          style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:8,color:C.t2,cursor:'pointer',padding:'5px 12px',fontSize:13}}>›</button>
+      </div>
+
+      {/* En-têtes jours */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4,marginBottom:6}}>
+        {DAYS.map(d => (
+          <div key={d} style={{textAlign:'center',fontSize:9,color:C.t3,fontWeight:700,letterSpacing:'0.05em',textTransform:'uppercase',padding:'4px 0'}}>{d}</div>
+        ))}
+      </div>
+
+      {/* Grille du calendrier */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
+        {/* Jours vides au début */}
+        {Array.from({length:startPad}).map((_,i) => <div key={`e${i}`}/>)}
+
+        {/* Jours du mois */}
+        {Array.from({length:totalDays}).map((_,i) => {
+          const day = i + 1;
+          const dayTrades = tradesByDay[day] || [];
+          const dayPnl = dayTrades.reduce((a,t) => a + (t.pnl||0), 0);
+          const isToday = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year;
+          const hasData = dayTrades.length > 0;
+          const isWeekend = ((i + startPad) % 7) >= 5;
+
+          let bg = 'rgba(255,255,255,0.02)';
+          let border = C.brd;
+          let pnlColor = C.t3;
+          if (hasData) {
+            if (dayPnl > 0) { bg = `${C.green}18`; border = `${C.green}40`; pnlColor = C.green; }
+            else if (dayPnl < 0) { bg = `${C.danger}15`; border = `${C.danger}35`; pnlColor = C.danger; }
+            else { bg = `${C.warn}10`; border = `${C.warn}30`; pnlColor = C.warn; }
+          }
+          if (isWeekend && !hasData) { bg = 'rgba(255,255,255,0.01)'; }
+
+          return (
+            <div key={day} style={{
+              background: bg,
+              border: `1px solid ${isToday ? rank.color : border}`,
+              borderRadius: 8,
+              padding: '6px 4px',
+              minHeight: 52,
+              textAlign: 'center',
+              position: 'relative',
+              boxShadow: isToday ? `0 0 8px ${rank.color}40` : 'none',
+              transition: 'all 0.15s',
+              cursor: hasData ? 'pointer' : 'default',
+            }}>
+              <div style={{fontSize:10,fontWeight: isToday ? 800 : 500,color: isToday ? rank.color : isWeekend ? C.t4 : C.t2,marginBottom:3}}>{day}</div>
+              {hasData && (
+                <>
+                  <div style={{fontSize:9,fontWeight:700,color:pnlColor}}>
+                    {dayPnl >= 0 ? '+' : ''}{dayPnl >= 1000 || dayPnl <= -1000 ? `${(dayPnl/1000).toFixed(1)}k` : dayPnl}$
+                  </div>
+                  <div style={{fontSize:8,color:C.t3,marginTop:1}}>{dayTrades.length}T</div>
+                  {/* Petits dots indicateurs */}
+                  <div style={{display:'flex',justifyContent:'center',gap:2,marginTop:3}}>
+                    {dayTrades.slice(0,3).map((_,di) => (
+                      <div key={di} style={{width:4,height:4,borderRadius:'50%',background:dayPnl>0?C.green:C.danger,opacity:0.8}}/>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Légende */}
+      <div style={{display:'flex',gap:16,marginTop:14,flexWrap:'wrap'}}>
+        {[
+          {c:C.green,  l:'Jour positif'},
+          {c:C.danger, l:'Jour négatif'},
+          {c:C.warn,   l:'Breakeven'},
+          {c:C.t4,     l:'Pas de trade'},
+        ].map(({c,l}) => (
+          <div key={l} style={{display:'flex',alignItems:'center',gap:5}}>
+            <div style={{width:10,height:10,borderRadius:3,background:`${c}30`,border:`1px solid ${c}60`}}/>
+            <span style={{fontSize:9,color:C.t3}}>{l}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
 // ─── MODAL NOUVEAU TRADE ─────────────────────
 const NewTradeModal = ({ onClose, onAdd }) => {
   const [form, setForm] = useState({ pair:'EURUSD', dir:'Long', entry:'', sl:'', tp:'', size:'', date: new Date().toISOString().split('T')[0], notes:'' });
@@ -1002,9 +1235,14 @@ export default function Dashboard() {
         </div>
 
         {/* ── ROW 5: Heatmap + Journal ── */}
-        <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:12,marginBottom:12}}>
           <TimeHeatmap/>
           <JournalNote/>
+        </div>
+
+        {/* ── ROW 6: Trading Calendar + Rank ── */}
+        <div style={{marginBottom:12}}>
+          <TradingCalendar/>
         </div>
 
       </div>
