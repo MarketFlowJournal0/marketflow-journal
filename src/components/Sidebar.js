@@ -134,21 +134,40 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
   };
   const planInfo = PLAN_LABELS[plan] || PLAN_LABELS.trial;
 
-  const ACCENT_COLORS = [
-    { label: 'Cyan',    value: '#06E6FF' },
-    { label: 'Teal',    value: '#00F5D4' },
-    { label: 'Green',   value: '#00FF88' },
-    { label: 'Purple',  value: '#B06EFF' },
-    { label: 'Pink',    value: '#FF4DC4' },
-    { label: 'Gold',    value: '#FFD700' },
-    { label: 'Orange',  value: '#FF8C42' },
-    { label: 'Blue',    value: '#4D7CFF' },
-  ];
+
 
   const applyTheme = (t) => {
     setTheme(t);
     localStorage.setItem('mf_theme', t);
     document.documentElement.setAttribute('data-theme', t);
+    const root = document.documentElement;
+    if (t === 'light') {
+      root.style.setProperty('--bg',         '#F0F4FF');
+      root.style.setProperty('--bg-sidebar', '#FFFFFF');
+      root.style.setProperty('--bg-card',    '#FFFFFF');
+      root.style.setProperty('--bg-high',    '#E8EEFF');
+      root.style.setProperty('--t0',         '#0A0F1E');
+      root.style.setProperty('--t1',         '#1A2340');
+      root.style.setProperty('--t2',         '#4A5880');
+      root.style.setProperty('--t3',         '#8A9AC0');
+      root.style.setProperty('--brd',        '#D0D8EE');
+      root.style.setProperty('--brd-hi',     '#B8C4E0');
+      document.body.style.background = '#F0F4FF';
+      document.body.style.color = '#0A0F1E';
+    } else {
+      root.style.setProperty('--bg',         '#030508');
+      root.style.setProperty('--bg-sidebar', '#070C14');
+      root.style.setProperty('--bg-card',    '#0C1422');
+      root.style.setProperty('--bg-high',    '#121C2E');
+      root.style.setProperty('--t0',         '#FFFFFF');
+      root.style.setProperty('--t1',         '#E8EEFF');
+      root.style.setProperty('--t2',         '#7A90B8');
+      root.style.setProperty('--t3',         '#334566');
+      root.style.setProperty('--brd',        '#162034');
+      root.style.setProperty('--brd-hi',     '#1E2E48');
+      document.body.style.background = '#030508';
+      document.body.style.color = '#FFFFFF';
+    }
   };
 
   const applyAccent = (c) => {
@@ -156,6 +175,15 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
     localStorage.setItem('mf_accent', c);
     document.documentElement.style.setProperty('--accent', c);
   };
+  // Appliquer thème et accent sauvegardés au montage
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('mf_theme') || 'dark';
+    const savedAccent = localStorage.getItem('mf_accent') || '#06E6FF';
+    applyTheme(savedTheme);
+    applyAccent(savedAccent);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const W = collapsed ? 72 : 260;
 
   return (
@@ -537,28 +565,57 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                   </div>
                 </div>
 
-                {/* Couleur accent — Elite only */}
+                {/* Couleur accent — Elite only — color picker infini */}
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #162034', opacity: isElite ? 1 : 0.45 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div style={{ fontSize: 11, color: '#334566', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Couleur d'accent</div>
                     {!isElite && <div style={{ fontSize: 10, color: '#FFD700', fontWeight: 600, background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', padding: '2px 7px', borderRadius: 100 }}>Elite ✦</div>}
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {ACCENT_COLORS.map(({ label, value }) => (
-                      <button
-                        key={value}
-                        title={label}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {/* Aperçu couleur actuelle */}
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 8,
+                      background: accentColor,
+                      boxShadow: `0 0 12px ${accentColor}88`,
+                      flexShrink: 0,
+                      border: '2px solid rgba(255,255,255,0.15)',
+                    }} />
+                    {/* Input color picker natif — ouvre le tableau des couleurs du système */}
+                    <label style={{ flex: 1, cursor: isElite ? 'pointer' : 'not-allowed' }}>
+                      <div style={{
+                        padding: '8px 12px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid #1E2E48',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        color: '#7A90B8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                      }}>
+                        <span style={{ fontFamily: 'monospace', color: accentColor, fontWeight: 700 }}>{accentColor.toUpperCase()}</span>
+                        <span>🎨</span>
+                      </div>
+                      <input
+                        type="color"
+                        value={accentColor}
                         disabled={!isElite}
-                        onClick={() => isElite && applyAccent(value)}
-                        style={{
-                          width: 26, height: 26, borderRadius: '50%',
-                          background: value,
-                          border: accentColor === value ? `2px solid #fff` : '2px solid transparent',
-                          cursor: isElite ? 'pointer' : 'not-allowed',
-                          boxShadow: accentColor === value ? `0 0 8px ${value}` : 'none',
-                          transition: 'all 0.2s',
-                        }}
+                        onChange={e => isElite && applyAccent(e.target.value)}
+                        style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: isElite ? 'auto' : 'none' }}
                       />
+                    </label>
+                  </div>
+                  {/* Couleurs rapides */}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                    {['#06E6FF','#00F5D4','#00FF88','#B06EFF','#FF4DC4','#FFD700','#FF8C42','#4D7CFF'].map(c => (
+                      <button key={c} disabled={!isElite} onClick={() => isElite && applyAccent(c)} style={{
+                        width: 22, height: 22, borderRadius: '50%', background: c,
+                        border: accentColor === c ? '2px solid #fff' : '2px solid transparent',
+                        cursor: isElite ? 'pointer' : 'not-allowed',
+                        boxShadow: accentColor === c ? `0 0 8px ${c}` : 'none',
+                        transition: 'all 0.15s', padding: 0,
+                      }} />
                     ))}
                   </div>
                 </div>
