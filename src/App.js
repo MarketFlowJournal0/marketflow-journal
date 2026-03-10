@@ -17,6 +17,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import PlanSelection from './pages/PlanSelection';
 import AuthCallback from './pages/AuthCallback';
 import './App.css';
+import './theme.css';
 
 // ─── LOADING SCREEN ───────────────────────────────────────────────────────────
 function LoadingScreen() {

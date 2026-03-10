@@ -1,0 +1,98 @@
+/* src/theme.css — Variables de thème MarketFlow Journal */
+
+/* ── Thème sombre (défaut) ─────────────────────────────────────────────────── */
+:root, [data-theme="dark"] {
+  --bg:           #030508;
+  --bg-sidebar:   #070C14;
+  --bg-card:      #0C1422;
+  --bg-high:      #121C2E;
+  --accent:       #06E6FF;
+  --t0:           #FFFFFF;
+  --t1:           #E8EEFF;
+  --t2:           #7A90B8;
+  --t3:           #334566;
+  --brd:          #162034;
+  --brd-hi:       #1E2E48;
+  --red:          #FF4D6A;
+  --green:        #00FF88;
+}
+
+/* ── Thème clair ───────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:           #F0F4FF;
+  --bg-sidebar:   #FFFFFF;
+  --bg-card:      #FFFFFF;
+  --bg-high:      #E8EEFF;
+  --t0:           #0A0F1E;
+  --t1:           #1A2340;
+  --t2:           #4A5880;
+  --t3:           #8A9AC0;
+  --brd:          #D0D8EE;
+  --brd-hi:       #B8C4E0;
+  --red:          #E0243E;
+  --green:        #00AA55;
+}
+
+/* ── Transitions fluides sur tout ─────────────────────────────────────────── */
+*, *::before, *::after {
+  transition: background-color 0.25s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────────── */
+body {
+  background: var(--bg) !important;
+  color: var(--t0) !important;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+[data-theme="light"] .mf-sidebar {
+  background: var(--bg-sidebar) !important;
+  border-right: 1px solid var(--brd) !important;
+  box-shadow: 2px 0 20px rgba(0,0,0,0.08) !important;
+}
+
+/* ── Cards / panels ────────────────────────────────────────────────────────── */
+[data-theme="light"] .mf-card {
+  background: var(--bg-card) !important;
+  border-color: var(--brd) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Textes généraux ───────────────────────────────────────────────────────── */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3 {
+  color: var(--t0) !important;
+}
+
+[data-theme="light"] p,
+[data-theme="light"] span,
+[data-theme="light"] div {
+  --text-secondary: var(--t2);
+}
+
+/* ── Inputs ────────────────────────────────────────────────────────────────── */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: #F8FAFF !important;
+  border-color: var(--brd) !important;
+  color: var(--t0) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--t3) !important;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #E8EEFF;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #B8C4E0;
+  border-radius: 4px;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #8A9AC0;
+}
