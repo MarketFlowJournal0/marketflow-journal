@@ -18,6 +18,7 @@ const NAV_SECTIONS = [
     items: [
       { id: 'dashboard',     label: 'Dashboard',     icon: DashboardIcon   },
       { id: 'all-trades',    label: 'All Trades',    icon: TradesIcon      },
+      { id: 'calendar',      label: 'Calendar',      icon: CalendarIcon    },
       { id: 'equity',        label: 'Equity',        icon: EquityIcon      },
       { id: 'backtest',      label: 'Backtest',      icon: BacktestIcon    },
     ],
@@ -112,8 +113,49 @@ function Tooltip({ label, badge, badgeColor, children }) {
    SIDEBAR COMPONENT
    Props: currentPage, setCurrentPage, collapsed, setCollapsed
    ══════════════════════════════════════════ */
-function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed }) {
+function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, onLogout }) {
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('mf_theme') || 'dark');
+  const [accentColor, setAccentColor] = useState(() => localStorage.getItem('mf_accent') || '#06E6FF');
+
+  // Infos user
+  const firstName   = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
+  const initials    = firstName.slice(0,2).toUpperCase();
+  const email       = user?.email || '';
+  const plan        = user?.user_metadata?.plan || 'trial';
+  const isElite     = plan === 'elite';
+
+  const PLAN_LABELS = {
+    starter: { label: 'Starter', color: '#00F5D4' },
+    pro:     { label: 'Pro',     color: '#06E6FF' },
+    elite:   { label: 'Elite ✦', color: '#FFD700' },
+    trial:   { label: 'Essai gratuit', color: '#00FF88' },
+  };
+  const planInfo = PLAN_LABELS[plan] || PLAN_LABELS.trial;
+
+  const ACCENT_COLORS = [
+    { label: 'Cyan',    value: '#06E6FF' },
+    { label: 'Teal',    value: '#00F5D4' },
+    { label: 'Green',   value: '#00FF88' },
+    { label: 'Purple',  value: '#B06EFF' },
+    { label: 'Pink',    value: '#FF4DC4' },
+    { label: 'Gold',    value: '#FFD700' },
+    { label: 'Orange',  value: '#FF8C42' },
+    { label: 'Blue',    value: '#4D7CFF' },
+  ];
+
+  const applyTheme = (t) => {
+    setTheme(t);
+    localStorage.setItem('mf_theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+  };
+
+  const applyAccent = (c) => {
+    setAccentColor(c);
+    localStorage.setItem('mf_accent', c);
+    document.documentElement.style.setProperty('--accent', c);
+  };
   const W = collapsed ? 72 : 260;
 
   return (
@@ -386,18 +428,21 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed }) {
       <div style={{ height: 1, margin: '0 14px', background: 'linear-gradient(90deg,transparent,#162034,transparent)' }}/>
 
       {/* ─── USER PROFILE ─── */}
-      <div style={{ padding: collapsed ? '11px 9px 15px' : '11px 11px 15px', transition: 'padding 0.30s ease' }}>
+      <div style={{ padding: collapsed ? '11px 9px 15px' : '11px 11px 15px', transition: 'padding 0.30s ease', position: 'relative' }}>
         {collapsed ? (
-          <Tooltip label="Trader — Pro Plan">
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', cursor: 'pointer' }}>
+          <Tooltip label={`${firstName} — ${planInfo.label}`}>
+            <div
+              style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', cursor: 'pointer' }}
+              onClick={() => setSettingsOpen(o => !o)}
+            >
               <div style={{
                 width: 36, height: 36, borderRadius: '50%',
-                background: 'linear-gradient(135deg,#06E6FF,#00FF88)',
+                background: `linear-gradient(135deg, ${accentColor}, #00FF88)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 13, fontWeight: 800, color: '#030508',
-                boxShadow: '0 0 14px rgba(6,230,255,0.35)', position: 'relative',
+                boxShadow: `0 0 14px ${accentColor}55`, position: 'relative',
               }}>
-                T
+                {initials}
                 <div style={{ position: 'absolute', bottom: 1, right: 1, width: 8, height: 8, borderRadius: '50%', background: '#00FF88', border: '1.5px solid #080E19', boxShadow: '0 0 5px #00FF88' }}/>
               </div>
             </div>
@@ -410,27 +455,130 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed }) {
               background: 'rgba(255,255,255,0.03)', border: '1px solid #162034',
               cursor: 'pointer', transition: 'all .2s',
             }}
-            whileHover={{ background: 'rgba(6,230,255,0.05)', borderColor: 'rgba(6,230,255,0.2)' }}
+            whileHover={{ background: `rgba(6,230,255,0.05)`, borderColor: 'rgba(6,230,255,0.2)' }}
+            onClick={() => setSettingsOpen(o => !o)}
           >
             <div style={{
               width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-              background: 'linear-gradient(135deg,#06E6FF,#00FF88)',
+              background: `linear-gradient(135deg, ${accentColor}, #00FF88)`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 13, fontWeight: 800, color: '#030508',
-              boxShadow: '0 0 14px rgba(6,230,255,0.3)', position: 'relative',
+              boxShadow: `0 0 14px ${accentColor}44`, position: 'relative',
             }}>
-              T
+              {initials}
               <div style={{ position: 'absolute', bottom: 1, right: 1, width: 8, height: 8, borderRadius: '50%', background: '#00FF88', border: '1.5px solid #080E19', boxShadow: '0 0 5px #00FF88' }}/>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#E8EEFF', lineHeight: 1.2 }}>Trader</div>
-              <div style={{ fontSize: 11, color: '#334566', marginTop: 1 }}>Pro Plan</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#E8EEFF', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{firstName}</div>
+              <div style={{ fontSize: 11, color: planInfo.color, marginTop: 1, fontWeight: 600 }}>{planInfo.label}</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
               {[0,1,2].map(i => <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: '#334566' }}/>)}
             </div>
           </motion.div>
         )}
+
+        {/* ─── SETTINGS PANEL ─── */}
+        <AnimatePresence>
+          {settingsOpen && (
+            <>
+              {/* Overlay */}
+              <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setSettingsOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, x: -10, scale: 0.97 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -10, scale: 0.97 }}
+                transition={{ duration: 0.18 }}
+                style={{
+                  position: 'fixed',
+                  bottom: 80, left: W + 12,
+                  width: 280,
+                  background: '#0C1422',
+                  border: '1px solid #1E2E48',
+                  borderRadius: 16,
+                  zIndex: 200,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+                }}
+              >
+                {/* Header user */}
+                <div style={{ padding: '16px 18px', borderBottom: '1px solid #162034', background: 'rgba(255,255,255,0.02)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${accentColor}, #00FF88)`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 15, fontWeight: 800, color: '#030508', flexShrink: 0,
+                    }}>{initials}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#E8EEFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{firstName}</div>
+                      <div style={{ fontSize: 11, color: '#7A90B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
+                    </div>
+                    <div style={{ marginLeft: 'auto', background: planInfo.color + '22', border: `1px solid ${planInfo.color}44`, color: planInfo.color, fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 100, whiteSpace: 'nowrap' }}>
+                      {planInfo.label}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thème */}
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #162034' }}>
+                  <div style={{ fontSize: 11, color: '#334566', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Thème</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {['dark', 'light'].map(t => (
+                      <button key={t} onClick={() => applyTheme(t)} style={{
+                        flex: 1, padding: '8px', borderRadius: 8, border: `1px solid ${theme === t ? accentColor : '#162034'}`,
+                        background: theme === t ? accentColor + '22' : 'rgba(255,255,255,0.03)',
+                        color: theme === t ? accentColor : '#7A90B8',
+                        fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                      }}>
+                        {t === 'dark' ? '🌙 Sombre' : '☀️ Clair'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Couleur accent — Elite only */}
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #162034', opacity: isElite ? 1 : 0.45 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: '#334566', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Couleur d'accent</div>
+                    {!isElite && <div style={{ fontSize: 10, color: '#FFD700', fontWeight: 600, background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', padding: '2px 7px', borderRadius: 100 }}>Elite ✦</div>}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {ACCENT_COLORS.map(({ label, value }) => (
+                      <button
+                        key={value}
+                        title={label}
+                        disabled={!isElite}
+                        onClick={() => isElite && applyAccent(value)}
+                        style={{
+                          width: 26, height: 26, borderRadius: '50%',
+                          background: value,
+                          border: accentColor === value ? `2px solid #fff` : '2px solid transparent',
+                          cursor: isElite ? 'pointer' : 'not-allowed',
+                          boxShadow: accentColor === value ? `0 0 8px ${value}` : 'none',
+                          transition: 'all 0.2s',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ padding: '10px 10px' }}>
+                  <button onClick={() => { setSettingsOpen(false); }} style={{ width: '100%', padding: '9px 12px', background: 'none', border: 'none', color: '#7A90B8', fontSize: 13, cursor: 'pointer', borderRadius: 8, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span>⚙️</span> Paramètres du compte
+                  </button>
+                  <button onClick={() => { setSettingsOpen(false); }} style={{ width: '100%', padding: '9px 12px', background: 'none', border: 'none', color: '#7A90B8', fontSize: 13, cursor: 'pointer', borderRadius: 8, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span>💳</span> Gérer l'abonnement
+                  </button>
+                  <button onClick={() => { setSettingsOpen(false); onLogout(); }} style={{ width: '100%', padding: '9px 12px', background: 'none', border: 'none', color: '#FF4D6A', fontSize: 13, cursor: 'pointer', borderRadius: 8, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span>🚪</span> Se déconnecter
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
