@@ -635,10 +635,379 @@ const TESTIS = [
 ];
 
 // ─── LANDING PAGE COMPONENT ───────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE MODAL — Changelog, Roadmap, Docs, Blog, CGU, RGPD, Cookies, Contact
+// ─────────────────────────────────────────────────────────────────────────────
+const PAGE_CONTENT = {
+  changelog: {
+    title: '📋 Changelog',
+    subtitle: 'Historique des mises à jour MarketFlow Journal',
+    color: '#06E6FF',
+    content: [
+      { version: 'v2.4.0', date: 'Mars 2026', badge: 'LATEST', badgeColor: '#00FF88', items: [
+        '✅ Calendrier de trading avec score de régularité MarketFlow Rank',
+        '✅ Thème clair/sombre sur l\'intégralité de l\'app',
+        '✅ Analytics Pro avec indicateurs avancés (Sharpe, Sortino, Calmar)',
+        '✅ Module Psychology — suivi émotionnel des trades',
+        '✅ Backtesting de stratégies avec simulation Monte Carlo',
+      ]},
+      { version: 'v2.3.0', date: 'Février 2026', badge: 'STABLE', badgeColor: '#4D7CFF', items: [
+        '✅ Intégration Stripe — abonnements Starter, Pro, Elite',
+        '✅ Authentification Supabase sécurisée',
+        '✅ Dashboard redesigné — 7 indicateurs KPI en temps réel',
+        '✅ Live Ticker — BTC, ETH, Forex, Indices en temps réel',
+      ]},
+      { version: 'v2.2.0', date: 'Janvier 2026', badge: '', badgeColor: '', items: [
+        '✅ Import de trades depuis Excel/CSV',
+        '✅ Rapport PDF exportable',
+        '✅ Module Equity — courbe de capital journalière',
+        '✅ Section All Trades avec filtres avancés',
+      ]},
+      { version: 'v2.0.0', date: 'Décembre 2025', badge: '', badgeColor: '', items: [
+        '🚀 Lancement de MarketFlow Journal v2',
+        '✅ Architecture SaaS complète',
+        '✅ Sidebar navigation dynamique',
+        '✅ Système de cards animées avec Framer Motion',
+      ]},
+    ]
+  },
+  roadmap: {
+    title: '🗺️ Roadmap',
+    subtitle: 'Ce qui arrive prochainement sur MarketFlow Journal',
+    color: '#B06EFF',
+    sections: [
+      { label: 'Q2 2026 — En développement', color: '#00FF88', items: [
+        { icon: '🤖', title: 'AI Chat Trader', desc: 'Assistant IA entraîné sur les patterns de trading, analyse tes trades en langage naturel.' },
+        { icon: '📱', title: 'App Mobile iOS & Android', desc: 'Accès complet au journal depuis ton téléphone, notifications de trades en temps réel.' },
+        { icon: '🔗', title: 'Connexion broker direct', desc: 'Import automatique des trades depuis MetaTrader 4/5, cTrader, Interactive Brokers.' },
+      ]},
+      { label: 'Q3 2026 — Planifié', color: '#06E6FF', items: [
+        { icon: '📊', title: 'Screener de marchés', desc: 'Identifie les meilleures opportunités en temps réel selon tes critères.' },
+        { icon: '👥', title: 'Mode communauté', desc: 'Partage tes stratégies, défis de trading, classements publics.' },
+        { icon: '⚡', title: 'Alertes intelligentes', desc: 'Notifications personnalisées basées sur tes patterns de trading.' },
+      ]},
+      { label: 'Q4 2026 — Exploration', color: '#FFD700', items: [
+        { icon: '🧬', title: 'Profilage psychologique avancé', desc: 'Détection automatique des biais cognitifs dans tes trades.' },
+        { icon: '🌐', title: 'Multi-comptes & Multi-brokers', desc: 'Gérez jusqu\'à 10 comptes trading depuis une seule interface.' },
+        { icon: '📈', title: 'Signaux de trading IA', desc: 'Signaux générés par ML basés sur 5 ans de données historiques.' },
+      ]},
+    ]
+  },
+  docs: {
+    title: '📚 Documentation',
+    subtitle: 'Guide complet d\'utilisation de MarketFlow Journal',
+    color: '#00F5D4',
+    sections: [
+      { title: '🚀 Démarrage rapide', items: [
+        { q: 'Comment créer mon premier trade ?', a: 'Depuis le Dashboard, clique sur "+ Nouveau Trade". Renseigne la paire, la direction (Long/Short), le prix d\'entrée, le Stop Loss, le Take Profit et la taille de position. Valide pour l\'enregistrer.' },
+        { q: 'Comment importer mes trades depuis Excel ?', a: 'Clique sur "Importer Excel" dans le Dashboard. Le fichier doit contenir les colonnes : Date, Paire, Direction, Entrée, SL, TP, Taille, P&L. Un modèle Excel est téléchargeable depuis la page All Trades.' },
+        { q: 'Comment générer un rapport PDF ?', a: 'Depuis le Dashboard, clique sur "Rapport PDF". Le navigateur ouvrira la fenêtre d\'impression — sélectionne "Enregistrer en PDF" comme destination.' },
+      ]},
+      { title: '📊 Analytics Pro', items: [
+        { q: 'Qu\'est-ce que le Profit Factor ?', a: 'Le Profit Factor est le ratio entre les gains bruts totaux et les pertes brutes totales. Un PF > 1 indique une stratégie profitable. Un PF > 1.5 est considéré comme excellent.' },
+        { q: 'Comment fonctionne le MarketFlow Rank ?', a: 'Le score de régularité (0-100) est calculé sur 5 critères : Win Rate (30pts), Régularité hebdomadaire (20pts), Risk Management (25pts), Profit Factor (15pts) et Activité (10pts). 8 rangs de Iron à Grandmaster.' },
+        { q: 'Qu\'est-ce que le ratio de Sharpe ?', a: 'Le ratio de Sharpe mesure le rendement ajusté au risque. Il divise le rendement excédentaire par la volatilité. Un ratio > 1 est bon, > 2 est excellent, > 3 est exceptionnel.' },
+      ]},
+      { title: '⚙️ Paramètres & Compte', items: [
+        { q: 'Comment changer mon plan ?', a: 'Dans la Sidebar, clique sur ton avatar en bas → "Gérer l\'abonnement". Tu seras redirigé vers le portail Stripe pour modifier ou annuler ton abonnement.' },
+        { q: 'Mes données sont-elles sécurisées ?', a: 'Oui. Toutes les données sont chiffrées et stockées sur Supabase (infrastructure PostgreSQL). Nous n\'accédons jamais à tes données de trading. Sauvegarde quotidienne automatique.' },
+      ]},
+    ]
+  },
+  blog: {
+    title: '✍️ Blog Trading',
+    subtitle: 'Conseils, stratégies et analyses pour traders',
+    color: '#FF4DC4',
+    posts: [
+      { date: '7 Mars 2026', tag: 'Psychologie', tagColor: '#B06EFF', title: 'Les 5 biais cognitifs qui détruisent les traders débutants', excerpt: 'Le biais de confirmation, l\'excès de confiance, l\'aversion à la perte... Ces mécanismes inconscients sabotent silencieusement ta performance. Découvre comment les identifier et les neutraliser grâce au journal de trading.' },
+      { date: '2 Mars 2026', tag: 'Stratégie', tagColor: '#06E6FF', title: 'Comment calculer correctement ta taille de position en 2026', excerpt: 'La gestion du risque est le socle de tout trader profitable. On t\'explique les méthodes Fixed Fractional, Kelly Criterion, et la règle des 1-2% avec des exemples concrets.' },
+      { date: '24 Février 2026', tag: 'Analytics', tagColor: '#00FF88', title: 'Profit Factor vs Win Rate : lequel optimiser en premier ?', excerpt: 'Beaucoup de traders se focalisent sur le win rate. C\'est une erreur. Un trader avec 40% de win rate peut être bien plus profitable qu\'un trader à 70%. Voici pourquoi.' },
+      { date: '18 Février 2026', tag: 'Outils', tagColor: '#FFD700', title: 'Backtesting : les erreurs que font 90% des traders', excerpt: 'Overfitting, look-ahead bias, survivorship bias... Le backtesting mal pratiqué donne une fausse confiance. Guide complet pour éviter ces pièges.' },
+      { date: '10 Février 2026', tag: 'Mindset', tagColor: '#FF4DC4', title: 'Routine matinale du trader performant : le guide 2026', excerpt: 'Les meilleurs traders ont une chose en commun : une routine solide. Analyse du marché, revue du journal, objectifs du jour. On décortique la routine de traders professionnels.' },
+    ]
+  },
+  tutoriels: {
+    title: '🎓 Tutoriels',
+    subtitle: 'Apprends à maîtriser MarketFlow Journal',
+    color: '#4D7CFF',
+    videos: [
+      { duration: '12 min', level: 'Débutant', levelColor: '#00FF88', title: 'Prise en main de MarketFlow Journal', desc: 'Crée ton compte, configure ton premier portefeuille, ajoute tes premiers trades et découvre le Dashboard.', steps: ['Créer ton compte et choisir ton plan', 'Configurer ton premier portefeuille de trading', 'Ajouter ton premier trade manuellement', 'Comprendre les KPIs du Dashboard'] },
+      { duration: '18 min', level: 'Intermédiaire', levelColor: '#06E6FF', title: 'Maîtriser Analytics Pro', desc: 'Explore les indicateurs avancés : Profit Factor, Sharpe Ratio, analyse par session, par paire et par setup.', steps: ['Comprendre le Profit Factor et le Sharpe Ratio', 'Analyser tes performances par session de trading', 'Identifier tes meilleures paires de devises', 'Utiliser le calendrier de performance'] },
+      { duration: '22 min', level: 'Avancé', levelColor: '#B06EFF', title: 'Backtesting et optimisation de stratégie', desc: 'Utilise le module Backtest pour valider tes stratégies sur données historiques et simuler différents scénarios.', steps: ['Définir les règles de ta stratégie', 'Lancer une simulation sur 12 mois', 'Analyser les résultats : drawdown, CAGR, Sharpe', 'Optimiser les paramètres d\'entrée/sortie'] },
+      { duration: '8 min', level: 'Débutant', levelColor: '#00FF88', title: 'Importer ses trades depuis MetaTrader', desc: 'Exporte ton historique MT4/MT5 et importe-le en un clic dans MarketFlow Journal.', steps: ['Exporter l\'historique depuis MetaTrader 4/5', 'Formater le fichier CSV selon le modèle MF', 'Importer et vérifier les données', 'Corriger les éventuelles erreurs d\'import'] },
+    ]
+  },
+  api: {
+    title: '⚙️ API Reference',
+    subtitle: 'Intègre MarketFlow Journal dans tes outils',
+    color: '#FFD700',
+    note: 'L\'API MarketFlow Journal est disponible pour les abonnés Elite. Elle permet d\'automatiser l\'enregistrement de trades, de récupérer tes statistiques et d\'intégrer le journal dans tes scripts de trading.',
+    endpoints: [
+      { method: 'POST', path: '/api/v1/trades', color: '#00FF88', desc: 'Ajouter un trade', params: 'pair, direction, entry, sl, tp, size, date, notes' },
+      { method: 'GET',  path: '/api/v1/trades', color: '#06E6FF', desc: 'Lister les trades', params: 'page, limit, pair, from, to' },
+      { method: 'GET',  path: '/api/v1/stats',  color: '#06E6FF', desc: 'Statistiques globales', params: 'period (week|month|year)' },
+      { method: 'PATCH', path: '/api/v1/trades/:id', color: '#FFD700', desc: 'Modifier un trade', params: 'exit, pnl, notes, tags' },
+      { method: 'DELETE', path: '/api/v1/trades/:id', color: '#FF3D57', desc: 'Supprimer un trade', params: '—' },
+    ]
+  },
+  cgu: {
+    title: '📄 Conditions Générales d\'Utilisation',
+    subtitle: 'En vigueur depuis le 1er Janvier 2026',
+    color: '#8BA3CC',
+    articles: [
+      { title: 'Article 1 — Objet', text: 'Les présentes Conditions Générales d\'Utilisation (CGU) ont pour objet de définir les modalités et conditions dans lesquelles MarketFlow Journal SAS (ci-après "MarketFlow") met à disposition de ses utilisateurs la plateforme MarketFlow Journal, accessible à l\'adresse marketflowjournal.com.' },
+      { title: 'Article 2 — Acceptation', text: 'L\'utilisation de la plateforme implique l\'acceptation pleine et entière des présentes CGU. MarketFlow se réserve le droit de modifier les CGU à tout moment. Les utilisateurs seront informés par email de toute modification substantielle.' },
+      { title: 'Article 3 — Description du service', text: 'MarketFlow Journal est une application SaaS de journal de trading permettant aux traders de suivre, analyser et améliorer leurs performances. Le service inclut selon l\'abonnement souscrit : tableau de bord, analytics, backtesting, module psychologie et intelligence artificielle.' },
+      { title: 'Article 4 — Abonnements et facturation', text: 'L\'accès à MarketFlow Journal est soumis au paiement d\'un abonnement mensuel ou annuel selon les tarifs en vigueur. Les paiements sont traités par Stripe Inc. Les abonnements annuels bénéficient d\'une réduction de 30%. Aucun remboursement ne sera effectué en cas d\'annulation en cours de période.' },
+      { title: 'Article 5 — Propriété des données', text: 'L\'utilisateur reste propriétaire de l\'ensemble de ses données de trading. MarketFlow s\'engage à ne jamais vendre, louer ou partager les données personnelles de trading avec des tiers. Les données peuvent être exportées à tout moment au format CSV ou PDF.' },
+      { title: 'Article 6 — Responsabilité', text: 'MarketFlow Journal est un outil d\'analyse et de suivi. Les informations fournies ne constituent en aucun cas des conseils financiers ou d\'investissement. MarketFlow ne saurait être tenu responsable des pertes financières liées aux décisions de trading prises par l\'utilisateur.' },
+      { title: 'Article 7 — Résiliation', text: 'L\'utilisateur peut résilier son abonnement à tout moment depuis la section "Gérer l\'abonnement" de son profil. La résiliation prend effet à la fin de la période de facturation en cours. Le compte reste actif jusqu\'à cette date.' },
+      { title: 'Article 8 — Droit applicable', text: 'Les présentes CGU sont soumises au droit français. Tout litige relatif à leur interprétation ou exécution relèvera de la compétence exclusive des tribunaux de Paris.' },
+    ]
+  },
+  rgpd: {
+    title: '🔒 Politique de Confidentialité (RGPD)',
+    subtitle: 'Dernière mise à jour : 1er Janvier 2026',
+    color: '#00F5D4',
+    articles: [
+      { title: 'Responsable du traitement', text: 'MarketFlow Journal SAS, immatriculée au RCS de Paris. DPO : privacy@marketflowjournal.com' },
+      { title: 'Données collectées', text: 'Nous collectons : (1) Données d\'identification : email, prénom, nom. (2) Données de trading : paires, prix, volumes, résultats — ces données appartiennent exclusivement à l\'utilisateur. (3) Données techniques : adresse IP, logs de connexion, cookies de session. (4) Données de paiement : traitées exclusivement par Stripe, nous ne stockons aucune donnée de carte bancaire.' },
+      { title: 'Finalités du traitement', text: 'Vos données sont utilisées pour : fournir et améliorer le service MarketFlow Journal, gérer votre compte et facturation, vous envoyer des communications relatives au service (mises à jour, alertes), améliorer les algorithmes d\'analyse (données anonymisées uniquement).' },
+      { title: 'Base légale', text: 'Le traitement de vos données repose sur : l\'exécution du contrat (fourniture du service), votre consentement (communications marketing), et l\'intérêt légitime (sécurité et amélioration du service).' },
+      { title: 'Conservation des données', text: 'Vos données sont conservées pendant toute la durée de votre abonnement actif, puis 3 ans après la résiliation à des fins légales. Les logs techniques sont supprimés après 12 mois.' },
+      { title: 'Vos droits', text: 'Conformément au RGPD, vous disposez des droits suivants : accès, rectification, effacement ("droit à l\'oubli"), portabilité, opposition et limitation du traitement. Pour exercer ces droits : privacy@marketflowjournal.com. Délai de réponse : 30 jours.' },
+      { title: 'Transferts hors UE', text: 'Nos serveurs sont hébergés dans l\'Union Européenne (Supabase EU region). Stripe Inc. (USA) traite les paiements — couvert par les clauses contractuelles types de la Commission Européenne.' },
+    ]
+  },
+  cookies: {
+    title: '🍪 Politique des Cookies',
+    subtitle: 'Comment nous utilisons les cookies sur MarketFlow Journal',
+    color: '#FFD700',
+    categories: [
+      { name: 'Cookies essentiels', required: true, color: '#00FF88', desc: 'Indispensables au fonctionnement du site. Ils gèrent la session de connexion, les préférences de thème et la sécurité CSRF. Ces cookies ne peuvent pas être désactivés.', cookies: [
+        { name: 'sb-auth-token', purpose: 'Session Supabase', duration: 'Session' },
+        { name: 'mf_theme', purpose: 'Préférence thème clair/sombre', duration: '1 an' },
+        { name: 'mf_accent', purpose: 'Couleur d\'accent personnalisée', duration: '1 an' },
+      ]},
+      { name: 'Cookies analytiques', required: false, color: '#06E6FF', desc: 'Nous aident à comprendre comment les visiteurs utilisent le site (pages visitées, durée de session). Les données sont anonymisées et agrégées.', cookies: [
+        { name: '_ga', purpose: 'Google Analytics — identification', duration: '2 ans' },
+        { name: '_ga_*', purpose: 'Google Analytics — session', duration: '2 ans' },
+      ]},
+      { name: 'Cookies de paiement', required: true, color: '#B06EFF', desc: 'Utilisés par Stripe pour sécuriser les transactions et détecter la fraude. Ces cookies sont déposés par Stripe Inc. lors du processus de paiement.', cookies: [
+        { name: '__stripe_mid', purpose: 'Prévention fraude Stripe', duration: '1 an' },
+        { name: '__stripe_sid', purpose: 'Session paiement Stripe', duration: 'Session' },
+      ]},
+    ]
+  },
+  contact: {
+    title: '📬 Contact',
+    subtitle: 'Notre équipe est là pour t\'aider',
+    color: '#FF4DC4',
+    channels: [
+      { icon: '📧', title: 'Support technique', value: 'support@marketflowjournal.com', desc: 'Bugs, problèmes de connexion, questions sur les fonctionnalités. Réponse sous 24h.' },
+      { icon: '💼', title: 'Partenariats & Presse', value: 'partners@marketflowjournal.com', desc: 'Collaborations, affiliations, demandes médias et interviews.' },
+      { icon: '🔒', title: 'Confidentialité & RGPD', value: 'privacy@marketflowjournal.com', desc: 'Exercice de tes droits RGPD, demandes de suppression de données.' },
+      { icon: '💳', title: 'Facturation', value: 'billing@marketflowjournal.com', desc: 'Questions sur ton abonnement, factures, remboursements.' },
+    ],
+    faq: [
+      { q: 'Quel est le délai de réponse ?', a: 'Nous répondons à toutes les demandes sous 24h ouvrées. Pour les questions urgentes, précise "URGENT" dans l\'objet de ton email.' },
+      { q: 'Proposez-vous un support en direct ?', a: 'Un chat en direct sera disponible pour les abonnés Elite à partir de Q2 2026. En attendant, l\'email reste notre canal principal.' },
+      { q: 'Comment signaler un bug ?', a: 'Envoie un email à support@marketflowjournal.com avec : description du problème, étapes pour le reproduire, captures d\'écran si possible, et ton navigateur/OS.' },
+    ]
+  },
+};
+
+function PageModal({ page, onClose }) {
+  const data = PAGE_CONTENT[page];
+  if (!data) return null;
+
+  const C2 = {
+    bg: '#060912', card: '#0C1422', brd: '#162034', brdHi: '#1E2E48',
+    t0: '#FFFFFF', t1: '#E8EEFF', t2: '#8BA3CC', t3: '#3A5070',
+  };
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:9000,display:'flex',alignItems:'flex-start',justifyContent:'center',backdropFilter:'blur(6px)',overflowY:'auto',padding:'40px 16px'}}
+      onClick={onClose}>
+      <div style={{background:C2.bg,border:`1px solid ${data.color}30`,borderRadius:20,maxWidth:820,width:'100%',boxShadow:`0 30px 80px rgba(0,0,0,0.8), 0 0 0 1px ${data.color}15`,position:'relative'}}
+        onClick={e=>e.stopPropagation()}>
+        {/* Header */}
+        <div style={{padding:'28px 32px 20px',borderBottom:`1px solid ${C2.brd}`,display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+          <div>
+            <h2 style={{margin:0,fontSize:22,fontWeight:800,color:C2.t0}}>{data.title}</h2>
+            <p style={{margin:'6px 0 0',fontSize:13,color:C2.t2}}>{data.subtitle}</p>
+          </div>
+          <button onClick={onClose} style={{background:'rgba(255,255,255,0.05)',border:`1px solid ${C2.brd}`,borderRadius:10,color:C2.t2,cursor:'pointer',padding:'8px 14px',fontSize:14,fontWeight:600,flexShrink:0,marginLeft:16}}>✕ Fermer</button>
+        </div>
+
+        {/* Body */}
+        <div style={{padding:'28px 32px',maxHeight:'70vh',overflowY:'auto'}}>
+
+          {/* CHANGELOG */}
+          {page === 'changelog' && data.content.map((v,i) => (
+            <div key={i} style={{marginBottom:28}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+                <span style={{fontSize:16,fontWeight:800,color:C2.t0}}>{v.version}</span>
+                {v.badge && <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:100,background:`${v.badgeColor}20`,border:`1px solid ${v.badgeColor}40`,color:v.badgeColor}}>{v.badge}</span>}
+                <span style={{fontSize:12,color:C2.t3,marginLeft:'auto'}}>{v.date}</span>
+              </div>
+              <div style={{paddingLeft:16,borderLeft:`2px solid ${data.color}40`}}>
+                {v.items.map((item,j) => <div key={j} style={{fontSize:13,color:C2.t1,marginBottom:8,lineHeight:1.6}}>{item}</div>)}
+              </div>
+            </div>
+          ))}
+
+          {/* ROADMAP */}
+          {page === 'roadmap' && data.sections.map((s,i) => (
+            <div key={i} style={{marginBottom:32}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
+                <div style={{width:8,height:8,borderRadius:'50%',background:s.color,boxShadow:`0 0 8px ${s.color}`}}/>
+                <span style={{fontSize:13,fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:'0.06em'}}>{s.label}</span>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:12}}>
+                {s.items.map((item,j) => (
+                  <div key={j} style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:12,padding:'16px',transition:'border-color 0.2s'}}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=`${s.color}50`}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=C2.brd}>
+                    <div style={{fontSize:22,marginBottom:8}}>{item.icon}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:C2.t0,marginBottom:6}}>{item.title}</div>
+                    <div style={{fontSize:12,color:C2.t2,lineHeight:1.6}}>{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* DOCUMENTATION */}
+          {page === 'docs' && data.sections.map((s,i) => (
+            <div key={i} style={{marginBottom:28}}>
+              <h3 style={{fontSize:15,fontWeight:700,color:data.color,marginBottom:14,marginTop:0}}>{s.title}</h3>
+              {s.items.map((item,j) => (
+                <div key={j} style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:12,padding:'16px',marginBottom:10}}>
+                  <div style={{fontSize:13,fontWeight:600,color:C2.t0,marginBottom:8}}>{item.q}</div>
+                  <div style={{fontSize:13,color:C2.t2,lineHeight:1.7}}>{item.a}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {/* BLOG */}
+          {page === 'blog' && data.posts.map((p,i) => (
+            <div key={i} style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:14,padding:'20px',marginBottom:14,cursor:'pointer',transition:'border-color 0.2s'}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor=`${data.color}50`}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=C2.brd}>
+              <div style={{display:'flex',gap:10,alignItems:'center',marginBottom:10}}>
+                <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:100,background:`${p.tagColor}15`,border:`1px solid ${p.tagColor}35`,color:p.tagColor}}>{p.tag}</span>
+                <span style={{fontSize:11,color:C2.t3}}>{p.date}</span>
+              </div>
+              <div style={{fontSize:15,fontWeight:700,color:C2.t0,marginBottom:8,lineHeight:1.4}}>{p.title}</div>
+              <div style={{fontSize:13,color:C2.t2,lineHeight:1.7}}>{p.excerpt}</div>
+              <div style={{marginTop:12,fontSize:12,color:data.color,fontWeight:600}}>Lire l\'article →</div>
+            </div>
+          ))}
+
+          {/* TUTORIELS */}
+          {page === 'tutoriels' && data.videos.map((v,i) => (
+            <div key={i} style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:14,padding:'20px',marginBottom:14}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+                <div>
+                  <div style={{display:'flex',gap:8,marginBottom:8}}>
+                    <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:100,background:`${v.levelColor}15`,border:`1px solid ${v.levelColor}35`,color:v.levelColor}}>{v.level}</span>
+                    <span style={{fontSize:11,color:C2.t3}}>⏱ {v.duration}</span>
+                  </div>
+                  <div style={{fontSize:15,fontWeight:700,color:C2.t0}}>{v.title}</div>
+                </div>
+                <div style={{width:44,height:44,borderRadius:12,background:`${data.color}20`,border:`1px solid ${data.color}40`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0,marginLeft:12}}>▶</div>
+              </div>
+              <div style={{fontSize:13,color:C2.t2,marginBottom:12,lineHeight:1.6}}>{v.desc}</div>
+              <div style={{paddingLeft:12,borderLeft:`2px solid ${data.color}40`}}>
+                {v.steps.map((step,j) => <div key={j} style={{fontSize:12,color:C2.t2,marginBottom:6}}>{j+1}. {step}</div>)}
+              </div>
+            </div>
+          ))}
+
+          {/* API */}
+          {page === 'api' && <>
+            <div style={{background:`${data.color}10`,border:`1px solid ${data.color}30`,borderRadius:12,padding:'14px 16px',marginBottom:24,fontSize:13,color:C2.t1,lineHeight:1.7}}>{data.note}</div>
+            <div style={{background:'#000',borderRadius:12,padding:'8px',marginBottom:8}}>
+              <div style={{fontSize:11,color:'#4A5568',padding:'4px 12px',marginBottom:4,fontFamily:'monospace'}}>Base URL: https://api.marketflowjournal.com</div>
+              <div style={{fontSize:11,color:'#4A5568',padding:'4px 12px',fontFamily:'monospace'}}>Auth: Bearer {'{'}&lt;your_api_key&gt;{'}'}</div>
+            </div>
+            {data.endpoints.map((ep,i) => (
+              <div key={i} style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:12,padding:'16px',marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                  <span style={{fontSize:11,fontWeight:800,padding:'3px 8px',borderRadius:6,background:`${ep.color}20`,border:`1px solid ${ep.color}40`,color:ep.color,fontFamily:'monospace'}}>{ep.method}</span>
+                  <code style={{fontSize:13,color:C2.t0,fontFamily:'monospace'}}>{ep.path}</code>
+                  <span style={{fontSize:12,color:C2.t3,marginLeft:'auto'}}>{ep.desc}</span>
+                </div>
+                <div style={{fontSize:12,color:C2.t2,fontFamily:'monospace'}}>Params: {ep.params}</div>
+              </div>
+            ))}
+          </>}
+
+          {/* CGU / RGPD — articles */}
+          {(page === 'cgu' || page === 'rgpd') && data.articles.map((a,i) => (
+            <div key={i} style={{marginBottom:22}}>
+              <h3 style={{fontSize:14,fontWeight:700,color:data.color,marginBottom:8,marginTop:0}}>{a.title}</h3>
+              <p style={{fontSize:13,color:C2.t1,lineHeight:1.8,margin:0}}>{a.text}</p>
+            </div>
+          ))}
+
+          {/* COOKIES */}
+          {page === 'cookies' && data.categories.map((cat,i) => (
+            <div key={i} style={{marginBottom:28}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+                <span style={{fontSize:14,fontWeight:700,color:C2.t0}}>{cat.name}</span>
+                <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:100,background:`${cat.color}15`,border:`1px solid ${cat.color}35`,color:cat.color}}>{cat.required?'Obligatoire':'Optionnel'}</span>
+              </div>
+              <p style={{fontSize:13,color:C2.t2,lineHeight:1.7,margin:'0 0 12px'}}>{cat.desc}</p>
+              <div style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:10,overflow:'hidden'}}>
+                {cat.cookies.map((ck,j) => (
+                  <div key={j} style={{display:'grid',gridTemplateColumns:'1fr 2fr 100px',gap:12,padding:'10px 14px',borderBottom: j<cat.cookies.length-1?`1px solid ${C2.brd}`:'none',fontSize:12}}>
+                    <code style={{color:cat.color,fontFamily:'monospace'}}>{ck.name}</code>
+                    <span style={{color:C2.t2}}>{ck.purpose}</span>
+                    <span style={{color:C2.t3,textAlign:'right'}}>{ck.duration}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* CONTACT */}
+          {page === 'contact' && <>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:12,marginBottom:28}}>
+              {data.channels.map((ch,i) => (
+                <div key={i} style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:14,padding:'18px',textAlign:'center',transition:'border-color 0.2s'}}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=`${data.color}50`}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=C2.brd}>
+                  <div style={{fontSize:28,marginBottom:10}}>{ch.icon}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:C2.t0,marginBottom:6}}>{ch.title}</div>
+                  <a href={`mailto:${ch.value}`} style={{fontSize:12,color:data.color,display:'block',marginBottom:8,textDecoration:'none'}}>{ch.value}</a>
+                  <div style={{fontSize:11,color:C2.t3,lineHeight:1.5}}>{ch.desc}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{fontSize:15,fontWeight:700,color:C2.t0,marginBottom:14}}>Questions fréquentes</h3>
+            {data.faq.map((f,i) => (
+              <div key={i} style={{background:C2.card,border:`1px solid ${C2.brd}`,borderRadius:12,padding:'16px',marginBottom:10}}>
+                <div style={{fontSize:13,fontWeight:600,color:data.color,marginBottom:8}}>{f.q}</div>
+                <div style={{fontSize:13,color:C2.t2,lineHeight:1.7}}>{f.a}</div>
+              </div>
+            ))}
+          </>}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [activePage, setActivePage] = useState(null); // 'features'|'changelog'|'roadmap'|'docs'|'blog'|'tutoriels'|'api'|'cgu'|'rgpd'|'cookies'|'contact'
   const rootRef = useRef(null);
 
   // Scroll listener
@@ -1152,26 +1521,26 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               <h4>Produit</h4>
               <a href="#features">Features</a>
               <a href="#pricing">Pricing</a>
-              <a href="#">Changelog</a>
-              <a href="#">Roadmap</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('changelog')}}>Changelog</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('roadmap')}}>Roadmap</a>
             </div>
             <div className="lp-footer-col">
               <h4>Ressources</h4>
-              <a href="#">Documentation</a>
-              <a href="#">Blog Trading</a>
-              <a href="#">Tutoriels</a>
-              <a href="#">API</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('docs')}}>Documentation</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('blog')}}>Blog Trading</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('tutoriels')}}>Tutoriels</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('api')}}>API</a>
             </div>
             <div className="lp-footer-col">
               <h4>Légal</h4>
-              <a href="#">CGU</a>
-              <a href="#">Politique RGPD</a>
-              <a href="#">Cookies</a>
-              <a href="#">Contact</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('cgu')}}>CGU</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('rgpd')}}>Politique RGPD</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('cookies')}}>Cookies</a>
+              <a href="#" onClick={e=>{e.preventDefault();setActivePage('contact')}}>Contact</a>
             </div>
           </div>
           <div className="lp-footer-bottom">
-            <p>© 2024 <span>MarketFlow Journal</span>. Tous droits réservés. Fait avec 🧠 pour les traders.</p>
+            <p>© 2026 <span>MarketFlow Journal</span>. Tous droits réservés. Fait avec 🧠 pour les traders.</p>
             <div className="lp-social-row">
               <a className="lp-social-btn" href="#">𝕏</a>
               <a className="lp-social-btn" href="#">in</a>
@@ -1180,6 +1549,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           </div>
         </div>
       </footer>
+
+      {/* ── PAGE MODALS (Changelog, Roadmap, Docs, CGU…) ── */}
+      {activePage && (
+        <PageModal page={activePage} onClose={() => setActivePage(null)} />
+      )}
     </div>
   );
 }
