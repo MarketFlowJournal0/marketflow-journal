@@ -18,7 +18,7 @@ const NAV_SECTIONS = [
     items: [
       { id: 'dashboard',     label: 'Dashboard',     icon: DashboardIcon   },
       { id: 'all-trades',    label: 'All Trades',    icon: TradesIcon      },
-      { id: 'calendar',      label: 'Calendar',      icon: CalendarIcon    },
+      { id: 'analytics-pro', label: 'Analytics Pro', icon: AnalyticsIcon,  badge: 'PRO', badgeColor: '#06E6FF' },
       { id: 'equity',        label: 'Equity',        icon: EquityIcon      },
       { id: 'backtest',      label: 'Backtest',      icon: BacktestIcon    },
     ],
@@ -26,7 +26,6 @@ const NAV_SECTIONS = [
   {
     label: 'AI Tools',
     items: [
-      { id: 'analytics-pro', label: 'Analytics Pro', icon: AnalyticsIcon,  badge: 'PRO', badgeColor: '#06E6FF' },
       { id: 'psychology',    label: 'Psychology',    icon: PsychologyIcon, badge: 'AI',  badgeColor: '#B06EFF' },
       { id: 'ai-chat',       label: 'AI Chat',       icon: AiChatIcon,     badge: 'NEW', badgeColor: '#FF4DC4' },
     ],

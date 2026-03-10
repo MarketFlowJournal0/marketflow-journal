@@ -1,72 +1,154 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* src/theme.css — Système de thème MarketFlow Journal */
 
-/* ============================================================
-   🎨 MARKETFLOW JOURNAL — DESIGN SYSTEM
-   Palette logo : #0D1117 fond + #00D4FF cyan + #00E676 vert
-   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background-color: #0D1117;
-  color: #E8EEFF;
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI',
-    'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ─── VARIABLES DARK (défaut) ───────────────────────────────────────────────── */
+:root {
+  --bg:           #030508;
+  --bg-sidebar:   #060D1A;
+  --bg-card:      #0C1422;
+  --bg-high:      #111B2E;
+  --bg-input:     rgba(255,255,255,0.04);
+  --accent:       #06E6FF;
+  --teal:         #00F5D4;
+  --green:        #00FF88;
+  --red:          #FF3D57;
+  --gold:         #FFD700;
+  --t0:           #FFFFFF;
+  --t1:           #E8EEFF;
+  --t2:           #7A90B8;
+  --t3:           #334566;
+  --t4:           #1A2440;
+  --brd:          #162034;
+  --brd-hi:       #1E2E48;
 }
 
-/* ── Scrollbar ── */
+/* ─── VARIABLES LIGHT ───────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:           #F2F5FC;
+  --bg-sidebar:   #FFFFFF;
+  --bg-card:      #FFFFFF;
+  --bg-high:      #EEF2FB;
+  --bg-input:     #F8FAFF;
+  --accent:       #0099CC;
+  --green:        #00AA55;
+  --red:          #E0243E;
+  --gold:         #C8900A;
+  --t0:           #0A0F1E;
+  --t1:           #1C2B4A;
+  --t2:           #4A5E80;
+  --t3:           #9AAAC8;
+  --t4:           #D0DAEA;
+  --brd:          #D8E2F0;
+  --brd-hi:       #BCC8E0;
+}
+
+/* ─── BASE ──────────────────────────────────────────────────────────────────── */
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg) !important;
+  color: var(--t0) !important;
+}
+
+/* Transitions thème */
+*, *::before, *::after {
+  transition: background-color 0.22s ease, border-color 0.18s ease, color 0.15s ease !important;
+}
+
+/* ─── SIDEBAR DARK (défaut) ─────────────────────────────────────────────────── */
+.mf-sidebar {
+  background: linear-gradient(180deg, #060D1A 0%, #04080F 60%, #030608 100%) !important;
+  border-right: 1px solid rgba(6,230,255,0.08) !important;
+  box-shadow: 4px 0 30px rgba(0,0,0,0.5) !important;
+}
+
+/* ─── SIDEBAR LIGHT ─────────────────────────────────────────────────────────── */
+[data-theme="light"] .mf-sidebar {
+  background: #FFFFFF !important;
+  border-right: 1px solid #D8E2F0 !important;
+  box-shadow: 2px 0 20px rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .mf-sidebar * {
+  border-color: #D8E2F0 !important;
+}
+
+/* ─── MAIN CONTENT ──────────────────────────────────────────────────────────── */
+.mf-main {
+  background: var(--bg) !important;
+  color: var(--t0) !important;
+}
+
+/* ─── TOUTES LES PAGES — fonds dark → clair ─────────────────────────────────── */
+/* On cible tous les backgrounds dark hardcodés dans les pages React */
+[data-theme="light"] .mf-main > div,
+[data-theme="light"] .mf-main [style*="background:'#0B0F1A'"],
+[data-theme="light"] .mf-main [style*="background: '#0B0F1A'"],
+[data-theme="light"] .mf-main [style*='background:"#0B0F1A"'],
+[data-theme="light"] .mf-main [style*="background:'#030508'"],
+[data-theme="light"] .mf-main [style*="background:'#0C1422'"],
+[data-theme="light"] .mf-main [style*="background:'#0E1525'"],
+[data-theme="light"] .mf-main [style*="background:'#111B2E'"],
+[data-theme="light"] .mf-main [style*="background:'#121C2E'"],
+[data-theme="light"] .mf-main [style*="background:'#0D1627'"],
+[data-theme="light"] .mf-main [style*="background:'#131D30'"],
+[data-theme="light"] .mf-main [style*="background:'#0F1420'"],
+[data-theme="light"] .mf-main [style*="background:'#080E19'"],
+[data-theme="light"] .mf-main [style*="background: rgb(11, 15, 26)"],
+[data-theme="light"] .mf-main [style*="background: rgb(12, 20, 34)"],
+[data-theme="light"] .mf-main [style*="background: rgb(14, 21, 37)"] {
+  background: var(--bg-card) !important;
+  color: var(--t0) !important;
+}
+
+/* Page wrapper principal de chaque page */
+[data-theme="light"] .mf-main > div:first-child {
+  background: var(--bg) !important;
+}
+
+/* ─── CARDS light ───────────────────────────────────────────────────────────── */
+[data-theme="light"] .mf-card {
+  background: #FFFFFF !important;
+  border-color: #D8E2F0 !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06) !important;
+}
+
+/* ─── INPUTS light ──────────────────────────────────────────────────────────── */
+[data-theme="light"] input:not([type="color"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: #F8FAFF !important;
+  border-color: #D8E2F0 !important;
+  color: #0A0F1E !important;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #9AAAC8 !important;
+}
+
+/* ─── TABLES light ──────────────────────────────────────────────────────────── */
+[data-theme="light"] thead { background: #EEF2FB !important; }
+[data-theme="light"] td, [data-theme="light"] th {
+  border-color: #D8E2F0 !important;
+  color: #1C2B4A !important;
+}
+[data-theme="light"] tr:hover { background: rgba(6,230,255,0.04) !important; }
+
+/* ─── RECHARTS light ────────────────────────────────────────────────────────── */
+[data-theme="light"] .recharts-cartesian-grid line { stroke: #D8E2F0 !important; }
+[data-theme="light"] .recharts-text tspan { fill: #4A5E80 !important; }
+[data-theme="light"] .recharts-tooltip-content {
+  background: #FFFFFF !important;
+  border-color: #D8E2F0 !important;
+}
+
+/* ─── SCROLLBARS ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #0D1117; }
-::-webkit-scrollbar-thumb { background: #1E2D45; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #243454; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--brd-hi); border-radius: 3px; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #BCC8E0; }
 
-/* ── Select options ── */
-option { background-color: #1A2235; color: #E8EEFF; }
-
-/* ── Inputs / Focus ── */
-input, select, textarea {
-  background-color: #0D1117;
-  color: #E8EEFF;
-  border-color: #1E2D45;
-}
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: #00D4FF !important;
-  box-shadow: 0 0 0 1px rgba(0,212,255,0.2);
-}
-input::placeholder, textarea::placeholder { color: #4A5568; }
-
-/* ── Checkbox / Radio ── */
-input[type="checkbox"], input[type="radio"] { accent-color: #00D4FF; }
-
-/* ── Gradient text helper ── */
-.mf-gradient-text {
-  background: linear-gradient(135deg, #00D4FF, #00E676);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ── Card base ── */
-.mf-card {
-  background-color: #1A2235;
-  border: 1px solid #1E2D45;
-  border-radius: 10px;
-}
-
-/* ── Button primary (cyan→vert) ── */
-.mf-btn-primary {
-  background: linear-gradient(135deg, #00D4FF, #00C9A7);
-  color: #0D1117;
-  font-weight: 700;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.mf-btn-primary:hover { opacity: 0.88; }
+/* ─── BADGES PLANS ──────────────────────────────────────────────────────────── */
+.mf-badge-trial { background: rgba(0,255,136,0.10); color: #00FF88; border: 1px solid rgba(0,255,136,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mf-badge-pro   { background: rgba(6,230,255,0.12); color: #06E6FF; border: 1px solid rgba(6,230,255,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mf-badge-elite { background: rgba(255,215,0,0.12); color: #FFD700; border: 1px solid rgba(255,215,0,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
