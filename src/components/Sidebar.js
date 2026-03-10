@@ -181,8 +181,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
     const savedAccent = localStorage.getItem('mf_accent') || '#06E6FF';
     applyTheme(savedTheme);
     applyAccent(savedAccent);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line
 
   const W = collapsed ? 72 : 260;
 
