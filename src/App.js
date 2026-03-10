@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
 import { Toaster, toast } from 'react-hot-toast';
 import PlanSelection from './pages/PlanSelection';
+import AuthCallback from './pages/AuthCallback';
 import './App.css';
 
 // ─── LOADING SCREEN ───────────────────────────────────────────────────────────
@@ -153,6 +154,11 @@ function AppInner() {
 
   // Vérification session en cours
   if (loading) return <LoadingScreen />;
+
+  // ── Route /auth/callback (emails Supabase) ────────────────────────────────
+  if (window.location.pathname === '/auth/callback') {
+    return <AuthCallback />;
+  }
 
   // ── Non connecté → Landing ────────────────────────────────────────────────
   if (!user) {
