@@ -5,7 +5,7 @@ import {
   Tooltip, ResponsiveContainer, Cell, ReferenceLine, PieChart, Pie, RadarChart,
   Radar, PolarGrid, PolarAngleAxis
 } from 'recharts';
-import { useTrades } from '../context/TradingContext';
+import { useTradingContext } from '../context/TradingContext';
 
 // ─────────────────────────────────────────────
 // DESIGN SYSTEM
@@ -844,7 +844,7 @@ function calcRegularityScore(trades) {
 }
 
 const TradingCalendar = () => {
-  const { trades = [] } = useTrades() || {};
+  const { trades = [] } = useTradingContext() || {};
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
   const year  = currentMonth.getFullYear();
