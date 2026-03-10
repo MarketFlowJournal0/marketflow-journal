@@ -953,10 +953,7 @@ export default function Dashboard() {
                 <option>Demo — $10,000</option>
               </select>
             </div>
-            <motion.div animate={{scale:[1,1.04,1]}} transition={{duration:2,repeat:Infinity}}
-              style={{padding:'7px 14px',borderRadius:9,background:`${C.green}18`,border:`1px solid ${C.green}35`,fontSize:10,fontWeight:800,color:C.green,cursor:'pointer'}}>
-              ➕ Ajouter trade
-            </motion.div>
+            
           </div>
         </motion.div>
 
