@@ -73,26 +73,56 @@ function AppInner() {
   const openSignup = () => setAuthModal('signup');
   const closeAuth  = () => setAuthModal(null);
 
+  // Ouvrir signup avec un plan en attente
+  const openSignupWithPlan = (priceId) => {
+    sessionStorage.setItem('pending_price_id', priceId);
+    setAuthModal('signup');
+  };
+
+  // Lancer Stripe Checkout
+  const launchCheckout = async (priceId, userEmail) => {
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId, email: userEmail }),
+      });
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      console.error('Checkout error:', err);
+    }
+  };
+
+  // Après inscription/connexion réussie → vérifier si plan en attente
+  const handleAuthSuccess = async (userData) => {
+    setAuthModal(null);
+    const pendingPriceId = sessionStorage.getItem('pending_price_id');
+    if (pendingPriceId) {
+      sessionStorage.removeItem('pending_price_id');
+      // Petit délai pour laisser Supabase initialiser la session
+      setTimeout(() => {
+        launchCheckout(pendingPriceId, userData?.email);
+      }, 800);
+    }
+  };
+
   // Détecter ?payment=success après retour Stripe
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      setShowSuccess(true);
-      // Nettoyer l'URL sans recharger la page
       window.history.replaceState({}, '', window.location.pathname);
-      // Toast de bienvenue
       setTimeout(() => {
         toast.success('🎉 Paiement confirmé ! Bienvenue sur MarketFlow Journal !', {
           duration: 6000,
           style: {
             background: '#0D1627',
-            color: '#fff',
+            color: '#00FF88',
             border: '1px solid rgba(0,255,136,0.3)',
             borderRadius: '12px',
             fontSize: '15px',
           },
         });
-        setShowSuccess(false);
       }, 500);
     }
     if (params.get('payment') === 'cancelled') {
@@ -107,10 +137,6 @@ function AppInner() {
       });
     }
   }, []);
-
-  const handleAuthSuccess = () => {
-    setAuthModal(null);
-  };
 
   const handleLogout = async () => {
     await logout();
@@ -130,7 +156,7 @@ function AppInner() {
   if (!user) {
     return (
       <>
-        <LandingPage onLogin={openLogin} onSignup={openSignup} />
+        <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
         {authModal && (
           <AuthModal
             defaultTab={authModal}

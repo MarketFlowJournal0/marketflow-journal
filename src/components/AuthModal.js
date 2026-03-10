@@ -381,7 +381,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
     e.preventDefault();
     if (!validateLogin()) return;
     const ok = await login({ email: form.email, password: form.password });
-    if (ok) { setSuccess(true); setTimeout(onSuccess, 900); }
+    if (ok) { setSuccess(true); setTimeout(() => onSuccess({ email: form.email }), 900); }
   };
 
   const handleForgot = async (e) => {
@@ -402,7 +402,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
     });
     if (result?.success) {
       setSuccess(true);
-      if (!result.needsConfirmation) setTimeout(onSuccess, 900);
+      if (!result.needsConfirmation) setTimeout(() => onSuccess({ email: form.email }), 900);
     }
   };
 
