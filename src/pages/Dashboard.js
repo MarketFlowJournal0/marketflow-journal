@@ -7,6 +7,10 @@ import {
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
 
+// Context interne pour partager les données du dashboard
+const DashboardDataCtx = React.createContext(null);
+const useDashData = () => React.useContext(DashboardDataCtx) || {};
+
 // ─────────────────────────────────────────────
 // DESIGN SYSTEM
 // ─────────────────────────────────────────────
@@ -39,70 +43,7 @@ const C = {
 };
 
 // ─────────────────────────────────────────────
-// MOCK DATA (replace with TradingContext)
-// ─────────────────────────────────────────────
-const MOCK_STATS = {
-  pnl: 16590, pnlPct: 8.2, winRate: 76.5, profitFactor: 21.74,
-  avgRR: '1:1.6', sharpe: 10.89, maxDrawdown: -31.6, expectancy: 976,
-  totalTrades: 47, wins: 36, losses: 8, breakevens: 3,
-  avgWin: 580, avgLoss: 280, streakWin: 7, streakLoss: 2,
-  bestTrade: 4500, worstTrade: -280,
-};
 
-const EQUITY_DATA = [
-  {d:'Jan',v:1000},{d:'Fév',v:2800},{d:'Mar',v:2400},{d:'Avr',v:4200},{d:'Mai',v:3800},
-  {d:'Juin',v:5600},{d:'Juil',v:6100},{d:'Août',v:8900},{d:'Sep',v:8200},{d:'Oct',v:10800},
-  {d:'Nov',v:13200},{d:'Déc',v:11800},{d:'Jan',v:14600},{d:'Fév',v:16590},
-];
-
-const DAILY_PNL = [
-  {d:'Lun',v:380,w:true},{d:'Mar',v:-120,w:false},{d:'Mer',v:0,w:false},{d:'Jeu',v:4500,w:true},
-  {d:'Ven',v:380,w:true},{d:'Lun',v:-280,w:false},{d:'Mar',v:0,w:false},
-];
-
-const RECENT_TRADES = [
-  {id:1,pair:'EURUSD',dir:'Long', res:'TP',rr:1.8,pnl:380,  date:'2024-01-22',session:'Londres', sl:'75px'},
-  {id:2,pair:'GBPUSD',dir:'Long', res:'SL',rr:-1, pnl:-128, date:'2024-01-23',session:'Londres', sl:'62px'},
-  {id:3,pair:'US30',  dir:'Long', res:'TP',rr:3.2,pnl:4500, date:'2024-01-24',session:'New-York',sl:'140px'},
-  {id:4,pair:'AAPL',  dir:'Long', res:'TP',rr:1.5,pnl:380,  date:'2024-01-25',session:'New-York',sl:'72px'},
-  {id:5,pair:'ETHUSD',dir:'Short',res:'SL',rr:-1, pnl:-200, date:'2024-01-26',session:'Asie',    sl:'88px'},
-  {id:6,pair:'EURUSD',dir:'Short',res:'TP',rr:2.1,pnl:620,  date:'2024-01-27',session:'Londres', sl:'95px'},
-];
-
-const SESSION_DATA = [
-  {s:'Londres',   tp:18, sl:3, be:2, pnl:8400},
-  {s:'New-York',  tp:11, sl:3, be:1, pnl:6200},
-  {s:'Asie',      tp:4,  sl:1, be:0, pnl:1400},
-  {s:'Hors Sess.', tp:3, sl:1, be:0, pnl:590},
-];
-
-const PAIR_DATA = [
-  {p:'EURUSD', n:24, wr:79, pnl:9200, col:C.cyan},
-  {p:'GBPUSD', n:9,  wr:67, pnl:3100, col:C.teal},
-  {p:'US30',   n:6,  wr:83, pnl:2800, col:C.gold},
-  {p:'AAPL',   n:5,  wr:80, pnl:980,  col:C.purple},
-  {p:'ETHUSD', n:3,  wr:33, pnl:-280, col:C.danger},
-];
-
-const RADAR_DATA = [
-  {m:'Win Rate',  v:77},{m:'Profit F.',v:100},{m:'Risk/Rew.', v:53},
-  {m:'Sharpe',    v:100},{m:'Discipline',v:65},{m:'Constance', v:100},
-];
-
-const BIAIS_DATA = [
-  {name:'Bullish',value:71,color:C.green,  pnl:'+$13,580'},
-  {name:'Bearish',value:25,color:C.danger, pnl:'+$3,010'},
-  {name:'Neutre', value:4, color:C.warn,   pnl:'+$80'},
-];
-
-const WEEK_HEATMAP = [
-  {day:'Lun',h:{ '8h':2,'10h':8,'12h':0,'14h':1,'16h':3}},
-  {day:'Mar',h:{'8h':5,'10h':12,'12h':-3,'14h':4,'16h':0}},
-  {day:'Mer',h:{'8h':0,'10h':7,'12h':4,'14h':2,'16h':6}},
-  {day:'Jeu',h:{'8h':9,'10h':45,'12h':0,'14h':3,'16h':8}},
-  {day:'Ven',h:{'8h':4,'10h':6,'12h':3,'14h':0,'16h':2}},
-];
-const HOURS = ['8h','10h','12h','14h','16h'];
 
 // ─────────────────────────────────────────────
 // REUSABLE PRIMITIVES
@@ -184,7 +125,9 @@ const KPI_ITEMS = [
   { label:'Expectancy',     value:'$976',     delta:-1.8, sub:'Par trade',      color:C.gold,   icon:'🧮' },
 ];
 
-const KpiStrip = () => (
+const KpiStrip = () => {
+  const { MOCK_STATS = {} } = useDashData();
+  return (
   <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:8, marginBottom:14 }}>
     {KPI_ITEMS.map((k, i) => (
       <Card key={k.label} custom={i} glow={k.color} hover style={{padding:'13px 14px',minHeight:82}}>
@@ -206,11 +149,13 @@ const KpiStrip = () => (
     ))}
   </div>
 );
+}
 
 // ─────────────────────────────────────────────
 // EQUITY CHART
 // ─────────────────────────────────────────────
 const EquityPanel = () => {
+  const { EQUITY_DATA = [], MOCK_STATS = {} } = useDashData();
   const [range, setRange] = useState('1A');
   const last = EQUITY_DATA[EQUITY_DATA.length-1].v;
   const first = EQUITY_DATA[0].v;
@@ -315,7 +260,9 @@ const DailyPnl = () => (
 // ─────────────────────────────────────────────
 // PERFORMANCE SCORE RADAR
 // ─────────────────────────────────────────────
-const PerformanceScore = () => (
+const PerformanceScore = () => {
+  const { RADAR_DATA = [], MOCK_STATS = {} } = useDashData();
+  return (
   <Card custom={9} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
     <SectionTitle color={C.purple} icon="⚡">Performance Score</SectionTitle>
     <div style={{display:'flex',alignItems:'center',gap:16}}>
@@ -365,11 +312,13 @@ const PerformanceScore = () => (
     </div>
   </Card>
 );
+}
 
 // ─────────────────────────────────────────────
 // BIAIS ANALYSIS
 // ─────────────────────────────────────────────
 const BiaisPanel = () => {
+  const { BIAIS_DATA = [] } = useDashData();
   const total = BIAIS_DATA.reduce((s,d)=>s+d.value,0);
   return (
     <Card custom={10} glow={C.teal} hover={false} style={{padding:'18px 18px'}}>
@@ -435,6 +384,7 @@ const BiaisPanel = () => {
 // RENTABILITE GAUGE
 // ─────────────────────────────────────────────
 const RentabiliteGauge = () => {
+  const { MOCK_STATS = {} } = useDashData();
   const pct = 76.5;
   const angle = (pct / 100) * 180 - 90; // -90 to +90
   return (
@@ -488,6 +438,7 @@ const RentabiliteGauge = () => {
 // RECENT TRADES
 // ─────────────────────────────────────────────
 const RecentTrades = () => {
+  const { RECENT_TRADES = [], MOCK_STATS = {} } = useDashData();
   const [filter, setFilter] = useState('All');
   const filtered = filter === 'All' ? RECENT_TRADES : RECENT_TRADES.filter(t => t.res === filter);
   return (
@@ -562,7 +513,9 @@ const RecentTrades = () => {
 // ─────────────────────────────────────────────
 // SESSION BREAKDOWN
 // ─────────────────────────────────────────────
-const SessionPanel = () => (
+const SessionPanel = () => {
+  const { SESSION_DATA = [] } = useDashData();
+  return (
   <Card custom={13} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
     <SectionTitle color={C.purple} icon="🌍">Sessions</SectionTitle>
     <div style={{display:'flex',flexDirection:'column',gap:6}}>
@@ -592,11 +545,14 @@ const SessionPanel = () => (
     </div>
   </Card>
 );
+}
 
 // ─────────────────────────────────────────────
 // PAIR BREAKDOWN
 // ─────────────────────────────────────────────
-const PairPanel = () => (
+const PairPanel = () => {
+  const { PAIR_DATA = [] } = useDashData();
+  return (
   <Card custom={14} glow={C.gold} hover={false} style={{padding:'18px 18px'}}>
     <SectionTitle color={C.gold} icon="💱">Par Paire</SectionTitle>
     <div style={{display:'flex',flexDirection:'column',gap:4}}>
@@ -623,11 +579,13 @@ const PairPanel = () => (
     </div>
   </Card>
 );
+}
 
 // ─────────────────────────────────────────────
 // HEATMAP Heure × Jour
 // ─────────────────────────────────────────────
 const TimeHeatmap = () => {
+  const { WEEK_HEATMAP = [], HOURS = ['8h','10h','12h','14h','16h'] } = useDashData();
   const maxV = Math.max(...WEEK_HEATMAP.flatMap(w=>Object.values(w.h).map(Math.abs)),1);
   return (
     <Card custom={15} glow={C.teal} hover={false} style={{padding:'18px 18px'}}>
@@ -1119,12 +1077,29 @@ export default function Dashboard() {
     window.print();
   };
 
-  const handleAddTrade = (tradeData) => {
-    console.log('New trade:', tradeData);
-    // TODO: connecter à TradingContext.addTrade()
+
+
+  const { stats, trades: allTrades, addTrade } = useTradingContext();
+  const dashData = {
+    MOCK_STATS:    stats,
+    EQUITY_DATA:   stats.equityData   || [],
+    DAILY_PNL:     stats.dailyPnl     || [],
+    RECENT_TRADES: stats.recentTrades || [],
+    SESSION_DATA:  stats.sessionData  || [],
+    PAIR_DATA:     stats.pairData     || [],
+    RADAR_DATA:    stats.radarData    || [],
+    BIAIS_DATA:    stats.biaisData    || [],
+    WEEK_HEATMAP:  stats.heatmap      || [],
+    HOURS:         ['8h','10h','12h','14h','16h'],
+    trades:        allTrades,
+  };
+
+  const handleAddTrade = async (tradeData) => {
+    await addTrade(tradeData);
   };
 
   return (
+    <DashboardDataCtx.Provider value={dashData}>
     <div style={{
       background:'var(--bg, #0B0F1A)',
       minHeight:'100%',
@@ -1247,5 +1222,6 @@ export default function Dashboard() {
 
       </div>
     </div>
+    </DashboardDataCtx.Provider>
   );
 }
