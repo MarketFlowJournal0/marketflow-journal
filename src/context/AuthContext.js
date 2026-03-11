@@ -4,81 +4,71 @@ import { supabase } from '../lib/supabase';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(null);
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);   // true pendant la vérif initiale
-  const [error,   setError]   = useState(null);
-  const [authLoading, setAuthLoading] = useState(false); // true pendant login/signup
+  const [user,        setUser]        = useState(null);
+  const [session,     setSession]     = useState(null);
+  const [profile,     setProfile]     = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
-  // ── Vérifier la session au démarrage + écouter les changements ─────────────
+  const fetchProfile = useCallback(async (userId) => {
+    if (!userId) { setProfile(null); return; }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end')
+        .eq('id', userId)
+        .single();
+      if (!error && data) setProfile(data);
+    } catch (_) {}
+  }, []);
+
   useEffect(() => {
-    // Session actuelle
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      await fetchProfile(session?.user?.id);
       setLoading(false);
     });
 
-    // Listener sur les changements d'auth (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      await fetchProfile(session?.user?.id);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile]);
 
-  // ── SIGNUP ─────────────────────────────────────────────────────────────────
   const signup = useCallback(async ({ firstName, lastName, email, password }) => {
     setAuthLoading(true);
     setError(null);
-
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+      email, password,
       options: {
         data: {
           first_name: firstName.trim(),
           last_name:  lastName.trim(),
           full_name:  `${firstName.trim()} ${lastName.trim()}`,
-          plan:       'starter',
+          plan: 'trial',
         },
         emailRedirectTo: window.location.origin,
       },
     });
-
     setAuthLoading(false);
-
-    if (error) {
-      // Traduction des erreurs Supabase en français
-      const msg = translateError(error.message);
-      setError(msg);
-      return { success: false, needsConfirmation: false };
-    }
-
-    // Si email confirmation activée dans Supabase
-    const needsConfirmation = !data.session;
-    return { success: true, needsConfirmation };
+    if (error) { setError(translateError(error.message)); return { success: false }; }
+    return { success: true, needsConfirmation: !data.session };
   }, []);
 
-  // ── LOGIN ──────────────────────────────────────────────────────────────────
   const login = useCallback(async ({ email, password }) => {
-    setAuthLoading(true);
-    setError(null);
-
+    setAuthLoading(true); setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-
     setAuthLoading(false);
-
-    if (error) {
-      setError(translateError(error.message));
-      return false;
-    }
+    if (error) { setError(translateError(error.message)); return false; }
     return true;
   }, []);
 
-  // ── LOGIN GOOGLE ───────────────────────────────────────────────────────────
   const loginWithGoogle = useCallback(async () => {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
@@ -88,7 +78,6 @@ export function AuthProvider({ children }) {
     if (error) setError(translateError(error.message));
   }, []);
 
-  // ── LOGIN GITHUB ───────────────────────────────────────────────────────────
   const loginWithGitHub = useCallback(async () => {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
@@ -98,7 +87,6 @@ export function AuthProvider({ children }) {
     if (error) setError(translateError(error.message));
   }, []);
 
-  // ── RESET PASSWORD ─────────────────────────────────────────────────────────
   const resetPassword = useCallback(async (email) => {
     setError(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -108,49 +96,63 @@ export function AuthProvider({ children }) {
     return true;
   }, []);
 
-  // ── LOGOUT ─────────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    setUser(null); setSession(null); setProfile(null);
   }, []);
 
-  // ── UPDATE PROFILE ─────────────────────────────────────────────────────────
   const updateProfile = useCallback(async (updates) => {
     const { error } = await supabase.auth.updateUser({ data: updates });
     if (error) { setError(translateError(error.message)); return false; }
     return true;
   }, []);
 
+  const refreshProfile = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) await fetchProfile(session.user.id);
+  }, [fetchProfile]);
+
   const clearError = useCallback(() => setError(null), []);
 
-  // Infos user formatées
+  const effectivePlan = profile?.plan || user?.user_metadata?.plan || 'trial';
+  const subStatus     = profile?.subscription_status || 'trialing';
+  const trialEnd      = profile?.trial_end || null;
+  const isTrialing    = subStatus === 'trialing';
+  const isActive      = subStatus === 'active';
+  const isPastDue     = subStatus === 'past_due';
+  const isCanceled    = subStatus === 'canceled';
+  const needsPayment  = isPastDue || (isTrialing && trialEnd && new Date(trialEnd) < new Date());
+  const trialDaysLeft = trialEnd
+    ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
+    : 14;
+
   const userProfile = user ? {
-    id:         user.id,
-    email:      user.email,
-    firstName:  user.user_metadata?.first_name || user.email?.split('@')[0] || 'Trader',
-    lastName:   user.user_metadata?.last_name  || '',
-    fullName:   user.user_metadata?.full_name  || user.email?.split('@')[0],
-    avatar:     user.user_metadata?.avatar_url || null,
-    plan:       user.user_metadata?.plan       || 'starter',
-    createdAt:  user.created_at,
+    id:           user.id,
+    email:        user.email,
+    firstName:    user.user_metadata?.first_name || user.email?.split('@')[0] || 'Trader',
+    lastName:     user.user_metadata?.last_name  || '',
+    fullName:     user.user_metadata?.full_name  || user.email?.split('@')[0],
+    avatar:       user.user_metadata?.avatar_url || null,
+    plan:         effectivePlan,
+    subStatus,
+    isTrialing,
+    isActive,
+    isPastDue,
+    isCanceled,
+    needsPayment,
+    trialDaysLeft,
+    trialEnd,
+    stripeCustomerId:     profile?.stripe_customer_id     || null,
+    stripeSubscriptionId: profile?.stripe_subscription_id || null,
+    createdAt:    user.created_at,
   } : null;
 
   return (
     <AuthContext.Provider value={{
       user: userProfile,
-      session,
-      loading,
-      authLoading,
-      error,
-      signup,
-      login,
-      loginWithGoogle,
-      loginWithGitHub,
-      resetPassword,
-      logout,
-      updateProfile,
-      clearError,
+      session, loading, authLoading, error,
+      signup, login, loginWithGoogle, loginWithGitHub,
+      resetPassword, logout, updateProfile, refreshProfile, clearError,
     }}>
       {children}
     </AuthContext.Provider>
@@ -163,17 +165,16 @@ export function useAuth() {
   return ctx;
 }
 
-// ── Traduction erreurs Supabase → français ─────────────────────────────────
 function translateError(msg) {
   if (!msg) return 'Une erreur est survenue.';
-  if (msg.includes('Invalid login credentials'))       return 'Email ou mot de passe incorrect.';
-  if (msg.includes('Email not confirmed'))             return 'Confirme ton email avant de te connecter.';
-  if (msg.includes('User already registered'))         return 'Un compte existe déjà avec cet email.';
-  if (msg.includes('Password should be at least'))     return 'Le mot de passe doit contenir au moins 6 caractères.';
-  if (msg.includes('Unable to validate email address'))return 'Adresse email invalide.';
-  if (msg.includes('Email rate limit exceeded'))       return 'Trop de tentatives. Attends quelques minutes.';
-  if (msg.includes('Invalid email'))                   return 'Adresse email invalide.';
-  if (msg.includes('signup is disabled'))              return 'Les inscriptions sont temporairement désactivées.';
-  if (msg.includes('network'))                         return 'Erreur réseau. Vérifie ta connexion.';
+  if (msg.includes('Invalid login credentials'))        return 'Email ou mot de passe incorrect.';
+  if (msg.includes('Email not confirmed'))              return 'Confirme ton email avant de te connecter.';
+  if (msg.includes('User already registered'))          return 'Un compte existe déjà avec cet email.';
+  if (msg.includes('Password should be at least'))      return 'Le mot de passe doit contenir au moins 6 caractères.';
+  if (msg.includes('Unable to validate email address')) return 'Adresse email invalide.';
+  if (msg.includes('Email rate limit exceeded'))        return 'Trop de tentatives. Attends quelques minutes.';
+  if (msg.includes('Invalid email'))                    return 'Adresse email invalide.';
+  if (msg.includes('signup is disabled'))               return 'Les inscriptions sont temporairement désactivées.';
+  if (msg.includes('network'))                          return 'Erreur réseau. Vérifie ta connexion.';
   return msg;
 }
