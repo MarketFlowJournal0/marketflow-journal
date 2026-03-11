@@ -115,26 +115,11 @@ function AppInner() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
 
-  // Nettoyer session corrompue + forcer PlanSelection si pas de Stripe customer
+  // Forcer PlanSelection si pas de Stripe customer (uniquement après chargement complet)
   React.useEffect(() => {
     if (loading) return;
-    // Session corrompue (user supprimé côté Supabase mais token encore présent)
-    // → on déconnecte proprement
-    if (!user) {
-      // Nettoyer les tokens Supabase du localStorage automatiquement
-      Object.keys(localStorage)
-        .filter(k => k.startsWith('sb-') || k.includes('supabase'))
-        .forEach(k => localStorage.removeItem(k));
-      return;
-    }
-    if (!user.id) return;
-    // Attendre que le profil soit chargé avant de décider
-    const timer = setTimeout(() => {
-      if (!user.stripeCustomerId) {
-        setShowPlanSelection(true);
-      }
-    }, 1500);
-    return () => clearTimeout(timer);
+    if (!user?.id) return;
+    setShowPlanSelection(!user.stripeCustomerId);
   }, [loading, user?.id, user?.stripeCustomerId]);
 
   const openLogin  = () => setAuthModal('login');
@@ -246,7 +231,7 @@ function AppInner() {
     return (
       <PlanSelection
         user={user}
-        onSkip={() => setShowPlanSelection(false)}
+        onSkip={null}
       />
     );
   }
