@@ -12,7 +12,6 @@ export function AuthProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(false);
   const initialized   = useRef(false);
 
-  // fetchProfile sans useCallback (pas dans les deps du useEffect)
   const fetchProfile = async (userId) => {
     if (!userId) { setProfile(null); return; }
     try {
@@ -27,35 +26,82 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Init une seule fois — pas de dépendances pour éviter toute boucle
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
-    // Charger la session initiale
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user?.id) await fetchProfile(session.user.id);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // Nettoyer les tokens corrompus AVANT de vérifier la session
+    const cleanCorruptTokens = () => {
+      try {
+        Object.keys(localStorage)
+          .filter(k => k.startsWith('sb-'))
+          .forEach(k => {
+            try {
+              const val = JSON.parse(localStorage.getItem(k));
+              // Si le token est expiré, le supprimer
+              if (val?.expires_at && val.expires_at * 1000 < Date.now()) {
+                localStorage.removeItem(k);
+              }
+            } catch (_) {
+              localStorage.removeItem(k); // JSON invalide → supprimer
+            }
+          });
+      } catch (_) {}
+    };
 
-    // Écouter les changements d'auth
+    cleanCorruptTokens();
+
+    // Timeout de sécurité : si loading reste true après 5s → forcer false
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      clearTimeout(safetyTimeout);
+      if (error || !session) {
+        // Pas de session valide → nettoyer et afficher landing
+        Object.keys(localStorage)
+          .filter(k => k.startsWith('sb-'))
+          .forEach(k => localStorage.removeItem(k));
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      setSession(session);
+      setUser(session.user);
+      await fetchProfile(session.user.id);
+      setLoading(false);
+    }).catch(() => {
+      clearTimeout(safetyTimeout);
+      // Erreur réseau ou token invalide → nettoyer
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-'))
+        .forEach(k => localStorage.removeItem(k));
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user?.id) {
-          await fetchProfile(session.user.id);
-        } else {
+        if (event === 'SIGNED_OUT' || !session) {
+          setUser(null);
+          setSession(null);
           setProfile(null);
+          setLoading(false);
+          return;
         }
+        setSession(session);
+        setUser(session.user);
+        await fetchProfile(session.user.id);
         setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []); // ← [] : s'exécute UNE SEULE FOIS
+  }, []);
 
   const signup = useCallback(async ({ firstName, lastName, email, password }) => {
     setAuthLoading(true); setError(null);
@@ -111,6 +157,9 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-'))
+      .forEach(k => localStorage.removeItem(k));
     setUser(null); setSession(null); setProfile(null);
   }, []);
 
