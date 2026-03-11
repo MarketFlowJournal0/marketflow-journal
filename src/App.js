@@ -73,6 +73,18 @@ function AppInner() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
 
+  // Forcer PlanSelection si l'user n'a pas encore de plan actif/trialing avec CB
+  // (cas: confirmation email → retour sur l'app sans passer par handleAuthSuccess)
+  React.useEffect(() => {
+    if (!user) return;
+    const noActiveSubscription =
+      !user.stripeSubscriptionId &&
+      !user.stripeCustomerId;
+    if (noActiveSubscription) {
+      setShowPlanSelection(true);
+    }
+  }, [user?.id]);
+
   const openLogin  = () => setAuthModal('login');
   const openSignup = () => setAuthModal('signup');
   const closeAuth  = () => setAuthModal(null);
@@ -89,7 +101,7 @@ function AppInner() {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, email: userEmail }),
+        body: JSON.stringify({ priceId, email: userEmail, userId: user?.id }),
       });
       const { url } = await res.json();
       if (url) window.location.href = url;
