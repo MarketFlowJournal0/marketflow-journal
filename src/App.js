@@ -32,40 +32,55 @@ function LoadingScreen() {
       <style>{`
         @keyframes mf-pulse {
           0%,100% { opacity:1; transform:scale(1); }
-          50%      { opacity:0.7; transform:scale(0.96); }
+          50%      { opacity:0.75; transform:scale(0.97); }
         }
-        @keyframes mf-load {
+        @keyframes mf-shimmer {
           0%   { transform:translateX(-100%); }
-          100% { transform:translateX(400%); }
+          100% { transform:translateX(350%); }
+        }
+        @keyframes mf-glow {
+          0%,100% { box-shadow: 0 0 30px rgba(6,230,255,0.2); }
+          50%      { box-shadow: 0 0 60px rgba(6,230,255,0.45); }
         }
       `}</style>
 
-      {/* Logo + nom */}
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,animation:'mf-pulse 2s ease-in-out infinite'}}>
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:18,animation:'mf-pulse 2.2s ease-in-out infinite'}}>
+
+        {/* Logo image */}
         <div style={{
-          width:64,height:64,borderRadius:16,
-          background:'linear-gradient(135deg,#06E6FF22,#00FF8822)',
-          border:'1px solid rgba(6,230,255,0.25)',
-          display:'flex',alignItems:'center',justifyContent:'center',
-          boxShadow:'0 0 40px rgba(6,230,255,0.15)',
+          width:72,height:72,borderRadius:20,
+          overflow:'hidden',
+          animation:'mf-glow 2.2s ease-in-out infinite',
         }}>
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <path d="M6 26 L13 16 L18 21 L23 11 L30 26" stroke="#06E6FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="30" cy="26" r="2" fill="#00FF88"/>
-          </svg>
+          <img
+            src="/logo192.png"
+            alt="MarketFlow"
+            style={{width:'100%',height:'100%',objectFit:'cover'}}
+            onError={(e)=>{
+              // fallback si image pas dispo
+              e.target.style.display='none';
+              e.target.parentElement.style.background='linear-gradient(135deg,#06E6FF,#00FF88)';
+              e.target.parentElement.innerHTML='<span style="font-size:32px;display:flex;align-items:center;justify-content:center;height:100%">📈</span>';
+            }}
+          />
         </div>
-        <div style={{textAlign:'center'}}>
+
+        {/* Nom */}
+        <div style={{textAlign:'center',lineHeight:1}}>
           <div style={{
             fontFamily:"'Inter',sans-serif",
-            fontWeight:800,fontSize:20,
-            color:'#fff',letterSpacing:'-0.5px',
+            fontWeight:800,fontSize:22,
+            color:'#fff',letterSpacing:'-0.6px',
           }}>
             Market<span style={{color:'#06E6FF'}}>Flow</span>
           </div>
           <div style={{
             fontFamily:"'Inter',sans-serif",
-            fontSize:12,color:'rgba(122,144,184,0.8)',
-            marginTop:3,letterSpacing:'0.05em',
+            fontSize:11,
+            color:'rgba(122,144,184,0.7)',
+            marginTop:4,
+            letterSpacing:'0.12em',
+            textTransform:'uppercase',
           }}>
             Journal
           </div>
@@ -74,15 +89,16 @@ function LoadingScreen() {
 
       {/* Barre de chargement */}
       <div style={{
-        width:120,height:2,borderRadius:2,
-        background:'rgba(255,255,255,0.06)',
-        overflow:'hidden',marginTop:4,
+        width:100,height:2,borderRadius:2,
+        background:'rgba(255,255,255,0.05)',
+        overflow:'hidden',
+        marginTop:8,
       }}>
         <div style={{
-          width:'40%',height:'100%',
-          background:'linear-gradient(90deg,#06E6FF,#00FF88)',
+          width:'35%',height:'100%',
+          background:'linear-gradient(90deg,transparent,#06E6FF,#00FF88,transparent)',
           borderRadius:2,
-          animation:'mf-load 1.4s ease-in-out infinite',
+          animation:'mf-shimmer 1.6s ease-in-out infinite',
         }}/>
       </div>
     </div>

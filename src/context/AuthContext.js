@@ -14,27 +14,34 @@ export function AuthProvider({ children }) {
   const fetchProfile = useCallback(async (userId) => {
     if (!userId) { setProfile(null); return; }
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end')
         .eq('id', userId)
-        .single();
-      if (!error && data) setProfile(data);
-    } catch (_) {}
+        .maybeSingle(); // maybeSingle ne crash pas si 0 lignes
+      if (data) setProfile(data);
+      else setProfile(null); // pas de profil = nouveau user
+    } catch (_) {
+      setProfile(null); // erreur réseau etc → ne pas bloquer
+    }
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      await fetchProfile(session?.user?.id);
-      setLoading(false);
-    });
+      if (session?.user?.id) {
+        await fetchProfile(session.user.id);
+      }
+      setLoading(false); // toujours terminer le loading
+    }).catch(() => setLoading(false));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      await fetchProfile(session?.user?.id);
+      if (session?.user?.id) {
+        await fetchProfile(session.user.id);
+      }
       setLoading(false);
     });
 
