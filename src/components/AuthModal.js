@@ -416,7 +416,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
       <style>{STYLES}</style>
 
       {/* Overlay */}
-      <div className="auth-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="auth-overlay">
 
         <div className="auth-modal">
           <button className="auth-close" onClick={onClose} aria-label="Fermer">✕</button>
