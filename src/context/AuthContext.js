@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
@@ -10,47 +10,55 @@ export function AuthProvider({ children }) {
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const initialized   = useRef(false);
 
-  const fetchProfile = useCallback(async (userId) => {
+  // fetchProfile sans useCallback (pas dans les deps du useEffect)
+  const fetchProfile = async (userId) => {
     if (!userId) { setProfile(null); return; }
     try {
       const { data } = await supabase
         .from('profiles')
         .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end')
         .eq('id', userId)
-        .maybeSingle(); // maybeSingle ne crash pas si 0 lignes
-      if (data) setProfile(data);
-      else setProfile(null); // pas de profil = nouveau user
+        .maybeSingle();
+      setProfile(data || null);
     } catch (_) {
-      setProfile(null); // erreur réseau etc → ne pas bloquer
+      setProfile(null);
     }
-  }, []);
+  };
 
+  // Init une seule fois — pas de dépendances pour éviter toute boucle
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    // Charger la session initiale
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user?.id) {
-        await fetchProfile(session.user.id);
-      }
-      setLoading(false); // toujours terminer le loading
+      if (session?.user?.id) await fetchProfile(session.user.id);
+      setLoading(false);
     }).catch(() => setLoading(false));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user?.id) {
-        await fetchProfile(session.user.id);
+    // Écouter les changements d'auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user?.id) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, []); // ← [] : s'exécute UNE SEULE FOIS
 
   const signup = useCallback(async ({ firstName, lastName, email, password }) => {
-    setAuthLoading(true);
-    setError(null);
+    setAuthLoading(true); setError(null);
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
@@ -79,8 +87,7 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = useCallback(async () => {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
+      provider: 'google', options: { redirectTo: window.location.origin },
     });
     if (error) setError(translateError(error.message));
   }, []);
@@ -88,8 +95,7 @@ export function AuthProvider({ children }) {
   const loginWithGitHub = useCallback(async () => {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { redirectTo: window.location.origin },
+      provider: 'github', options: { redirectTo: window.location.origin },
     });
     if (error) setError(translateError(error.message));
   }, []);
@@ -117,41 +123,36 @@ export function AuthProvider({ children }) {
   const refreshProfile = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) await fetchProfile(session.user.id);
-  }, [fetchProfile]);
+  }, []);
 
   const clearError = useCallback(() => setError(null), []);
 
   const effectivePlan = profile?.plan || user?.user_metadata?.plan || 'trial';
   const subStatus     = profile?.subscription_status || 'trialing';
   const trialEnd      = profile?.trial_end || null;
-  const isTrialing    = subStatus === 'trialing';
-  const isActive      = subStatus === 'active';
-  const isPastDue     = subStatus === 'past_due';
-  const isCanceled    = subStatus === 'canceled';
-  const needsPayment  = isPastDue || (isTrialing && trialEnd && new Date(trialEnd) < new Date());
   const trialDaysLeft = trialEnd
     ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
     : 14;
 
   const userProfile = user ? {
-    id:           user.id,
-    email:        user.email,
-    firstName:    user.user_metadata?.first_name || user.email?.split('@')[0] || 'Trader',
-    lastName:     user.user_metadata?.last_name  || '',
-    fullName:     user.user_metadata?.full_name  || user.email?.split('@')[0],
-    avatar:       user.user_metadata?.avatar_url || null,
-    plan:         effectivePlan,
+    id:                   user.id,
+    email:                user.email,
+    firstName:            user.user_metadata?.first_name || user.email?.split('@')[0] || 'Trader',
+    lastName:             user.user_metadata?.last_name  || '',
+    fullName:             user.user_metadata?.full_name  || user.email?.split('@')[0],
+    avatar:               user.user_metadata?.avatar_url || null,
+    plan:                 effectivePlan,
     subStatus,
-    isTrialing,
-    isActive,
-    isPastDue,
-    isCanceled,
-    needsPayment,
+    isTrialing:           subStatus === 'trialing',
+    isActive:             subStatus === 'active',
+    isPastDue:            subStatus === 'past_due',
+    isCanceled:           subStatus === 'canceled',
+    needsPayment:         subStatus === 'past_due',
     trialDaysLeft,
     trialEnd,
     stripeCustomerId:     profile?.stripe_customer_id     || null,
     stripeSubscriptionId: profile?.stripe_subscription_id || null,
-    createdAt:    user.created_at,
+    createdAt:            user.created_at,
   } : null;
 
   return (
