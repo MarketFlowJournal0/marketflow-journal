@@ -728,11 +728,7 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         {' · '}14 jours gratuits — CB requise
       </div>
 
-      {onSkip && (
-        <button className="ps-skip" onClick={onSkip}>
-          Passer pour l'instant →
-        </button>
-      )}
+
     </div>
   );
 }
