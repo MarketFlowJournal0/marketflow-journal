@@ -24,41 +24,67 @@ function LoadingScreen() {
   return (
     <div style={{
       position:'fixed',inset:0,
-      background:'#060912',
+      background:'#030508',
       display:'flex',alignItems:'center',justifyContent:'center',
-      flexDirection:'column',gap:16,
+      flexDirection:'column',gap:20,
       zIndex:9999,
     }}>
-      <div style={{
-        width:48,height:48,borderRadius:12,overflow:'hidden',
-        boxShadow:'0 0 30px rgba(6,230,255,0.4)',
-      }}>
-        <div style={{
-          width:48,height:48,
-          background:'linear-gradient(135deg,#06E6FF,#00FF88)',
-          display:'flex',alignItems:'center',justifyContent:'center',
-          fontSize:24,
-        }}>🧠</div>
-      </div>
-      <div style={{
-        width:32,height:3,borderRadius:2,
-        background:'rgba(255,255,255,0.06)',
-        overflow:'hidden',
-      }}>
-        <div style={{
-          height:'100%',
-          background:'linear-gradient(90deg,#06E6FF,#00FF88)',
-          animation:'mf-load 1.2s ease-in-out infinite',
-          borderRadius:2,
-        }}/>
-      </div>
       <style>{`
+        @keyframes mf-pulse {
+          0%,100% { opacity:1; transform:scale(1); }
+          50%      { opacity:0.7; transform:scale(0.96); }
+        }
         @keyframes mf-load {
-          0%   { width:0%;   margin-left:0; }
-          50%  { width:100%; margin-left:0; }
-          100% { width:0%;   margin-left:100%; }
+          0%   { transform:translateX(-100%); }
+          100% { transform:translateX(400%); }
         }
       `}</style>
+
+      {/* Logo + nom */}
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,animation:'mf-pulse 2s ease-in-out infinite'}}>
+        <div style={{
+          width:64,height:64,borderRadius:16,
+          background:'linear-gradient(135deg,#06E6FF22,#00FF8822)',
+          border:'1px solid rgba(6,230,255,0.25)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          boxShadow:'0 0 40px rgba(6,230,255,0.15)',
+        }}>
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <path d="M6 26 L13 16 L18 21 L23 11 L30 26" stroke="#06E6FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="30" cy="26" r="2" fill="#00FF88"/>
+          </svg>
+        </div>
+        <div style={{textAlign:'center'}}>
+          <div style={{
+            fontFamily:"'Inter',sans-serif",
+            fontWeight:800,fontSize:20,
+            color:'#fff',letterSpacing:'-0.5px',
+          }}>
+            Market<span style={{color:'#06E6FF'}}>Flow</span>
+          </div>
+          <div style={{
+            fontFamily:"'Inter',sans-serif",
+            fontSize:12,color:'rgba(122,144,184,0.8)',
+            marginTop:3,letterSpacing:'0.05em',
+          }}>
+            Journal
+          </div>
+        </div>
+      </div>
+
+      {/* Barre de chargement */}
+      <div style={{
+        width:120,height:2,borderRadius:2,
+        background:'rgba(255,255,255,0.06)',
+        overflow:'hidden',marginTop:4,
+      }}>
+        <div style={{
+          width:'40%',height:'100%',
+          background:'linear-gradient(90deg,#06E6FF,#00FF88)',
+          borderRadius:2,
+          animation:'mf-load 1.4s ease-in-out infinite',
+        }}/>
+      </div>
     </div>
   );
 }
@@ -73,17 +99,21 @@ function AppInner() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
 
-  // Forcer PlanSelection si l'user n'a pas encore de plan actif/trialing avec CB
-  // (cas: confirmation email → retour sur l'app sans passer par handleAuthSuccess)
+  // Forcer PlanSelection si l'user n'a pas encore de Stripe customer
+  // Guard: attendre que loading soit false ET que user soit stable
   React.useEffect(() => {
-    if (!user) return;
-    const noActiveSubscription =
-      !user.stripeSubscriptionId &&
-      !user.stripeCustomerId;
-    if (noActiveSubscription) {
-      setShowPlanSelection(true);
-    }
-  }, [user?.id]);
+    if (loading) return;           // encore en train de charger
+    if (!user) return;             // pas connecté
+    if (!user.id) return;          // user pas encore hydraté
+    // Si pas de customer Stripe → forcer sélection plan
+    // On donne 1s pour que AuthContext finisse de charger le profil Supabase
+    const timer = setTimeout(() => {
+      if (!user.stripeCustomerId) {
+        setShowPlanSelection(true);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [loading, user?.id, user?.stripeCustomerId]);
 
   const openLogin  = () => setAuthModal('login');
   const openSignup = () => setAuthModal('signup');
