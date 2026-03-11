@@ -99,19 +99,25 @@ function AppInner() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
 
-  // Forcer PlanSelection si l'user n'a pas encore de Stripe customer
-  // Guard: attendre que loading soit false ET que user soit stable
+  // Nettoyer session corrompue + forcer PlanSelection si pas de Stripe customer
   React.useEffect(() => {
-    if (loading) return;           // encore en train de charger
-    if (!user) return;             // pas connecté
-    if (!user.id) return;          // user pas encore hydraté
-    // Si pas de customer Stripe → forcer sélection plan
-    // On donne 1s pour que AuthContext finisse de charger le profil Supabase
+    if (loading) return;
+    // Session corrompue (user supprimé côté Supabase mais token encore présent)
+    // → on déconnecte proprement
+    if (!user) {
+      // Nettoyer les tokens Supabase du localStorage automatiquement
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-') || k.includes('supabase'))
+        .forEach(k => localStorage.removeItem(k));
+      return;
+    }
+    if (!user.id) return;
+    // Attendre que le profil soit chargé avant de décider
     const timer = setTimeout(() => {
       if (!user.stripeCustomerId) {
         setShowPlanSelection(true);
       }
-    }, 1000);
+    }, 1500);
     return () => clearTimeout(timer);
   }, [loading, user?.id, user?.stripeCustomerId]);
 

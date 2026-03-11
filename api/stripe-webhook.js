@@ -19,7 +19,8 @@ const PRICE_TO_PLAN = {
   'price_1T97r3RrHTdWtpEZTCMcR9rb': 'elite',
 };
 
-export const config = { api: { bodyParser: false } };
+// Désactiver le body parser Vercel (Stripe a besoin du raw body)
+module.exports.config = { api: { bodyParser: false } };
 
 async function getRawBody(req) {
   return new Promise((resolve, reject) => {
