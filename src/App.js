@@ -115,12 +115,18 @@ function AppInner() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
 
-  // Forcer PlanSelection si pas de Stripe customer (uniquement après chargement complet)
+  // Forcer PlanSelection si pas de Stripe customer
+  // Utiliser une ref pour éviter les boucles
+  const planCheckDone = React.useRef(false);
   React.useEffect(() => {
     if (loading) return;
     if (!user?.id) return;
-    setShowPlanSelection(!user.stripeCustomerId);
-  }, [loading, user?.id, user?.stripeCustomerId]);
+    if (planCheckDone.current) return; // ne faire le check qu'une seule fois
+    planCheckDone.current = true;
+    if (!user.stripeCustomerId) {
+      setShowPlanSelection(true);
+    }
+  }, [loading, user?.id]);
 
   const openLogin  = () => setAuthModal('login');
   const openSignup = () => setAuthModal('signup');
@@ -228,6 +234,11 @@ function AppInner() {
 
   // ── Connecté mais pas encore de plan → Sélection plan ────────────────────
   if (showPlanSelection) {
+    // Bloquer le bouton retour du navigateur
+    window.history.pushState(null, '', window.location.href);
+    window.onpopstate = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
     return (
       <PlanSelection
         user={user}
