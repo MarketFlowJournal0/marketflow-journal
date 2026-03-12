@@ -71,6 +71,9 @@ function AppInner() {
     if (!user?.id)      return;
     if (planChecked.current) return;
     planChecked.current = true;
+    // Si retour de Stripe avec succès → ne pas afficher PlanSelection
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') return;
     if (!user.stripeCustomerId) {
       setShowPlanSelection(true);
     }

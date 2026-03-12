@@ -492,16 +492,24 @@ export default function PlanSelection({ user: userProp, onSkip }) {
   const [portalLoading, setPortalLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Détecter retour depuis Stripe
+  // Détecter retour depuis Stripe → rafraîchir profil → rediriger vers dashboard
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      setSuccessMsg('🎉 Abonnement activé ! Bienvenue sur MarketFlow.');
-      // Rafraîchir le profil pour avoir le bon plan
-      setTimeout(() => refreshProfile?.(), 2000);
       window.history.replaceState({}, '', window.location.pathname);
+      setSuccessMsg('🎉 Abonnement activé ! Redirection...');
+      // Rafraîchir le profil Supabase (stripe_customer_id sera présent)
+      const doRefresh = async () => {
+        try { await refreshProfile?.(); } catch(_) {}
+        // Forcer un reload complet pour que App.js détecte le nouveau profil
+        // et ne redirige plus vers PlanSelection
+        setTimeout(() => {
+          window.location.href = window.location.origin;
+        }, 1500);
+      };
+      doRefresh();
     }
-  }, [refreshProfile]);
+  }, []); // eslint-disable-line
 
   // Plan actuel
   const currentPlan = user?.plan || 'trial';
