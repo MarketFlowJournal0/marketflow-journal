@@ -158,6 +158,11 @@ function AppInner() {
     return <PlanSelection user={user} onSkip={null} />;
   }
 
+  // ── Attendre que le plan soit vérifié (évite écran noir) ─────────────────
+  if (!planChecked.current) {
+    return <LoadingScreen />;
+  }
+
   // ── App principale ────────────────────────────────────────────────────────
   const sidebarWidth = collapsed ? 72 : 260;
 

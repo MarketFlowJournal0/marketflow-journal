@@ -9,18 +9,27 @@ export function TradingProvider({ children }) {
 
   // Charger les trades depuis Supabase
   const fetchTrades = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user?.id) { setTrades([]); setLoading(false); return; }
-    const { data, error } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('open_date', { ascending: false });
-    if (!error) setTrades(data || []);
-    setLoading(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) { setTrades([]); setLoading(false); return; }
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('open_date', { ascending: false });
+      if (!error) setTrades(data || []);
+    } catch(_) {
+      setTrades([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { fetchTrades(); }, [fetchTrades]);
+  useEffect(() => {
+    // Timeout de sécurité : si ça ne répond pas en 5s → setLoading(false)
+    const t = setTimeout(() => setLoading(false), 5000);
+    fetchTrades().finally(() => clearTimeout(t));
+  }, [fetchTrades]);
 
   // Ajouter un trade
   const addTrade = useCallback(async (tradeData) => {

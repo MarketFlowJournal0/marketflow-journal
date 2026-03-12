@@ -802,7 +802,7 @@ function calcRegularityScore(trades) {
 }
 
 const TradingCalendar = () => {
-  const { trades = [] } = useTradingContext() || {};
+  const ctx = useTradingContext(); const trades = ctx?.trades || [];
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
   const year  = currentMonth.getFullYear();
@@ -1079,7 +1079,7 @@ export default function Dashboard() {
 
 
 
-  const { stats, trades: allTrades, addTrade } = useTradingContext();
+  const { stats = emptyStats(), trades: allTrades = [], addTrade = ()=>null } = useTradingContext() || {};
   const dashData = {
     MOCK_STATS:    stats,
     EQUITY_DATA:   stats.equityData   || [],
