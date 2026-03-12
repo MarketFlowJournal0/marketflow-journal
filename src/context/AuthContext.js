@@ -119,6 +119,14 @@ export function AuthProvider({ children }) {
     });
     setAuthLoading(false);
     if (error) { setError(translateError(error.message)); return { success: false }; }
+
+    // FIX : Supabase ne retourne pas d'erreur si email déjà utilisé
+    // mais retourne un user avec identities vide
+    if (data?.user && data.user.identities?.length === 0) {
+      setError('Un compte existe déjà avec cet email.');
+      return { success: false };
+    }
+
     return { success: true, needsConfirmation: !data.session };
   }, []);
 

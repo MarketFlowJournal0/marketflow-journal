@@ -19,6 +19,8 @@ import AuthCallback from './pages/AuthCallback';
 import './App.css';
 import './theme.css';
 
+const PAYMENT_SUCCESS_KEY = 'mfj_payment_success';
+
 // ─── LOADING SCREEN ───────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
@@ -57,7 +59,7 @@ function LoadingScreen() {
 
 // ─── APP INNER ────────────────────────────────────────────────────────────────
 function AppInner() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refreshProfile } = useAuth();
 
   const [currentPage,       setCurrentPage]       = useState('dashboard');
   const [collapsed,         setCollapsed]         = useState(false);
@@ -65,40 +67,24 @@ function AppInner() {
   const [showPlanSelection, setShowPlanSelection] = useState(false);
   const planChecked = useRef(false);
 
-  // Vérifier UNE SEULE FOIS si l'user a un abonnement Stripe
-  useEffect(() => {
-    if (loading)        return;
-    if (!user?.id)      return;
-    if (planChecked.current) return;
-    planChecked.current = true;
-    // Si retour de Stripe avec succès → ne pas afficher PlanSelection
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') return;
-    if (!user.stripeCustomerId) {
-      setShowPlanSelection(true);
-    }
-  }, [loading, user?.id]); // eslint-disable-line
-
-  // Bloquer retour navigateur sur PlanSelection (une seule fois)
-  useEffect(() => {
-    if (!showPlanSelection) return;
-    window.history.pushState(null, '', window.location.href);
-    const block = () => window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', block);
-    return () => window.removeEventListener('popstate', block);
-  }, [showPlanSelection]);
-
-  // Détecter ?payment=success
+  // ── Détecter retour Stripe ?payment=success ─────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
     if (params.get('payment') === 'success') {
+      // Nettoyer l'URL
       window.history.replaceState({}, '', window.location.pathname);
-      setShowPlanSelection(false);
+      // Mémoriser le succès dans localStorage (survit au reload)
+      localStorage.setItem(PAYMENT_SUCCESS_KEY, Date.now().toString());
+      // Rafraîchir le profil Supabase en arrière-plan
+      refreshProfile?.().catch(() => {});
+      // Toast de confirmation
       setTimeout(() => toast.success('🎉 Abonnement activé ! Bienvenue sur MarketFlow Journal !', {
         duration: 6000,
         style: { background:'#0D1627', color:'#00FF88', border:'1px solid rgba(0,255,136,0.3)', borderRadius:'12px', fontSize:'15px' },
       }), 500);
     }
+
     if (params.get('payment') === 'cancelled') {
       window.history.replaceState({}, '', window.location.pathname);
       toast('Paiement annulé. Tu peux réessayer quand tu veux ! 👋', {
@@ -106,6 +92,42 @@ function AppInner() {
       });
     }
   }, []); // eslint-disable-line
+
+  // ── Vérifier si l'user doit voir PlanSelection ───────────────────────────
+  useEffect(() => {
+    if (loading)             return;
+    if (!user?.id)           return;
+    if (planChecked.current) return;
+    planChecked.current = true;
+
+    // Si paiement récent (< 10 min) → bypasser le check stripeCustomerId
+    const paymentTs = localStorage.getItem(PAYMENT_SUCCESS_KEY);
+    if (paymentTs) {
+      const age = Date.now() - parseInt(paymentTs, 10);
+      if (age < 10 * 60 * 1000) {
+        // Paiement récent → aller au dashboard directement
+        setShowPlanSelection(false);
+        return;
+      } else {
+        // Flag trop vieux → nettoyer
+        localStorage.removeItem(PAYMENT_SUCCESS_KEY);
+      }
+    }
+
+    // Pas de stripeCustomerId et pas de paiement récent → afficher PlanSelection
+    if (!user.stripeCustomerId) {
+      setShowPlanSelection(true);
+    }
+  }, [loading, user?.id]); // eslint-disable-line
+
+  // ── Bloquer retour navigateur sur PlanSelection ──────────────────────────
+  useEffect(() => {
+    if (!showPlanSelection) return;
+    window.history.pushState(null, '', window.location.href);
+    const block = () => window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', block);
+    return () => window.removeEventListener('popstate', block);
+  }, [showPlanSelection]);
 
   const openLogin          = () => setAuthModal('login');
   const openSignup         = () => setAuthModal('signup');
@@ -136,6 +158,7 @@ function AppInner() {
 
   const handleLogout = async () => {
     planChecked.current = false;
+    localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     await logout();
     toast('À bientôt ! 👋', { style:{ background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' } });
   };
