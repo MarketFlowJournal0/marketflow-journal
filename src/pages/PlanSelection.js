@@ -29,8 +29,8 @@ const PLANS = [
     desc:     'Parfait pour commencer à tracker tes trades',
     monthly:  15,
     annual:   11,
-    priceMonthly: 'price_1T97lcRrHTdWtpEZUhmUeTTk',
-    priceAnnual:  'price_1T97mJRrHTdWtpEZAfccumX3',
+    priceMonthly: 'price_1T9t9L2Ouddv7uendIMAR6IP',
+    priceAnnual:  'price_1T9t9K2Ouddv7uengELbKBaO',
     features: [
       'Journal de trading illimité',
       'Dashboard & statistiques de base',
@@ -48,8 +48,8 @@ const PLANS = [
     desc:     'Pour les traders sérieux qui veulent progresser',
     monthly:  22,
     annual:   15,
-    priceMonthly: 'price_1T97psRrHTdWtpEZyNf4dG6a',
-    priceAnnual:  'price_1T97qBRrHTdWtpEZJ6b8f3ga',
+    priceMonthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
+    priceAnnual:  'price_1T9t9U2Ouddv7uenK6oT1O13',
     popular:  true,
     features: [
       'Tout le plan Starter',
@@ -70,8 +70,8 @@ const PLANS = [
     desc:     'Pour les pros qui veulent le meilleur outil',
     monthly:  38,
     annual:   27,
-    priceMonthly: 'price_1T97qXRrHTdWtpEZnWH1JSb5',
-    priceAnnual:  'price_1T97r3RrHTdWtpEZTCMcR9rb',
+    priceMonthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
+    priceAnnual:  'price_1T9t9K2Ouddv7uennnWOJ44p',
     features: [
       'Tout le plan Pro',
       'AI Trading Coach (GPT-4)',
