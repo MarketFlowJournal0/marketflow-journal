@@ -11,12 +11,12 @@ const supabase = createClient(
 
 // Map Price ID → plan name
 const PRICE_TO_PLAN = {
-  'price_1T97lcRrHTdWtpEZUhmUeTTk': 'starter',
-  'price_1T97mJRrHTdWtpEZAfccumX3': 'starter',
-  'price_1T97psRrHTdWtpEZyNf4dG6a': 'pro',
-  'price_1T97qBRrHTdWtpEZJ6b8f3ga': 'pro',
-  'price_1T97qXRrHTdWtpEZnWH1JSb5': 'elite',
-  'price_1T97r3RrHTdWtpEZTCMcR9rb': 'elite',
+  'price_1T9t9L2Ouddv7uendIMAR6IP': 'starter',
+  'price_1T9t9K2Ouddv7uengELbKBaO': 'starter',
+  'price_1T9t9U2Ouddv7uenfg38PRZ2': 'pro',
+  'price_1T9t9U2Ouddv7uenK6oT1O13': 'pro',
+  'price_1T9t9L2Ouddv7uen4DXuOatj': 'elite',
+  'price_1T9t9K2Ouddv7uennnWOJ44p': 'elite',
 };
 
 // Désactiver le body parser Vercel (Stripe a besoin du raw body)
