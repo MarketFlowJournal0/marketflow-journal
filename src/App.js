@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
@@ -16,7 +16,6 @@ import AuthModal from './components/AuthModal';
 import { Toaster, toast } from 'react-hot-toast';
 import PlanSelection from './pages/PlanSelection';
 import AuthCallback from './pages/AuthCallback';
-import { supabase } from './lib/supabase';
 import './App.css';
 import './theme.css';
 
@@ -48,12 +47,12 @@ function LoadingScreen() {
 }
 
 function AppInner() {
-  const { user, loading, logout, refreshProfile } = useAuth();
+  const { user, loading, profileLoaded, logout, refreshProfile } = useAuth();
 
-  const [currentPage,   setCurrentPage]   = useState('dashboard');
-  const [collapsed,     setCollapsed]     = useState(false);
-  const [authModal,     setAuthModal]     = useState(null);
-  const [appState,      setAppState]      = useState('loading'); // 'loading' | 'landing' | 'plan' | 'app'
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [collapsed,   setCollapsed]   = useState(false);
+  const [authModal,   setAuthModal]   = useState(null);
+  const [paymentOk,   setPaymentOk]   = useState(false);
 
   // ── Détecter retour Stripe ───────────────────────────────────────────────
   useEffect(() => {
@@ -61,6 +60,7 @@ function AppInner() {
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
       localStorage.setItem(PAYMENT_SUCCESS_KEY, Date.now().toString());
+      setPaymentOk(true);
       refreshProfile?.().catch(() => {});
       setTimeout(() => toast.success('🎉 Abonnement activé ! Bienvenue sur MarketFlow Journal !', {
         duration: 6000,
@@ -73,61 +73,14 @@ function AppInner() {
         style: { background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' },
       });
     }
+    // Vérifier paiement récent
+    const ts = localStorage.getItem(PAYMENT_SUCCESS_KEY);
+    if (ts && Date.now() - parseInt(ts, 10) < 10 * 60 * 1000) {
+      setPaymentOk(true);
+    } else if (ts) {
+      localStorage.removeItem(PAYMENT_SUCCESS_KEY);
+    }
   }, []); // eslint-disable-line
-
-  // ── Déterminer l'état de l'app après chargement ──────────────────────────
-  useEffect(() => {
-    if (loading) return;
-
-    // Pas connecté → landing
-    if (!user?.id) {
-      setAppState('landing');
-      return;
-    }
-
-    // Paiement récent (< 10 min) → dashboard direct
-    const paymentTs = localStorage.getItem(PAYMENT_SUCCESS_KEY);
-    if (paymentTs) {
-      const age = Date.now() - parseInt(paymentTs, 10);
-      if (age < 10 * 60 * 1000) {
-        setAppState('app');
-        return;
-      } else {
-        localStorage.removeItem(PAYMENT_SUCCESS_KEY);
-      }
-    }
-
-    // Vérifier stripe_customer_id DIRECTEMENT dans Supabase (pas via state React)
-    supabase
-      .from('profiles')
-      .select('stripe_customer_id')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.stripe_customer_id) {
-          setAppState('app');
-        } else {
-          setAppState('plan');
-        }
-      })
-      .catch(() => {
-        // En cas d'erreur réseau, faire confiance au state React
-        if (user.stripeCustomerId) {
-          setAppState('app');
-        } else {
-          setAppState('plan');
-        }
-      });
-  }, [loading, user?.id]); // eslint-disable-line
-
-  // ── Bloquer retour navigateur sur PlanSelection ──────────────────────────
-  useEffect(() => {
-    if (appState !== 'plan') return;
-    window.history.pushState(null, '', window.location.href);
-    const block = () => window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', block);
-    return () => window.removeEventListener('popstate', block);
-  }, [appState]);
 
   const openLogin          = () => setAuthModal('login');
   const openSignup         = () => setAuthModal('signup');
@@ -156,7 +109,7 @@ function AppInner() {
 
   const handleLogout = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
-    setAppState('loading');
+    setPaymentOk(false);
     await logout();
     toast('À bientôt ! 👋', { style:{ background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' } });
   };
@@ -164,11 +117,12 @@ function AppInner() {
   // ── Auth callback ─────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  // ── Loading ───────────────────────────────────────────────────────────────
-  if (loading || appState === 'loading') return <LoadingScreen />;
+  // ── Loading : attendre que auth ET profil soient chargés ─────────────────
+  // profileLoaded garantit que fetchProfile() est terminé
+  if (loading || (user && !profileLoaded)) return <LoadingScreen />;
 
   // ── Landing ───────────────────────────────────────────────────────────────
-  if (appState === 'landing') {
+  if (!user) {
     return (
       <>
         <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
@@ -178,7 +132,9 @@ function AppInner() {
   }
 
   // ── Plan selection ────────────────────────────────────────────────────────
-  if (appState === 'plan') {
+  // On arrive ici seulement si profileLoaded=true, donc stripeCustomerId est fiable
+  const needsPlan = !user.stripeCustomerId && !paymentOk;
+  if (needsPlan) {
     return <PlanSelection user={user} onSkip={null} />;
   }
 

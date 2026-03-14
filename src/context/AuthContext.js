@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [session,     setSession]     = useState(null);
   const [profile,     setProfile]     = useState(null);
   const [loading,     setLoading]     = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [error,       setError]       = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const initialized   = useRef(false);
@@ -23,6 +24,8 @@ export function AuthProvider({ children }) {
       setProfile(data || null);
     } catch (_) {
       setProfile(null);
+    } finally {
+      setProfileLoaded(true);
     }
   };
 
@@ -227,6 +230,7 @@ export function AuthProvider({ children }) {
       session, loading, authLoading, error,
       signup, login, loginWithGoogle, loginWithGitHub,
       resetPassword, logout, updateProfile, refreshProfile, clearError,
+      profileLoaded,
     }}>
       {children}
     </AuthContext.Provider>
