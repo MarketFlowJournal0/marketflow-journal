@@ -84,8 +84,17 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
+    // Flag pour ignorer le premier INITIAL_SESSION (getSession s'en charge déjà)
+    let initialEventSkipped = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!initialEventSkipped && event === 'INITIAL_SESSION') {
+          initialEventSkipped = true;
+          return;
+        }
+        initialEventSkipped = true;
+
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
           setSession(null);
