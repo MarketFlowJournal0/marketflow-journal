@@ -33,7 +33,24 @@ module.exports = async (req, res) => {
       customerId = profile?.stripe_customer_id || null;
     }
 
-    // Créer le customer Stripe si besoin (avec metadata userId pour le webhook)
+    // Vérifier que le customer existe vraiment dans Stripe (live vs test mismatch)
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch (err) {
+        // Customer inexistant dans cet environnement (ex: ID test utilisé en live) → reset
+        console.log(`Customer ${customerId} introuvable dans Stripe, création d'un nouveau`);
+        customerId = null;
+        if (userId) {
+          await supabase
+            .from('profiles')
+            .update({ stripe_customer_id: null })
+            .eq('id', userId);
+        }
+      }
+    }
+
+    // Créer le customer Stripe si besoin
     if (!customerId && (email || userId)) {
       const customer = await stripe.customers.create({
         ...(email ? { email } : {}),
@@ -63,7 +80,6 @@ module.exports = async (req, res) => {
         trial_period_days: 14,
         trial_settings: {
           end_behavior: {
-            // Annuler si pas de CB valide à la fin du trial
             missing_payment_method: 'cancel',
           },
         },
