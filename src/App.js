@@ -16,6 +16,7 @@ import AuthModal from './components/AuthModal';
 import { Toaster, toast } from 'react-hot-toast';
 import PlanSelection from './pages/PlanSelection';
 import AuthCallback from './pages/AuthCallback';
+import { supabase } from './lib/supabase';
 import './App.css';
 import './theme.css';
 
@@ -25,9 +26,9 @@ function LoadingScreen() {
   return (
     <div style={{position:'fixed',inset:0,background:'#030508',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:20,zIndex:9999}}>
       <style>{`
-        @keyframes mf-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.75;transform:scale(.97)} }
-        @keyframes mf-shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
-        @keyframes mf-glow { 0%,100%{box-shadow:0 0 30px rgba(6,230,255,.2)} 50%{box-shadow:0 0 60px rgba(6,230,255,.45)} }
+        @keyframes mf-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.75;transform:scale(.97)}}
+        @keyframes mf-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+        @keyframes mf-glow{0%,100%{box-shadow:0 0 30px rgba(6,230,255,.2)}50%{box-shadow:0 0 60px rgba(6,230,255,.45)}}
       `}</style>
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:18,animation:'mf-pulse 2.2s ease-in-out infinite'}}>
         <div style={{width:72,height:72,borderRadius:20,overflow:'hidden',animation:'mf-glow 2.2s ease-in-out infinite'}}>
@@ -49,77 +50,84 @@ function LoadingScreen() {
 function AppInner() {
   const { user, loading, logout, refreshProfile } = useAuth();
 
-  const [currentPage,    setCurrentPage]    = useState('dashboard');
-  const [collapsed,      setCollapsed]      = useState(false);
-  const [authModal,      setAuthModal]      = useState(null);
-  const [paymentBypass,  setPaymentBypass]  = useState(false);
-  const [profileReady,   setProfileReady]   = useState(false);
+  const [currentPage,   setCurrentPage]   = useState('dashboard');
+  const [collapsed,     setCollapsed]     = useState(false);
+  const [authModal,     setAuthModal]     = useState(null);
+  const [appState,      setAppState]      = useState('loading'); // 'loading' | 'landing' | 'plan' | 'app'
 
-  // ── Détecter retour Stripe ?payment=success ─────────────────────────────
+  // ── Détecter retour Stripe ───────────────────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
       localStorage.setItem(PAYMENT_SUCCESS_KEY, Date.now().toString());
-      setPaymentBypass(true);
       refreshProfile?.().catch(() => {});
       setTimeout(() => toast.success('🎉 Abonnement activé ! Bienvenue sur MarketFlow Journal !', {
         duration: 6000,
         style: { background:'#0D1627', color:'#00FF88', border:'1px solid rgba(0,255,136,0.3)', borderRadius:'12px', fontSize:'15px' },
       }), 500);
     }
-
     if (params.get('payment') === 'cancelled') {
       window.history.replaceState({}, '', window.location.pathname);
       toast('Paiement annulé. Tu peux réessayer quand tu veux ! 👋', {
         style: { background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' },
       });
     }
+  }, []); // eslint-disable-line
 
-    // Vérifier paiement récent en localStorage
+  // ── Déterminer l'état de l'app après chargement ──────────────────────────
+  useEffect(() => {
+    if (loading) return;
+
+    // Pas connecté → landing
+    if (!user?.id) {
+      setAppState('landing');
+      return;
+    }
+
+    // Paiement récent (< 10 min) → dashboard direct
     const paymentTs = localStorage.getItem(PAYMENT_SUCCESS_KEY);
     if (paymentTs) {
       const age = Date.now() - parseInt(paymentTs, 10);
       if (age < 10 * 60 * 1000) {
-        setPaymentBypass(true);
+        setAppState('app');
+        return;
       } else {
         localStorage.removeItem(PAYMENT_SUCCESS_KEY);
       }
     }
-  }, []); // eslint-disable-line
 
-  // ── Attendre que le profil soit vraiment chargé ──────────────────────────
-  // On marque profileReady uniquement quand :
-  // 1. loading est false ET
-  // 2. soit user est null (pas connecté), soit user.stripeCustomerId est défini
-  //    (même si null — ça veut dire que le profil a été lu)
-  useEffect(() => {
-    if (loading) return;
-    // Si pas d'user → prêt
-    if (!user) { setProfileReady(true); return; }
-    // Si user existe mais profil pas encore hydraté → attendre
-    // Le profil est hydraté quand stripeCustomerId est explicitement présent
-    // (même null) — on vérifie via hasOwnProperty sur l'objet user
-    // En pratique AuthContext met toujours stripeCustomerId dans userProfile
-    // donc on peut faire confiance à ce que loading=false = profil chargé
-    // Mais on ajoute un court délai pour laisser le temps au profil Supabase
-    // de revenir depuis fetchProfile
-    const timer = setTimeout(() => setProfileReady(true), 300);
-    return () => clearTimeout(timer);
+    // Vérifier stripe_customer_id DIRECTEMENT dans Supabase (pas via state React)
+    supabase
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.stripe_customer_id) {
+          setAppState('app');
+        } else {
+          setAppState('plan');
+        }
+      })
+      .catch(() => {
+        // En cas d'erreur réseau, faire confiance au state React
+        if (user.stripeCustomerId) {
+          setAppState('app');
+        } else {
+          setAppState('plan');
+        }
+      });
   }, [loading, user?.id]); // eslint-disable-line
 
-  // ── Calcul de showPlanSelection ──────────────────────────────────────────
-  const showPlanSelection = profileReady && !!user && !user.stripeCustomerId && !paymentBypass;
-
-  // ── Bloquer retour navigateur ────────────────────────────────────────────
+  // ── Bloquer retour navigateur sur PlanSelection ──────────────────────────
   useEffect(() => {
-    if (!showPlanSelection) return;
+    if (appState !== 'plan') return;
     window.history.pushState(null, '', window.location.href);
     const block = () => window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', block);
     return () => window.removeEventListener('popstate', block);
-  }, [showPlanSelection]);
+  }, [appState]);
 
   const openLogin          = () => setAuthModal('login');
   const openSignup         = () => setAuthModal('signup');
@@ -148,20 +156,19 @@ function AppInner() {
 
   const handleLogout = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
-    setPaymentBypass(false);
-    setProfileReady(false);
+    setAppState('loading');
     await logout();
     toast('À bientôt ! 👋', { style:{ background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' } });
   };
 
-  // ── Loading ───────────────────────────────────────────────────────────────
-  if (loading || !profileReady) return <LoadingScreen />;
-
   // ── Auth callback ─────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  // ── Non connecté ──────────────────────────────────────────────────────────
-  if (!user) {
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (loading || appState === 'loading') return <LoadingScreen />;
+
+  // ── Landing ───────────────────────────────────────────────────────────────
+  if (appState === 'landing') {
     return (
       <>
         <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
@@ -170,8 +177,8 @@ function AppInner() {
     );
   }
 
-  // ── Sélection de plan ─────────────────────────────────────────────────────
-  if (showPlanSelection) {
+  // ── Plan selection ────────────────────────────────────────────────────────
+  if (appState === 'plan') {
     return <PlanSelection user={user} onSkip={null} />;
   }
 
