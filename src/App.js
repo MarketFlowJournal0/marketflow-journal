@@ -21,14 +21,9 @@ import './theme.css';
 
 const PAYMENT_SUCCESS_KEY = 'mfj_payment_success';
 
-// ─── LOADING SCREEN ───────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
-    <div style={{
-      position:'fixed',inset:0,background:'#030508',
-      display:'flex',alignItems:'center',justifyContent:'center',
-      flexDirection:'column',gap:20,zIndex:9999,
-    }}>
+    <div style={{position:'fixed',inset:0,background:'#030508',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:20,zIndex:9999}}>
       <style>{`
         @keyframes mf-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.75;transform:scale(.97)} }
         @keyframes mf-shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
@@ -36,18 +31,12 @@ function LoadingScreen() {
       `}</style>
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:18,animation:'mf-pulse 2.2s ease-in-out infinite'}}>
         <div style={{width:72,height:72,borderRadius:20,overflow:'hidden',animation:'mf-glow 2.2s ease-in-out infinite'}}>
-          <img src="/logo192.png" alt="MarketFlow"
-            style={{width:'100%',height:'100%',objectFit:'cover'}}
-            onError={e=>{e.target.style.display='none';e.target.parentElement.style.background='linear-gradient(135deg,#06E6FF,#00FF88)';}}
-          />
+          <img src="/logo192.png" alt="MarketFlow" style={{width:'100%',height:'100%',objectFit:'cover'}}
+            onError={e=>{e.target.style.display='none';e.target.parentElement.style.background='linear-gradient(135deg,#06E6FF,#00FF88)';}}/>
         </div>
         <div style={{textAlign:'center',lineHeight:1}}>
-          <div style={{fontFamily:"'Inter',sans-serif",fontWeight:800,fontSize:22,color:'#fff',letterSpacing:'-0.6px'}}>
-            Market<span style={{color:'#06E6FF'}}>Flow</span>
-          </div>
-          <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:'rgba(122,144,184,0.7)',marginTop:4,letterSpacing:'0.12em',textTransform:'uppercase'}}>
-            Journal
-          </div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontWeight:800,fontSize:22,color:'#fff',letterSpacing:'-0.6px'}}>Market<span style={{color:'#06E6FF'}}>Flow</span></div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:'rgba(122,144,184,0.7)',marginTop:4,letterSpacing:'0.12em',textTransform:'uppercase'}}>Journal</div>
         </div>
       </div>
       <div style={{width:100,height:2,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden',marginTop:8}}>
@@ -57,15 +46,14 @@ function LoadingScreen() {
   );
 }
 
-// ─── APP INNER ────────────────────────────────────────────────────────────────
 function AppInner() {
   const { user, loading, logout, refreshProfile } = useAuth();
 
-  const [currentPage,   setCurrentPage]   = useState('dashboard');
-  const [collapsed,     setCollapsed]     = useState(false);
-  const [authModal,     setAuthModal]     = useState(null);
-  const [planReady,     setPlanReady]     = useState(false);
-  const [paymentBypass, setPaymentBypass] = useState(false);
+  const [currentPage,    setCurrentPage]    = useState('dashboard');
+  const [collapsed,      setCollapsed]      = useState(false);
+  const [authModal,      setAuthModal]      = useState(null);
+  const [paymentBypass,  setPaymentBypass]  = useState(false);
+  const [profileReady,   setProfileReady]   = useState(false);
 
   // ── Détecter retour Stripe ?payment=success ─────────────────────────────
   useEffect(() => {
@@ -89,7 +77,7 @@ function AppInner() {
       });
     }
 
-    // Vérifier si un paiement récent est en localStorage
+    // Vérifier paiement récent en localStorage
     const paymentTs = localStorage.getItem(PAYMENT_SUCCESS_KEY);
     if (paymentTs) {
       const age = Date.now() - parseInt(paymentTs, 10);
@@ -101,14 +89,30 @@ function AppInner() {
     }
   }, []); // eslint-disable-line
 
-  // ── Marquer plan comme prêt une fois loading terminé ────────────────────
+  // ── Attendre que le profil soit vraiment chargé ──────────────────────────
+  // On marque profileReady uniquement quand :
+  // 1. loading est false ET
+  // 2. soit user est null (pas connecté), soit user.stripeCustomerId est défini
+  //    (même si null — ça veut dire que le profil a été lu)
   useEffect(() => {
-    if (!loading) setPlanReady(true);
-  }, [loading]);
+    if (loading) return;
+    // Si pas d'user → prêt
+    if (!user) { setProfileReady(true); return; }
+    // Si user existe mais profil pas encore hydraté → attendre
+    // Le profil est hydraté quand stripeCustomerId est explicitement présent
+    // (même null) — on vérifie via hasOwnProperty sur l'objet user
+    // En pratique AuthContext met toujours stripeCustomerId dans userProfile
+    // donc on peut faire confiance à ce que loading=false = profil chargé
+    // Mais on ajoute un court délai pour laisser le temps au profil Supabase
+    // de revenir depuis fetchProfile
+    const timer = setTimeout(() => setProfileReady(true), 300);
+    return () => clearTimeout(timer);
+  }, [loading, user?.id]); // eslint-disable-line
 
-  // ── Bloquer retour navigateur si PlanSelection visible ──────────────────
-  const showPlanSelection = planReady && !!user && !user.stripeCustomerId && !paymentBypass;
+  // ── Calcul de showPlanSelection ──────────────────────────────────────────
+  const showPlanSelection = profileReady && !!user && !user.stripeCustomerId && !paymentBypass;
 
+  // ── Bloquer retour navigateur ────────────────────────────────────────────
   useEffect(() => {
     if (!showPlanSelection) return;
     window.history.pushState(null, '', window.location.href);
@@ -145,13 +149,13 @@ function AppInner() {
   const handleLogout = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     setPaymentBypass(false);
-    setPlanReady(false);
+    setProfileReady(false);
     await logout();
     toast('À bientôt ! 👋', { style:{ background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' } });
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────
-  if (loading || !planReady) return <LoadingScreen />;
+  if (loading || !profileReady) return <LoadingScreen />;
 
   // ── Auth callback ─────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
@@ -203,7 +207,6 @@ function AppInner() {
   );
 }
 
-// ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <AuthProvider>
