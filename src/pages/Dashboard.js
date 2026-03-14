@@ -536,23 +536,6 @@ const LiveTicker = () => {
   );
 };
 
-// ─── QUICK ACTIONS ────────────────────────────────────────────────────────────
-const QuickActions = ({onNewTrade,onImport,onPDF,onGoals}) => (
-  <div style={{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap'}}>
-    {[
-      {l:'+ Nouveau Trade',c:C.green,bg:`${C.green}15`,bd:`${C.green}35`,icon:'➕',fn:onNewTrade},
-      {l:'Importer Excel',c:C.cyan,bg:`${C.cyan}12`,bd:`${C.cyan}30`,icon:'📥',fn:onImport},
-      {l:'Rapport PDF',c:C.purple,bg:`${C.purple}12`,bd:`${C.purple}28`,icon:'📄',fn:onPDF},
-      {l:'Objectifs du mois',c:C.gold,bg:`${C.gold}12`,bd:`${C.gold}25`,icon:'🎯',fn:onGoals},
-    ].map((a,i)=>(
-      <motion.button key={i} whileHover={{scale:1.03,y:-1}} whileTap={{scale:0.97}} onClick={a.fn}
-        style={{display:'flex',alignItems:'center',gap:7,padding:'8px 14px',borderRadius:9,border:`1px solid ${a.bd}`,background:a.bg,color:a.c,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}>
-        <span style={{fontSize:13}}>{a.icon}</span>{a.l}
-      </motion.button>
-    ))}
-  </div>
-);
-
 // ─── GOAL PROGRESS ────────────────────────────────────────────────────────────
 const GoalProgress = () => {
   const {MOCK_STATS:s={}} = useDashData();
@@ -737,66 +720,11 @@ const TradingCalendar = () => {
   );
 };
 
-// ─── MODALS ───────────────────────────────────────────────────────────────────
-const NewTradeModal = ({onClose,onAdd}) => {
-  const [form,setForm]=useState({pair:'EURUSD',dir:'Long',entry:'',sl:'',tp:'',size:'',date:new Date().toISOString().split('T')[0],notes:''});
-  const set=(k,v)=>setForm(p=>({...p,[k]:v}));
-  return(
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)'}} onClick={onClose}>
-      <motion.div initial={{scale:0.95,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()}
-        style={{background:'#0C1422',border:'1px solid #1E2E48',borderRadius:16,padding:28,width:420,maxWidth:'95vw',boxShadow:'0 20px 60px rgba(0,0,0,0.7)'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-          <div style={{fontSize:16,fontWeight:800,color:'#fff'}}>➕ Nouveau Trade</div>
-          <button onClick={onClose} style={{background:'none',border:'none',color:'#7A90B8',fontSize:18,cursor:'pointer'}}>✕</button>
-        </div>
-        {[{l:'Paire',k:'pair',type:'text',ph:'EURUSD'},{l:'Direction',k:'dir',type:'select',opts:['Long','Short']},{l:'Prix entrée',k:'entry',type:'number',ph:'1.08320'},{l:'Stop Loss',k:'sl',type:'number',ph:'1.08000'},{l:'Take Profit',k:'tp',type:'number',ph:'1.09000'},{l:'Taille (lots)',k:'size',type:'number',ph:'0.10'},{l:'Date',k:'date',type:'date'}].map(({l,k,type,ph,opts})=>(
-          <div key={k} style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:'#7A90B8',marginBottom:5,fontWeight:600}}>{l}</div>
-            {type==='select'?<select value={form[k]} onChange={e=>set(k,e.target.value)} style={{width:'100%',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid #1E2E48',borderRadius:8,color:'#E8EEFF',fontSize:13,outline:'none'}}>{opts.map(o=><option key={o}>{o}</option>)}</select>:<input type={type} placeholder={ph} value={form[k]} onChange={e=>set(k,e.target.value)} style={{width:'100%',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid #1E2E48',borderRadius:8,color:'#E8EEFF',fontSize:13,outline:'none',boxSizing:'border-box'}}/>}
-          </div>
-        ))}
-        <textarea placeholder="Notes..." value={form.notes} onChange={e=>set('notes',e.target.value)} style={{width:'100%',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid #1E2E48',borderRadius:8,color:'#E8EEFF',fontSize:12,outline:'none',resize:'vertical',minHeight:60,boxSizing:'border-box',marginBottom:16}}/>
-        <div style={{display:'flex',gap:10}}>
-          <button onClick={onClose} style={{flex:1,padding:'10px',borderRadius:9,background:'rgba(255,255,255,0.04)',border:'1px solid #162034',color:'#7A90B8',cursor:'pointer',fontWeight:600}}>Annuler</button>
-          <button onClick={()=>{onAdd(form);onClose();}} style={{flex:2,padding:'10px',borderRadius:9,background:'linear-gradient(135deg,#06E6FF,#00FF88)',border:'none',color:'#000',cursor:'pointer',fontWeight:800}}>Ajouter le trade</button>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-const GoalsModal = ({onClose}) => {
-  const goals=[{l:'Objectif P&L mensuel ($)',k:'pnl',v:'10000'},{l:'Win Rate cible (%)',k:'wr',v:'70'},{l:'Max trades/semaine',k:'trades',v:'10'},{l:'Max Drawdown (%)',k:'dd',v:'20'}];
-  const [vals,setVals]=useState(()=>Object.fromEntries(goals.map(g=>[g.k,g.v])));
-  return(
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)'}} onClick={onClose}>
-      <motion.div initial={{scale:0.95,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()}
-        style={{background:'#0C1422',border:'1px solid #1E2E48',borderRadius:16,padding:28,width:380,maxWidth:'95vw'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-          <div style={{fontSize:16,fontWeight:800,color:'#fff'}}>🎯 Objectifs du mois</div>
-          <button onClick={onClose} style={{background:'none',border:'none',color:'#7A90B8',fontSize:18,cursor:'pointer'}}>✕</button>
-        </div>
-        {goals.map(g=>(
-          <div key={g.k} style={{marginBottom:14}}>
-            <div style={{fontSize:11,color:'#7A90B8',marginBottom:5,fontWeight:600}}>{g.l}</div>
-            <input type="number" value={vals[g.k]} onChange={e=>setVals(p=>({...p,[g.k]:e.target.value}))} style={{width:'100%',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid #1E2E48',borderRadius:8,color:'#E8EEFF',fontSize:13,outline:'none',boxSizing:'border-box'}}/>
-          </div>
-        ))}
-        <button onClick={onClose} style={{width:'100%',padding:'11px',borderRadius:9,background:'linear-gradient(135deg,#FFD700,#FF8C42)',border:'none',color:'#000',cursor:'pointer',fontWeight:800,marginTop:4}}>Enregistrer</button>
-      </motion.div>
-    </div>
-  );
-};
-
 // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [greeting]=useState(()=>{const h=new Date().getHours();return h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';});
-  const [showNewTrade,setShowNewTrade]=useState(false);
-  const [showGoals,setShowGoals]=useState(false);
-  const handleImportExcel=()=>{const input=document.createElement('input');input.type='file';input.accept='.xlsx,.xls,.csv';input.onchange=(e)=>{const file=e.target.files[0];if(file)alert(`Fichier "${file.name}" sélectionné. Import en cours de développement.`);};input.click();};
-  const handlePDF=()=>window.print();
 
-  const {stats,trades:allTrades=[],addTrade=()=>null}=useTradingContext()||{};
+  const {stats,trades:allTrades=[]}=useTradingContext()||{};
   const s = stats || {};
 
   const dashData={
@@ -812,8 +740,6 @@ export default function Dashboard() {
     HOURS:         ['8h','10h','12h','14h','16h'],
     trades:        allTrades,
   };
-
-  const handleAddTrade=async(tradeData)=>{await addTrade(tradeData);};
 
   return(
     <DashboardDataCtx.Provider value={dashData}>
@@ -851,11 +777,6 @@ export default function Dashboard() {
         </motion.div>
 
         <LiveTicker/>
-        <QuickActions onNewTrade={()=>setShowNewTrade(true)} onImport={handleImportExcel} onPDF={handlePDF} onGoals={()=>setShowGoals(true)}/>
-        <AnimatePresence>
-          {showNewTrade&&<NewTradeModal onClose={()=>setShowNewTrade(false)} onAdd={handleAddTrade}/>}
-          {showGoals&&<GoalsModal onClose={()=>setShowGoals(false)}/>}
-        </AnimatePresence>
 
         <KpiStrip/>
 
