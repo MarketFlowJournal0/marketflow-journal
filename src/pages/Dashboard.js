@@ -47,61 +47,65 @@ const Badge = ({children,color}) => (
 );
 
 const Delta = ({value,suffix='%',invert=false}) => {
-  const pos = invert?value<0:value>=0;
+  const pos = invert?value<=0:value>=0;
   return <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',borderRadius:4,color:pos?C.green:C.danger,background:pos?`${C.green}15`:`${C.danger}15`,border:`1px solid ${pos?C.green:C.danger}25`}}>{pos?'▲':'▼'} {Math.abs(value)}{suffix}</span>;
 };
 
 const ChartTip = ({active,payload,label,prefix='$'}) => {
   if(!active||!payload?.length) return null;
-  const v = payload[0]?.value;
+  const v=payload[0]?.value;
   return <div style={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,padding:'8px 12px',fontSize:11,boxShadow:'0 8px 28px rgba(0,0,0,0.8)'}}><div style={{color:C.t3,fontSize:8.5,marginBottom:3}}>{label}</div><div style={{color:v>=0?C.green:C.danger,fontWeight:900,fontFamily:'monospace'}}>{v>=0?'+':''}{prefix}{typeof v==='number'?v.toLocaleString():v}</div></div>;
 };
 
-const KPI_ITEMS = [
-  {label:'P&L Total',value:'+$16 590',delta:8.2,sub:'$371/trade',color:C.green,icon:'💰'},
-  {label:'Win Rate',value:'76.5%',delta:2.8,sub:'36W · 8L · 3BE',color:C.cyan,icon:'🎯'},
-  {label:'Profit Factor',value:'21.74',delta:7.5,sub:'Avg W $116',color:C.teal,icon:'⚖️'},
-  {label:'Avg R:R',value:'1:1.6',delta:0.0,sub:'Objectif x1.2',color:C.blue,icon:'📐'},
-  {label:'Sharpe',value:'10.89',delta:null,sub:'Annualisé',color:C.purple,icon:'📏'},
-  {label:'Max Drawdown',value:'-31.6%',delta:-1.9,sub:'Recovery ×1.4',color:C.danger,icon:'⚠️',invert:true},
-  {label:'Expectancy',value:'$976',delta:-1.8,sub:'Par trade',color:C.gold,icon:'🧮'},
-];
+// ─── KPI STRIP — données réelles ─────────────────────────────────────────────
+const KpiStrip = () => {
+  const { MOCK_STATS: s={} } = useDashData();
+  const items = [
+    { label:'P&L Total',     value: s.pnl>=0?`+$${s.pnl?.toLocaleString()}`:`-$${Math.abs(s.pnl||0).toLocaleString()}`, delta:s.pnlPct||0,  sub:`$${s.expectancy||0}/trade`,   color:C.green,  icon:'💰' },
+    { label:'Win Rate',      value:`${s.winRate||0}%`,    delta:s.winRate||0,   sub:`${s.wins||0}W · ${s.losses||0}L · ${s.breakevens||0}BE`, color:C.cyan,   icon:'🎯' },
+    { label:'Profit Factor', value:`${s.profitFactor||0}`, delta:s.profitFactor||0, sub:`Avg W $${s.avgWin||0}`, color:C.teal, icon:'⚖️' },
+    { label:'Avg R:R',       value:s.avgRR||'—',          delta:0,              sub:'Objectif x1.2',  color:C.blue,   icon:'📐' },
+    { label:'Sharpe',        value:`${s.sharpe||0}`,      delta:null,           sub:'Annualisé',      color:C.purple, icon:'📏' },
+    { label:'Max Drawdown',  value:`${s.maxDrawdown||0}%`, delta:s.maxDrawdown||0, sub:`Best $${s.bestTrade||0}`, color:C.danger, icon:'⚠️', invert:true },
+    { label:'Expectancy',    value:`$${s.expectancy||0}`, delta:s.expectancy||0, sub:'Par trade',     color:C.gold,   icon:'🧮' },
+  ];
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8,marginBottom:14}}>
+      {items.map((k,i)=>(
+        <Card key={k.label} custom={i} glow={k.color} hover style={{padding:'13px 14px',minHeight:82}}>
+          <div style={{position:'absolute',top:-20,right:-12,width:60,height:60,borderRadius:'50%',background:`radial-gradient(circle,${k.color}20,transparent 70%)`,filter:'blur(10px)',pointerEvents:'none'}}/>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:5}}>
+            <span style={{fontSize:7,fontWeight:800,color:C.t3,letterSpacing:'1.2px',textTransform:'uppercase',lineHeight:1.4}}>{k.label}</span>
+            <span style={{fontSize:14,filter:`drop-shadow(0 0 5px ${k.color})`}}>{k.icon}</span>
+          </div>
+          <div style={{fontSize:19,fontWeight:900,fontFamily:'monospace',color:k.color,lineHeight:1,marginBottom:4,textShadow:`0 0 18px ${k.color}30`}}>{k.value}</div>
+          <div style={{display:'flex',alignItems:'center',gap:5,flexWrap:'wrap'}}>
+            <span style={{fontSize:7.5,color:C.t2}}>{k.sub}</span>
+            {k.delta!==null&&<Delta value={k.delta} invert={k.invert}/>}
+          </div>
+          <motion.div animate={{opacity:[0.3,0.7,0.3]}} transition={{duration:2.5,repeat:Infinity,delay:i*0.2}} style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${k.color}50,transparent)`}}/>
+        </Card>
+      ))}
+    </div>
+  );
+};
 
-const KpiStrip = () => (
-  <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8,marginBottom:14}}>
-    {KPI_ITEMS.map((k,i)=>(
-      <Card key={k.label} custom={i} glow={k.color} hover style={{padding:'13px 14px',minHeight:82}}>
-        <div style={{position:'absolute',top:-20,right:-12,width:60,height:60,borderRadius:'50%',background:`radial-gradient(circle,${k.color}20,transparent 70%)`,filter:'blur(10px)',pointerEvents:'none'}}/>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:5}}>
-          <span style={{fontSize:7,fontWeight:800,color:C.t3,letterSpacing:'1.2px',textTransform:'uppercase',lineHeight:1.4}}>{k.label}</span>
-          <span style={{fontSize:14,filter:`drop-shadow(0 0 5px ${k.color})`}}>{k.icon}</span>
-        </div>
-        <div style={{fontSize:19,fontWeight:900,fontFamily:'monospace',color:k.color,lineHeight:1,marginBottom:4,textShadow:`0 0 18px ${k.color}30`}}>{k.value}</div>
-        <div style={{display:'flex',alignItems:'center',gap:5,flexWrap:'wrap'}}>
-          <span style={{fontSize:7.5,color:C.t2}}>{k.sub}</span>
-          {k.delta!==null&&<Delta value={k.delta} invert={k.invert}/>}
-        </div>
-        <motion.div animate={{opacity:[0.3,0.7,0.3]}} transition={{duration:2.5,repeat:Infinity,delay:i*0.2}} style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${k.color}50,transparent)`}}/>
-      </Card>
-    ))}
-  </div>
-);
-
+// ─── EQUITY CHART — données réelles ──────────────────────────────────────────
 const EquityPanel = () => {
-  const {EQUITY_DATA=[]} = useDashData();
-  const [range,setRange] = useState('1A');
-  // ── FIX: guard si EQUITY_DATA vide ──
-  const last     = EQUITY_DATA.length ? EQUITY_DATA[EQUITY_DATA.length-1].v : 0;
-  const first    = EQUITY_DATA.length ? EQUITY_DATA[0].v : 0;
-  const gain     = last - first;
-  const gainPct  = first ? ((gain/first)*100).toFixed(1) : '0.0';
+  const {EQUITY_DATA=[],MOCK_STATS:s={}} = useDashData();
+  const [range,setRange] = useState('Tout');
+  const last    = EQUITY_DATA.length ? EQUITY_DATA[EQUITY_DATA.length-1].v : 0;
+  const first   = EQUITY_DATA.length ? EQUITY_DATA[0].v : 0;
+  const gain    = last - first;
+  const gainPct = first ? ((gain/first)*100).toFixed(1) : '0.0';
+  const pnlStr  = gain>=0?`+$${gain.toLocaleString()}`:`-$${Math.abs(gain).toLocaleString()}`;
   return (
     <Card custom={7} glow={C.green} hover={false} style={{padding:'20px 20px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
         <div>
           <SectionTitle color={C.green} icon="📈">Equity Curve</SectionTitle>
           <div style={{display:'flex',alignItems:'baseline',gap:10,marginTop:-6,marginBottom:10}}>
-            <span style={{fontSize:28,fontWeight:900,fontFamily:'monospace',color:C.green,textShadow:`0 0 24px ${C.green}40`}}>+$16,590</span>
+            <span style={{fontSize:28,fontWeight:900,fontFamily:'monospace',color:C.green,textShadow:`0 0 24px ${C.green}40`}}>{pnlStr}</span>
             <Delta value={gainPct} suffix="%"/>
             <span style={{fontSize:9,color:C.t3}}>depuis le début</span>
           </div>
@@ -113,65 +117,94 @@ const EquityPanel = () => {
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:14}}>
-        {[{l:'Max DD',v:'-31.6%',c:C.danger},{l:'Meilleur',v:'+$4,500',c:C.green},{l:'Pire',v:'-$280',c:C.danger},{l:'Trades',v:'1/1',c:C.cyan}].map(x=>(
+        {[
+          {l:'Max DD',    v:`${s.maxDrawdown||0}%`,                   c:C.danger},
+          {l:'Meilleur',  v:`+$${s.bestTrade||0}`,                    c:C.green},
+          {l:'Pire',      v:`-$${Math.abs(s.worstTrade||0)}`,         c:C.danger},
+          {l:'Trades',    v:`${s.wins||0}W/${s.losses||0}L`,          c:C.cyan},
+        ].map(x=>(
           <div key={x.l} style={{padding:'6px 10px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.brd}`,textAlign:'center'}}>
             <div style={{fontSize:7,color:C.t3,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:2}}>{x.l}</div>
             <div style={{fontSize:12,fontWeight:900,fontFamily:'monospace',color:x.c}}>{x.v}</div>
           </div>
         ))}
       </div>
-      <ResponsiveContainer width="100%" height={180}>
-        <AreaChart data={EQUITY_DATA} margin={{top:4,right:4,bottom:0,left:0}}>
-          <defs>
-            <linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.green} stopOpacity={0.35}/><stop offset="100%" stopColor={C.green} stopOpacity={0.01}/></linearGradient>
-            <linearGradient id="el" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor={C.cyan}/><stop offset="60%" stopColor={C.green}/><stop offset="100%" stopColor={C.teal}/></linearGradient>
-          </defs>
-          <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
-          <XAxis dataKey="d" tick={{fill:C.t3,fontSize:7.5}} axisLine={false} tickLine={false}/>
-          <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`} width={36}/>
-          <Tooltip content={<ChartTip/>}/>
-          <Area type="monotone" dataKey="v" stroke="url(#el)" strokeWidth={2.5} fill="url(#eg)" dot={false} activeDot={{r:5,fill:C.green,stroke:'#fff',strokeWidth:2}}/>
-        </AreaChart>
-      </ResponsiveContainer>
+      {EQUITY_DATA.length === 0 ? (
+        <div style={{height:180,display:'flex',alignItems:'center',justifyContent:'center',color:C.t3,fontSize:13}}>
+          Aucun trade enregistré
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={180}>
+          <AreaChart data={EQUITY_DATA} margin={{top:4,right:4,bottom:0,left:0}}>
+            <defs>
+              <linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.green} stopOpacity={0.35}/><stop offset="100%" stopColor={C.green} stopOpacity={0.01}/></linearGradient>
+              <linearGradient id="el" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor={C.cyan}/><stop offset="60%" stopColor={C.green}/><stop offset="100%" stopColor={C.teal}/></linearGradient>
+            </defs>
+            <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
+            <XAxis dataKey="d" tick={{fill:C.t3,fontSize:7.5}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`} width={36}/>
+            <Tooltip content={<ChartTip/>}/>
+            <Area type="monotone" dataKey="v" stroke="url(#el)" strokeWidth={2.5} fill="url(#eg)" dot={false} activeDot={{r:5,fill:C.green,stroke:'#fff',strokeWidth:2}}/>
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
     </Card>
   );
 };
 
-const DAILY_PNL = [
-  {d:'Lun',v:0},{d:'Mar',v:0},{d:'Mer',v:0},{d:'Jeu',v:0},{d:'Ven',v:0},{d:'Sam',v:0},{d:'Dim',v:16590},
-];
-
-const DailyPnl = () => (
-  <Card custom={8} glow={C.cyan} hover={false} style={{padding:'18px 18px'}}>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-      <SectionTitle color={C.cyan} icon="📅">Performance par jour</SectionTitle>
-      <div style={{display:'flex',gap:8,alignItems:'center'}}><Badge color={C.green}>Sun +$16590</Badge><Badge color={C.warn}>Mon $0</Badge></div>
-    </div>
-    <ResponsiveContainer width="100%" height={130}>
-      <BarChart data={DAILY_PNL} margin={{top:4,right:4,bottom:0,left:0}}>
-        <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
-        <XAxis dataKey="d" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false}/>
-        <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} width={36}/>
-        <Tooltip content={<ChartTip prefix="$"/>}/>
-        <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)"/>
-        <Bar dataKey="v" radius={[4,4,0,0]} maxBarSize={36}>
-          {DAILY_PNL.map((d,i)=><Cell key={i} fill={d.v>0?C.green:d.v<0?C.danger:C.warn} opacity={0.85}/>)}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-    <div style={{display:'grid',gridTemplateColumns:`repeat(${DAILY_PNL.length},1fr)`,gap:3,marginTop:8}}>
-      {DAILY_PNL.map((d,i)=>(
-        <div key={i} style={{textAlign:'center',padding:'4px 0',borderRadius:6,background:'rgba(255,255,255,0.025)'}}>
-          <div style={{fontSize:7,color:C.t3,marginBottom:1}}>{d.d}</div>
-          <div style={{fontSize:8.5,fontWeight:900,fontFamily:'monospace',color:d.v>0?C.green:d.v<0?C.danger:C.t3}}>{d.v>0?'+':''}${Math.abs(d.v)}</div>
+// ─── DAILY P&L — données réelles ─────────────────────────────────────────────
+const DailyPnl = () => {
+  const {DAILY_PNL=[]} = useDashData();
+  const best  = DAILY_PNL.reduce((a,d)=>d.v>a.v?d:a, {v:-Infinity,d:'—'});
+  const worst = DAILY_PNL.reduce((a,d)=>d.v<a.v?d:a, {v:Infinity,d:'—'});
+  return (
+    <Card custom={8} glow={C.cyan} hover={false} style={{padding:'18px 18px'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+        <SectionTitle color={C.cyan} icon="📅">Performance par jour</SectionTitle>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          {best.v>-Infinity&&<Badge color={C.green}>{best.d} +${best.v}</Badge>}
+          {worst.v<Infinity&&worst.v<0&&<Badge color={C.danger}>{worst.d} -${Math.abs(worst.v)}</Badge>}
         </div>
-      ))}
-    </div>
-  </Card>
-);
+      </div>
+      {DAILY_PNL.length===0?(
+        <div style={{height:130,display:'flex',alignItems:'center',justifyContent:'center',color:C.t3,fontSize:12}}>Aucune donnée</div>
+      ):(
+        <ResponsiveContainer width="100%" height={130}>
+          <BarChart data={DAILY_PNL} margin={{top:4,right:4,bottom:0,left:0}}>
+            <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
+            <XAxis dataKey="d" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} width={36}/>
+            <Tooltip content={<ChartTip prefix="$"/>}/>
+            <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)"/>
+            <Bar dataKey="v" radius={[4,4,0,0]} maxBarSize={36}>
+              {DAILY_PNL.map((d,i)=><Cell key={i} fill={d.v>0?C.green:d.v<0?C.danger:C.warn} opacity={0.85}/>)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+      <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.max(DAILY_PNL.length,1)},1fr)`,gap:3,marginTop:8}}>
+        {DAILY_PNL.map((d,i)=>(
+          <div key={i} style={{textAlign:'center',padding:'4px 0',borderRadius:6,background:'rgba(255,255,255,0.025)'}}>
+            <div style={{fontSize:7,color:C.t3,marginBottom:1}}>{d.d}</div>
+            <div style={{fontSize:8.5,fontWeight:900,fontFamily:'monospace',color:d.v>0?C.green:d.v<0?C.danger:C.t3}}>{d.v>0?'+':''}${Math.abs(d.v)}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
 
+// ─── PERFORMANCE SCORE — données réelles ─────────────────────────────────────
 const PerformanceScore = () => {
-  const {RADAR_DATA=[]} = useDashData();
+  const {RADAR_DATA=[],MOCK_STATS:s={}} = useDashData();
+  const score = Math.round(
+    Math.min(100,(
+      Math.min(30,(s.winRate||0)*0.4) +
+      Math.min(20,(s.totalTrades||0)*0.5) +
+      Math.min(25,(s.profitFactor||0)*5) +
+      Math.min(25,Math.max(0,25-(Math.abs(s.maxDrawdown||0)/20)*10))
+    ))
+  );
   return (
     <Card custom={9} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
       <SectionTitle color={C.purple} icon="⚡">Performance Score</SectionTitle>
@@ -179,16 +212,25 @@ const PerformanceScore = () => {
         <div style={{position:'relative',flexShrink:0,width:70,height:70}}>
           <svg width="70" height="70" viewBox="0 0 70 70">
             <circle cx="35" cy="35" r="30" fill="none" stroke="rgba(176,110,255,0.12)" strokeWidth="6"/>
-            <circle cx="35" cy="35" r="30" fill="none" stroke="url(#sg)" strokeWidth="6" strokeDasharray={`${2*Math.PI*30*0.68} ${2*Math.PI*30*(1-0.68)}`} strokeLinecap="round" transform="rotate(-90 35 35)"/>
+            <circle cx="35" cy="35" r="30" fill="none" stroke="url(#sg)" strokeWidth="6"
+              strokeDasharray={`${2*Math.PI*30*(score/100)} ${2*Math.PI*30*(1-score/100)}`}
+              strokeLinecap="round" transform="rotate(-90 35 35)"/>
             <defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop stopColor={C.cyan}/><stop offset="1" stopColor={C.purple}/></linearGradient></defs>
           </svg>
           <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-            <span style={{fontSize:19,fontWeight:900,color:C.t0,lineHeight:1}}>68</span>
+            <span style={{fontSize:19,fontWeight:900,color:C.t0,lineHeight:1}}>{score}</span>
             <span style={{fontSize:6.5,color:C.t3,fontWeight:700,letterSpacing:'0.5px'}}>SCORE</span>
           </div>
         </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:5}}>
-          {[{l:'Win Rate',v:77,c:C.green},{l:'Profit F.',v:100,c:C.cyan},{l:'Risk/Rew.',v:53,c:C.purple},{l:'Sharpe',v:100,c:C.teal},{l:'Discipline',v:65,c:C.warn},{l:'Constance',v:100,c:C.blue}].map(x=>(
+          {[
+            {l:'Win Rate',  v:Math.min(100,Math.round(s.winRate||0)),   c:C.green},
+            {l:'Profit F.', v:Math.min(100,Math.round((s.profitFactor||0)*25)), c:C.cyan},
+            {l:'Risk/Rew.', v:Math.min(100,Math.round(((s.avgWin||0)/(s.avgLoss||1))*30)), c:C.purple},
+            {l:'Sharpe',    v:Math.min(100,Math.round(Math.abs((s.pnl||0)/(s.avgLoss||1))*5)), c:C.teal},
+            {l:'Discipline',v:Math.min(100,Math.round((1-(s.streakLoss||0)/10)*100)), c:C.warn},
+            {l:'Constance', v:(s.totalTrades||0)>=10?Math.min(100,Math.round(s.winRate||0)):Math.round((s.totalTrades||0)*10), c:C.blue},
+          ].map(x=>(
             <div key={x.l} style={{display:'flex',alignItems:'center',gap:7}}>
               <span style={{fontSize:7.5,color:C.t3,width:52,flexShrink:0}}>{x.l}</span>
               <div style={{flex:1,height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
@@ -212,34 +254,40 @@ const PerformanceScore = () => {
   );
 };
 
+// ─── BIAIS — données réelles ──────────────────────────────────────────────────
 const BiaisPanel = () => {
-  const {BIAIS_DATA=[]} = useDashData();
+  const {BIAIS_DATA=[],MOCK_STATS:s={}} = useDashData();
+  const bullPnl = BIAIS_DATA.find(b=>b.name==='Bullish')?.pnl||'$0';
+  const bearPnl = BIAIS_DATA.find(b=>b.name==='Bearish')?.pnl||'$0';
+  const dom     = BIAIS_DATA.length ? BIAIS_DATA.reduce((a,b)=>b.value>a.value?b:a,BIAIS_DATA[0]) : null;
   return (
     <Card custom={10} glow={C.teal} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
         <SectionTitle color={C.teal} icon="🧭">Analyse des Biais</SectionTitle>
-        <Badge color={C.cyan}>17 annotés</Badge>
+        <Badge color={C.cyan}>{s.totalTrades||0} trades</Badge>
       </div>
       <div style={{display:'flex',gap:16,alignItems:'center',marginBottom:12}}>
         <div style={{position:'relative',flexShrink:0}}>
           <ResponsiveContainer width={110} height={110}>
             <PieChart>
-              <Pie data={BIAIS_DATA} cx="50%" cy="50%" innerRadius={32} outerRadius={50} dataKey="value" startAngle={90} endAngle={-270} stroke="none" paddingAngle={2}>
-                {BIAIS_DATA.map((d,i)=><Cell key={i} fill={d.color}/>)}
+              <Pie data={BIAIS_DATA.length?BIAIS_DATA:[{name:'Aucun',value:100,color:C.brd}]} cx="50%" cy="50%" innerRadius={32} outerRadius={50} dataKey="value" startAngle={90} endAngle={-270} stroke="none" paddingAngle={2}>
+                {(BIAIS_DATA.length?BIAIS_DATA:[{color:C.brd}]).map((d,i)=><Cell key={i} fill={d.color}/>)}
               </Pie>
             </PieChart>
           </ResponsiveContainer>
           <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-            <span style={{fontSize:8.5,fontWeight:900,color:C.green}}>Bull</span>
-            <span style={{fontSize:7,color:C.t3}}>71%</span>
+            <span style={{fontSize:8.5,fontWeight:900,color:dom?.color||C.t3}}>{dom?.name||'—'}</span>
+            <span style={{fontSize:7,color:C.t3}}>{dom?.value||0}%</span>
           </div>
         </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>
-          {BIAIS_DATA.map((d,i)=>(
+          {BIAIS_DATA.length===0?(
+            <span style={{fontSize:11,color:C.t3}}>Aucun trade</span>
+          ):BIAIS_DATA.map((d,i)=>(
             <div key={i}>
               <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
                 <div style={{display:'flex',alignItems:'center',gap:5}}><div style={{width:7,height:7,borderRadius:2,background:d.color}}/><span style={{fontSize:9.5,fontWeight:700,color:C.t1}}>{d.name}</span></div>
-                <div style={{display:'flex',gap:8}}><span style={{fontSize:9,fontWeight:800,color:d.color,fontFamily:'monospace'}}>{d.value}%</span><span style={{fontSize:9,color:d.pnl.startsWith('+')?C.green:C.danger,fontFamily:'monospace'}}>{d.pnl}</span></div>
+                <div style={{display:'flex',gap:8}}><span style={{fontSize:9,fontWeight:800,color:d.color,fontFamily:'monospace'}}>{d.value}%</span><span style={{fontSize:9,color:d.pnl?.startsWith('+')?C.green:C.danger,fontFamily:'monospace'}}>{d.pnl}</span></div>
               </div>
               <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
                 <motion.div initial={{width:0}} animate={{width:`${d.value}%`}} transition={{duration:0.9,delay:i*0.15}} style={{height:'100%',background:d.color,borderRadius:2}}/>
@@ -249,7 +297,11 @@ const BiaisPanel = () => {
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6,padding:'10px',borderRadius:10,background:'rgba(255,255,255,0.025)',border:`1px solid ${C.brd}`}}>
-        {[{l:'P&L Bull.',v:'+$13,580',c:C.green},{l:'P&L Bear.',v:'+$3,010',c:C.danger},{l:'Biais dom.',v:'🐂 Bull',c:C.green}].map((x,i)=>(
+        {[
+          {l:'P&L Bull.',  v:bullPnl, c:C.green},
+          {l:'P&L Bear.',  v:bearPnl, c:C.danger},
+          {l:'Biais dom.', v:dom?`${dom.name==='Bullish'?'🐂':'🐻'} ${dom.name}`:'—', c:dom?.color||C.t3},
+        ].map((x,i)=>(
           <div key={i} style={{textAlign:'center'}}><div style={{fontSize:7,color:C.t3,marginBottom:2}}>{x.l}</div><div style={{fontSize:11,fontWeight:900,color:x.c,fontFamily:'monospace'}}>{x.v}</div></div>
         ))}
       </div>
@@ -257,14 +309,16 @@ const BiaisPanel = () => {
   );
 };
 
+// ─── RENTABILITE — données réelles ───────────────────────────────────────────
 const RentabiliteGauge = () => {
-  const pct = 76.5;
+  const {MOCK_STATS:s={}} = useDashData();
+  const pct   = s.winRate||0;
   const angle = (pct/100)*180-90;
   return (
     <Card custom={11} glow={C.orange} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
         <SectionTitle color={C.orange} icon="🔥">Rentabilité</SectionTitle>
-        <Badge color={C.cyan}>1h 24m avg</Badge>
+        <Badge color={C.cyan}>{s.totalTrades||0} trades</Badge>
       </div>
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',paddingTop:4}}>
         <svg width="200" height="110" viewBox="0 0 200 110">
@@ -277,12 +331,12 @@ const RentabiliteGauge = () => {
           <text x="184" y="115" fontSize="8" fill={C.t3} textAnchor="middle">100%</text>
         </svg>
         <div style={{marginTop:-8,textAlign:'center'}}>
-          <div style={{fontSize:32,fontWeight:900,fontFamily:'monospace',color:C.green,lineHeight:1,textShadow:`0 0 28px ${C.green}50`}}>76.5%</div>
+          <div style={{fontSize:32,fontWeight:900,fontFamily:'monospace',color:C.green,lineHeight:1,textShadow:`0 0 28px ${C.green}50`}}>{pct.toFixed(1)}%</div>
           <div style={{fontSize:9,color:C.t3,letterSpacing:'2px',textTransform:'uppercase',marginTop:3}}>Win Rate</div>
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6,marginTop:12}}>
-        {[{l:'Total',v:'47'},{l:'Wins',v:'36',c:C.green},{l:'Losses',v:'8',c:C.danger}].map((x,i)=>(
+        {[{l:'Total',v:`${s.totalTrades||0}`},{l:'Wins',v:`${s.wins||0}`,c:C.green},{l:'Losses',v:`${s.losses||0}`,c:C.danger}].map((x,i)=>(
           <div key={i} style={{textAlign:'center',padding:'5px 0',borderRadius:8,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.brd}`}}>
             <div style={{fontSize:7,color:C.t3,marginBottom:1,textTransform:'uppercase',letterSpacing:'0.5px'}}>{x.l}</div>
             <div style={{fontSize:13,fontWeight:900,color:x.c||C.t1,fontFamily:'monospace'}}>{x.v}</div>
@@ -293,10 +347,13 @@ const RentabiliteGauge = () => {
   );
 };
 
+// ─── RECENT TRADES — données réelles ─────────────────────────────────────────
 const RecentTrades = () => {
-  const {RECENT_TRADES=[]} = useDashData();
+  const {RECENT_TRADES=[],MOCK_STATS:s={}} = useDashData();
   const [filter,setFilter] = useState('All');
   const filtered = filter==='All'?RECENT_TRADES:RECENT_TRADES.filter(t=>t.res===filter);
+  const weekPnl  = RECENT_TRADES.slice(0,7).reduce((a,t)=>a+(t.pnl||0),0);
+  const weekWr   = RECENT_TRADES.length ? Math.round(RECENT_TRADES.filter(t=>t.pnl>0).length/RECENT_TRADES.length*100) : 0;
   return (
     <Card custom={12} glow={C.blue} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
@@ -311,121 +368,150 @@ const RecentTrades = () => {
         </div>
       </div>
       <div style={{display:'flex',gap:8,marginBottom:12}}>
-        <div style={{padding:'4px 10px',borderRadius:7,background:`${C.green}12`,border:`1px solid ${C.green}25`,display:'flex',gap:6,alignItems:'center'}}><span style={{fontSize:8,color:C.t3}}>P&L semaine</span><span style={{fontSize:10,fontWeight:900,color:C.green,fontFamily:'monospace'}}>+$5,000</span></div>
-        <div style={{padding:'4px 10px',borderRadius:7,background:`${C.cyan}12`,border:`1px solid ${C.cyan}25`,display:'flex',gap:6,alignItems:'center'}}><span style={{fontSize:8,color:C.t3}}>Win rate</span><span style={{fontSize:10,fontWeight:900,color:C.cyan,fontFamily:'monospace'}}>88%</span></div>
+        <div style={{padding:'4px 10px',borderRadius:7,background:`${C.green}12`,border:`1px solid ${C.green}25`,display:'flex',gap:6,alignItems:'center'}}>
+          <span style={{fontSize:8,color:C.t3}}>P&L total</span>
+          <span style={{fontSize:10,fontWeight:900,color:weekPnl>=0?C.green:C.danger,fontFamily:'monospace'}}>{weekPnl>=0?'+':''}{weekPnl}$</span>
+        </div>
+        <div style={{padding:'4px 10px',borderRadius:7,background:`${C.cyan}12`,border:`1px solid ${C.cyan}25`,display:'flex',gap:6,alignItems:'center'}}>
+          <span style={{fontSize:8,color:C.t3}}>Win rate</span>
+          <span style={{fontSize:10,fontWeight:900,color:C.cyan,fontFamily:'monospace'}}>{weekWr}%</span>
+        </div>
       </div>
-      <div style={{display:'flex',flexDirection:'column',gap:3}}>
-        {filtered.map((t,i)=>{
-          const rc=t.res==='TP'?C.green:t.res==='SL'?C.danger:C.warn;
-          return(
-            <motion.div key={t.id} initial={{opacity:0,x:-8}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
-              style={{display:'grid',gridTemplateColumns:'32px 1fr 1fr 1fr 1fr 1fr',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:9,background:i%2===0?'rgba(255,255,255,0.018)':'rgba(255,255,255,0.010)',border:'1px solid rgba(255,255,255,0.035)',transition:'all 0.12s',cursor:'pointer'}}
-              whileHover={{background:'rgba(77,124,255,0.06)',borderColor:'rgba(77,124,255,0.18)'}}>
-              <div style={{width:32,height:22,borderRadius:5,background:`${rc}15`,border:`1px solid ${rc}28`,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:6.5,fontWeight:900,color:rc}}>{t.pair.slice(0,3)}</span></div>
-              <div><div style={{fontSize:10,fontWeight:800,color:C.t1}}>{t.pair}</div><div style={{fontSize:7.5,color:t.dir==='Long'?C.green:C.danger,fontWeight:700}}>{t.dir==='Long'?'▲':'▼'} {t.dir}</div></div>
-              <div style={{textAlign:'center'}}><div style={{display:'inline-block',padding:'1px 6px',borderRadius:4,background:`${rc}18`,border:`1px solid ${rc}30`,fontSize:8,fontWeight:800,color:rc}}>{t.res}</div></div>
-              <div style={{textAlign:'right'}}><div style={{fontSize:9.5,fontWeight:900,fontFamily:'monospace',color:t.rr>0?C.green:C.danger}}>{t.rr>0?'+':''}{t.rr}R</div></div>
-              <div style={{textAlign:'right'}}><div style={{fontSize:9.5,fontWeight:900,fontFamily:'monospace',color:t.pnl>0?C.green:C.danger}}>{t.pnl>0?'+':''}{t.pnl}$</div></div>
-              <div style={{textAlign:'right'}}><div style={{fontSize:7.5,color:C.purple}}>{t.session}</div><div style={{fontSize:7,color:C.t3}}>{t.date.slice(5)}</div></div>
-            </motion.div>
-          );
-        })}
-      </div>
+      {filtered.length===0?(
+        <div style={{padding:'24px',textAlign:'center',color:C.t3,fontSize:12}}>Aucun trade enregistré</div>
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:3}}>
+          {filtered.map((t,i)=>{
+            const rc=t.res==='TP'?C.green:t.res==='SL'?C.danger:C.warn;
+            return(
+              <motion.div key={t.id} initial={{opacity:0,x:-8}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
+                style={{display:'grid',gridTemplateColumns:'32px 1fr 1fr 1fr 1fr 1fr',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:9,background:i%2===0?'rgba(255,255,255,0.018)':'rgba(255,255,255,0.010)',border:'1px solid rgba(255,255,255,0.035)',transition:'all 0.12s',cursor:'pointer'}}
+                whileHover={{background:'rgba(77,124,255,0.06)',borderColor:'rgba(77,124,255,0.18)'}}>
+                <div style={{width:32,height:22,borderRadius:5,background:`${rc}15`,border:`1px solid ${rc}28`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <span style={{fontSize:6.5,fontWeight:900,color:rc}}>{(t.pair||'?').slice(0,3)}</span>
+                </div>
+                <div><div style={{fontSize:10,fontWeight:800,color:C.t1}}>{t.pair}</div><div style={{fontSize:7.5,color:t.dir==='Long'?C.green:C.danger,fontWeight:700}}>{t.dir==='Long'?'▲':'▼'} {t.dir}</div></div>
+                <div style={{textAlign:'center'}}><div style={{display:'inline-block',padding:'1px 6px',borderRadius:4,background:`${rc}18`,border:`1px solid ${rc}30`,fontSize:8,fontWeight:800,color:rc}}>{t.res}</div></div>
+                <div style={{textAlign:'right'}}><div style={{fontSize:9.5,fontWeight:900,fontFamily:'monospace',color:t.rr>0?C.green:C.danger}}>{t.rr>0?'+':''}{t.rr}R</div></div>
+                <div style={{textAlign:'right'}}><div style={{fontSize:9.5,fontWeight:900,fontFamily:'monospace',color:t.pnl>0?C.green:C.danger}}>{t.pnl>0?'+':''}{t.pnl}$</div></div>
+                <div style={{textAlign:'right'}}><div style={{fontSize:7.5,color:C.purple}}>{t.session}</div><div style={{fontSize:7,color:C.t3}}>{(t.date||'').slice(5)}</div></div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </Card>
   );
 };
 
+// ─── SESSION — données réelles ────────────────────────────────────────────────
 const SessionPanel = () => {
   const {SESSION_DATA=[]} = useDashData();
   return (
     <Card custom={13} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
       <SectionTitle color={C.purple} icon="🌍">Sessions</SectionTitle>
-      <div style={{display:'flex',flexDirection:'column',gap:6}}>
-        {SESSION_DATA.map((s,i)=>{
-          const wr=Math.round(s.tp/(s.tp+s.sl+s.be)*100);
-          const maxPnl=Math.max(...SESSION_DATA.map(x=>x.pnl));
-          const pct=s.pnl/maxPnl*100;
-          return(
-            <div key={i} style={{padding:'9px 11px',borderRadius:10,background:'rgba(255,255,255,0.025)',border:`1px solid ${C.brd}`,position:'relative',overflow:'hidden'}}>
-              <motion.div animate={{opacity:[0.04,0.08,0.04]}} transition={{duration:3,repeat:Infinity,delay:i*0.4}} style={{position:'absolute',inset:0,background:`linear-gradient(90deg,${C.purple}10,transparent)`}}/>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5,position:'relative'}}>
-                <span style={{fontSize:10,fontWeight:800,color:C.t1}}>{s.s}</span>
-                <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                  <span style={{fontSize:8.5,fontWeight:800,fontFamily:'monospace',color:C.green}}>+${s.pnl.toLocaleString()}</span>
-                  <span style={{fontSize:8,fontWeight:800,color:wr>=65?C.green:wr>=50?C.warn:C.danger,fontFamily:'monospace'}}>{wr}%</span>
-                  <span style={{fontSize:7.5,color:C.t3}}>{s.tp}W·{s.sl}L·{s.be}BE</span>
+      {SESSION_DATA.length===0?(
+        <div style={{padding:'16px',textAlign:'center',color:C.t3,fontSize:12}}>Aucune donnée</div>
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {SESSION_DATA.map((s,i)=>{
+            const total=s.tp+s.sl+s.be||1;
+            const wr=Math.round(s.tp/total*100);
+            const maxPnl=Math.max(...SESSION_DATA.map(x=>x.pnl),1);
+            const pct=s.pnl/maxPnl*100;
+            return(
+              <div key={i} style={{padding:'9px 11px',borderRadius:10,background:'rgba(255,255,255,0.025)',border:`1px solid ${C.brd}`,position:'relative',overflow:'hidden'}}>
+                <motion.div animate={{opacity:[0.04,0.08,0.04]}} transition={{duration:3,repeat:Infinity,delay:i*0.4}} style={{position:'absolute',inset:0,background:`linear-gradient(90deg,${C.purple}10,transparent)`}}/>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5,position:'relative'}}>
+                  <span style={{fontSize:10,fontWeight:800,color:C.t1}}>{s.s}</span>
+                  <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                    <span style={{fontSize:8.5,fontWeight:800,fontFamily:'monospace',color:s.pnl>=0?C.green:C.danger}}>{s.pnl>=0?'+':''}${s.pnl.toLocaleString()}</span>
+                    <span style={{fontSize:8,fontWeight:800,color:wr>=65?C.green:wr>=50?C.warn:C.danger,fontFamily:'monospace'}}>{wr}%</span>
+                    <span style={{fontSize:7.5,color:C.t3}}>{s.tp}W·{s.sl}L·{s.be}BE</span>
+                  </div>
+                </div>
+                <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
+                  <motion.div initial={{width:0}} animate={{width:`${pct}%`}} transition={{duration:0.8,delay:0.2+i*0.1}} style={{height:'100%',background:`linear-gradient(90deg,${C.purple}88,${C.purple})`,borderRadius:2}}/>
                 </div>
               </div>
-              <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
-                <motion.div initial={{width:0}} animate={{width:`${pct}%`}} transition={{duration:0.8,delay:0.2+i*0.1}} style={{height:'100%',background:`linear-gradient(90deg,${C.purple}88,${C.purple})`,borderRadius:2}}/>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </Card>
   );
 };
 
+// ─── PAIRS — données réelles ──────────────────────────────────────────────────
 const PairPanel = () => {
   const {PAIR_DATA=[]} = useDashData();
   return (
     <Card custom={14} glow={C.gold} hover={false} style={{padding:'18px 18px'}}>
       <SectionTitle color={C.gold} icon="💱">Par Paire</SectionTitle>
-      <div style={{display:'flex',flexDirection:'column',gap:4}}>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'0 8px 6px',borderBottom:`1px solid ${C.brd}`}}>
-          {['Paire','#','WR','P&L'].map(h=><span key={h} style={{fontSize:7,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:'right'}}>{h}</span>)}
+      {PAIR_DATA.length===0?(
+        <div style={{padding:'16px',textAlign:'center',color:C.t3,fontSize:12}}>Aucune donnée</div>
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:4}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'0 8px 6px',borderBottom:`1px solid ${C.brd}`}}>
+            {['Paire','#','WR','P&L'].map(h=><span key={h} style={{fontSize:7,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:'right'}}>{h}</span>)}
+          </div>
+          {PAIR_DATA.map((p,i)=>(
+            <motion.div key={i} initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} transition={{delay:0.1+i*0.06}}
+              style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'7px 8px',borderRadius:8,background:'rgba(255,255,255,0.02)',alignItems:'center',cursor:'pointer',transition:'all 0.12s'}}
+              whileHover={{background:'rgba(255,215,0,0.05)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:6,height:6,borderRadius:'50%',background:p.col,boxShadow:`0 0 5px ${p.col}`,flexShrink:0}}/><span style={{fontSize:10.5,fontWeight:800,color:C.t1}}>{p.p}</span></div>
+              <span style={{fontSize:9,color:C.t2,fontFamily:'monospace',textAlign:'right'}}>{p.n}</span>
+              <span style={{fontSize:9,fontWeight:800,fontFamily:'monospace',color:p.wr>=65?C.green:p.wr>=50?C.warn:C.danger,textAlign:'right'}}>{p.wr}%</span>
+              <span style={{fontSize:10,fontWeight:900,fontFamily:'monospace',color:p.pnl>=0?C.green:C.danger,textAlign:'right'}}>{p.pnl>=0?'+':''}{p.pnl>=0?'$'+p.pnl.toLocaleString():'-$'+Math.abs(p.pnl)}</span>
+            </motion.div>
+          ))}
         </div>
-        {PAIR_DATA.map((p,i)=>(
-          <motion.div key={i} initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} transition={{delay:0.1+i*0.06}}
-            style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'7px 8px',borderRadius:8,background:'rgba(255,255,255,0.02)',alignItems:'center',cursor:'pointer',transition:'all 0.12s'}}
-            whileHover={{background:'rgba(255,215,0,0.05)',borderColor:`${C.gold}20`}}>
-            <div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:6,height:6,borderRadius:'50%',background:p.col,boxShadow:`0 0 5px ${p.col}`,flexShrink:0}}/><span style={{fontSize:10.5,fontWeight:800,color:C.t1}}>{p.p}</span></div>
-            <span style={{fontSize:9,color:C.t2,fontFamily:'monospace',textAlign:'right'}}>{p.n}</span>
-            <span style={{fontSize:9,fontWeight:800,fontFamily:'monospace',color:p.wr>=65?C.green:p.wr>=50?C.warn:C.danger,textAlign:'right'}}>{p.wr}%</span>
-            <span style={{fontSize:10,fontWeight:900,fontFamily:'monospace',color:p.pnl>=0?C.green:C.danger,textAlign:'right'}}>{p.pnl>=0?'+':''}{p.pnl>=0?'$'+p.pnl.toLocaleString():'-$'+Math.abs(p.pnl)}</span>
-          </motion.div>
-        ))}
-      </div>
+      )}
     </Card>
   );
 };
 
+// ─── HEATMAP — données réelles ────────────────────────────────────────────────
 const TimeHeatmap = () => {
   const {WEEK_HEATMAP=[],HOURS=['8h','10h','12h','14h','16h']} = useDashData();
   const maxV = Math.max(...WEEK_HEATMAP.flatMap(w=>Object.values(w.h).map(Math.abs)),1);
   return (
     <Card custom={15} glow={C.teal} hover={false} style={{padding:'18px 18px'}}>
       <SectionTitle color={C.teal} icon="🌡️">Heatmap Heure × Jour</SectionTitle>
-      <div style={{overflowX:'auto'}}>
-        <table style={{borderCollapse:'separate',borderSpacing:3,minWidth:'100%'}}>
-          <thead><tr><th style={{width:44}}/>{HOURS.map(h=><th key={h} style={{fontSize:7.5,fontWeight:700,color:C.t3,textAlign:'center',padding:'0 2px 5px',whiteSpace:'nowrap'}}>{h}</th>)}</tr></thead>
-          <tbody>
-            {WEEK_HEATMAP.map((row,ri)=>(
-              <tr key={ri}>
-                <td style={{fontSize:8.5,fontWeight:700,color:C.t2,paddingRight:6,textAlign:'right'}}>{row.day}</td>
-                {HOURS.map(h=>{
-                  const v=row.h[h]||0;
-                  const intensity=Math.min(0.8,Math.abs(v)/maxV*0.8);
-                  const bg=v>0?`rgba(0,255,136,${intensity*0.65})`:v<0?`rgba(255,61,87,${intensity*0.55})`:'rgba(255,255,255,0.03)';
-                  const tc=v>0?C.green:v<0?C.danger:C.t4;
-                  return(
-                    <td key={h} style={{padding:2}}>
-                      <motion.div whileHover={{scale:1.15}} style={{width:38,height:34,borderRadius:7,background:bg,border:`1px solid ${v!==0?'rgba(255,255,255,0.07)':C.brd}`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-                        {v!==0?(<><div style={{fontSize:8.5,fontWeight:900,fontFamily:'monospace',color:tc,lineHeight:1}}>{v>0?'+':''}${Math.abs(v)*100}</div><div style={{fontSize:6,color:C.t3,marginTop:1}}>{v>0?'+':''}{v}R</div></>):<div style={{width:5,height:1,background:'rgba(255,255,255,0.06)'}}/>}
-                      </motion.div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {WEEK_HEATMAP.length===0?(
+        <div style={{padding:'24px',textAlign:'center',color:C.t3,fontSize:12}}>Aucune donnée</div>
+      ):(
+        <div style={{overflowX:'auto'}}>
+          <table style={{borderCollapse:'separate',borderSpacing:3,minWidth:'100%'}}>
+            <thead><tr><th style={{width:44}}/>{HOURS.map(h=><th key={h} style={{fontSize:7.5,fontWeight:700,color:C.t3,textAlign:'center',padding:'0 2px 5px',whiteSpace:'nowrap'}}>{h}</th>)}</tr></thead>
+            <tbody>
+              {WEEK_HEATMAP.map((row,ri)=>(
+                <tr key={ri}>
+                  <td style={{fontSize:8.5,fontWeight:700,color:C.t2,paddingRight:6,textAlign:'right'}}>{row.day}</td>
+                  {HOURS.map(h=>{
+                    const v=row.h[h]||0;
+                    const intensity=Math.min(0.8,Math.abs(v)/maxV*0.8);
+                    const bg=v>0?`rgba(0,255,136,${intensity*0.65})`:v<0?`rgba(255,61,87,${intensity*0.55})`:'rgba(255,255,255,0.03)';
+                    const tc=v>0?C.green:v<0?C.danger:C.t4;
+                    return(
+                      <td key={h} style={{padding:2}}>
+                        <motion.div whileHover={{scale:1.15}} style={{width:38,height:34,borderRadius:7,background:bg,border:`1px solid ${v!==0?'rgba(255,255,255,0.07)':C.brd}`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+                          {v!==0?(<><div style={{fontSize:8.5,fontWeight:900,fontFamily:'monospace',color:tc,lineHeight:1}}>{v>0?'+':''}${Math.abs(Math.round(v))}</div><div style={{fontSize:6,color:C.t3,marginTop:1}}>{v>0?'+':''}{Math.round(v/100)}R</div></>):<div style={{width:5,height:1,background:'rgba(255,255,255,0.06)'}}/>}
+                        </motion.div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Card>
   );
 };
 
+// ─── LIVE TICKER ──────────────────────────────────────────────────────────────
 const LiveTicker = () => {
   const [visible,setVisible] = useState(true);
   if(!visible) return null;
@@ -450,6 +536,7 @@ const LiveTicker = () => {
   );
 };
 
+// ─── QUICK ACTIONS ────────────────────────────────────────────────────────────
 const QuickActions = ({onNewTrade,onImport,onPDF,onGoals}) => (
   <div style={{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap'}}>
     {[
@@ -466,12 +553,14 @@ const QuickActions = ({onNewTrade,onImport,onPDF,onGoals}) => (
   </div>
 );
 
+// ─── GOAL PROGRESS ────────────────────────────────────────────────────────────
 const GoalProgress = () => {
+  const {MOCK_STATS:s={}} = useDashData();
   const goals = [
-    {l:'Objectif mensuel',cur:8400,target:10000,c:C.cyan},
-    {l:'Win Rate cible',cur:76.5,target:70,c:C.green,suffix:'%'},
-    {l:'Max trades/sem.',cur:7,target:10,c:C.purple},
-    {l:'Drawdown max',cur:31.6,target:20,c:C.danger,invert:true,suffix:'%'},
+    {l:'Objectif mensuel',  cur:s.pnl||0,        target:10000, c:C.cyan},
+    {l:'Win Rate cible',    cur:s.winRate||0,     target:70,    c:C.green, suffix:'%'},
+    {l:'Max trades/sem.',   cur:s.totalTrades||0, target:10,    c:C.purple},
+    {l:'Drawdown max',      cur:Math.abs(s.maxDrawdown||0), target:20, c:C.danger, invert:true, suffix:'%'},
   ];
   return (
     <Card custom={16} glow={C.cyan} hover={false} style={{padding:'18px 18px'}}>
@@ -486,7 +575,7 @@ const GoalProgress = () => {
               <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
                 <span style={{fontSize:9.5,fontWeight:700,color:C.t1}}>{g.l}</span>
                 <div style={{display:'flex',gap:6,alignItems:'center'}}>
-                  <span style={{fontSize:9,fontFamily:'monospace',color:c,fontWeight:800}}>{g.suffix==='%'?g.cur+'%':g.prefix==='$'?'$'+g.cur.toLocaleString():g.cur}</span>
+                  <span style={{fontSize:9,fontFamily:'monospace',color:c,fontWeight:800}}>{g.suffix==='%'?g.cur.toFixed(1)+'%':g.prefix==='$'?'$'+g.cur.toLocaleString():g.cur}</span>
                   <span style={{fontSize:7.5,color:C.t3}}>/ {g.suffix==='%'?g.target+'%':'$'+g.target.toLocaleString()}</span>
                   {ok&&<span style={{fontSize:10}}>✅</span>}
                 </div>
@@ -502,6 +591,7 @@ const GoalProgress = () => {
   );
 };
 
+// ─── JOURNAL NOTE ─────────────────────────────────────────────────────────────
 const JournalNote = () => (
   <Card custom={17} glow={C.warn} hover={false} style={{padding:'18px 18px'}}>
     <SectionTitle color={C.warn} icon="📝">Note du jour</SectionTitle>
@@ -517,6 +607,7 @@ const JournalNote = () => (
   </Card>
 );
 
+// ─── TRADING CALENDAR + RANK ──────────────────────────────────────────────────
 const MF_RANKS = [
   {rank:'Iron',min:0,max:19,color:'#8B7355',icon:'🔩',desc:'Débutant'},
   {rank:'Bronze',min:20,max:39,color:'#CD7F32',icon:'🥉',desc:'En progression'},
@@ -527,11 +618,9 @@ const MF_RANKS = [
   {rank:'Master',min:93,max:97,color:'#B06EFF',icon:'👑',desc:'Master Trader'},
   {rank:'Grandmaster',min:98,max:100,color:'#FF4DC4',icon:'⚡',desc:'Légende'},
 ];
-
-function getRank(score) { return MF_RANKS.find(r=>score>=r.min&&score<=r.max)||MF_RANKS[0]; }
-
-function calcRegularityScore(trades) {
-  if(!trades||trades.length===0) return 0;
+function getRank(score){return MF_RANKS.find(r=>score>=r.min&&score<=r.max)||MF_RANKS[0];}
+function calcRegularityScore(trades){
+  if(!trades||trades.length===0)return 0;
   const wins=trades.filter(t=>t.pnl>0).length;
   const wr=wins/trades.length;
   const wrScore=Math.min(30,wr*40);
@@ -561,12 +650,17 @@ const TradingCalendar = () => {
   const startPad=(firstDay.getDay()+6)%7;
   const totalDays=lastDay.getDate();
   const tradesByDay={};
-  (trades||[]).forEach(t=>{const d=new Date(t.date||t.entryDate||t.createdAt);if(d.getFullYear()===year&&d.getMonth()===month){const key=d.getDate();if(!tradesByDay[key])tradesByDay[key]=[];tradesByDay[key].push(t);}});
-  const score=calcRegularityScore(trades);
+  (trades||[]).forEach(t=>{
+    const d=new Date(t.open_date||t.date||t.entryDate||t.createdAt);
+    if(d.getFullYear()===year&&d.getMonth()===month){const key=d.getDate();if(!tradesByDay[key])tradesByDay[key]=[];tradesByDay[key].push(t);}
+  });
+  // Adapter les trades pour calcRegularityScore (qui attend .pnl)
+  const tradesForScore = trades.map(t=>({...t, pnl:t.profit_loss||t.pnl||0}));
+  const score=calcRegularityScore(tradesForScore);
   const rank=getRank(score);
   const nextRank=MF_RANKS[MF_RANKS.findIndex(r=>r.rank===rank.rank)+1];
   const monthTrades=Object.values(tradesByDay).flat();
-  const monthPnl=monthTrades.reduce((a,t)=>a+(t.pnl||0),0);
+  const monthPnl=monthTrades.reduce((a,t)=>a+(t.profit_loss||t.pnl||0),0);
   const tradingDays=Object.keys(tradesByDay).length;
   return (
     <Card custom={18} glow={rank.color} hover={false} style={{padding:'20px 22px'}}>
@@ -595,7 +689,11 @@ const TradingCalendar = () => {
         </div>
       </div>
       <div style={{display:'flex',gap:16,marginBottom:16,flexWrap:'wrap'}}>
-        {[{l:'P&L du mois',v:monthPnl>=0?`+$${monthPnl.toLocaleString()}`:`-$${Math.abs(monthPnl).toLocaleString()}`,c:monthPnl>=0?C.green:C.danger},{l:'Jours tradés',v:tradingDays,c:C.cyan},{l:'Trades ce mois',v:monthTrades.length,c:C.purple}].map((s,i)=>(
+        {[
+          {l:'P&L du mois',v:monthPnl>=0?`+$${Math.round(monthPnl).toLocaleString()}`:`-$${Math.abs(Math.round(monthPnl)).toLocaleString()}`,c:monthPnl>=0?C.green:C.danger},
+          {l:'Jours tradés',v:tradingDays,c:C.cyan},
+          {l:'Trades ce mois',v:monthTrades.length,c:C.purple},
+        ].map((s,i)=>(
           <div key={i} style={{background:'rgba(255,255,255,0.03)',borderRadius:8,padding:'8px 14px',border:`1px solid ${C.brd}`}}>
             <div style={{fontSize:9,color:C.t3,fontWeight:600,marginBottom:3,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.l}</div>
             <div style={{fontSize:16,fontWeight:800,color:s.c}}>{s.v}</div>
@@ -615,7 +713,7 @@ const TradingCalendar = () => {
         {Array.from({length:totalDays}).map((_,i)=>{
           const day=i+1;
           const dayTrades=tradesByDay[day]||[];
-          const dayPnl=dayTrades.reduce((a,t)=>a+(t.pnl||0),0);
+          const dayPnl=dayTrades.reduce((a,t)=>a+(t.profit_loss||t.pnl||0),0);
           const isToday=new Date().getDate()===day&&new Date().getMonth()===month&&new Date().getFullYear()===year;
           const hasData=dayTrades.length>0;
           const isWeekend=((i+startPad)%7)>=5;
@@ -625,7 +723,7 @@ const TradingCalendar = () => {
           return(
             <div key={day} style={{background:bg,border:`1px solid ${isToday?rank.color:border}`,borderRadius:8,padding:'6px 4px',minHeight:52,textAlign:'center',position:'relative',boxShadow:isToday?`0 0 8px ${rank.color}40`:'none',transition:'all 0.15s',cursor:hasData?'pointer':'default'}}>
               <div style={{fontSize:10,fontWeight:isToday?800:500,color:isToday?rank.color:isWeekend?C.t4:C.t2,marginBottom:3}}>{day}</div>
-              {hasData&&(<><div style={{fontSize:9,fontWeight:700,color:pnlColor}}>{dayPnl>=0?'+':''}{dayPnl>=1000||dayPnl<=-1000?`${(dayPnl/1000).toFixed(1)}k`:dayPnl}$</div><div style={{fontSize:8,color:C.t3,marginTop:1}}>{dayTrades.length}T</div><div style={{display:'flex',justifyContent:'center',gap:2,marginTop:3}}>{dayTrades.slice(0,3).map((_,di)=><div key={di} style={{width:4,height:4,borderRadius:'50%',background:dayPnl>0?C.green:C.danger,opacity:0.8}}/>)}</div></>)}
+              {hasData&&(<><div style={{fontSize:9,fontWeight:700,color:pnlColor}}>{dayPnl>=0?'+':''}{dayPnl>=1000||dayPnl<=-1000?`${(dayPnl/1000).toFixed(1)}k`:Math.round(dayPnl)}$</div><div style={{fontSize:8,color:C.t3,marginTop:1}}>{dayTrades.length}T</div><div style={{display:'flex',justifyContent:'center',gap:2,marginTop:3}}>{dayTrades.slice(0,3).map((_,di)=><div key={di} style={{width:4,height:4,borderRadius:'50%',background:dayPnl>0?C.green:C.danger,opacity:0.8}}/>)}</div></>)}
             </div>
           );
         })}
@@ -639,6 +737,7 @@ const TradingCalendar = () => {
   );
 };
 
+// ─── MODALS ───────────────────────────────────────────────────────────────────
 const NewTradeModal = ({onClose,onAdd}) => {
   const [form,setForm]=useState({pair:'EURUSD',dir:'Long',entry:'',sl:'',tp:'',size:'',date:new Date().toISOString().split('T')[0],notes:''});
   const set=(k,v)=>setForm(p=>({...p,[k]:v}));
@@ -689,31 +788,29 @@ const GoalsModal = ({onClose}) => {
   );
 };
 
-function emptyStats() {
-  return {equityData:[],dailyPnl:[],recentTrades:[],sessionData:[],pairData:[],radarData:[],biaisData:[],heatmap:[]};
-}
-
+// ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [greeting]=useState(()=>{const h=new Date().getHours();return h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';});
   const [showNewTrade,setShowNewTrade]=useState(false);
   const [showGoals,setShowGoals]=useState(false);
-
   const handleImportExcel=()=>{const input=document.createElement('input');input.type='file';input.accept='.xlsx,.xls,.csv';input.onchange=(e)=>{const file=e.target.files[0];if(file)alert(`Fichier "${file.name}" sélectionné. Import en cours de développement.`);};input.click();};
   const handlePDF=()=>window.print();
 
-  const {stats=emptyStats(),trades:allTrades=[],addTrade=()=>null}=useTradingContext()||{};
+  const {stats,trades:allTrades=[],addTrade=()=>null}=useTradingContext()||{};
+  const s = stats || {};
+
   const dashData={
-    MOCK_STATS:stats,
-    EQUITY_DATA:stats.equityData||[],
-    DAILY_PNL:stats.dailyPnl||[],
-    RECENT_TRADES:stats.recentTrades||[],
-    SESSION_DATA:stats.sessionData||[],
-    PAIR_DATA:stats.pairData||[],
-    RADAR_DATA:stats.radarData||[],
-    BIAIS_DATA:stats.biaisData||[],
-    WEEK_HEATMAP:stats.heatmap||[],
-    HOURS:['8h','10h','12h','14h','16h'],
-    trades:allTrades,
+    MOCK_STATS:    s,
+    EQUITY_DATA:   s.equityData   || [],
+    DAILY_PNL:     s.dailyPnl     || [],
+    RECENT_TRADES: s.recentTrades || [],
+    SESSION_DATA:  s.sessionData  || [],
+    PAIR_DATA:     s.pairData     || [],
+    RADAR_DATA:    s.radarData    || [],
+    BIAIS_DATA:    s.biaisData    || [],
+    WEEK_HEATMAP:  s.heatmap      || [],
+    HOURS:         ['8h','10h','12h','14h','16h'],
+    trades:        allTrades,
   };
 
   const handleAddTrade=async(tradeData)=>{await addTrade(tradeData);};
@@ -727,6 +824,8 @@ export default function Dashboard() {
         <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(77,124,255,0.008) 1px,transparent 1px),linear-gradient(90deg,rgba(77,124,255,0.008) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
       </div>
       <div style={{position:'relative',zIndex:1,padding:'22px 24px 40px',width:'100%',boxSizing:'border-box'}}>
+
+        {/* HEADER */}
         <motion.div initial={{opacity:0,y:-12}} animate={{opacity:1,y:0}} transition={{duration:0.45}}
           style={{marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
           <div>
@@ -745,21 +844,21 @@ export default function Dashboard() {
           </div>
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
             <div style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,display:'flex',gap:8,alignItems:'center'}}>
-              <span style={{fontSize:9,color:C.t3}}>Compte</span>
-              <select style={{background:'transparent',border:'none',color:C.cyan,fontSize:10,fontWeight:700,outline:'none',cursor:'pointer',fontFamily:'inherit'}}>
-                <option>Live — $48,590</option>
-                <option>Demo — $10,000</option>
-              </select>
+              <span style={{fontSize:9,color:C.t3}}>Trades</span>
+              <span style={{color:C.cyan,fontSize:10,fontWeight:700}}>{s.totalTrades||0} total</span>
             </div>
           </div>
         </motion.div>
+
         <LiveTicker/>
         <QuickActions onNewTrade={()=>setShowNewTrade(true)} onImport={handleImportExcel} onPDF={handlePDF} onGoals={()=>setShowGoals(true)}/>
         <AnimatePresence>
           {showNewTrade&&<NewTradeModal onClose={()=>setShowNewTrade(false)} onAdd={handleAddTrade}/>}
           {showGoals&&<GoalsModal onClose={()=>setShowGoals(false)}/>}
         </AnimatePresence>
+
         <KpiStrip/>
+
         <div style={{display:'grid',gridTemplateColumns:'2fr 1.1fr',gap:12,marginBottom:12}}>
           <EquityPanel/>
           <div style={{display:'flex',flexDirection:'column',gap:12}}><DailyPnl/><GoalProgress/></div>
