@@ -54,7 +54,6 @@ function AppInner() {
   const [authModal,   setAuthModal]   = useState(null);
   const [paymentOk,   setPaymentOk]   = useState(false);
 
-  // ── Détecter retour Stripe ───────────────────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
@@ -73,7 +72,6 @@ function AppInner() {
         style: { background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' },
       });
     }
-    // Vérifier paiement récent
     const ts = localStorage.getItem(PAYMENT_SUCCESS_KEY);
     if (ts && Date.now() - parseInt(ts, 10) < 10 * 60 * 1000) {
       setPaymentOk(true);
@@ -114,14 +112,10 @@ function AppInner() {
     toast('À bientôt ! 👋', { style:{ background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' } });
   };
 
-  // ── Auth callback ─────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  // ── Loading : attendre que auth ET profil soient chargés ─────────────────
-  // profileLoaded garantit que fetchProfile() est terminé
   if (loading || (user && !profileLoaded)) return <LoadingScreen />;
 
-  // ── Landing ───────────────────────────────────────────────────────────────
   if (!user) {
     return (
       <>
@@ -131,14 +125,23 @@ function AppInner() {
     );
   }
 
-  // ── Plan selection ────────────────────────────────────────────────────────
-  // On arrive ici seulement si profileLoaded=true, donc stripeCustomerId est fiable
+  // ── DEBUG ─────────────────────────────────────────────────────────────────
   const needsPlan = !user.stripeCustomerId && !paymentOk;
+  console.log('MFJ DEBUG:', JSON.stringify({
+    needsPlan,
+    stripeCustomerId: user.stripeCustomerId,
+    profileLoaded,
+    paymentOk,
+    userId: user.id,
+    plan: user.plan,
+    subStatus: user.subStatus,
+  }));
+  // ─────────────────────────────────────────────────────────────────────────
+
   if (needsPlan) {
     return <PlanSelection user={user} onSkip={null} />;
   }
 
-  // ── App principale ────────────────────────────────────────────────────────
   const sidebarWidth = collapsed ? 72 : 260;
 
   const renderPage = () => {
