@@ -108,6 +108,40 @@ const STYLES = `
     pointer-events: none;
   }
 
+  /* ── Flèche retour ── */
+  .ps-back {
+    position: absolute;
+    top: 28px;
+    left: 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid ${C.brd};
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: ${C.t2};
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+    text-decoration: none;
+    z-index: 10;
+  }
+  .ps-back:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: ${C.brdHi};
+    color: ${C.t1};
+    transform: translateX(-2px);
+  }
+  .ps-back svg {
+    transition: transform 0.2s;
+  }
+  .ps-back:hover svg {
+    transform: translateX(-3px);
+  }
+
   .ps-logo {
     display: flex; align-items: center; gap: 10px;
     margin-bottom: 48px;
@@ -386,7 +420,6 @@ const STYLES = `
   }
   .ps-skip:hover { color: ${C.t2}; }
 
-
   .ps-success-banner {
     background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(6,230,255,0.08));
     border: 1px solid rgba(0,255,136,0.3);
@@ -479,6 +512,7 @@ const STYLES = `
   }
 
   @media (max-width: 640px) {
+    .ps-back { top: 16px; left: 16px; padding: 7px 12px; font-size: 12px; }
     .ps-grid { grid-template-columns: 1fr; }
   }
 `;
@@ -487,38 +521,30 @@ export default function PlanSelection({ user: userProp, onSkip }) {
   const { user: authUser, refreshProfile } = useAuth();
   const user = authUser || userProp;
 
-  const [billing,   setBilling]   = useState('monthly');
-  const [loading,   setLoading]   = useState(null);
+  const [billing,       setBilling]       = useState('monthly');
+  const [loading,       setLoading]       = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [successMsg,    setSuccessMsg]    = useState('');
 
-  // Détecter retour depuis Stripe → rafraîchir profil → rediriger vers dashboard
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
       setSuccessMsg('🎉 Abonnement activé ! Redirection...');
-      // Rafraîchir le profil Supabase (stripe_customer_id sera présent)
       const doRefresh = async () => {
-        try { await refreshProfile?.(); } catch(_) {}
-        // Forcer un reload complet pour que App.js détecte le nouveau profil
-        // et ne redirige plus vers PlanSelection
-        setTimeout(() => {
-          window.location.href = window.location.origin;
-        }, 1500);
+        try { await refreshProfile?.(); } catch (_) {}
+        setTimeout(() => { window.location.href = window.location.origin; }, 1500);
       };
       doRefresh();
     }
   }, []); // eslint-disable-line
 
-  // Plan actuel
-  const currentPlan = user?.plan || 'trial';
-  const subStatus   = user?.subStatus || 'trialing';
-  const isTrialing  = user?.isTrialing ?? true;
-  const daysLeft    = user?.trialDaysLeft ?? 14;
-  const needsPayment = user?.needsPayment || false;
+  const currentPlan  = user?.plan       || 'trial';
+  const subStatus    = user?.subStatus  || 'trialing';
+  const isTrialing   = user?.isTrialing ?? true;
+  const daysLeft     = user?.trialDaysLeft ?? 14;
+  const needsPayment = user?.needsPayment  || false;
 
-  // Lancer le checkout Stripe
   const handleSelect = async (plan) => {
     const priceId = billing === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
     setLoading(plan.id);
@@ -526,11 +552,7 @@ export default function PlanSelection({ user: userProp, onSkip }) {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId,
-          email:  user?.email,
-          userId: user?.id,
-        }),
+        body: JSON.stringify({ priceId, email: user?.email, userId: user?.id }),
       });
       const { url, error } = await res.json();
       if (url) window.location.href = url;
@@ -542,7 +564,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   };
 
-  // Ouvrir le portail Stripe (gérer CB, annuler, changer plan)
   const handleManage = async () => {
     setPortalLoading(true);
     try {
@@ -561,12 +582,26 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   };
 
-  const isCurrentPlan = (planId) => currentPlan === planId && (isTrialing || subStatus === 'active');
+  // Retour : dashboard si connecté, landing sinon
+  const handleBack = () => {
+    window.location.href = window.location.origin;
+  };
+
+  const isCurrentPlan = (planId) =>
+    currentPlan === planId && (isTrialing || subStatus === 'active');
 
   return (
     <div className="ps-root">
       <style>{STYLES}</style>
       <div className="ps-glow-top" />
+
+      {/* ── Flèche retour ── */}
+      <button className="ps-back" onClick={handleBack}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        Retour
+      </button>
 
       {/* Logo */}
       <div className="ps-logo">
@@ -576,12 +611,10 @@ export default function PlanSelection({ user: userProp, onSkip }) {
 
       {/* Bannière succès */}
       {successMsg && (
-        <div className="ps-success-banner">
-          {successMsg}
-        </div>
+        <div className="ps-success-banner">{successMsg}</div>
       )}
 
-      {/* Bannière trial / paiement requis */}
+      {/* Bannière trial */}
       {user && isTrialing && daysLeft > 0 && (
         <div className="ps-trial-banner">
           <span className="ps-trial-icon">⏱</span>
@@ -735,8 +768,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         {' · '}Annulation en 1 clic
         {' · '}14 jours gratuits — CB requise
       </div>
-
-
     </div>
   );
 }
