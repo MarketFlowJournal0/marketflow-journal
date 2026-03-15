@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [error,         setError]         = useState(null);
   const [authLoading,   setAuthLoading]   = useState(false);
+  const initDone = useRef(false);
 
   const fetchProfile = useCallback(async (userId) => {
     if (!userId) {
@@ -19,15 +20,13 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end')
         .eq('id', userId)
         .maybeSingle();
-      console.log('FETCH PROFILE:', JSON.stringify({ data, error, userId }));
       setProfile(data || null);
-    } catch (e) {
-      console.log('FETCH PROFILE ERROR:', e.message);
+    } catch (_) {
       setProfile(null);
     } finally {
       setProfileLoaded(true);
@@ -35,36 +34,62 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Timeout sécurité 8s
-    const safetyTimeout = setTimeout(() => {
-      console.log('SAFETY TIMEOUT TRIGGERED');
-      setProfileLoaded(true);
-      setLoading(false);
-    }, 8000);
+    if (initDone.current) return;
+    initDone.current = true;
 
+    let mounted = true;
+
+    const finish = (sessionData) => {
+      if (!mounted) return;
+      if (!sessionData?.user) {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setProfileLoaded(true);
+        setLoading(false);
+        return;
+      }
+      setSession(sessionData);
+      setUser(sessionData.user);
+      fetchProfile(sessionData.user.id).then(() => {
+        if (mounted) setLoading(false);
+      });
+    };
+
+    // Timeout sécurité 6s
+    const t = setTimeout(() => {
+      if (mounted) { setProfileLoaded(true); setLoading(false); }
+    }, 6000);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(t);
+      finish(session);
+    }).catch(() => {
+      clearTimeout(t);
+      if (mounted) { setProfileLoaded(true); setLoading(false); }
+    });
+
+    // onAuthStateChange pour les events POST-init uniquement
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('AUTH EVENT:', event, session?.user?.id);
-        clearTimeout(safetyTimeout);
+        if (event === 'INITIAL_SESSION') return; // géré par getSession
+        if (!mounted) return;
 
         if (event === 'SIGNED_OUT' || !session) {
-          setUser(null);
-          setSession(null);
-          setProfile(null);
-          setProfileLoaded(true);
-          setLoading(false);
+          setUser(null); setSession(null); setProfile(null);
+          setProfileLoaded(true); setLoading(false);
           return;
         }
-
         setSession(session);
         setUser(session.user);
         await fetchProfile(session.user.id);
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     );
 
     return () => {
-      clearTimeout(safetyTimeout);
+      mounted = false;
+      clearTimeout(t);
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
@@ -74,21 +99,13 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: {
-          first_name: firstName.trim(),
-          last_name:  lastName.trim(),
-          full_name:  `${firstName.trim()} ${lastName.trim()}`,
-          plan: 'trial',
-        },
+        data: { first_name: firstName.trim(), last_name: lastName.trim(), full_name: `${firstName.trim()} ${lastName.trim()}`, plan: 'trial' },
         emailRedirectTo: window.location.origin,
       },
     });
     setAuthLoading(false);
     if (error) { setError(translateError(error.message)); return { success: false }; }
-    if (data?.user && data.user.identities?.length === 0) {
-      setError('Un compte existe déjà avec cet email.');
-      return { success: false };
-    }
+    if (data?.user && data.user.identities?.length === 0) { setError('Un compte existe déjà avec cet email.'); return { success: false }; }
     return { success: true, needsConfirmation: !data.session };
   }, []);
 
@@ -102,36 +119,27 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = useCallback(async () => {
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google', options: { redirectTo: window.location.origin },
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
     if (error) setError(translateError(error.message));
   }, []);
 
   const loginWithGitHub = useCallback(async () => {
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github', options: { redirectTo: window.location.origin },
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.origin } });
     if (error) setError(translateError(error.message));
   }, []);
 
   const resetPassword = useCallback(async (email) => {
     setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
     if (error) { setError(translateError(error.message)); return false; }
     return true;
   }, []);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('sb-'))
-      .forEach(k => localStorage.removeItem(k));
-    setUser(null); setSession(null); setProfile(null);
-    setProfileLoaded(true);
+    Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
+    setUser(null); setSession(null); setProfile(null); setProfileLoaded(true);
   }, []);
 
   const updateProfile = useCallback(async (updates) => {
@@ -150,9 +158,7 @@ export function AuthProvider({ children }) {
   const effectivePlan = profile?.plan || user?.user_metadata?.plan || 'trial';
   const subStatus     = profile?.subscription_status || 'trialing';
   const trialEnd      = profile?.trial_end || null;
-  const trialDaysLeft = trialEnd
-    ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
-    : 14;
+  const trialDaysLeft = trialEnd ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000)) : 14;
 
   const userProfile = user ? {
     id:                   user.id,
@@ -177,8 +183,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user: userProfile,
-      session, loading, authLoading, error, profileLoaded,
+      user: userProfile, session, loading, authLoading, error, profileLoaded,
       signup, login, loginWithGoogle, loginWithGitHub,
       resetPassword, logout, updateProfile, refreshProfile, clearError,
     }}>

@@ -52,7 +52,13 @@ function AppInner() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null);
-  const [paymentOk,   setPaymentOk]   = useState(false);
+  const [paymentOk,   setPaymentOk]   = useState(() => {
+    // Initialiser depuis localStorage dès le départ
+    const ts = localStorage.getItem(PAYMENT_SUCCESS_KEY);
+    if (ts && Date.now() - parseInt(ts, 10) < 10 * 60 * 1000) return true;
+    if (ts) localStorage.removeItem(PAYMENT_SUCCESS_KEY);
+    return false;
+  });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -61,22 +67,14 @@ function AppInner() {
       localStorage.setItem(PAYMENT_SUCCESS_KEY, Date.now().toString());
       setPaymentOk(true);
       refreshProfile?.().catch(() => {});
-      setTimeout(() => toast.success('🎉 Abonnement activé ! Bienvenue sur MarketFlow Journal !', {
+      setTimeout(() => toast.success('🎉 Abonnement activé !', {
         duration: 6000,
         style: { background:'#0D1627', color:'#00FF88', border:'1px solid rgba(0,255,136,0.3)', borderRadius:'12px', fontSize:'15px' },
       }), 500);
     }
     if (params.get('payment') === 'cancelled') {
       window.history.replaceState({}, '', window.location.pathname);
-      toast('Paiement annulé. Tu peux réessayer quand tu veux ! 👋', {
-        style: { background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' },
-      });
-    }
-    const ts = localStorage.getItem(PAYMENT_SUCCESS_KEY);
-    if (ts && Date.now() - parseInt(ts, 10) < 10 * 60 * 1000) {
-      setPaymentOk(true);
-    } else if (ts) {
-      localStorage.removeItem(PAYMENT_SUCCESS_KEY);
+      toast('Paiement annulé. 👋', { style: { background:'#0D1627', color:'#fff', borderRadius:'12px' } });
     }
   }, []); // eslint-disable-line
 
@@ -109,12 +107,13 @@ function AppInner() {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     setPaymentOk(false);
     await logout();
-    toast('À bientôt ! 👋', { style:{ background:'#0D1627', color:'#fff', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px' } });
+    toast('À bientôt ! 👋', { style:{ background:'#0D1627', color:'#fff', borderRadius:'12px' } });
   };
 
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  if (loading || (user && !profileLoaded)) return <LoadingScreen />;
+  // Attendre loading ET profileLoaded
+  if (loading || !profileLoaded) return <LoadingScreen />;
 
   if (!user) {
     return (
@@ -125,20 +124,8 @@ function AppInner() {
     );
   }
 
-  // ── DEBUG ─────────────────────────────────────────────────────────────────
-  const needsPlan = !user.stripeCustomerId && !paymentOk;
-  console.log('MFJ DEBUG:', JSON.stringify({
-    needsPlan,
-    stripeCustomerId: user.stripeCustomerId,
-    profileLoaded,
-    paymentOk,
-    userId: user.id,
-    plan: user.plan,
-    subStatus: user.subStatus,
-  }));
-  // ─────────────────────────────────────────────────────────────────────────
-
-  if (needsPlan) {
+  // stripeCustomerId est fiable ici car profileLoaded=true
+  if (!user.stripeCustomerId && !paymentOk) {
     return <PlanSelection user={user} onSkip={null} />;
   }
 
