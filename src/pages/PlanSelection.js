@@ -108,7 +108,6 @@ const STYLES = `
     pointer-events: none;
   }
 
-  /* ── Flèche retour ── */
   .ps-back {
     position: absolute;
     top: 28px;
@@ -126,7 +125,6 @@ const STYLES = `
     cursor: pointer;
     transition: all 0.2s;
     font-family: 'Inter', sans-serif;
-    text-decoration: none;
     z-index: 10;
   }
   .ps-back:hover {
@@ -539,9 +537,9 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   }, []); // eslint-disable-line
 
-  const currentPlan  = user?.plan       || 'trial';
-  const subStatus    = user?.subStatus  || 'trialing';
-  const isTrialing   = user?.isTrialing ?? true;
+  const currentPlan  = user?.plan          || 'trial';
+  const subStatus    = user?.subStatus     || 'trialing';
+  const isTrialing   = user?.isTrialing    ?? true;
   const daysLeft     = user?.trialDaysLeft ?? 14;
   const needsPayment = user?.needsPayment  || false;
 
@@ -582,9 +580,13 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   };
 
-  // Retour : dashboard si connecté, landing sinon
+  // ✅ Retour : appelle onSkip si dispo (évite la boucle), sinon fallback
   const handleBack = () => {
-    window.location.href = window.location.origin;
+    if (onSkip) {
+      onSkip();
+    } else {
+      window.location.href = window.location.origin;
+    }
   };
 
   const isCurrentPlan = (planId) =>
