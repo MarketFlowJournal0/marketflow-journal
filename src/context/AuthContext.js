@@ -20,13 +20,15 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end')
         .eq('id', userId)
         .maybeSingle();
+      console.log('FETCH PROFILE RESULT:', JSON.stringify({ data, error, userId }));
       setProfile(data || null);
-    } catch (_) {
+    } catch (e) {
+      console.log('FETCH PROFILE CATCH:', e.message);
       setProfile(null);
     } finally {
       setProfileLoaded(true);
