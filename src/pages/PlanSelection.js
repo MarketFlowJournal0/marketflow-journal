@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
 
 const C = {
   bg:     '#030508',
@@ -129,6 +128,7 @@ const STYLES = `
     font-family: 'Inter', sans-serif;
     z-index: 9999;
     pointer-events: all;
+    text-decoration: none;
   }
   .ps-back:hover {
     background: rgba(255,255,255,0.12);
@@ -302,187 +302,82 @@ const STYLES = `
     opacity: 0.6;
   }
 
-  .ps-card-icon {
-    font-size: 32px;
-    margin-bottom: 16px;
-    display: block;
-  }
+  .ps-card-icon { font-size: 32px; margin-bottom: 16px; display: block; }
+  .ps-card-name { font-size: 22px; font-weight: 800; color: ${C.t0}; margin: 0 0 6px; }
+  .ps-card-desc { font-size: 13px; color: ${C.t2}; margin: 0 0 24px; line-height: 1.5; }
 
-  .ps-card-name {
-    font-size: 22px; font-weight: 800;
-    color: ${C.t0};
-    margin: 0 0 6px;
-  }
-
-  .ps-card-desc {
-    font-size: 13px; color: ${C.t2};
-    margin: 0 0 24px;
-    line-height: 1.5;
-  }
-
-  .ps-price-block {
-    margin-bottom: 28px;
-  }
-  .ps-price-main {
-    display: flex; align-items: baseline; gap: 4px;
-    margin-bottom: 4px;
-  }
-  .ps-price-currency {
-    font-size: 20px; font-weight: 700;
-    color: var(--accent);
-  }
-  .ps-price-amount {
-    font-size: 48px; font-weight: 900;
-    color: ${C.t0};
-    line-height: 1;
-  }
-  .ps-price-period {
-    font-size: 14px; color: ${C.t2};
-  }
-  .ps-price-annual {
-    font-size: 12px; color: ${C.t3};
-  }
-  .ps-price-annual span {
-    color: ${C.green};
-    font-weight: 600;
-  }
+  .ps-price-block { margin-bottom: 28px; }
+  .ps-price-main { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+  .ps-price-currency { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .ps-price-amount { font-size: 48px; font-weight: 900; color: ${C.t0}; line-height: 1; }
+  .ps-price-period { font-size: 14px; color: ${C.t2}; }
+  .ps-price-annual { font-size: 12px; color: ${C.t3}; }
+  .ps-price-annual span { color: ${C.green}; font-weight: 600; }
 
   .ps-features {
-    list-style: none;
-    margin: 0 0 28px;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    list-style: none; margin: 0 0 28px; padding: 0;
+    display: flex; flex-direction: column; gap: 10px;
   }
-  .ps-feature {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 13px; color: ${C.t1};
-  }
+  .ps-feature { display: flex; align-items: center; gap: 10px; font-size: 13px; color: ${C.t1}; }
   .ps-feature-check {
     width: 18px; height: 18px; border-radius: 50%;
-    background: rgba(0,255,136,0.1);
-    border: 1px solid rgba(0,255,136,0.25);
+    background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25);
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    font-size: 9px;
-    color: ${C.green};
+    flex-shrink: 0; font-size: 9px; color: ${C.green};
   }
 
   .ps-cta {
-    width: 100%;
-    padding: 14px;
-    border-radius: 12px;
-    font-size: 14px; font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    letter-spacing: 0.03em;
-    position: relative;
-    overflow: hidden;
+    width: 100%; padding: 14px; border-radius: 12px;
+    font-size: 14px; font-weight: 700; cursor: pointer; border: none;
+    transition: all 0.2s; letter-spacing: 0.03em; position: relative; overflow: hidden;
   }
   .ps-cta-primary {
     background: linear-gradient(135deg, var(--accent), var(--accent-end, var(--accent)));
-    color: #000;
-    box-shadow: 0 4px 20px var(--glow);
+    color: #000; box-shadow: 0 4px 20px var(--glow);
   }
-  .ps-cta-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 30px var(--glow);
-    filter: brightness(1.1);
-  }
-  .ps-cta-secondary {
-    background: rgba(255,255,255,0.05);
-    color: ${C.t1};
-    border: 1px solid ${C.brd};
-  }
-  .ps-cta-secondary:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  .ps-cta:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-  }
+  .ps-cta-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 30px var(--glow); filter: brightness(1.1); }
+  .ps-cta-secondary { background: rgba(255,255,255,0.05); color: ${C.t1}; border: 1px solid ${C.brd}; }
+  .ps-cta-secondary:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); color: var(--accent); }
+  .ps-cta:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 
   .ps-trial-note {
-    text-align: center;
-    margin-top: 32px;
-    font-size: 13px;
-    color: ${C.t3};
-    position: relative;
-    z-index: 1;
+    text-align: center; margin-top: 32px; font-size: 13px;
+    color: ${C.t3}; position: relative; z-index: 1;
   }
   .ps-trial-note span { color: ${C.t2}; }
 
   .ps-success-banner {
     background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(6,230,255,0.08));
-    border: 1px solid rgba(0,255,136,0.3);
-    border-radius: 12px;
-    padding: 14px 20px;
-    color: #00FF88;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 24px;
-    text-align: center;
-    width: 100%;
-    max-width: 900px;
-    position: relative;
-    z-index: 1;
+    border: 1px solid rgba(0,255,136,0.3); border-radius: 12px;
+    padding: 14px 20px; color: #00FF88; font-size: 14px; font-weight: 600;
+    margin-bottom: 24px; text-align: center; width: 100%; max-width: 900px;
+    position: relative; z-index: 1;
   }
 
   .ps-trial-banner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255,215,0,0.07);
-    border: 1px solid rgba(255,215,0,0.2);
-    border-radius: 12px;
-    padding: 12px 18px;
-    margin-bottom: 24px;
-    width: 100%;
-    max-width: 900px;
-    font-size: 13.5px;
-    color: rgba(255,255,255,0.75);
-    position: relative;
-    z-index: 1;
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,215,0,0.07); border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 12px; padding: 12px 18px; margin-bottom: 24px;
+    width: 100%; max-width: 900px; font-size: 13.5px;
+    color: rgba(255,255,255,0.75); position: relative; z-index: 1;
   }
   .ps-trial-icon { font-size: 18px; flex-shrink: 0; }
   .ps-trial-banner strong { color: #FFD700; }
 
   .ps-alert-banner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255,61,87,0.08);
-    border: 1px solid rgba(255,61,87,0.25);
-    border-radius: 12px;
-    padding: 12px 18px;
-    margin-bottom: 24px;
-    width: 100%;
-    max-width: 900px;
-    font-size: 13.5px;
-    color: rgba(255,255,255,0.75);
-    position: relative;
-    z-index: 1;
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,61,87,0.08); border: 1px solid rgba(255,61,87,0.25);
+    border-radius: 12px; padding: 12px 18px; margin-bottom: 24px;
+    width: 100%; max-width: 900px; font-size: 13.5px;
+    color: rgba(255,255,255,0.75); position: relative; z-index: 1;
   }
   .ps-alert-banner strong { color: #FF5570; }
 
   .ps-manage-btn {
-    margin-left: auto;
-    flex-shrink: 0;
-    padding: 7px 14px;
-    background: rgba(255,215,0,0.12);
-    border: 1px solid rgba(255,215,0,0.3);
-    border-radius: 8px;
-    color: #FFD700;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.18s;
-    font-family: 'Inter', sans-serif;
+    margin-left: auto; flex-shrink: 0; padding: 7px 14px;
+    background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 8px; color: #FFD700; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.18s; font-family: 'Inter', sans-serif;
   }
   .ps-manage-btn:hover { background: rgba(255,215,0,0.2); }
 
@@ -491,17 +386,9 @@ const STYLES = `
     box-shadow: 0 0 0 1px var(--accent), 0 24px 64px var(--glow) !important;
   }
   .ps-current-badge {
-    position: absolute;
-    top: -1px; left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: #030508;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 12px;
-    border-radius: 0 0 8px 8px;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
+    position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #030508; font-size: 11px; font-weight: 700;
+    padding: 3px 12px; border-radius: 0 0 8px 8px; letter-spacing: 0.04em; white-space: nowrap;
   }
   .ps-cta-manage {
     background: rgba(255,255,255,0.06) !important;
@@ -510,8 +397,7 @@ const STYLES = `
   }
   .ps-cta-manage:hover:not(:disabled) {
     background: rgba(255,255,255,0.1) !important;
-    color: #fff !important;
-    transform: none !important;
+    color: #fff !important; transform: none !important;
   }
 
   @media (max-width: 640px) {
@@ -585,15 +471,9 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   };
 
-  // ✅ Retour : signOut Supabase + reload garanti
-  const handleBack = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (_) {}
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('sb-') || k.startsWith('mfj-'))
-      .forEach(k => localStorage.removeItem(k));
-    window.location.reload();
+  // ✅ Retour simple — pas d'import supabase, juste window.location
+  const handleBack = () => {
+    window.location.href = window.location.origin;
   };
 
   const isCurrentPlan = (planId) =>
@@ -604,11 +484,10 @@ export default function PlanSelection({ user: userProp, onSkip }) {
       <style>{STYLES}</style>
       <div className="ps-glow-top" />
 
-      {/* ── Bouton Retour — position:fixed, z-index:9999 ── */}
       <button
+        type="button"
         className="ps-back"
         onClick={handleBack}
-        type="button"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -616,7 +495,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         Retour
       </button>
 
-      {/* Logo */}
       <div className="ps-logo">
         <div className="ps-logo-dot" />
         MarketFlow Journal
