@@ -20,6 +20,7 @@ import './App.css';
 import './theme.css';
 
 const PAYMENT_SUCCESS_KEY = 'mfj_payment_success';
+const SKIP_PLAN_KEY       = 'mfj_skip_plan';
 
 function LoadingScreen() {
   return (
@@ -86,18 +87,32 @@ function AppInner() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null);
-  const [paymentOk,   setPaymentOk]   = useState(() => {
+
+  // ✅ skipPlan persisté en sessionStorage — survit aux re-renders
+  const [skipPlan, setSkipPlan] = useState(
+    () => sessionStorage.getItem(SKIP_PLAN_KEY) === 'true'
+  );
+
+  const [paymentOk, setPaymentOk] = useState(() => {
     const ts = localStorage.getItem(PAYMENT_SUCCESS_KEY);
     if (ts && Date.now() - parseInt(ts, 10) < 10 * 60 * 1000) return true;
     if (ts) localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     return false;
   });
 
+  const handleSkipPlan = () => {
+    sessionStorage.setItem(SKIP_PLAN_KEY, 'true');
+    setSkipPlan(true);
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
       localStorage.setItem(PAYMENT_SUCCESS_KEY, Date.now().toString());
+      // Paiement ok → on efface le skip
+      sessionStorage.removeItem(SKIP_PLAN_KEY);
+      setSkipPlan(false);
       setPaymentOk(true);
       refreshProfile?.().catch(() => {});
       setTimeout(() => toast.success('🎉 Abonnement activé !', {
@@ -150,20 +165,19 @@ function AppInner() {
 
   const handleLogout = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
+    sessionStorage.removeItem(SKIP_PLAN_KEY);
     setPaymentOk(false);
+    setSkipPlan(false);
     await logout();
     toast('À bientôt ! 👋', {
       style: { background: '#0D1627', color: '#fff', borderRadius: '12px' },
     });
   };
 
-  // Route AuthCallback
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  // ✅ FIX : on sort du spinner dès que profileLoaded=true, même si loading traîne
   if (loading && !profileLoaded) return <LoadingScreen />;
 
-  // Pas connecté → Landing
   if (!user) {
     return (
       <>
@@ -183,9 +197,9 @@ function AppInner() {
     );
   }
 
-  // ✅ FIX : on vérifie profileLoaded avant de forcer PlanSelection
-  if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
-    return <PlanSelection user={user} onSkip={null} />;
+  // ✅ skipPlan depuis sessionStorage → pas de boucle
+  if (!user.stripeCustomerId && !paymentOk && profileLoaded && !skipPlan) {
+    return <PlanSelection user={user} onSkip={handleSkipPlan} />;
   }
 
   const sidebarWidth = collapsed ? 72 : 260;
