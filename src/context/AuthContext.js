@@ -56,6 +56,7 @@ export function AuthProvider({ children }) {
 
     // Timeout de sécurité : si loading reste true après 5s → forcer false
     const safetyTimeout = setTimeout(() => {
+      setProfileLoaded(true);
       setLoading(false);
     }, 5000);
 
@@ -69,6 +70,7 @@ export function AuthProvider({ children }) {
         setUser(null);
         setSession(null);
         setProfile(null);
+        setProfileLoaded(true);
         setLoading(false);
         return;
       }
@@ -78,12 +80,12 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }).catch(() => {
       clearTimeout(safetyTimeout);
-      // Erreur réseau ou token invalide → nettoyer
       Object.keys(localStorage)
         .filter(k => k.startsWith('sb-'))
         .forEach(k => localStorage.removeItem(k));
       setUser(null);
       setSession(null);
+      setProfileLoaded(true);
       setLoading(false);
     });
 
@@ -102,6 +104,7 @@ export function AuthProvider({ children }) {
           setUser(null);
           setSession(null);
           setProfile(null);
+          setProfileLoaded(true);
           setLoading(false);
           return;
         }
