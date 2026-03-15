@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const C = {
   bg:     '#030508',
@@ -96,7 +97,7 @@ const STYLES = `
     align-items: center;
     padding: 48px 24px 80px;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .ps-glow-top {
@@ -106,35 +107,38 @@ const STYLES = `
     width: 700px; height: 400px;
     background: radial-gradient(ellipse, rgba(6,230,255,0.08) 0%, transparent 70%);
     pointer-events: none;
+    z-index: 0;
   }
 
   .ps-back {
-    position: absolute;
+    position: fixed;
     top: 28px;
     left: 28px;
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.06);
     border: 1px solid ${C.brd};
     border-radius: 10px;
-    padding: 8px 14px;
+    padding: 10px 16px;
     font-size: 13px;
     font-weight: 600;
     color: ${C.t2};
     cursor: pointer;
     transition: all 0.2s;
     font-family: 'Inter', sans-serif;
-    z-index: 10;
+    z-index: 9999;
+    pointer-events: all;
   }
   .ps-back:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: ${C.brdHi};
-    color: ${C.t1};
+    background: rgba(255,255,255,0.12);
+    border-color: ${C.cyan};
+    color: ${C.t0};
     transform: translateX(-2px);
   }
   .ps-back svg {
     transition: transform 0.2s;
+    flex-shrink: 0;
   }
   .ps-back:hover svg {
     transform: translateX(-3px);
@@ -146,6 +150,8 @@ const STYLES = `
     font-size: 20px; font-weight: 700;
     color: ${C.t0};
     text-decoration: none;
+    position: relative;
+    z-index: 1;
   }
   .ps-logo-dot {
     width: 10px; height: 10px; border-radius: 50%;
@@ -157,6 +163,7 @@ const STYLES = `
     text-align: center;
     margin-bottom: 48px;
     position: relative;
+    z-index: 1;
   }
   .ps-step {
     display: inline-flex; align-items: center; gap: 8px;
@@ -204,6 +211,8 @@ const STYLES = `
     border: 1px solid ${C.brd};
     border-radius: 100px;
     padding: 6px;
+    position: relative;
+    z-index: 1;
   }
   .ps-toggle-btn {
     padding: 8px 20px;
@@ -235,6 +244,7 @@ const STYLES = `
     width: 100%;
     max-width: 980px;
     position: relative;
+    z-index: 1;
   }
 
   .ps-card {
@@ -402,21 +412,10 @@ const STYLES = `
     margin-top: 32px;
     font-size: 13px;
     color: ${C.t3};
+    position: relative;
+    z-index: 1;
   }
   .ps-trial-note span { color: ${C.t2}; }
-
-  .ps-skip {
-    margin-top: 20px;
-    background: none;
-    border: none;
-    color: ${C.t3};
-    font-size: 13px;
-    cursor: pointer;
-    text-decoration: underline;
-    font-family: 'Inter', sans-serif;
-    transition: color 0.2s;
-  }
-  .ps-skip:hover { color: ${C.t2}; }
 
   .ps-success-banner {
     background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(6,230,255,0.08));
@@ -430,6 +429,8 @@ const STYLES = `
     text-align: center;
     width: 100%;
     max-width: 900px;
+    position: relative;
+    z-index: 1;
   }
 
   .ps-trial-banner {
@@ -445,6 +446,8 @@ const STYLES = `
     max-width: 900px;
     font-size: 13.5px;
     color: rgba(255,255,255,0.75);
+    position: relative;
+    z-index: 1;
   }
   .ps-trial-icon { font-size: 18px; flex-shrink: 0; }
   .ps-trial-banner strong { color: #FFD700; }
@@ -462,6 +465,8 @@ const STYLES = `
     max-width: 900px;
     font-size: 13.5px;
     color: rgba(255,255,255,0.75);
+    position: relative;
+    z-index: 1;
   }
   .ps-alert-banner strong { color: #FF5570; }
 
@@ -510,7 +515,7 @@ const STYLES = `
   }
 
   @media (max-width: 640px) {
-    .ps-back { top: 16px; left: 16px; padding: 7px 12px; font-size: 12px; }
+    .ps-back { top: 16px; left: 16px; padding: 8px 12px; font-size: 12px; }
     .ps-grid { grid-template-columns: 1fr; }
   }
 `;
@@ -580,13 +585,15 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   };
 
-  // ✅ Retour : appelle onSkip si dispo (évite la boucle), sinon fallback
-  const handleBack = () => {
-    if (onSkip) {
-      onSkip();
-    } else {
-      window.location.href = window.location.origin;
-    }
+  // ✅ Retour : signOut Supabase + reload garanti
+  const handleBack = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {}
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-') || k.startsWith('mfj-'))
+      .forEach(k => localStorage.removeItem(k));
+    window.location.reload();
   };
 
   const isCurrentPlan = (planId) =>
@@ -597,8 +604,12 @@ export default function PlanSelection({ user: userProp, onSkip }) {
       <style>{STYLES}</style>
       <div className="ps-glow-top" />
 
-      {/* ── Flèche retour ── */}
-      <button className="ps-back" onClick={handleBack}>
+      {/* ── Bouton Retour — position:fixed, z-index:9999 ── */}
+      <button
+        className="ps-back"
+        onClick={handleBack}
+        type="button"
+      >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
@@ -611,12 +622,10 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         MarketFlow Journal
       </div>
 
-      {/* Bannière succès */}
       {successMsg && (
         <div className="ps-success-banner">{successMsg}</div>
       )}
 
-      {/* Bannière trial */}
       {user && isTrialing && daysLeft > 0 && (
         <div className="ps-trial-banner">
           <span className="ps-trial-icon">⏱</span>
@@ -642,7 +651,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         </div>
       )}
 
-      {/* Header */}
       <div className="ps-header">
         {!user ? (
           <>
@@ -675,7 +683,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         )}
       </div>
 
-      {/* Toggle billing */}
       <div className="ps-toggle">
         <button
           className={`ps-toggle-btn ${billing === 'monthly' ? 'active' : ''}`}
@@ -688,7 +695,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         {billing === 'annual' && <span className="ps-toggle-badge">-30% 🎉</span>}
       </div>
 
-      {/* Plans grid */}
       <div className="ps-grid">
         {PLANS.map(plan => {
           const isCurrent = isCurrentPlan(plan.id);
@@ -707,11 +713,9 @@ export default function PlanSelection({ user: userProp, onSkip }) {
                 <div className="ps-popular-badge">✦ Le plus populaire</div>
               )}
               <div className="ps-card-glow" />
-
               <span className="ps-card-icon">{plan.icon}</span>
               <div className="ps-card-name">{plan.name}</div>
               <div className="ps-card-desc">{plan.desc}</div>
-
               <div className="ps-price-block">
                 <div className="ps-price-main">
                   <span className="ps-price-currency">$</span>
@@ -727,7 +731,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
                   </div>
                 )}
               </div>
-
               <ul className="ps-features">
                 {plan.features.map((f, i) => (
                   <li key={i} className="ps-feature">
@@ -736,7 +739,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
                   </li>
                 ))}
               </ul>
-
               {isCurrent && user?.stripeCustomerId ? (
                 <button
                   className="ps-cta ps-cta-manage"
