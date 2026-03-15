@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
@@ -11,9 +11,8 @@ export function AuthProvider({ children }) {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [error,         setError]         = useState(null);
   const [authLoading,   setAuthLoading]   = useState(false);
-  const initialized = useRef(false);
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = useCallback(async (userId) => {
     if (!userId) {
       setProfile(null);
       setProfileLoaded(true);
@@ -25,69 +24,28 @@ export function AuthProvider({ children }) {
         .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end')
         .eq('id', userId)
         .maybeSingle();
-      console.log('FETCH PROFILE RESULT:', JSON.stringify({ data, error, userId }));
+      console.log('FETCH PROFILE:', JSON.stringify({ data, error, userId }));
       setProfile(data || null);
     } catch (e) {
-      console.log('FETCH PROFILE CATCH:', e.message);
+      console.log('FETCH PROFILE ERROR:', e.message);
       setProfile(null);
     } finally {
       setProfileLoaded(true);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    // Nettoyer les tokens expirés
-    try {
-      Object.keys(localStorage)
-        .filter(k => k.startsWith('sb-'))
-        .forEach(k => {
-          try {
-            const val = JSON.parse(localStorage.getItem(k));
-            if (val?.expires_at && val.expires_at * 1000 < Date.now()) {
-              localStorage.removeItem(k);
-            }
-          } catch (_) { localStorage.removeItem(k); }
-        });
-    } catch (_) {}
-
-    // Timeout de sécurité 8s
+    // Timeout sécurité 8s
     const safetyTimeout = setTimeout(() => {
+      console.log('SAFETY TIMEOUT TRIGGERED');
       setProfileLoaded(true);
       setLoading(false);
     }, 8000);
 
-    // Chargement initial via getSession UNIQUEMENT
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      clearTimeout(safetyTimeout);
-      if (error || !session) {
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        setProfileLoaded(true);
-        setLoading(false);
-        return;
-      }
-      setSession(session);
-      setUser(session.user);
-      await fetchProfile(session.user.id);
-      setLoading(false);
-    }).catch(() => {
-      clearTimeout(safetyTimeout);
-      setUser(null);
-      setSession(null);
-      setProfileLoaded(true);
-      setLoading(false);
-    });
-
-    // onAuthStateChange UNIQUEMENT pour les événements POST-init
-    // (login, logout, token refresh) — pas pour INITIAL_SESSION
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Ignorer INITIAL_SESSION — géré par getSession ci-dessus
-        if (event === 'INITIAL_SESSION') return;
+        console.log('AUTH EVENT:', event, session?.user?.id);
+        clearTimeout(safetyTimeout);
 
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
@@ -98,7 +56,6 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
         setSession(session);
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -106,8 +63,11 @@ export function AuthProvider({ children }) {
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      clearTimeout(safetyTimeout);
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
 
   const signup = useCallback(async ({ firstName, lastName, email, password }) => {
     setAuthLoading(true); setError(null);
@@ -183,7 +143,7 @@ export function AuthProvider({ children }) {
   const refreshProfile = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) await fetchProfile(session.user.id);
-  }, []);
+  }, [fetchProfile]);
 
   const clearError = useCallback(() => setError(null), []);
 
