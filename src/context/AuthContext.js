@@ -4,17 +4,21 @@ import { supabase } from '../lib/supabase';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user,        setUser]        = useState(null);
-  const [session,     setSession]     = useState(null);
-  const [profile,     setProfile]     = useState(null);
-  const [loading,     setLoading]     = useState(true);
+  const [user,          setUser]          = useState(null);
+  const [session,       setSession]       = useState(null);
+  const [profile,       setProfile]       = useState(null);
+  const [loading,       setLoading]       = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const [error,       setError]       = useState(null);
-  const [authLoading, setAuthLoading] = useState(false);
-  const initialized   = useRef(false);
+  const [error,         setError]         = useState(null);
+  const [authLoading,   setAuthLoading]   = useState(false);
+  const initialized = useRef(false);
 
   const fetchProfile = async (userId) => {
-    if (!userId) { setProfile(null); return; }
+    if (!userId) {
+      setProfile(null);
+      setProfileLoaded(true);
+      return;
+    }
     try {
       const { data } = await supabase
         .from('profiles')
@@ -33,40 +37,30 @@ export function AuthProvider({ children }) {
     if (initialized.current) return;
     initialized.current = true;
 
-    // Nettoyer les tokens corrompus AVANT de vérifier la session
-    const cleanCorruptTokens = () => {
-      try {
-        Object.keys(localStorage)
-          .filter(k => k.startsWith('sb-'))
-          .forEach(k => {
-            try {
-              const val = JSON.parse(localStorage.getItem(k));
-              // Si le token est expiré, le supprimer
-              if (val?.expires_at && val.expires_at * 1000 < Date.now()) {
-                localStorage.removeItem(k);
-              }
-            } catch (_) {
-              localStorage.removeItem(k); // JSON invalide → supprimer
+    // Nettoyer les tokens expirés
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-'))
+        .forEach(k => {
+          try {
+            const val = JSON.parse(localStorage.getItem(k));
+            if (val?.expires_at && val.expires_at * 1000 < Date.now()) {
+              localStorage.removeItem(k);
             }
-          });
-      } catch (_) {}
-    };
+          } catch (_) { localStorage.removeItem(k); }
+        });
+    } catch (_) {}
 
-    cleanCorruptTokens();
-
-    // Timeout de sécurité : si loading reste true après 5s → forcer false
+    // Timeout de sécurité 8s
     const safetyTimeout = setTimeout(() => {
       setProfileLoaded(true);
       setLoading(false);
-    }, 5000);
+    }, 8000);
 
+    // Chargement initial via getSession UNIQUEMENT
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       clearTimeout(safetyTimeout);
       if (error || !session) {
-        // Pas de session valide → nettoyer et afficher landing
-        Object.keys(localStorage)
-          .filter(k => k.startsWith('sb-'))
-          .forEach(k => localStorage.removeItem(k));
         setUser(null);
         setSession(null);
         setProfile(null);
@@ -80,25 +74,18 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }).catch(() => {
       clearTimeout(safetyTimeout);
-      Object.keys(localStorage)
-        .filter(k => k.startsWith('sb-'))
-        .forEach(k => localStorage.removeItem(k));
       setUser(null);
       setSession(null);
       setProfileLoaded(true);
       setLoading(false);
     });
 
-    // Flag pour ignorer le premier INITIAL_SESSION (getSession s'en charge déjà)
-    let initialEventSkipped = false;
-
+    // onAuthStateChange UNIQUEMENT pour les événements POST-init
+    // (login, logout, token refresh) — pas pour INITIAL_SESSION
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!initialEventSkipped && event === 'INITIAL_SESSION') {
-          initialEventSkipped = true;
-          return;
-        }
-        initialEventSkipped = true;
+        // Ignorer INITIAL_SESSION — géré par getSession ci-dessus
+        if (event === 'INITIAL_SESSION') return;
 
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
@@ -108,6 +95,8 @@ export function AuthProvider({ children }) {
           setLoading(false);
           return;
         }
+
+        // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
         setSession(session);
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -134,14 +123,10 @@ export function AuthProvider({ children }) {
     });
     setAuthLoading(false);
     if (error) { setError(translateError(error.message)); return { success: false }; }
-
-    // FIX : Supabase ne retourne pas d'erreur si email déjà utilisé
-    // mais retourne un user avec identities vide
     if (data?.user && data.user.identities?.length === 0) {
       setError('Un compte existe déjà avec cet email.');
       return { success: false };
     }
-
     return { success: true, needsConfirmation: !data.session };
   }, []);
 
@@ -184,6 +169,7 @@ export function AuthProvider({ children }) {
       .filter(k => k.startsWith('sb-'))
       .forEach(k => localStorage.removeItem(k));
     setUser(null); setSession(null); setProfile(null);
+    setProfileLoaded(true);
   }, []);
 
   const updateProfile = useCallback(async (updates) => {
@@ -230,10 +216,9 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user: userProfile,
-      session, loading, authLoading, error,
+      session, loading, authLoading, error, profileLoaded,
       signup, login, loginWithGoogle, loginWithGitHub,
       resetPassword, logout, updateProfile, refreshProfile, clearError,
-      profileLoaded,
     }}>
       {children}
     </AuthContext.Provider>
