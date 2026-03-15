@@ -1,3 +1,4 @@
+import { supabase } from './lib/supabase';
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
@@ -157,12 +158,17 @@ function AppInner() {
     });
   };
 
-  // ✅ Retour depuis PlanSelection → déconnexion propre → landing
+  // ✅ Bouton retour PlanSelection → logout + reload = landing garantie
   const handleSkipPlan = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
-    setPaymentOk(false);
-    await logout();
-    // pas de toast pour ne pas perturber
+    // On signOut Supabase directement (sans passer par logout du context)
+    await supabase.auth.signOut();
+    // On vide le storage manuellement
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-') || k.startsWith('mfj-'))
+      .forEach(k => localStorage.removeItem(k));
+    // Reload → app repart de zéro → user=null → landing
+    window.location.reload();
   };
 
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
@@ -188,8 +194,6 @@ function AppInner() {
     );
   }
 
-  // ✅ Pas de stripeCustomerId → page abonnement
-  // Le bouton retour déconnecte → retour landing naturel
   if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
     return <PlanSelection user={user} onSkip={handleSkipPlan} />;
   }
