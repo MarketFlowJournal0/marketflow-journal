@@ -39,40 +39,48 @@ export function AuthProvider({ children }) {
 
     let mounted = true;
 
-    const finish = (sessionData) => {
-      if (!mounted) return;
-      if (!sessionData?.user) {
-        setUser(null);
-        setSession(null);
-        setProfile(null);
+    // Timeout sécurité 4s max
+    const t = setTimeout(() => {
+      if (mounted) {
         setProfileLoaded(true);
         setLoading(false);
-        return;
       }
-      setSession(sessionData);
-      setUser(sessionData.user);
-      fetchProfile(sessionData.user.id).then(() => {
+    }, 4000);
+
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        clearTimeout(t);
+        if (!mounted) return;
+
+        if (!session?.user) {
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setProfileLoaded(true);
+          setLoading(false);
+          return;
+        }
+
+        setSession(session);
+        setUser(session.user);
+        await fetchProfile(session.user.id);
         if (mounted) setLoading(false);
-      });
+      } catch (err) {
+        clearTimeout(t);
+        console.error('Auth init error:', err);
+        if (mounted) {
+          setProfileLoaded(true);
+          setLoading(false);
+        }
+      }
     };
 
-    // Timeout sécurité 6s
-    const t = setTimeout(() => {
-      if (mounted) { setProfileLoaded(true); setLoading(false); }
-    }, 6000);
+    init();
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(t);
-      finish(session);
-    }).catch(() => {
-      clearTimeout(t);
-      if (mounted) { setProfileLoaded(true); setLoading(false); }
-    });
-
-    // onAuthStateChange pour les events POST-init uniquement
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'INITIAL_SESSION') return; // géré par getSession
+        if (event === 'INITIAL_SESSION') return;
         if (!mounted) return;
 
         if (event === 'SIGNED_OUT' || !session) {
@@ -99,13 +107,21 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: { first_name: firstName.trim(), last_name: lastName.trim(), full_name: `${firstName.trim()} ${lastName.trim()}`, plan: 'trial' },
+        data: {
+          first_name: firstName.trim(),
+          last_name:  lastName.trim(),
+          full_name:  `${firstName.trim()} ${lastName.trim()}`,
+          plan:       'trial',
+        },
         emailRedirectTo: window.location.origin,
       },
     });
     setAuthLoading(false);
     if (error) { setError(translateError(error.message)); return { success: false }; }
-    if (data?.user && data.user.identities?.length === 0) { setError('Un compte existe déjà avec cet email.'); return { success: false }; }
+    if (data?.user && data.user.identities?.length === 0) {
+      setError('Un compte existe déjà avec cet email.');
+      return { success: false };
+    }
     return { success: true, needsConfirmation: !data.session };
   }, []);
 
@@ -119,26 +135,36 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = useCallback(async () => {
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
     if (error) setError(translateError(error.message));
   }, []);
 
   const loginWithGitHub = useCallback(async () => {
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.origin } });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: window.location.origin },
+    });
     if (error) setError(translateError(error.message));
   }, []);
 
   const resetPassword = useCallback(async (email) => {
     setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     if (error) { setError(translateError(error.message)); return false; }
     return true;
   }, []);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
-    Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-') || k.startsWith('mfj-'))
+      .forEach(k => localStorage.removeItem(k));
     setUser(null); setSession(null); setProfile(null); setProfileLoaded(true);
   }, []);
 
@@ -158,7 +184,9 @@ export function AuthProvider({ children }) {
   const effectivePlan = profile?.plan || user?.user_metadata?.plan || 'trial';
   const subStatus     = profile?.subscription_status || 'trialing';
   const trialEnd      = profile?.trial_end || null;
-  const trialDaysLeft = trialEnd ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000)) : 14;
+  const trialDaysLeft = trialEnd
+    ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
+    : 14;
 
   const userProfile = user ? {
     id:                   user.id,
