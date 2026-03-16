@@ -88,7 +88,7 @@ function AppInner() {
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null);
 
-  // ✅ Flag sessionStorage : si présent au chargement → afficher landing
+  // Lire le flag sessionStorage une seule fois à l'initialisation
   const [forceLanding, setForceLanding] = useState(
     () => sessionStorage.getItem(BACK_FROM_PLAN_KEY) === '1'
   );
@@ -100,13 +100,14 @@ function AppInner() {
     return false;
   });
 
-  // Nettoyer le flag dès qu'il a été lu
+  // Nettoyer le flag sessionStorage après qu'il a été lu (une seule fois)
   useEffect(() => {
     if (forceLanding) {
       sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
     }
-  }, [forceLanding]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Gérer le retour Stripe (payment success / cancelled)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
@@ -130,7 +131,7 @@ function AppInner() {
         style: { background: '#0D1627', color: '#fff', borderRadius: '12px' },
       });
     }
-  }, []); // eslint-disable-line
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openLogin          = () => { setForceLanding(false); setAuthModal('login'); };
   const openSignup         = () => { setForceLanding(false); setAuthModal('signup'); };
@@ -176,19 +177,20 @@ function AppInner() {
     });
   };
 
-  // ✅ Retour depuis PlanSelection
-  // On pose le flag AVANT le reload → au prochain rendu forceLanding=true → landing
+  // Retour depuis PlanSelection → pose le flag puis reload
   const handleSkipPlan = () => {
     sessionStorage.setItem(BACK_FROM_PLAN_KEY, '1');
     window.location.reload();
   };
 
+  // ── Callback OAuth ──────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  if (loading && !profileLoaded) return <LoadingScreen />;
-
-  // ✅ Flag posé → afficher landing même si user connecté
-  if (forceLanding || !user) {
+  // ── ✅ FIX : forceLanding EN PREMIER, avant le LoadingScreen ────────────────
+  // Si le flag est actif, on affiche la LandingPage immédiatement,
+  // peu importe l'état de l'auth. Cela évite que le Dashboard s'affiche
+  // le temps que profileLoaded passe à true après le reload.
+  if (forceLanding) {
     return (
       <>
         <LandingPage
@@ -207,10 +209,35 @@ function AppInner() {
     );
   }
 
+  // ── Loading auth ────────────────────────────────────────────────────────────
+  if (loading && !profileLoaded) return <LoadingScreen />;
+
+  // ── Non connecté → LandingPage ──────────────────────────────────────────────
+  if (!user) {
+    return (
+      <>
+        <LandingPage
+          onLogin={openLogin}
+          onSignup={openSignup}
+          onSignupWithPlan={openSignupWithPlan}
+        />
+        {authModal && (
+          <AuthModal
+            defaultTab={authModal}
+            onClose={closeAuth}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
+      </>
+    );
+  }
+
+  // ── Connecté sans abonnement → PlanSelection ────────────────────────────────
   if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
     return <PlanSelection user={user} onSkip={handleSkipPlan} />;
   }
 
+  // ── App principale ──────────────────────────────────────────────────────────
   const sidebarWidth = collapsed ? 72 : 260;
 
   const renderPage = () => {
