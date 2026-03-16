@@ -100,12 +100,12 @@ function AppInner() {
     return false;
   });
 
-  // Nettoyer le flag sessionStorage après qu'il a été lu (une seule fois)
+  // Nettoyer le flag sessionStorage une seule fois au montage
   useEffect(() => {
     if (forceLanding) {
       sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line
 
   // Gérer le retour Stripe (payment success / cancelled)
   useEffect(() => {
@@ -131,7 +131,7 @@ function AppInner() {
         style: { background: '#0D1627', color: '#fff', borderRadius: '12px' },
       });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line
 
   const openLogin          = () => { setForceLanding(false); setAuthModal('login'); };
   const openSignup         = () => { setForceLanding(false); setAuthModal('signup'); };
@@ -186,7 +186,7 @@ function AppInner() {
   // ── Callback OAuth ──────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  // ── ✅ FIX : forceLanding EN PREMIER, avant le LoadingScreen ────────────────
+  // ── FIX : forceLanding EN PREMIER, avant le LoadingScreen ──────────────────
   // Si le flag est actif, on affiche la LandingPage immédiatement,
   // peu importe l'état de l'auth. Cela évite que le Dashboard s'affiche
   // le temps que profileLoaded passe à true après le reload.
