@@ -43,9 +43,6 @@ const C = {
 };
 
 // ─────────────────────────────────────────────
-
-
-// ─────────────────────────────────────────────
 // REUSABLE PRIMITIVES
 // ─────────────────────────────────────────────
 const Card = ({ children, style = {}, glow = null, hover = false, custom = 0, onClick }) => (
@@ -125,9 +122,7 @@ const KPI_ITEMS = [
   { label:'Expectancy',     value:'$976',     delta:-1.8, sub:'Par trade',      color:C.gold,   icon:'🧮' },
 ];
 
-const KpiStrip = () => {
-  const { MOCK_STATS = {} } = useDashData();
-  return (
+const KpiStrip = () => (
   <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:8, marginBottom:14 }}>
     {KPI_ITEMS.map((k, i) => (
       <Card key={k.label} custom={i} glow={k.color} hover style={{padding:'13px 14px',minHeight:82}}>
@@ -149,15 +144,13 @@ const KpiStrip = () => {
     ))}
   </div>
 );
-}
 
 // ─────────────────────────────────────────────
 // EQUITY CHART
 // ─────────────────────────────────────────────
 const EquityPanel = () => {
-  const { EQUITY_DATA = [], MOCK_STATS = {} } = useDashData();
+  const { EQUITY_DATA = [] } = useDashData();
   const [range, setRange] = useState('1A');
-  // ── FIX: guard si EQUITY_DATA vide ──
   const last     = EQUITY_DATA.length ? EQUITY_DATA[EQUITY_DATA.length-1].v : 0;
   const first    = EQUITY_DATA.length ? EQUITY_DATA[0].v : 0;
   const gain     = last - first;
@@ -183,7 +176,6 @@ const EquityPanel = () => {
           ))}
         </div>
       </div>
-      {/* Mini stats row */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:14}}>
         {[
           {l:'Max DD',v:'-31.6%',c:C.danger},
@@ -221,113 +213,113 @@ const EquityPanel = () => {
 };
 
 // ─────────────────────────────────────────────
-// DAILY P&L BAR
+// DAILY P&L BAR — ✅ FIX: lit DAILY_PNL depuis le contexte
 // ─────────────────────────────────────────────
-const DailyPnl = () => (
-  <Card custom={8} glow={C.cyan} hover={false} style={{padding:'18px 18px'}}>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-      <SectionTitle color={C.cyan} icon="📅">Performance par jour</SectionTitle>
-      <div style={{display:'flex',gap:8,alignItems:'center'}}>
-        <Badge color={C.green}>Sun +$16590</Badge>
-        <Badge color={C.warn}>Mon $0</Badge>
-      </div>
-    </div>
-    <ResponsiveContainer width="100%" height={130}>
-      <BarChart data={DAILY_PNL} margin={{top:4,right:4,bottom:0,left:0}}>
-        <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
-        <XAxis dataKey="d" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false}/>
-        <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} width={36}/>
-        <Tooltip content={<ChartTip prefix="$"/>}/>
-        <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)"/>
-        <Bar dataKey="v" radius={[4,4,0,0]} maxBarSize={36}>
-          {DAILY_PNL.map((d,i)=><Cell key={i} fill={d.v>0?C.green:d.v<0?C.danger:C.warn} opacity={0.85}/>)}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-    {/* Day values row */}
-    <div style={{display:'grid',gridTemplateColumns:`repeat(${DAILY_PNL.length},1fr)`,gap:3,marginTop:8}}>
-      {DAILY_PNL.map((d,i)=>(
-        <div key={i} style={{textAlign:'center',padding:'4px 0',borderRadius:6,background:'rgba(255,255,255,0.025)'}}>
-          <div style={{fontSize:7,color:C.t3,marginBottom:1}}>{d.d}</div>
-          <div style={{fontSize:8.5,fontWeight:900,fontFamily:'monospace',color:d.v>0?C.green:d.v<0?C.danger:C.t3}}>
-            {d.v>0?'+':''}${Math.abs(d.v)}
-          </div>
+const DailyPnl = () => {
+  const { DAILY_PNL = [] } = useDashData(); // ← FIX: plus de variable globale
+  return (
+    <Card custom={8} glow={C.cyan} hover={false} style={{padding:'18px 18px'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+        <SectionTitle color={C.cyan} icon="📅">Performance par jour</SectionTitle>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <Badge color={C.green}>Sun +$16590</Badge>
+          <Badge color={C.warn}>Mon $0</Badge>
         </div>
-      ))}
-    </div>
-  </Card>
-);
+      </div>
+      <ResponsiveContainer width="100%" height={130}>
+        <BarChart data={DAILY_PNL} margin={{top:4,right:4,bottom:0,left:0}}>
+          <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
+          <XAxis dataKey="d" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false}/>
+          <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} width={36}/>
+          <Tooltip content={<ChartTip prefix="$"/>}/>
+          <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)"/>
+          <Bar dataKey="v" radius={[4,4,0,0]} maxBarSize={36}>
+            {DAILY_PNL.map((d,i)=><Cell key={i} fill={d.v>0?C.green:d.v<0?C.danger:C.warn} opacity={0.85}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      {DAILY_PNL.length > 0 && (
+        <div style={{display:'grid',gridTemplateColumns:`repeat(${DAILY_PNL.length},1fr)`,gap:3,marginTop:8}}>
+          {DAILY_PNL.map((d,i)=>(
+            <div key={i} style={{textAlign:'center',padding:'4px 0',borderRadius:6,background:'rgba(255,255,255,0.025)'}}>
+              <div style={{fontSize:7,color:C.t3,marginBottom:1}}>{d.d}</div>
+              <div style={{fontSize:8.5,fontWeight:900,fontFamily:'monospace',color:d.v>0?C.green:d.v<0?C.danger:C.t3}}>
+                {d.v>0?'+':''}${Math.abs(d.v)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+};
 
 // ─────────────────────────────────────────────
 // PERFORMANCE SCORE RADAR
 // ─────────────────────────────────────────────
 const PerformanceScore = () => {
-  const { RADAR_DATA = [], MOCK_STATS = {} } = useDashData();
+  const { RADAR_DATA = [] } = useDashData();
   return (
-  <Card custom={9} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
-    <SectionTitle color={C.purple} icon="⚡">Performance Score</SectionTitle>
-    <div style={{display:'flex',alignItems:'center',gap:16}}>
-      {/* Score circle */}
-      <div style={{position:'relative',flexShrink:0,width:70,height:70}}>
-        <svg width="70" height="70" viewBox="0 0 70 70">
-          <circle cx="35" cy="35" r="30" fill="none" stroke="rgba(176,110,255,0.12)" strokeWidth="6"/>
-          <circle cx="35" cy="35" r="30" fill="none" stroke="url(#sg)" strokeWidth="6"
-            strokeDasharray={`${2*Math.PI*30*0.68} ${2*Math.PI*30*(1-0.68)}`}
-            strokeLinecap="round" transform="rotate(-90 35 35)"/>
-          <defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop stopColor={C.cyan}/><stop offset="1" stopColor={C.purple}/></linearGradient></defs>
-        </svg>
-        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-          <span style={{fontSize:19,fontWeight:900,color:C.t0,lineHeight:1}}>68</span>
-          <span style={{fontSize:6.5,color:C.t3,fontWeight:700,letterSpacing:'0.5px'}}>SCORE</span>
+    <Card custom={9} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
+      <SectionTitle color={C.purple} icon="⚡">Performance Score</SectionTitle>
+      <div style={{display:'flex',alignItems:'center',gap:16}}>
+        <div style={{position:'relative',flexShrink:0,width:70,height:70}}>
+          <svg width="70" height="70" viewBox="0 0 70 70">
+            <circle cx="35" cy="35" r="30" fill="none" stroke="rgba(176,110,255,0.12)" strokeWidth="6"/>
+            <circle cx="35" cy="35" r="30" fill="none" stroke="url(#sg)" strokeWidth="6"
+              strokeDasharray={`${2*Math.PI*30*0.68} ${2*Math.PI*30*(1-0.68)}`}
+              strokeLinecap="round" transform="rotate(-90 35 35)"/>
+            <defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop stopColor={C.cyan}/><stop offset="1" stopColor={C.purple}/></linearGradient></defs>
+          </svg>
+          <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+            <span style={{fontSize:19,fontWeight:900,color:C.t0,lineHeight:1}}>68</span>
+            <span style={{fontSize:6.5,color:C.t3,fontWeight:700,letterSpacing:'0.5px'}}>SCORE</span>
+          </div>
+        </div>
+        <div style={{flex:1,display:'flex',flexDirection:'column',gap:5}}>
+          {[
+            {l:'Win Rate',v:77,c:C.green},
+            {l:'Profit F.',v:100,c:C.cyan},
+            {l:'Risk/Rew.',v:53,c:C.purple},
+            {l:'Sharpe',v:100,c:C.teal},
+            {l:'Discipline',v:65,c:C.warn},
+            {l:'Constance',v:100,c:C.blue},
+          ].map(x=>(
+            <div key={x.l} style={{display:'flex',alignItems:'center',gap:7}}>
+              <span style={{fontSize:7.5,color:C.t3,width:52,flexShrink:0}}>{x.l}</span>
+              <div style={{flex:1,height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
+                <motion.div initial={{width:0}} animate={{width:`${x.v}%`}} transition={{duration:1,delay:0.3,ease:[0.16,1,0.3,1]}}
+                  style={{height:'100%',background:`linear-gradient(90deg,${x.c}66,${x.c})`,borderRadius:2}}/>
+              </div>
+              <span style={{fontSize:7.5,fontWeight:800,color:x.c,width:22,textAlign:'right',fontFamily:'monospace'}}>{x.v}</span>
+            </div>
+          ))}
         </div>
       </div>
-      {/* Bars */}
-      <div style={{flex:1,display:'flex',flexDirection:'column',gap:5}}>
-        {[
-          {l:'Win Rate',v:77,c:C.green},
-          {l:'Profit F.',v:100,c:C.cyan},
-          {l:'Risk/Rew.',v:53,c:C.purple},
-          {l:'Sharpe',v:100,c:C.teal},
-          {l:'Discipline',v:65,c:C.warn},
-          {l:'Constance',v:100,c:C.blue},
-        ].map(x=>(
-          <div key={x.l} style={{display:'flex',alignItems:'center',gap:7}}>
-            <span style={{fontSize:7.5,color:C.t3,width:52,flexShrink:0}}>{x.l}</span>
-            <div style={{flex:1,height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
-              <motion.div initial={{width:0}} animate={{width:`${x.v}%`}} transition={{duration:1,delay:0.3,ease:[0.16,1,0.3,1]}}
-                style={{height:'100%',background:`linear-gradient(90deg,${x.c}66,${x.c})`,borderRadius:2}}/>
-            </div>
-            <span style={{fontSize:7.5,fontWeight:800,color:x.c,width:22,textAlign:'right',fontFamily:'monospace'}}>{x.v}</span>
-          </div>
-        ))}
+      <div style={{marginTop:12}}>
+        <ResponsiveContainer width="100%" height={140}>
+          <RadarChart data={RADAR_DATA} cx="50%" cy="50%" outerRadius="58%">
+            <PolarGrid stroke="rgba(255,255,255,0.07)" gridType="polygon"/>
+            <PolarAngleAxis dataKey="m" tick={{fill:C.t3,fontSize:7.5}}/>
+            <Radar dataKey="v" stroke={C.purple} strokeWidth={1.5} fill={C.purple} fillOpacity={0.18}/>
+          </RadarChart>
+        </ResponsiveContainer>
       </div>
-    </div>
-    <div style={{marginTop:12}}>
-      <ResponsiveContainer width="100%" height={140}>
-        <RadarChart data={RADAR_DATA} cx="50%" cy="50%" outerRadius="58%">
-          <PolarGrid stroke="rgba(255,255,255,0.07)" gridType="polygon"/>
-          <PolarAngleAxis dataKey="m" tick={{fill:C.t3,fontSize:7.5}}/>
-          <Radar dataKey="v" stroke={C.purple} strokeWidth={1.5} fill={C.purple} fillOpacity={0.18}/>
-        </RadarChart>
-      </ResponsiveContainer>
-    </div>
-  </Card>
-);
-}
+    </Card>
+  );
+};
 
 // ─────────────────────────────────────────────
 // BIAIS ANALYSIS
 // ─────────────────────────────────────────────
 const BiaisPanel = () => {
   const { BIAIS_DATA = [] } = useDashData();
-  const total = BIAIS_DATA.reduce((s,d)=>s+d.value,0);
   return (
     <Card custom={10} glow={C.teal} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
         <SectionTitle color={C.teal} icon="🧭">Analyse des Biais</SectionTitle>
         <Badge color={C.cyan}>17 annotés</Badge>
       </div>
-      {/* Donut */}
       <div style={{display:'flex',gap:16,alignItems:'center',marginBottom:12}}>
         <div style={{position:'relative',flexShrink:0}}>
           <ResponsiveContainer width={110} height={110}>
@@ -353,7 +345,7 @@ const BiaisPanel = () => {
                 </div>
                 <div style={{display:'flex',gap:8}}>
                   <span style={{fontSize:9,fontWeight:800,color:d.color,fontFamily:'monospace'}}>{d.value}%</span>
-                  <span style={{fontSize:9,color:d.pnl.startsWith('+')?C.green:C.danger,fontFamily:'monospace'}}>{d.pnl}</span>
+                  <span style={{fontSize:9,color:d.pnl?.startsWith('+')?C.green:C.danger,fontFamily:'monospace'}}>{d.pnl}</span>
                 </div>
               </div>
               <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
@@ -364,7 +356,6 @@ const BiaisPanel = () => {
           ))}
         </div>
       </div>
-      {/* Bottom stats */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6,padding:'10px',borderRadius:10,background:'rgba(255,255,255,0.025)',border:`1px solid ${C.brd}`}}>
         {[
           {l:'P&L Bull.',v:'+$13,580',c:C.green},
@@ -385,9 +376,8 @@ const BiaisPanel = () => {
 // RENTABILITE GAUGE
 // ─────────────────────────────────────────────
 const RentabiliteGauge = () => {
-  const { MOCK_STATS = {} } = useDashData();
   const pct = 76.5;
-  const angle = (pct / 100) * 180 - 90; // -90 to +90
+  const angle = (pct / 100) * 180 - 90;
   return (
     <Card custom={11} glow={C.orange} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
@@ -395,7 +385,6 @@ const RentabiliteGauge = () => {
         <Badge color={C.cyan}>1h 24m avg</Badge>
       </div>
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',paddingTop:4}}>
-        {/* Gauge SVG */}
         <svg width="200" height="110" viewBox="0 0 200 110">
           <defs>
             <linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -403,17 +392,13 @@ const RentabiliteGauge = () => {
               <stop offset="70%" stopColor={C.teal}/><stop offset="100%" stopColor={C.green}/>
             </linearGradient>
           </defs>
-          {/* Track */}
           <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="14" strokeLinecap="round"/>
-          {/* Filled */}
           <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gg)" strokeWidth="14" strokeLinecap="round"
             strokeDasharray={`${pct/100*251} 251`}/>
-          {/* Needle */}
           <g transform={`rotate(${angle},100,100)`}>
             <line x1="100" y1="100" x2="100" y2="30" stroke={C.t0} strokeWidth="2.5" strokeLinecap="round"/>
             <circle cx="100" cy="100" r="5" fill={C.t0}/>
           </g>
-          {/* Labels */}
           <text x="16" y="115" fontSize="8" fill={C.t3} textAnchor="middle">0%</text>
           <text x="100" y="28" fontSize="8" fill={C.t3} textAnchor="middle">50%</text>
           <text x="184" y="115" fontSize="8" fill={C.t3} textAnchor="middle">100%</text>
@@ -439,7 +424,7 @@ const RentabiliteGauge = () => {
 // RECENT TRADES
 // ─────────────────────────────────────────────
 const RecentTrades = () => {
-  const { RECENT_TRADES = [], MOCK_STATS = {} } = useDashData();
+  const { RECENT_TRADES = [] } = useDashData();
   const [filter, setFilter] = useState('All');
   const filtered = filter === 'All' ? RECENT_TRADES : RECENT_TRADES.filter(t => t.res === filter);
   return (
@@ -459,7 +444,6 @@ const RecentTrades = () => {
           </button>
         </div>
       </div>
-      {/* Stats mini-row */}
       <div style={{display:'flex',gap:8,marginBottom:12}}>
         <div style={{padding:'4px 10px',borderRadius:7,background:`${C.green}12`,border:`1px solid ${C.green}25`,display:'flex',gap:6,alignItems:'center'}}>
           <span style={{fontSize:8,color:C.t3}}>P&L semaine</span>
@@ -480,11 +464,8 @@ const RecentTrades = () => {
                 background:i%2===0?'rgba(255,255,255,0.018)':'rgba(255,255,255,0.010)',
                 border:'1px solid rgba(255,255,255,0.035)',transition:'all 0.12s',cursor:'pointer'}}
               whileHover={{background:'rgba(77,124,255,0.06)',borderColor:'rgba(77,124,255,0.18)'}}>
-              {/* Pair badge */}
               <div style={{width:32,height:22,borderRadius:5,background:`${rc}15`,border:`1px solid ${rc}28`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <span style={{fontSize:6.5,fontWeight:900,color:rc}}>
-                  {t.pair.slice(0,3)}
-                </span>
+                <span style={{fontSize:6.5,fontWeight:900,color:rc}}>{t.pair?.slice(0,3)}</span>
               </div>
               <div>
                 <div style={{fontSize:10,fontWeight:800,color:C.t1}}>{t.pair}</div>
@@ -501,7 +482,7 @@ const RecentTrades = () => {
               </div>
               <div style={{textAlign:'right'}}>
                 <div style={{fontSize:7.5,color:C.purple}}>{t.session}</div>
-                <div style={{fontSize:7,color:C.t3}}>{t.date.slice(5)}</div>
+                <div style={{fontSize:7,color:C.t3}}>{t.date?.slice(5)}</div>
               </div>
             </motion.div>
           );
@@ -517,36 +498,36 @@ const RecentTrades = () => {
 const SessionPanel = () => {
   const { SESSION_DATA = [] } = useDashData();
   return (
-  <Card custom={13} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
-    <SectionTitle color={C.purple} icon="🌍">Sessions</SectionTitle>
-    <div style={{display:'flex',flexDirection:'column',gap:6}}>
-      {SESSION_DATA.map((s,i)=>{
-        const wr = Math.round(s.tp/(s.tp+s.sl+s.be)*100);
-        const maxPnl = Math.max(...SESSION_DATA.map(x=>x.pnl));
-        const pct = s.pnl/maxPnl*100;
-        return (
-          <div key={i} style={{padding:'9px 11px',borderRadius:10,background:'rgba(255,255,255,0.025)',border:`1px solid ${C.brd}`,position:'relative',overflow:'hidden'}}>
-            <motion.div animate={{opacity:[0.04,0.08,0.04]}} transition={{duration:3,repeat:Infinity,delay:i*0.4}}
-              style={{position:'absolute',inset:0,background:`linear-gradient(90deg,${C.purple}10,transparent)`}}/>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5,position:'relative'}}>
-              <span style={{fontSize:10,fontWeight:800,color:C.t1}}>{s.s}</span>
-              <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                <span style={{fontSize:8.5,fontWeight:800,fontFamily:'monospace',color:C.green}}>+${s.pnl.toLocaleString()}</span>
-                <span style={{fontSize:8,fontWeight:800,color:wr>=65?C.green:wr>=50?C.warn:C.danger,fontFamily:'monospace'}}>{wr}%</span>
-                <span style={{fontSize:7.5,color:C.t3}}>{s.tp}W·{s.sl}L·{s.be}BE</span>
+    <Card custom={13} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
+      <SectionTitle color={C.purple} icon="🌍">Sessions</SectionTitle>
+      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+        {SESSION_DATA.map((s,i)=>{
+          const wr = Math.round(s.tp/(s.tp+s.sl+s.be)*100);
+          const maxPnl = Math.max(...SESSION_DATA.map(x=>x.pnl));
+          const pct = s.pnl/maxPnl*100;
+          return (
+            <div key={i} style={{padding:'9px 11px',borderRadius:10,background:'rgba(255,255,255,0.025)',border:`1px solid ${C.brd}`,position:'relative',overflow:'hidden'}}>
+              <motion.div animate={{opacity:[0.04,0.08,0.04]}} transition={{duration:3,repeat:Infinity,delay:i*0.4}}
+                style={{position:'absolute',inset:0,background:`linear-gradient(90deg,${C.purple}10,transparent)`}}/>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5,position:'relative'}}>
+                <span style={{fontSize:10,fontWeight:800,color:C.t1}}>{s.s}</span>
+                <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                  <span style={{fontSize:8.5,fontWeight:800,fontFamily:'monospace',color:C.green}}>+${s.pnl.toLocaleString()}</span>
+                  <span style={{fontSize:8,fontWeight:800,color:wr>=65?C.green:wr>=50?C.warn:C.danger,fontFamily:'monospace'}}>{wr}%</span>
+                  <span style={{fontSize:7.5,color:C.t3}}>{s.tp}W·{s.sl}L·{s.be}BE</span>
+                </div>
+              </div>
+              <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
+                <motion.div initial={{width:0}} animate={{width:`${pct}%`}} transition={{duration:0.8,delay:0.2+i*0.1}}
+                  style={{height:'100%',background:`linear-gradient(90deg,${C.purple}88,${C.purple})`,borderRadius:2}}/>
               </div>
             </div>
-            <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
-              <motion.div initial={{width:0}} animate={{width:`${pct}%`}} transition={{duration:0.8,delay:0.2+i*0.1}}
-                style={{height:'100%',background:`linear-gradient(90deg,${C.purple}88,${C.purple})`,borderRadius:2}}/>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </Card>
-);
-}
+          );
+        })}
+      </div>
+    </Card>
+  );
+};
 
 // ─────────────────────────────────────────────
 // PAIR BREAKDOWN
@@ -554,33 +535,32 @@ const SessionPanel = () => {
 const PairPanel = () => {
   const { PAIR_DATA = [] } = useDashData();
   return (
-  <Card custom={14} glow={C.gold} hover={false} style={{padding:'18px 18px'}}>
-    <SectionTitle color={C.gold} icon="💱">Par Paire</SectionTitle>
-    <div style={{display:'flex',flexDirection:'column',gap:4}}>
-      {/* Header */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'0 8px 6px',borderBottom:`1px solid ${C.brd}`}}>
-        {['Paire','#','WR','P&L'].map(h=><span key={h} style={{fontSize:7,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:'right'}}>{h}</span>)}
+    <Card custom={14} glow={C.gold} hover={false} style={{padding:'18px 18px'}}>
+      <SectionTitle color={C.gold} icon="💱">Par Paire</SectionTitle>
+      <div style={{display:'flex',flexDirection:'column',gap:4}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'0 8px 6px',borderBottom:`1px solid ${C.brd}`}}>
+          {['Paire','#','WR','P&L'].map(h=><span key={h} style={{fontSize:7,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:'right'}}>{h}</span>)}
+        </div>
+        {PAIR_DATA.map((p,i)=>(
+          <motion.div key={i} initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} transition={{delay:0.1+i*0.06}}
+            style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'7px 8px',borderRadius:8,
+              background:'rgba(255,255,255,0.02)',alignItems:'center',cursor:'pointer',transition:'all 0.12s'}}
+            whileHover={{background:'rgba(255,215,0,0.05)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <div style={{width:6,height:6,borderRadius:'50%',background:p.col,boxShadow:`0 0 5px ${p.col}`,flexShrink:0}}/>
+              <span style={{fontSize:10.5,fontWeight:800,color:C.t1}}>{p.p}</span>
+            </div>
+            <span style={{fontSize:9,color:C.t2,fontFamily:'monospace',textAlign:'right'}}>{p.n}</span>
+            <span style={{fontSize:9,fontWeight:800,fontFamily:'monospace',color:p.wr>=65?C.green:p.wr>=50?C.warn:C.danger,textAlign:'right'}}>{p.wr}%</span>
+            <span style={{fontSize:10,fontWeight:900,fontFamily:'monospace',color:p.pnl>=0?C.green:C.danger,textAlign:'right'}}>
+              {p.pnl>=0?'+':''}{p.pnl>=0?'$'+p.pnl.toLocaleString():'-$'+Math.abs(p.pnl)}
+            </span>
+          </motion.div>
+        ))}
       </div>
-      {PAIR_DATA.map((p,i)=>(
-        <motion.div key={i} initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} transition={{delay:0.1+i*0.06}}
-          style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'7px 8px',borderRadius:8,
-            background:'rgba(255,255,255,0.02)',alignItems:'center',cursor:'pointer',transition:'all 0.12s'}}
-          whileHover={{background:'rgba(255,215,0,0.05)',borderColor:`${C.gold}20`}}>
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <div style={{width:6,height:6,borderRadius:'50%',background:p.col,boxShadow:`0 0 5px ${p.col}`,flexShrink:0}}/>
-            <span style={{fontSize:10.5,fontWeight:800,color:C.t1}}>{p.p}</span>
-          </div>
-          <span style={{fontSize:9,color:C.t2,fontFamily:'monospace',textAlign:'right'}}>{p.n}</span>
-          <span style={{fontSize:9,fontWeight:800,fontFamily:'monospace',color:p.wr>=65?C.green:p.wr>=50?C.warn:C.danger,textAlign:'right'}}>{p.wr}%</span>
-          <span style={{fontSize:10,fontWeight:900,fontFamily:'monospace',color:p.pnl>=0?C.green:C.danger,textAlign:'right'}}>
-            {p.pnl>=0?'+':''}{p.pnl>=0?'$'+p.pnl.toLocaleString():'-$'+Math.abs(p.pnl)}
-          </span>
-        </motion.div>
-      ))}
-    </div>
-  </Card>
-);
-}
+    </Card>
+  );
+};
 
 // ─────────────────────────────────────────────
 // HEATMAP Heure × Jour
@@ -629,7 +609,7 @@ const TimeHeatmap = () => {
 };
 
 // ─────────────────────────────────────────────
-// OPEN TRADE TICKER (top alert bar)
+// OPEN TRADE TICKER
 // ─────────────────────────────────────────────
 const LiveTicker = () => {
   const [visible, setVisible] = useState(true);
@@ -661,6 +641,7 @@ const LiveTicker = () => {
   );
 };
 
+// ─────────────────────────────────────────────
 // GOAL PROGRESS
 // ─────────────────────────────────────────────
 const GoalProgress = () => {
@@ -684,7 +665,7 @@ const GoalProgress = () => {
                 <span style={{fontSize:9.5,fontWeight:700,color:C.t1}}>{g.l}</span>
                 <div style={{display:'flex',gap:6,alignItems:'center'}}>
                   <span style={{fontSize:9,fontFamily:'monospace',color:c,fontWeight:800}}>
-                    {g.suffix==='%'?g.cur+'%':g.prefix==='$'?'$'+g.cur.toLocaleString():g.cur}
+                    {g.suffix==='%'?g.cur+'%':'$'+g.cur.toLocaleString()}
                   </span>
                   <span style={{fontSize:7.5,color:C.t3}}>/ {g.suffix==='%'?g.target+'%':'$'+g.target.toLocaleString()}</span>
                   {ok && <span style={{fontSize:10}}>✅</span>}
@@ -726,21 +707,17 @@ const JournalNote = () => (
 );
 
 // ─────────────────────────────────────────────
-// MAIN DASHBOARD
+// MARKETFLOW RANK
 // ─────────────────────────────────────────────
-// ─────────────────────────────────────────────
-// TRADING CALENDAR + MARKETFLOW RANK SCORE
-// ─────────────────────────────────────────────
-
 const MF_RANKS = [
-  { rank: 'Iron',     min: 0,   max: 19,  color: '#8B7355', icon: '🔩', desc: 'Débutant' },
-  { rank: 'Bronze',   min: 20,  max: 39,  color: '#CD7F32', icon: '🥉', desc: 'En progression' },
-  { rank: 'Silver',   min: 40,  max: 59,  color: '#C0C0C0', icon: '🥈', desc: 'Régulier' },
-  { rank: 'Gold',     min: 60,  max: 74,  color: '#FFD700', icon: '🥇', desc: 'Performant' },
-  { rank: 'Platinum', min: 75,  max: 84,  color: '#00F5D4', icon: '💎', desc: 'Expert' },
-  { rank: 'Diamond',  min: 85,  max: 92,  color: '#06E6FF', icon: '💠', desc: 'Élite' },
-  { rank: 'Master',   min: 93,  max: 97,  color: '#B06EFF', icon: '👑', desc: 'Master Trader' },
-  { rank: 'Grandmaster', min: 98, max: 100, color: '#FF4DC4', icon: '⚡', desc: 'Légende' },
+  { rank: 'Iron',        min: 0,   max: 19,  color: '#8B7355', icon: '🔩', desc: 'Débutant' },
+  { rank: 'Bronze',      min: 20,  max: 39,  color: '#CD7F32', icon: '🥉', desc: 'En progression' },
+  { rank: 'Silver',      min: 40,  max: 59,  color: '#C0C0C0', icon: '🥈', desc: 'Régulier' },
+  { rank: 'Gold',        min: 60,  max: 74,  color: '#FFD700', icon: '🥇', desc: 'Performant' },
+  { rank: 'Platinum',    min: 75,  max: 84,  color: '#00F5D4', icon: '💎', desc: 'Expert' },
+  { rank: 'Diamond',     min: 85,  max: 92,  color: '#06E6FF', icon: '💠', desc: 'Élite' },
+  { rank: 'Master',      min: 93,  max: 97,  color: '#B06EFF', icon: '👑', desc: 'Master Trader' },
+  { rank: 'Grandmaster', min: 98,  max: 100, color: '#FF4DC4', icon: '⚡', desc: 'Légende' },
 ];
 
 function getRank(score) {
@@ -749,40 +726,33 @@ function getRank(score) {
 
 function calcRegularityScore(trades) {
   if (!trades || trades.length === 0) return 0;
-
-  // 1. Win rate (30pts)
   const wins = trades.filter(t => t.pnl > 0).length;
   const wr = wins / trades.length;
   const wrScore = Math.min(30, wr * 40);
-
-  // 2. Régularité hebdo (20pts) — trades répartis sur plusieurs semaines
   const weeks = new Set(trades.map(t => {
     const d = new Date(t.date || t.entryDate || Date.now());
     const start = new Date(d.getFullYear(), 0, 1);
     return Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
   }));
   const weekScore = Math.min(20, weeks.size * 3);
-
-  // 3. Risk management (25pts) — pas de grosse perte unique
   const pnls = trades.map(t => t.pnl || 0);
   const maxLoss = Math.abs(Math.min(...pnls, 0));
   const totalPnl = pnls.reduce((a,b) => a+b, 0);
   const riskScore = totalPnl > 0 ? Math.min(25, 25 - (maxLoss / Math.max(totalPnl, 1)) * 10) : 10;
-
-  // 4. Profit factor (15pts)
-  const grossWin = pnls.filter(p => p > 0).reduce((a,b) => a+b, 0);
+  const grossWin  = pnls.filter(p => p > 0).reduce((a,b) => a+b, 0);
   const grossLoss = Math.abs(pnls.filter(p => p < 0).reduce((a,b) => a+b, 0));
   const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? 3 : 0;
   const pfScore = Math.min(15, pf * 5);
-
-  // 5. Activité (10pts) — nb de trades
   const actScore = Math.min(10, trades.length * 0.5);
-
   return Math.round(wrScore + weekScore + riskScore + pfScore + actScore);
 }
 
+// ─────────────────────────────────────────────
+// TRADING CALENDAR
+// ─────────────────────────────────────────────
 const TradingCalendar = () => {
-  const ctx = useTradingContext(); const trades = ctx?.trades || [];
+  const ctx = useTradingContext();
+  const trades = ctx?.trades || [];
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
   const year  = currentMonth.getFullYear();
@@ -790,13 +760,11 @@ const TradingCalendar = () => {
   const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const DAYS   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 
-  // Calculer les jours du mois
   const firstDay = new Date(year, month, 1);
   const lastDay  = new Date(year, month + 1, 0);
-  const startPad = (firstDay.getDay() + 6) % 7; // Lundi = 0
+  const startPad = (firstDay.getDay() + 6) % 7;
   const totalDays = lastDay.getDate();
 
-  // Grouper les trades par jour
   const tradesByDay = {};
   (trades || []).forEach(t => {
     const d = new Date(t.date || t.entryDate || t.createdAt);
@@ -807,12 +775,10 @@ const TradingCalendar = () => {
     }
   });
 
-  // Score de régularité
   const score = calcRegularityScore(trades);
   const rank  = getRank(score);
   const nextRank = MF_RANKS[MF_RANKS.findIndex(r => r.rank === rank.rank) + 1];
 
-  // Stats du mois
   const monthTrades = Object.values(tradesByDay).flat();
   const monthPnl    = monthTrades.reduce((a, t) => a + (t.pnl || 0), 0);
   const tradingDays = Object.keys(tradesByDay).length;
@@ -821,8 +787,6 @@ const TradingCalendar = () => {
     <Card custom={18} glow={rank.color} hover={false} style={{padding:'20px 22px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:12}}>
         <SectionTitle color={rank.color} icon="📅">Calendrier de Trading</SectionTitle>
-
-        {/* Score MarketFlow Rank */}
         <div style={{display:'flex',alignItems:'center',gap:12,background:'rgba(255,255,255,0.03)',border:`1px solid ${rank.color}30`,borderRadius:12,padding:'8px 14px'}}>
           <div style={{textAlign:'center'}}>
             <div style={{fontSize:22}}>{rank.icon}</div>
@@ -834,7 +798,6 @@ const TradingCalendar = () => {
               <span style={{fontSize:12,color:C.t3}}>/100</span>
             </div>
             <div style={{fontSize:10,color:C.t2,marginTop:2}}>{rank.desc}</div>
-            {/* Barre de progression vers le prochain rang */}
             {nextRank && (
               <div style={{marginTop:6}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
@@ -856,7 +819,6 @@ const TradingCalendar = () => {
         </div>
       </div>
 
-      {/* Stats rapides du mois */}
       <div style={{display:'flex',gap:16,marginBottom:16,flexWrap:'wrap'}}>
         {[
           {l:'P&L du mois', v: monthPnl >= 0 ? `+$${monthPnl.toLocaleString()}` : `-$${Math.abs(monthPnl).toLocaleString()}`, c: monthPnl >= 0 ? C.green : C.danger},
@@ -870,7 +832,6 @@ const TradingCalendar = () => {
         ))}
       </div>
 
-      {/* Navigation mois */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
         <button onClick={() => setCurrentMonth(new Date(year, month-1, 1))}
           style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:8,color:C.t2,cursor:'pointer',padding:'5px 12px',fontSize:13}}>‹</button>
@@ -879,19 +840,14 @@ const TradingCalendar = () => {
           style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:8,color:C.t2,cursor:'pointer',padding:'5px 12px',fontSize:13}}>›</button>
       </div>
 
-      {/* En-têtes jours */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4,marginBottom:6}}>
         {DAYS.map(d => (
           <div key={d} style={{textAlign:'center',fontSize:9,color:C.t3,fontWeight:700,letterSpacing:'0.05em',textTransform:'uppercase',padding:'4px 0'}}>{d}</div>
         ))}
       </div>
 
-      {/* Grille du calendrier */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
-        {/* Jours vides au début */}
         {Array.from({length:startPad}).map((_,i) => <div key={`e${i}`}/>)}
-
-        {/* Jours du mois */}
         {Array.from({length:totalDays}).map((_,i) => {
           const day = i + 1;
           const dayTrades = tradesByDay[day] || [];
@@ -904,33 +860,26 @@ const TradingCalendar = () => {
           let border = C.brd;
           let pnlColor = C.t3;
           if (hasData) {
-            if (dayPnl > 0) { bg = `${C.green}18`; border = `${C.green}40`; pnlColor = C.green; }
+            if (dayPnl > 0)      { bg = `${C.green}18`;  border = `${C.green}40`;  pnlColor = C.green; }
             else if (dayPnl < 0) { bg = `${C.danger}15`; border = `${C.danger}35`; pnlColor = C.danger; }
-            else { bg = `${C.warn}10`; border = `${C.warn}30`; pnlColor = C.warn; }
+            else                 { bg = `${C.warn}10`;   border = `${C.warn}30`;   pnlColor = C.warn; }
           }
-          if (isWeekend && !hasData) { bg = 'rgba(255,255,255,0.01)'; }
+          if (isWeekend && !hasData) bg = 'rgba(255,255,255,0.01)';
 
           return (
             <div key={day} style={{
-              background: bg,
-              border: `1px solid ${isToday ? rank.color : border}`,
-              borderRadius: 8,
-              padding: '6px 4px',
-              minHeight: 52,
-              textAlign: 'center',
-              position: 'relative',
-              boxShadow: isToday ? `0 0 8px ${rank.color}40` : 'none',
-              transition: 'all 0.15s',
-              cursor: hasData ? 'pointer' : 'default',
+              background:bg, border:`1px solid ${isToday ? rank.color : border}`,
+              borderRadius:8, padding:'6px 4px', minHeight:52, textAlign:'center',
+              position:'relative', boxShadow:isToday?`0 0 8px ${rank.color}40`:'none',
+              transition:'all 0.15s', cursor:hasData?'pointer':'default',
             }}>
-              <div style={{fontSize:10,fontWeight: isToday ? 800 : 500,color: isToday ? rank.color : isWeekend ? C.t4 : C.t2,marginBottom:3}}>{day}</div>
+              <div style={{fontSize:10,fontWeight:isToday?800:500,color:isToday?rank.color:isWeekend?C.t4:C.t2,marginBottom:3}}>{day}</div>
               {hasData && (
                 <>
                   <div style={{fontSize:9,fontWeight:700,color:pnlColor}}>
                     {dayPnl >= 0 ? '+' : ''}{dayPnl >= 1000 || dayPnl <= -1000 ? `${(dayPnl/1000).toFixed(1)}k` : dayPnl}$
                   </div>
                   <div style={{fontSize:8,color:C.t3,marginTop:1}}>{dayTrades.length}T</div>
-                  {/* Petits dots indicateurs */}
                   <div style={{display:'flex',justifyContent:'center',gap:2,marginTop:3}}>
                     {dayTrades.slice(0,3).map((_,di) => (
                       <div key={di} style={{width:4,height:4,borderRadius:'50%',background:dayPnl>0?C.green:C.danger,opacity:0.8}}/>
@@ -943,7 +892,6 @@ const TradingCalendar = () => {
         })}
       </div>
 
-      {/* Légende */}
       <div style={{display:'flex',gap:16,marginTop:14,flexWrap:'wrap'}}>
         {[
           {c:C.green,  l:'Jour positif'},
@@ -960,6 +908,18 @@ const TradingCalendar = () => {
     </Card>
   );
 };
+
+// ─────────────────────────────────────────────
+// MAIN DASHBOARD
+// ─────────────────────────────────────────────
+function emptyStats() {
+  return {
+    equityData: [], dailyPnl: [], recentTrades: [],
+    sessionData: [], pairData: [], radarData: [],
+    biaisData: [], heatmap: [],
+  };
+}
+
 export default function Dashboard() {
   const [greeting] = useState(() => {
     const h = new Date().getHours();
@@ -967,10 +927,11 @@ export default function Dashboard() {
   });
 
   const { stats = emptyStats(), trades: allTrades = [] } = useTradingContext() || {};
+
   const dashData = {
     MOCK_STATS:    stats,
     EQUITY_DATA:   stats.equityData   || [],
-    DAILY_PNL:     stats.dailyPnl     || [],
+    DAILY_PNL:     stats.dailyPnl     || [],   // ← disponible dans le contexte
     RECENT_TRADES: stats.recentTrades || [],
     SESSION_DATA:  stats.sessionData  || [],
     PAIR_DATA:     stats.pairData     || [],
@@ -981,126 +942,104 @@ export default function Dashboard() {
     trades:        allTrades,
   };
 
-
   return (
     <DashboardDataCtx.Provider value={dashData}>
-    <div style={{
-      background:'var(--bg, #0B0F1A)',
-      minHeight:'100%',
-      width:'100%',
-      fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",
-      color:'var(--t1, #E8EEFF)',
-      position:'relative',
-    }}>
-      {/* BG ambiance */}
-      <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:0}}>
-        <div style={{position:'absolute',top:0,left:'20%',width:600,height:400,background:'radial-gradient(ellipse,rgba(77,124,255,0.06) 0%,transparent 70%)',filter:'blur(40px)'}}/>
-        <div style={{position:'absolute',bottom:0,right:'10%',width:500,height:350,background:'radial-gradient(ellipse,rgba(0,255,136,0.04) 0%,transparent 70%)',filter:'blur(40px)'}}/>
-        <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(77,124,255,0.008) 1px,transparent 1px),linear-gradient(90deg,rgba(77,124,255,0.008) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
-      </div>
+      <div style={{
+        background:'var(--bg, #0B0F1A)', minHeight:'100%', width:'100%',
+        fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",
+        color:'var(--t1, #E8EEFF)', position:'relative',
+      }}>
+        {/* BG ambiance */}
+        <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:0}}>
+          <div style={{position:'absolute',top:0,left:'20%',width:600,height:400,background:'radial-gradient(ellipse,rgba(77,124,255,0.06) 0%,transparent 70%)',filter:'blur(40px)'}}/>
+          <div style={{position:'absolute',bottom:0,right:'10%',width:500,height:350,background:'radial-gradient(ellipse,rgba(0,255,136,0.04) 0%,transparent 70%)',filter:'blur(40px)'}}/>
+          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(77,124,255,0.008) 1px,transparent 1px),linear-gradient(90deg,rgba(77,124,255,0.008) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
+        </div>
 
-      <div style={{position:'relative',zIndex:1,padding:'22px 24px 40px',width:'100%',boxSizing:'border-box'}}>
+        <div style={{position:'relative',zIndex:1,padding:'22px 24px 40px',width:'100%',boxSizing:'border-box'}}>
 
-        {/* ── HEADER ── */}
-        <motion.div initial={{opacity:0,y:-12}} animate={{opacity:1,y:0}} transition={{duration:0.45}}
-          style={{marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
-              <motion.div animate={{rotate:[0,5,-5,0]}} transition={{duration:4,repeat:Infinity,repeatDelay:8}}
-                style={{fontSize:22}}>👋</motion.div>
-              <h1 style={{margin:0,fontSize:20,fontWeight:900,color:C.t0,letterSpacing:'-0.5px'}}>
-                {greeting}, <span style={{background:C.gradCyan,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Trader</span>
-              </h1>
-            </div>
-            <div style={{display:'flex',alignItems:'center',gap:10,paddingLeft:2}}>
-              <span style={{fontSize:10,color:C.t3}}>{(() => {
-                const now = new Date();
-                const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-                const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-                const d = now.getDate();
-                const startOfYear = new Date(now.getFullYear(), 0, 1);
-                const week = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
-                return `${days[now.getDay()]} ${d} ${months[now.getMonth()]} ${now.getFullYear()} · Semaine ${week}`;
-              })()}</span>
-              <div style={{width:4,height:4,borderRadius:'50%',background:C.t4}}/>
-              <motion.div animate={{opacity:[1,0.4,1]}} transition={{duration:1.5,repeat:Infinity}}
-                style={{display:'flex',alignItems:'center',gap:4}}>
-                <div style={{width:6,height:6,borderRadius:'50%',background:C.green,boxShadow:`0 0 6px ${C.green}`}}/>
-                <span style={{fontSize:9.5,color:C.green,fontWeight:700}}>{(() => {
-                  const h = new Date().getUTCHours();
-                  if (h >= 0  && h < 7)  return 'Sydney · Session Active';
-                  if (h >= 2  && h < 9)  return 'Tokyo · Session Active';
-                  if (h >= 7  && h < 16) return 'London · Session Active';
-                  if (h >= 13 && h < 22) return 'New York · Session Active';
-                  return 'Marché Fermé';
+          {/* ── HEADER ── */}
+          <motion.div initial={{opacity:0,y:-12}} animate={{opacity:1,y:0}} transition={{duration:0.45}}
+            style={{marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
+            <div>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+                <motion.div animate={{rotate:[0,5,-5,0]}} transition={{duration:4,repeat:Infinity,repeatDelay:8}}
+                  style={{fontSize:22}}>👋</motion.div>
+                <h1 style={{margin:0,fontSize:20,fontWeight:900,color:C.t0,letterSpacing:'-0.5px'}}>
+                  {greeting}, <span style={{background:C.gradCyan,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Trader</span>
+                </h1>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:10,paddingLeft:2}}>
+                <span style={{fontSize:10,color:C.t3}}>{(() => {
+                  const now = new Date();
+                  const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                  const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+                  const startOfYear = new Date(now.getFullYear(), 0, 1);
+                  const week = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+                  return `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} · Semaine ${week}`;
                 })()}</span>
-              </motion.div>
+                <div style={{width:4,height:4,borderRadius:'50%',background:C.t4}}/>
+                <motion.div animate={{opacity:[1,0.4,1]}} transition={{duration:1.5,repeat:Infinity}}
+                  style={{display:'flex',alignItems:'center',gap:4}}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:C.green,boxShadow:`0 0 6px ${C.green}`}}/>
+                  <span style={{fontSize:9.5,color:C.green,fontWeight:700}}>{(() => {
+                    const h = new Date().getUTCHours();
+                    if (h >= 0  && h < 7)  return 'Sydney · Session Active';
+                    if (h >= 2  && h < 9)  return 'Tokyo · Session Active';
+                    if (h >= 7  && h < 16) return 'London · Session Active';
+                    if (h >= 13 && h < 22) return 'New York · Session Active';
+                    return 'Marché Fermé';
+                  })()}</span>
+                </motion.div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+              <div style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,display:'flex',gap:8,alignItems:'center'}}>
+                <span style={{fontSize:9,color:C.t3}}>Compte</span>
+                <select style={{background:'transparent',border:'none',color:C.cyan,fontSize:10,fontWeight:700,outline:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                  <option>Live — $48,590</option>
+                  <option>Demo — $10,000</option>
+                </select>
+              </div>
+            </div>
+          </motion.div>
+
+          <LiveTicker/>
+          <KpiStrip/>
+
+          <div style={{display:'grid',gridTemplateColumns:'2fr 1.1fr',gap:12,marginBottom:12}}>
+            <EquityPanel/>
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <DailyPnl/>
+              <GoalProgress/>
             </div>
           </div>
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <div style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,display:'flex',gap:8,alignItems:'center'}}>
-              <span style={{fontSize:9,color:C.t3}}>Compte</span>
-              <select style={{background:'transparent',border:'none',color:C.cyan,fontSize:10,fontWeight:700,outline:'none',cursor:'pointer',fontFamily:'inherit'}}>
-                <option>Live — $48,590</option>
-                <option>Demo — $10,000</option>
-              </select>
+
+          <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr',gap:12,marginBottom:12}}>
+            <PerformanceScore/>
+            <BiaisPanel/>
+            <RentabiliteGauge/>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:12,marginBottom:12}}>
+            <RecentTrades/>
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <SessionPanel/>
+              <PairPanel/>
             </div>
           </div>
-        </motion.div>
 
-        {/* ── LIVE TICKER ── */}
-        <LiveTicker/>
-
-
-        {/* ── KPI STRIP ── */}
-        <KpiStrip/>
-
-        {/* ── ROW 2: Equity (large) + Daily PnL ── */}
-        <div style={{display:'grid',gridTemplateColumns:'2fr 1.1fr',gap:12,marginBottom:12}}>
-          <EquityPanel/>
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            <DailyPnl/>
-            <GoalProgress/>
+          <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:12,marginBottom:12}}>
+            <TimeHeatmap/>
+            <JournalNote/>
           </div>
-        </div>
 
-        {/* ── ROW 3: Score + Biais + Rentabilité ── */}
-        <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr',gap:12,marginBottom:12}}>
-          <PerformanceScore/>
-          <BiaisPanel/>
-          <RentabiliteGauge/>
-        </div>
-
-        {/* ── ROW 4: Trades + (Session + Pairs) ── */}
-        <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:12,marginBottom:12}}>
-          <RecentTrades/>
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            <SessionPanel/>
-            <PairPanel/>
+          <div style={{marginBottom:12}}>
+            <TradingCalendar/>
           </div>
-        </div>
 
-        {/* ── ROW 5: Heatmap + Journal ── */}
-        <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:12,marginBottom:12}}>
-          <TimeHeatmap/>
-          <JournalNote/>
         </div>
-
-        {/* ── ROW 6: Trading Calendar + Rank ── */}
-        <div style={{marginBottom:12}}>
-          <TradingCalendar/>
-        </div>
-
       </div>
-    </div>
     </DashboardDataCtx.Provider>
   );
-}
-
-function emptyStats() {
-  return {
-    equityData: [], dailyPnl: [], recentTrades: [],
-    sessionData: [], pairData: [], radarData: [],
-    biaisData: [], heatmap: [],
-  };
 }
