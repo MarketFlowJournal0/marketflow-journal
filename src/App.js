@@ -20,6 +20,7 @@ import './App.css';
 import './theme.css';
 
 const PAYMENT_SUCCESS_KEY = 'mfj_payment_success';
+const BACK_FROM_PLAN_KEY  = 'mfj_back_from_plan';
 
 function LoadingScreen() {
   return (
@@ -86,12 +87,25 @@ function AppInner() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null);
-  const [paymentOk,   setPaymentOk]   = useState(() => {
+
+  // ✅ Flag sessionStorage : si présent au chargement → afficher landing
+  const [forceLanding, setForceLanding] = useState(
+    () => sessionStorage.getItem(BACK_FROM_PLAN_KEY) === '1'
+  );
+
+  const [paymentOk, setPaymentOk] = useState(() => {
     const ts = localStorage.getItem(PAYMENT_SUCCESS_KEY);
     if (ts && Date.now() - parseInt(ts, 10) < 10 * 60 * 1000) return true;
     if (ts) localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     return false;
   });
+
+  // Nettoyer le flag dès qu'il a été lu
+  useEffect(() => {
+    if (forceLanding) {
+      sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
+    }
+  }, [forceLanding]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -99,6 +113,7 @@ function AppInner() {
       window.history.replaceState({}, '', window.location.pathname);
       localStorage.setItem(PAYMENT_SUCCESS_KEY, Date.now().toString());
       setPaymentOk(true);
+      setForceLanding(false);
       refreshProfile?.().catch(() => {});
       setTimeout(() => toast.success('🎉 Abonnement activé !', {
         duration: 6000,
@@ -117,11 +132,12 @@ function AppInner() {
     }
   }, []); // eslint-disable-line
 
-  const openLogin          = () => setAuthModal('login');
-  const openSignup         = () => setAuthModal('signup');
+  const openLogin          = () => { setForceLanding(false); setAuthModal('login'); };
+  const openSignup         = () => { setForceLanding(false); setAuthModal('signup'); };
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
     sessionStorage.setItem('pending_price_id', priceId);
+    setForceLanding(false);
     setAuthModal('signup');
   };
 
@@ -141,6 +157,7 @@ function AppInner() {
 
   const handleAuthSuccess = async (userData) => {
     setAuthModal(null);
+    setForceLanding(false);
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
@@ -150,18 +167,19 @@ function AppInner() {
 
   const handleLogout = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
+    sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
     setPaymentOk(false);
+    setForceLanding(false);
     await logout();
     toast('À bientôt ! 👋', {
       style: { background: '#0D1627', color: '#fff', borderRadius: '12px' },
     });
   };
 
-  // ✅ Retour depuis PlanSelection → logout propre → landing
-  const handleSkipPlan = async () => {
-    localStorage.removeItem(PAYMENT_SUCCESS_KEY);
-    setPaymentOk(false);
-    await logout();
+  // ✅ Retour depuis PlanSelection
+  // On pose le flag AVANT le reload → au prochain rendu forceLanding=true → landing
+  const handleSkipPlan = () => {
+    sessionStorage.setItem(BACK_FROM_PLAN_KEY, '1');
     window.location.reload();
   };
 
@@ -169,7 +187,8 @@ function AppInner() {
 
   if (loading && !profileLoaded) return <LoadingScreen />;
 
-  if (!user) {
+  // ✅ Flag posé → afficher landing même si user connecté
+  if (forceLanding || !user) {
     return (
       <>
         <LandingPage
