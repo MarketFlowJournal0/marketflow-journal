@@ -184,6 +184,18 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
     applyAccent(savedAccent);
   }, []); // eslint-disable-line
 
+  // Fermer le panel si clic en dehors
+  React.useEffect(() => {
+    if (!settingsOpen) return;
+    const handler = (e) => {
+      if (!e.target.closest('.mf-settings-panel') && !e.target.closest('.mf-user-trigger')) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [settingsOpen]);
+
   const W = collapsed ? 72 : 260;
 
   return (
@@ -479,6 +491,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
           </Tooltip>
         ) : (
           <motion.div
+            className="mf-user-trigger"
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '9px 11px', borderRadius: 12,
@@ -512,9 +525,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         <AnimatePresence>
           {settingsOpen && (
             <>
-              {/* Overlay */}
-              <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setSettingsOpen(false)} />
+              {/* Fermeture via useEffect au click dehors */}
               <motion.div
+                className="mf-settings-panel"
                 initial={{ opacity: 0, x: -10, scale: 0.97 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: -10, scale: 0.97 }}
@@ -625,14 +638,14 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                 {/* Actions */}
                 <div style={{ padding: '10px 10px' }}>
                   <button
-                    onMouseDown={(e) => { e.stopPropagation(); setSettingsOpen(false); setCurrentPage('account-settings'); }}
+                    onClick={() => { setSettingsOpen(false); setCurrentPage('account-settings'); }}
                     style={{ width: '100%', padding: '9px 12px', background: 'none', border: 'none', color: '#7A90B8', fontSize: 13, cursor: 'pointer', borderRadius: 8, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'inherit' }}
                     onMouseEnter={e => { e.currentTarget.style.background='rgba(6,230,255,0.07)'; e.currentTarget.style.color='#E8EEFF'; }}
                     onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#7A90B8'; }}>
                     <span>⚙️</span> Paramètres du compte
                   </button>
                   <button
-                    onMouseDown={(e) => { e.stopPropagation(); setSettingsOpen(false); setCurrentPage('subscription'); }}
+                    onClick={() => { setSettingsOpen(false); setCurrentPage('subscription'); }}
                     style={{ width: '100%', padding: '9px 12px', background: 'none', border: 'none', color: '#7A90B8', fontSize: 13, cursor: 'pointer', borderRadius: 8, textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit' }}
                     onMouseEnter={e => { e.currentTarget.style.background='rgba(6,230,255,0.07)'; e.currentTarget.style.color='#E8EEFF'; }}
                     onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#7A90B8'; }}>
@@ -642,7 +655,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                     <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 100, background: planInfo.color+'22', border: `1px solid ${planInfo.color}44`, color: planInfo.color, whiteSpace: 'nowrap' }}>{planInfo.label}</span>
                   </button>
                   <button
-                    onMouseDown={(e) => { e.stopPropagation(); setSettingsOpen(false); if (onLogout) onLogout(); }}
+                    onClick={() => { setSettingsOpen(false); if (onLogout) onLogout(); }}
                     style={{ width: '100%', padding: '9px 12px', background: 'none', border: 'none', color: '#FF4D6A', fontSize: 13, cursor: 'pointer', borderRadius: 8, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'inherit' }}
                     onMouseEnter={e => { e.currentTarget.style.background='rgba(255,61,106,0.09)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background='none'; }}>
