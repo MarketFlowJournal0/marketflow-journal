@@ -228,7 +228,10 @@ function AppInner() {
   }
 
   // ── App principale ──────────────────────────────────────────────────────────
-  const sidebarWidth = collapsed ? 72 : 260;
+  // Pas de sidebar sur les pages plein écran
+  const fullscreenPages = ['subscription', 'account-settings'];
+  const isFullscreen    = fullscreenPages.includes(currentPage);
+  const sidebarWidth    = isFullscreen ? 0 : (collapsed ? 72 : 260);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -270,20 +273,22 @@ function AppInner() {
         backgroundColor: 'var(--bg)',
         fontFamily: "'Inter',sans-serif",
       }}>
-        <div style={{
-          position: 'fixed', top: 0, left: 0, bottom: 0,
-          width: sidebarWidth, zIndex: 100,
-          transition: 'width 0.30s cubic-bezier(0.4,0,0.2,1)',
-        }}>
-          <Sidebar
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            collapsed={collapsed}
-            setCollapsed={setCollapsed}
-            user={user}
-            onLogout={handleLogout}
-          />
-        </div>
+        {!isFullscreen && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, bottom: 0,
+            width: sidebarWidth, zIndex: 100,
+            transition: 'width 0.30s cubic-bezier(0.4,0,0.2,1)',
+          }}>
+            <Sidebar
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              collapsed={collapsed}
+              setCollapsed={setCollapsed}
+              user={user}
+              onLogout={handleLogout}
+            />
+          </div>
+        )}
         <div
           className="mf-main"
           style={{

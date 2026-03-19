@@ -98,7 +98,6 @@ const STYLES = `
     position: relative;
     overflow: visible;
   }
-
   .ps-glow-top {
     position: absolute;
     top: -200px; left: 50%;
@@ -108,27 +107,21 @@ const STYLES = `
     pointer-events: none;
     z-index: 0;
   }
-
   .ps-back {
     position: fixed;
-    top: 28px;
-    left: 28px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    top: 28px; left: 28px;
+    display: flex; align-items: center; gap: 8px;
     background: rgba(255,255,255,0.06);
     border: 1px solid ${C.brd};
     border-radius: 10px;
     padding: 10px 16px;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 13px; font-weight: 600;
     color: ${C.t2};
     cursor: pointer;
     transition: all 0.2s;
     font-family: 'Inter', sans-serif;
     z-index: 9999;
     pointer-events: all;
-    text-decoration: none;
   }
   .ps-back:hover {
     background: rgba(255,255,255,0.12);
@@ -144,21 +137,16 @@ const STYLES = `
     margin-bottom: 48px;
     font-size: 20px; font-weight: 700;
     color: ${C.t0};
-    text-decoration: none;
-    position: relative;
-    z-index: 1;
+    position: relative; z-index: 1;
   }
   .ps-logo-dot {
     width: 10px; height: 10px; border-radius: 50%;
     background: ${C.cyan};
     box-shadow: 0 0 12px ${C.cyan};
   }
-
   .ps-header {
-    text-align: center;
-    margin-bottom: 48px;
-    position: relative;
-    z-index: 1;
+    text-align: center; margin-bottom: 48px;
+    position: relative; z-index: 1;
   }
   .ps-step {
     display: inline-flex; align-items: center; gap: 8px;
@@ -183,21 +171,15 @@ const STYLES = `
   }
   .ps-title {
     font-size: clamp(28px, 5vw, 42px);
-    font-weight: 800;
-    color: ${C.t0};
-    margin: 0 0 12px;
-    line-height: 1.15;
+    font-weight: 800; color: ${C.t0};
+    margin: 0 0 12px; line-height: 1.15;
   }
   .ps-title span {
     background: linear-gradient(135deg, ${C.cyan}, ${C.teal});
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  .ps-subtitle {
-    font-size: 16px; color: ${C.t2};
-    margin: 0;
-    line-height: 1.6;
-  }
+  .ps-subtitle { font-size: 16px; color: ${C.t2}; margin: 0; line-height: 1.6; }
 
   .ps-toggle {
     display: flex; align-items: center; gap: 12px;
@@ -206,19 +188,14 @@ const STYLES = `
     border: 1px solid ${C.brd};
     border-radius: 100px;
     padding: 6px;
-    position: relative;
-    z-index: 1;
+    position: relative; z-index: 1;
   }
   .ps-toggle-btn {
-    padding: 8px 20px;
-    border-radius: 100px;
+    padding: 8px 20px; border-radius: 100px;
     font-size: 13px; font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    color: ${C.t2};
-    background: transparent;
-    font-family: 'Inter', sans-serif;
+    cursor: pointer; border: none;
+    transition: all 0.2s; color: ${C.t2};
+    background: transparent; font-family: 'Inter', sans-serif;
   }
   .ps-toggle-btn.active { background: ${C.cyan}; color: #000; }
   .ps-toggle-badge {
@@ -234,21 +211,17 @@ const STYLES = `
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
     gap: 20px;
-    width: 100%;
-    max-width: 980px;
-    position: relative;
-    z-index: 1;
+    width: 100%; max-width: 980px;
+    position: relative; z-index: 1;
   }
 
   .ps-card {
     background: ${C.card};
-    border-radius: 20px;
-    padding: 32px;
+    border-radius: 20px; padding: 32px;
     border: 1px solid ${C.brd};
     position: relative;
     transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-    cursor: pointer;
-    overflow: hidden;
+    cursor: pointer; overflow: hidden;
   }
   .ps-card:hover {
     transform: translateY(-4px);
@@ -260,27 +233,17 @@ const STYLES = `
     background: linear-gradient(135deg, #0C1422 0%, #0D1830 100%);
   }
   .ps-popular-badge {
-    position: absolute;
-    top: -1px; left: 50%;
-    transform: translateX(-50%);
+    position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
     background: linear-gradient(90deg, ${C.cyan}, ${C.teal});
-    color: #000;
-    font-size: 11px; font-weight: 700;
-    padding: 5px 16px;
-    border-radius: 0 0 10px 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    white-space: nowrap;
+    color: #000; font-size: 11px; font-weight: 700;
+    padding: 5px 16px; border-radius: 0 0 10px 10px;
+    letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
   }
   .ps-card-glow {
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 180px; height: 180px;
-    border-radius: 50%;
-    background: var(--glow);
-    filter: blur(40px);
-    pointer-events: none;
-    opacity: 0.6;
+    position: absolute; top: -60px; right: -60px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: var(--glow); filter: blur(40px);
+    pointer-events: none; opacity: 0.6;
   }
   .ps-card-icon { font-size: 32px; margin-bottom: 16px; display: block; }
   .ps-card-name { font-size: 22px; font-weight: 800; color: ${C.t0}; margin: 0 0 6px; }
@@ -306,7 +269,7 @@ const STYLES = `
   .ps-cta {
     width: 100%; padding: 14px; border-radius: 12px;
     font-size: 14px; font-weight: 700; cursor: pointer; border: none;
-    transition: all 0.2s; letter-spacing: 0.03em; position: relative;
+    transition: all 0.2s; letter-spacing: 0.03em;
     font-family: 'Inter', sans-serif; box-sizing: border-box;
   }
   .ps-cta-primary {
@@ -317,6 +280,38 @@ const STYLES = `
   .ps-cta-secondary { background: rgba(255,255,255,0.05); color: ${C.t1}; border: 1px solid ${C.brd}; }
   .ps-cta-secondary:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); color: var(--accent); }
   .ps-cta:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+  /* ─── Badge + bouton "Plan actuel" ─── */
+  .ps-card-current {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 1px var(--accent), 0 24px 64px var(--glow) !important;
+  }
+  .ps-current-badge {
+    position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #030508;
+    font-size: 11px; font-weight: 800;
+    padding: 4px 16px; border-radius: 0 0 10px 10px;
+    letter-spacing: 0.05em; white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .ps-cta-current {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,0.4) !important;
+    cursor: default !important;
+  }
+  .ps-cta-current:hover { transform: none !important; filter: none !important; }
+
+  .ps-cta-manage {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: rgba(255,255,255,0.7) !important;
+  }
+  .ps-cta-manage:hover:not(:disabled) {
+    background: rgba(255,255,255,0.1) !important;
+    color: #fff !important; transform: none !important;
+  }
+
   .ps-trial-note {
     text-align: center; margin-top: 32px; font-size: 13px;
     color: ${C.t3}; position: relative; z-index: 1;
@@ -353,24 +348,7 @@ const STYLES = `
     cursor: pointer; transition: all 0.18s; font-family: 'Inter', sans-serif;
   }
   .ps-manage-btn:hover { background: rgba(255,215,0,0.2); }
-  .ps-card-current {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 1px var(--accent), 0 24px 64px var(--glow) !important;
-  }
-  .ps-current-badge {
-    position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
-    background: var(--accent); color: #030508; font-size: 11px; font-weight: 700;
-    padding: 3px 12px; border-radius: 0 0 8px 8px; letter-spacing: 0.04em; white-space: nowrap;
-  }
-  .ps-cta-manage {
-    background: rgba(255,255,255,0.06) !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    color: rgba(255,255,255,0.7) !important;
-  }
-  .ps-cta-manage:hover:not(:disabled) {
-    background: rgba(255,255,255,0.1) !important;
-    color: #fff !important; transform: none !important;
-  }
+
   @media (max-width: 640px) {
     .ps-back { top: 16px; left: 16px; padding: 8px 12px; font-size: 12px; }
     .ps-grid { grid-template-columns: 1fr; }
@@ -400,8 +378,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
   }, []); // eslint-disable-line
 
   // ── Lecture du plan actuel ────────────────────────────────────────────────
-  // Supabase stocke les métadonnées dans user_metadata
-  // On lit en priorité user_metadata.plan, puis user.plan (fallback legacy)
   const currentPlan  = user?.user_metadata?.plan || user?.plan || 'trial';
   const subStatus    = user?.user_metadata?.subStatus  || user?.subStatus  || 'trialing';
   const isTrialing   = user?.user_metadata?.isTrialing ?? user?.isTrialing ?? (currentPlan === 'trial');
@@ -445,29 +421,23 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   };
 
-  // ── Retour ────────────────────────────────────────────────────────────────
-  // Si onSkip est fourni (vient de la sidebar → App.js), on l'utilise
-  // Sinon fallback vers window.location (cas "pas encore d'abonnement")
   const handleBack = () => {
-    if (onSkip) {
-      onSkip();
-    } else {
-      window.location.href = window.location.origin;
-    }
+    if (onSkip) onSkip();
+    else window.location.href = window.location.origin;
   };
 
-  const isCurrentPlan = (planId) =>
-    currentPlan === planId && (isTrialing || subStatus === 'active');
+  // ── FIX : le plan actuel est affiché dès que l'id correspond,
+  // indépendamment du subStatus (trial inclus)
+  const isCurrentPlan = (planId) => currentPlan === planId;
 
-  // Détermine si on vient de la sidebar (utilisateur déjà abonné)
-  const isManageMode = !!onSkip && !!user?.stripeCustomerId;
+  const isManageMode = !!onSkip;
 
   return (
     <div className="ps-root">
       <style>{STYLES}</style>
       <div className="ps-glow-top" />
 
-      {/* Bouton retour — visible seulement si onSkip fourni (mode gestion) */}
+      {/* Bouton retour — visible en mode gestion (vient de la sidebar) */}
       {onSkip && (
         <button type="button" className="ps-back" onClick={handleBack}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -482,9 +452,7 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         MarketFlow Journal
       </div>
 
-      {successMsg && (
-        <div className="ps-success-banner">{successMsg}</div>
-      )}
+      {successMsg && <div className="ps-success-banner">{successMsg}</div>}
 
       {user && isTrialing && daysLeft > 0 && (
         <div className="ps-trial-banner">
@@ -512,22 +480,7 @@ export default function PlanSelection({ user: userProp, onSkip }) {
       )}
 
       <div className="ps-header">
-        {isManageMode ? (
-          <>
-            <h1 className="ps-title">
-              Ton <span>abonnement</span>
-            </h1>
-            <p className="ps-subtitle">
-              {subStatus === 'active'
-                ? `Plan actif · ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`
-                : subStatus === 'trialing'
-                ? `Essai gratuit en cours · ${daysLeft}j restants`
-                : subStatus === 'canceled'
-                ? 'Abonnement annulé — Réactive un plan'
-                : 'Gère ou change ton abonnement ci-dessous'}
-            </p>
-          </>
-        ) : !user ? (
+        {!user ? (
           <>
             <div className="ps-step">
               <div className="ps-step-dot" />
@@ -543,12 +496,12 @@ export default function PlanSelection({ user: userProp, onSkip }) {
         ) : (
           <>
             <h1 className="ps-title">
-              {needsPayment ? 'Choisis ton plan' : 'Ton abonnement'}
+              {needsPayment ? 'Choisis ton plan' : <>Ton <span>abonnement</span></>}
             </h1>
             <p className="ps-subtitle">
               {subStatus === 'active'
                 ? `Plan actif · ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`
-                : subStatus === 'trialing'
+                : isTrialing
                 ? `Essai gratuit en cours · ${daysLeft}j restants`
                 : subStatus === 'canceled'
                 ? 'Abonnement annulé — Réactive un plan'
@@ -574,21 +527,26 @@ export default function PlanSelection({ user: userProp, onSkip }) {
           return (
             <div
               key={plan.id}
-              className={`ps-card ${plan.popular ? 'ps-card-popular' : ''} ${isCurrent ? 'ps-card-current' : ''}`}
+              className={`ps-card ${plan.popular && !isCurrent ? 'ps-card-popular' : ''} ${isCurrent ? 'ps-card-current' : ''}`}
               style={{ '--accent': plan.accent, '--glow': plan.glow }}
             >
+              {/* Badge "Plan actuel" — prioritaire sur "populaire" */}
               {isCurrent && (
                 <div className="ps-current-badge">
-                  {isTrialing ? `⏱ Essai · ${daysLeft}j` : '✓ Plan actuel'}
+                  {isTrialing ? `⏱ Essai · ${daysLeft}j restants` : '✦ Plan actuel'}
                 </div>
               )}
+
+              {/* Badge "populaire" uniquement si ce n'est pas le plan actuel */}
               {plan.popular && !isCurrent && (
                 <div className="ps-popular-badge">✦ Le plus populaire</div>
               )}
+
               <div className="ps-card-glow" />
               <span className="ps-card-icon">{plan.icon}</span>
               <div className="ps-card-name">{plan.name}</div>
               <div className="ps-card-desc">{plan.desc}</div>
+
               <div className="ps-price-block">
                 <div className="ps-price-main">
                   <span className="ps-price-currency">$</span>
@@ -604,6 +562,7 @@ export default function PlanSelection({ user: userProp, onSkip }) {
                   </div>
                 )}
               </div>
+
               <ul className="ps-features">
                 {plan.features.map((f, i) => (
                   <li key={i} className="ps-feature">
@@ -612,11 +571,20 @@ export default function PlanSelection({ user: userProp, onSkip }) {
                   </li>
                 ))}
               </ul>
+
+              {/* Bouton CTA selon l'état */}
               {isCurrent && user?.stripeCustomerId ? (
+                // Plan payant actif → portail Stripe
                 <button className="ps-cta ps-cta-manage" onClick={handleManage} disabled={portalLoading}>
                   {portalLoading ? '⏳ Chargement...' : '⚙️ Gérer mon abonnement'}
                 </button>
+              ) : isCurrent ? (
+                // Plan actuel sans Stripe (trial) → grisé non cliquable
+                <button className="ps-cta ps-cta-current" disabled>
+                  ✦ Plan actuel
+                </button>
               ) : (
+                // Autre plan → souscription
                 <button
                   className={`ps-cta ${plan.popular ? 'ps-cta-primary' : 'ps-cta-secondary'}`}
                   disabled={!!loading}
@@ -624,11 +592,7 @@ export default function PlanSelection({ user: userProp, onSkip }) {
                 >
                   {loading === plan.id
                     ? '⏳ Chargement...'
-                    : isCurrent
-                    ? '✓ Plan actuel'
-                    : isTrialing
-                    ? `Passer à ${plan.name}`
-                    : `Commencer avec ${plan.name}`}
+                    : `Passer à ${plan.name}`}
                 </button>
               )}
             </div>
