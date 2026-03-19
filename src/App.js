@@ -10,11 +10,12 @@ import Calendar from './pages/Calendar';
 import Equity from './pages/Equity';
 import Psychology from './pages/Psychology';
 import AIChat from './pages/AIChat';
+import AccountSettings from './pages/AccountSettings';
+import PlanSelection from './pages/PlanSelection';
 import { TradingProvider } from './context/TradingContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
 import { Toaster, toast } from 'react-hot-toast';
-import PlanSelection from './pages/PlanSelection';
 import AuthCallback from './pages/AuthCallback';
 import './App.css';
 import './theme.css';
@@ -88,7 +89,6 @@ function AppInner() {
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null);
 
-  // Lire le flag sessionStorage une seule fois à l'initialisation
   const [forceLanding, setForceLanding] = useState(
     () => sessionStorage.getItem(BACK_FROM_PLAN_KEY) === '1'
   );
@@ -100,14 +100,10 @@ function AppInner() {
     return false;
   });
 
-  // Nettoyer le flag sessionStorage une seule fois au montage
   useEffect(() => {
-    if (forceLanding) {
-      sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
-    }
+    if (forceLanding) sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
   }, []); // eslint-disable-line
 
-  // Gérer le retour Stripe (payment success / cancelled)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
@@ -166,18 +162,15 @@ function AppInner() {
     }
   };
 
+  // Déconnexion → retour LandingPage garanti via window.location
   const handleLogout = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
-    setPaymentOk(false);
-    setForceLanding(false);
-    await logout();
-    toast('À bientôt ! 👋', {
-      style: { background: '#0D1627', color: '#fff', borderRadius: '12px' },
-    });
+    try { await logout(); } catch (_) {}
+    window.location.href = '/';
   };
 
-  // Retour depuis PlanSelection → pose le flag puis reload
+  // Retour depuis PlanSelection
   const handleSkipPlan = () => {
     sessionStorage.setItem(BACK_FROM_PLAN_KEY, '1');
     window.location.reload();
@@ -186,10 +179,7 @@ function AppInner() {
   // ── Callback OAuth ──────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  // ── FIX : forceLanding EN PREMIER, avant le LoadingScreen ──────────────────
-  // Si le flag est actif, on affiche la LandingPage immédiatement,
-  // peu importe l'état de l'auth. Cela évite que le Dashboard s'affiche
-  // le temps que profileLoaded passe à true après le reload.
+  // ── forceLanding EN PREMIER ─────────────────────────────────────────────────
   if (forceLanding) {
     return (
       <>
@@ -209,10 +199,10 @@ function AppInner() {
     );
   }
 
-  // ── Loading auth ────────────────────────────────────────────────────────────
+  // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading && !profileLoaded) return <LoadingScreen />;
 
-  // ── Non connecté → LandingPage ──────────────────────────────────────────────
+  // ── Non connecté ────────────────────────────────────────────────────────────
   if (!user) {
     return (
       <>
@@ -232,7 +222,7 @@ function AppInner() {
     );
   }
 
-  // ── Connecté sans abonnement → PlanSelection ────────────────────────────────
+  // ── Pas d'abonnement → PlanSelection ────────────────────────────────────────
   if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
     return <PlanSelection user={user} onSkip={handleSkipPlan} />;
   }
@@ -242,16 +232,34 @@ function AppInner() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'dashboard':     return <Dashboard />;
-      case 'all-trades':    return <AllTrades />;
-      case 'analytics':     return <Analytics />;
-      case 'analytics-pro': return <AnalyticsPro />;
-      case 'backtest':      return <Backtest />;
-      case 'calendar':      return <Calendar />;
-      case 'equity':        return <Equity />;
-      case 'psychology':    return <Psychology />;
-      case 'ai-chat':       return <AIChat />;
-      default:              return <Dashboard />;
+
+      // Pages Trading
+      case 'dashboard':        return <Dashboard />;
+      case 'all-trades':       return <AllTrades />;
+      case 'analytics':        return <Analytics />;
+      case 'analytics-pro':    return <AnalyticsPro />;
+      case 'backtest':         return <Backtest />;
+      case 'calendar':         return <Calendar />;
+      case 'equity':           return <Equity />;
+      case 'psychology':       return <Psychology />;
+      case 'ai-chat':          return <AIChat />;
+
+      // ─── Paramètres du compte ───────────────────────────────────────────────
+      case 'account-settings':
+        return <AccountSettings user={user} onBack={() => setCurrentPage('dashboard')} />;
+
+      // ─── Gérer l'abonnement ────────────────────────────────────────────────
+      // PlanSelection reçoit onSkip → affiche le bouton "Retour au dashboard"
+      // et lit user_metadata.plan pour afficher le plan actuel
+      case 'subscription':
+        return (
+          <PlanSelection
+            user={user}
+            onSkip={() => setCurrentPage('dashboard')}
+          />
+        );
+
+      default: return <Dashboard />;
     }
   };
 
