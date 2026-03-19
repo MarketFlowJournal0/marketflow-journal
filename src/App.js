@@ -12,6 +12,8 @@ import Psychology from './pages/Psychology';
 import AIChat from './pages/AIChat';
 import AccountSettings from './pages/AccountSettings';
 import PlanSelection from './pages/PlanSelection';
+import SupportPage from './pages/SupportPage';
+import SupportWidget from './components/supportwidget';
 import { TradingProvider } from './context/TradingContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
@@ -162,7 +164,6 @@ function AppInner() {
     }
   };
 
-  // Déconnexion → retour LandingPage garanti via window.location
   const handleLogout = async () => {
     localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
@@ -170,7 +171,6 @@ function AppInner() {
     window.location.href = '/';
   };
 
-  // Retour depuis PlanSelection
   const handleSkipPlan = () => {
     sessionStorage.setItem(BACK_FROM_PLAN_KEY, '1');
     window.location.reload();
@@ -188,6 +188,7 @@ function AppInner() {
           onSignup={openSignup}
           onSignupWithPlan={openSignupWithPlan}
         />
+        <SupportWidget onOpenPage={() => {}} />
         {authModal && (
           <AuthModal
             defaultTab={authModal}
@@ -202,7 +203,7 @@ function AppInner() {
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading && !profileLoaded) return <LoadingScreen />;
 
-  // ── Non connecté ────────────────────────────────────────────────────────────
+  // ── Non connecté → LandingPage + SupportWidget ──────────────────────────────
   if (!user) {
     return (
       <>
@@ -211,6 +212,7 @@ function AppInner() {
           onSignup={openSignup}
           onSignupWithPlan={openSignupWithPlan}
         />
+        <SupportWidget onOpenPage={() => {}} />
         {authModal && (
           <AuthModal
             defaultTab={authModal}
@@ -228,15 +230,12 @@ function AppInner() {
   }
 
   // ── App principale ──────────────────────────────────────────────────────────
-  // Pas de sidebar sur les pages plein écran
-  const fullscreenPages = ['subscription', 'account-settings'];
+  const fullscreenPages = ['subscription', 'account-settings', 'support'];
   const isFullscreen    = fullscreenPages.includes(currentPage);
   const sidebarWidth    = isFullscreen ? 0 : (collapsed ? 72 : 260);
 
   const renderPage = () => {
     switch (currentPage) {
-
-      // Pages Trading
       case 'dashboard':        return <Dashboard />;
       case 'all-trades':       return <AllTrades />;
       case 'analytics':        return <Analytics />;
@@ -246,22 +245,12 @@ function AppInner() {
       case 'equity':           return <Equity />;
       case 'psychology':       return <Psychology />;
       case 'ai-chat':          return <AIChat />;
-
-      // ─── Paramètres du compte ───────────────────────────────────────────────
       case 'account-settings':
         return <AccountSettings user={user} onBack={() => setCurrentPage('dashboard')} />;
-
-      // ─── Gérer l'abonnement ────────────────────────────────────────────────
-      // PlanSelection reçoit onSkip → affiche le bouton "Retour au dashboard"
-      // et lit user_metadata.plan pour afficher le plan actuel
       case 'subscription':
-        return (
-          <PlanSelection
-            user={user}
-            onSkip={() => setCurrentPage('dashboard')}
-          />
-        );
-
+        return <PlanSelection user={user} onSkip={() => setCurrentPage('dashboard')} />;
+      case 'support':
+        return <SupportPage user={user} onBack={() => setCurrentPage('dashboard')} />;
       default: return <Dashboard />;
     }
   };
@@ -299,6 +288,10 @@ function AppInner() {
         >
           {renderPage()}
         </div>
+
+        {/* ── SupportWidget flottant bas-droite ── */}
+        <SupportWidget onOpenPage={(page) => setCurrentPage(page)} />
+
       </div>
     </TradingProvider>
   );
