@@ -1003,6 +1003,103 @@ function PageModal({ page, onClose }) {
   );
 }
 
+
+// ─── Composant formulaire contact isolé (pour useState local) ───────────────
+function ContactFormBlock() {
+  const [form, setForm] = React.useState({ name: '', email: '', subject: '', message: '' });
+  const [sending, setSending] = React.useState(false);
+  const [sent, setSent] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.email || !form.message) { setError('Email et message requis.'); return; }
+    setSending(true); setError('');
+    try {
+      const res = await fetch('/api/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, category: 'other', plan: 'visitor', subject: form.subject || 'Message depuis la landing page' }),
+      });
+      if (!res.ok) throw new Error();
+      setSent(true);
+    } catch {
+      setError('Erreur lors de l\'envoi. Réessaie ou écris-nous directement.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (sent) return (
+    <div className="lp-contact-form-wrap">
+      <div className="lp-contact-success">
+        <div style={{
+          width:64, height:64, borderRadius:'50%',
+          background:'linear-gradient(135deg,#06E6FF,#00FF88)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          fontSize:28, margin:'0 auto 20px',
+          boxShadow:'0 0 30px rgba(0,255,136,0.4)',
+        }}>✓</div>
+        <div style={{fontSize:18, fontWeight:800, color:'#fff', marginBottom:10}}>Message envoyé !</div>
+        <div style={{fontSize:14, color:'#7A90B8', lineHeight:1.7, marginBottom:24}}>
+          Merci ! On te répond sous 24h ouvrées à <span style={{color:'#06E6FF'}}>{form.email}</span>.
+        </div>
+        <button onClick={() => { setSent(false); setForm({ name:'', email:'', subject:'', message:'' }); }}
+          style={{padding:'9px 22px', borderRadius:9, border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.04)', color:'#7A90B8', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit'}}>
+          Envoyer un autre message
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="lp-contact-form-wrap">
+      <div style={{fontSize:15, fontWeight:800, color:'#fff', marginBottom:6}}>Envoie-nous un message</div>
+      <div style={{fontSize:12, color:'#334566', marginBottom:24}}>On répond à toutes les demandes, sans exception.</div>
+
+      <form onSubmit={handleSubmit} style={{display:'flex', flexDirection:'column', gap:16}}>
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
+          <div>
+            <label className="lp-contact-label">Prénom</label>
+            <input className="lp-contact-field" placeholder="Alex" value={form.name} onChange={set('name')} />
+          </div>
+          <div>
+            <label className="lp-contact-label">Email <span style={{color:'#06E6FF'}}>*</span></label>
+            <input className="lp-contact-field" type="email" placeholder="alex@email.com" value={form.email} onChange={set('email')} required />
+          </div>
+        </div>
+
+        <div>
+          <label className="lp-contact-label">Sujet</label>
+          <input className="lp-contact-field" placeholder="Question sur le plan Pro..." value={form.subject} onChange={set('subject')} />
+        </div>
+
+        <div>
+          <label className="lp-contact-label">Message <span style={{color:'#06E6FF'}}>*</span></label>
+          <textarea className="lp-contact-field" rows={5} placeholder="Décris ta demande en détail..." value={form.message} onChange={set('message')} required
+            style={{resize:'vertical', lineHeight:1.6}} />
+        </div>
+
+        {error && (
+          <div style={{padding:'10px 14px', borderRadius:8, background:'rgba(255,61,87,0.08)', border:'1px solid rgba(255,61,87,0.25)', color:'#FF5570', fontSize:13}}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <button type="submit" className="lp-contact-btn" disabled={sending}>
+          {sending ? '⏳ Envoi en cours...' : '✉️ Envoyer le message'}
+        </button>
+
+        <div style={{textAlign:'center', fontSize:11, color:'#334566'}}>
+          🔒 Tes données ne sont jamais partagées
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
@@ -1493,6 +1590,165 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           </div>
         </div>
       </section>
+
+
+      {/* ── SECTION CONTACT ── */}
+      <section className="lp-section" id="contact" style={{paddingTop:80, paddingBottom:80}}>
+        <style>{`
+          .lp-contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            gap: 48px;
+            align-items: start;
+            max-width: 960px;
+            margin: 0 auto;
+          }
+          .lp-contact-info-card {
+            padding: 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.04);
+            background: linear-gradient(145deg, rgba(14,21,37,0.9), rgba(10,15,28,0.95));
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: border-color 0.2s, transform 0.2s;
+            cursor: default;
+          }
+          .lp-contact-info-card:hover {
+            border-color: rgba(6,230,255,0.2);
+            transform: translateX(4px);
+          }
+          .lp-contact-icon {
+            width: 42px; height: 42px;
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+          }
+          .lp-contact-form-wrap {
+            background: linear-gradient(145deg, rgba(12,20,34,0.98), rgba(9,14,26,0.99));
+            border: 1px solid rgba(6,230,255,0.12);
+            border-radius: 20px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 60px rgba(6,230,255,0.05), 0 24px 60px rgba(0,0,0,0.5);
+          }
+          .lp-contact-form-wrap::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(6,230,255,0.5), rgba(0,255,136,0.4), transparent);
+          }
+          .lp-contact-field {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #E8EEFF;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+          }
+          .lp-contact-field:focus {
+            border-color: rgba(6,230,255,0.4);
+            box-shadow: 0 0 0 3px rgba(6,230,255,0.08);
+          }
+          .lp-contact-field::placeholder { color: #334566; }
+          .lp-contact-label {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #334566;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 7px;
+          }
+          .lp-contact-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 11px;
+            border: none;
+            background: linear-gradient(135deg, #06E6FF, #00FF88);
+            color: #060912;
+            font-size: 14px;
+            font-weight: 800;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.02em;
+            position: relative;
+            overflow: hidden;
+          }
+          .lp-contact-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(6,230,255,0.4); filter: brightness(1.05); }
+          .lp-contact-btn:active { transform: translateY(0); }
+          .lp-contact-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+          .lp-contact-success {
+            text-align: center;
+            padding: 32px 0;
+          }
+          @media (max-width: 768px) {
+            .lp-contact-grid { grid-template-columns: 1fr; }
+          }
+        `}</style>
+
+        <div className="lp-section-inner">
+          <div style={{textAlign:'center', marginBottom:52}}>
+            <div className="lp-section-tag fade-in">✉️ Contact</div>
+            <h2 className="fade-in">Une question ? <em>Écris-nous.</em></h2>
+            <p className="lp-section-sub fade-in" style={{margin:'0 auto'}}>
+              Notre équipe répond sous 24h ouvrées. Pas de bot, pas d'attente interminable.
+            </p>
+          </div>
+
+          <div className="lp-contact-grid fade-in">
+
+            {/* ── Colonne gauche : infos ── */}
+            <div style={{display:'flex', flexDirection:'column', gap:14}}>
+
+              {[
+                { icon:'⚡', color:'#06E6FF', bg:'rgba(6,230,255,0.1)', title:'Réponse sous 24h', desc:'Souvent bien plus vite. Notre équipe est active du lun au ven, 9h–18h CET.' },
+                { icon:'🎯', color:'#00FF88', bg:'rgba(0,255,136,0.1)', title:'Support humain', desc:'Pas de chatbot. De vraies personnes qui tradent et comprennent tes besoins.' },
+                { icon:'🔒', color:'#B06EFF', bg:'rgba(176,110,255,0.1)', title:'100% confidentiel', desc:'Tes données et messages restent entre toi et notre équipe. Zéro partage.' },
+                { icon:'💳', color:'#FFD700', bg:'rgba(255,215,0,0.1)', title:'Questions facturation', desc:'Abonnement, remboursement, changement de plan — on règle ça rapidement.' },
+              ].map((item, i) => (
+                <div key={i} className="lp-contact-info-card">
+                  <div className="lp-contact-icon" style={{background: item.bg}}>
+                    <span style={{color: item.color}}>{item.icon}</span>
+                  </div>
+                  <div>
+                    <div style={{fontSize:14, fontWeight:700, color:'#E8EEFF', marginBottom:4}}>{item.title}</div>
+                    <div style={{fontSize:12.5, color:'#7A90B8', lineHeight:1.6}}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Email direct */}
+              <div style={{
+                marginTop:8, padding:'16px 20px', borderRadius:12,
+                background:'rgba(6,230,255,0.04)', border:'1px solid rgba(6,230,255,0.12)',
+                display:'flex', alignItems:'center', gap:12,
+              }}>
+                <span style={{fontSize:18}}>📧</span>
+                <div>
+                  <div style={{fontSize:10.5, color:'#334566', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3}}>Email direct</div>
+                  <a href="mailto:support@marketflowjournal.com" style={{fontSize:13, color:'#06E6FF', fontWeight:600, textDecoration:'none'}}>
+                    support@marketflowjournal.com
+                  </a>
+                </div>
+              </div>
+
+            </div>
+
+            {/* ── Colonne droite : formulaire ── */}
+            <ContactFormBlock />
+
+          </div>
+        </div>
+      </section>
+
 
       {/* ── CTA FINAL ── */}
       <div className="lp-cta">
