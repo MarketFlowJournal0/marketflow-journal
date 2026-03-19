@@ -1573,7 +1573,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <div className="lp-section-tag fade-in">❓ FAQ</div>
             <h2 className="fade-in">Questions <em>fréquentes.</em></h2>
             <p className="lp-section-sub fade-in">Tu ne trouves pas ta réponse ? Écris-nous sur Discord, on répond en moins d'une heure.</p>
-            <a href="https://discord.gg/Rhwaqc8mDb" target="_blank" rel="noopener noreferrer" className="btn-ghost fade-in" style={{marginTop:24,display:"inline-block",textDecoration:"none"}}>💬 Rejoindre le Discord</a>
+            <a href="https://discord.gg/Cvh6H8yK8m" target="_blank" rel="noopener noreferrer" className="btn-ghost fade-in" style={{marginTop:24,display:"inline-block",textDecoration:"none"}}>💬 Rejoindre le Discord</a>
           </div>
           <div className="lp-faq-list fade-in">
             {FAQS.map((f,i)=>(
