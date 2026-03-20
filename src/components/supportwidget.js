@@ -293,11 +293,9 @@ export default function SupportWidget({ onOpenPage }) {
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
         ) : (
-          <img
-            src={LOGO_SIMPLE}
-            alt="MarketFlow"
-            style={{ width: '80%', height: '80%', objectFit: 'contain', filter: 'brightness(1.1)' }}
-          />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#060912" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
         )}
       </button>
 
@@ -307,7 +305,9 @@ export default function SupportWidget({ onOpenPage }) {
           {/* Header */}
           <div className="mfw-head">
             <div className="mfw-av">
-              <img src={LOGO_SIMPLE} alt="MFJ" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06E6FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
