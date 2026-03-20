@@ -117,6 +117,16 @@ function AppInner() {
 
   const [authModal,      setAuthModal]      = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [forceLoggedOut, setForceLoggedOut] = useState(
+    () => sessionStorage.getItem('mfj_logged_out') === '1'
+  );
+
+  useEffect(() => {
+    if (forceLoggedOut) {
+      sessionStorage.removeItem('mfj_logged_out');
+      setForceLoggedOut(false);
+    }
+  }, [forceLoggedOut]);
 
   // Gestion payment=success / cancelled depuis Stripe
   useEffect(() => {
@@ -190,6 +200,7 @@ function AppInner() {
     });
     sessionStorage.clear();
     // Forcer retour sur la racine proprement
+    sessionStorage.setItem('mfj_logged_out', '1');
     window.location.href = 'https://marketflowjournal.com/';
   };
 
@@ -225,8 +236,8 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement → /plan ──
-  if (profileLoaded && !user.stripeCustomerId) {
+  // ── Pas d'abonnement → /plan ── (sauf si on vient de logout)
+  if (profileLoaded && !user.stripeCustomerId && !forceLoggedOut) {
     return (
       <>
         <Routes>
