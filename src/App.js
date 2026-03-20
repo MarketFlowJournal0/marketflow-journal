@@ -223,7 +223,7 @@ function AppInner() {
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={handleLogout}
+              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = '/'; }, 300); }}
             />
           } />
           <Route path="*" element={<Navigate to="/plan" replace />} />
