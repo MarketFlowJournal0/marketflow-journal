@@ -9,5 +9,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
     persistSession:     true,
     detectSessionInUrl: true,
     storageKey:         'mfj-auth',
+    storage: {
+      // Override storage pour intercepter les writes pendant logout
+      getItem:    (key) => localStorage.getItem(key),
+      setItem:    (key, value) => localStorage.setItem(key, value),
+      removeItem: (key) => localStorage.removeItem(key),
+    },
   },
 });

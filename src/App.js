@@ -180,10 +180,14 @@ function AppInner() {
 
   const handleLogout = async () => {
     try { await logout(); } catch (_) {}
-    // Tout vider puis recharger — Supabase ne pourra pas restaurer la session
-    localStorage.clear();
+    // Supprimer explicitement la session Supabase
+    localStorage.removeItem('mfj-auth');
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('sb-') || k.startsWith('mfj')) localStorage.removeItem(k);
+    });
     sessionStorage.clear();
-    window.location.replace('/');
+    // Petit délai pour laisser signOut() terminer avant reload
+    setTimeout(() => { window.location.replace('/'); }, 200);
   };
 
   const handleOnboardingComplete = (answers) => {

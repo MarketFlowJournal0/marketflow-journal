@@ -154,11 +154,15 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     loggingOut.current = true;
-    // Vider le state React immédiatement
     setUser(null); setSession(null); setProfile(null); setProfileLoaded(true);
     try { await supabase.auth.signOut(); } catch (_) {}
-    // Vider TOUT le localStorage et sessionStorage (sessions Supabase incluses)
-    localStorage.clear();
+    // Supprimer la clé de session Supabase EXPLICITEMENT
+    localStorage.removeItem('mfj-auth');
+    localStorage.removeItem('mfj-auth-token');
+    // Supprimer toutes les clés sb- et mfj
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('sb-') || k.startsWith('mfj')) localStorage.removeItem(k);
+    });
     sessionStorage.clear();
   }, []);
 
