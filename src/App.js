@@ -218,34 +218,9 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement → PlanSelection SANS bouton retour ──────────────────────
+  // ── Pas d'abonnement → PlanSelection avec bouton déconnexion ────────────────
   if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
-    return (
-      <>
-        {/* Bouton discret "Changer de compte" en bas */}
-        <div style={{
-          position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 9999,
-        }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 20, padding: '7px 16px',
-              color: '#334566', fontSize: 12, fontWeight: 500,
-              cursor: 'pointer', fontFamily: 'inherit',
-              transition: 'all 0.18s',
-            }}
-            onMouseEnter={e => { e.target.style.color = '#7A90B8'; e.target.style.borderColor = 'rgba(255,255,255,0.15)'; }}
-            onMouseLeave={e => { e.target.style.color = '#334566'; e.target.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-          >
-            ↩ Changer de compte
-          </button>
-        </div>
-        <PlanSelection user={user} />
-      </>
-    );
+    return <PlanSelection user={user} onLogout={handleLogout} />;
   }
 
   // ── App principale ──────────────────────────────────────────────────────────

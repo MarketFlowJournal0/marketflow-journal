@@ -107,6 +107,7 @@ const STYLES = `
     pointer-events: none;
     z-index: 0;
   }
+  /* Bouton retour (sidebar) */
   .ps-back {
     position: fixed;
     top: 28px; left: 28px;
@@ -121,7 +122,6 @@ const STYLES = `
     transition: all 0.2s;
     font-family: 'Inter', sans-serif;
     z-index: 9999;
-    pointer-events: all;
   }
   .ps-back:hover {
     background: rgba(255,255,255,0.12);
@@ -131,6 +131,28 @@ const STYLES = `
   }
   .ps-back svg { transition: transform 0.2s; flex-shrink: 0; }
   .ps-back:hover svg { transform: translateX(-3px); }
+
+  /* Bouton déconnexion (user sans abo) */
+  .ps-logout {
+    position: fixed;
+    top: 28px; right: 28px;
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 12px; font-weight: 600;
+    color: #334566;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+    z-index: 9999;
+  }
+  .ps-logout:hover {
+    background: rgba(255,61,87,0.08);
+    border-color: rgba(255,61,87,0.25);
+    color: #FF5570;
+  }
 
   .ps-logo {
     display: flex; align-items: center; gap: 10px;
@@ -281,7 +303,6 @@ const STYLES = `
   .ps-cta-secondary:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); color: var(--accent); }
   .ps-cta:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 
-  /* ─── Badge + bouton "Plan actuel" ─── */
   .ps-card-current {
     border-color: var(--accent) !important;
     box-shadow: 0 0 0 1px var(--accent), 0 24px 64px var(--glow) !important;
@@ -301,7 +322,6 @@ const STYLES = `
     cursor: default !important;
   }
   .ps-cta-current:hover { transform: none !important; filter: none !important; }
-
   .ps-cta-manage {
     background: rgba(255,255,255,0.06) !important;
     border: 1px solid rgba(255,255,255,0.12) !important;
@@ -351,11 +371,12 @@ const STYLES = `
 
   @media (max-width: 640px) {
     .ps-back { top: 16px; left: 16px; padding: 8px 12px; font-size: 12px; }
+    .ps-logout { top: 16px; right: 16px; padding: 7px 12px; font-size: 11px; }
     .ps-grid { grid-template-columns: 1fr; }
   }
 `;
 
-export default function PlanSelection({ user: userProp, onSkip }) {
+export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const { user: authUser, refreshProfile } = useAuth();
   const user = authUser || userProp;
 
@@ -377,7 +398,6 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   }, []); // eslint-disable-line
 
-  // ── Lecture du plan actuel ────────────────────────────────────────────────
   const currentPlan  = user?.user_metadata?.plan || user?.plan || 'trial';
   const subStatus    = user?.user_metadata?.subStatus  || user?.subStatus  || 'trialing';
   const isTrialing   = user?.user_metadata?.isTrialing ?? user?.isTrialing ?? (currentPlan === 'trial');
@@ -421,29 +441,32 @@ export default function PlanSelection({ user: userProp, onSkip }) {
     }
   };
 
-  const handleBack = () => {
-    if (onSkip) onSkip();
-    else window.location.href = window.location.origin;
-  };
-
-  // ── FIX : le plan actuel est affiché dès que l'id correspond,
-  // indépendamment du subStatus (trial inclus)
   const isCurrentPlan = (planId) => currentPlan === planId;
-
-  const isManageMode = !!onSkip;
 
   return (
     <div className="ps-root">
       <style>{STYLES}</style>
       <div className="ps-glow-top" />
 
-      {/* Bouton retour — visible en mode gestion (vient de la sidebar) */}
+      {/* Bouton retour — uniquement depuis la sidebar (onSkip défini) */}
       {onSkip && (
-        <button type="button" className="ps-back" onClick={handleBack}>
+        <button type="button" className="ps-back" onClick={onSkip}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           Retour au dashboard
+        </button>
+      )}
+
+      {/* Bouton déconnexion — uniquement pour les nouveaux users sans abo */}
+      {!onSkip && onLogout && (
+        <button type="button" className="ps-logout" onClick={onLogout}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Changer de compte
         </button>
       )}
 
@@ -530,18 +553,14 @@ export default function PlanSelection({ user: userProp, onSkip }) {
               className={`ps-card ${plan.popular && !isCurrent ? 'ps-card-popular' : ''} ${isCurrent ? 'ps-card-current' : ''}`}
               style={{ '--accent': plan.accent, '--glow': plan.glow }}
             >
-              {/* Badge "Plan actuel" — prioritaire sur "populaire" */}
               {isCurrent && (
                 <div className="ps-current-badge">
                   {isTrialing ? `⏱ Essai · ${daysLeft}j restants` : '✦ Plan actuel'}
                 </div>
               )}
-
-              {/* Badge "populaire" uniquement si ce n'est pas le plan actuel */}
               {plan.popular && !isCurrent && (
                 <div className="ps-popular-badge">✦ Le plus populaire</div>
               )}
-
               <div className="ps-card-glow" />
               <span className="ps-card-icon">{plan.icon}</span>
               <div className="ps-card-name">{plan.name}</div>
@@ -572,27 +591,21 @@ export default function PlanSelection({ user: userProp, onSkip }) {
                 ))}
               </ul>
 
-              {/* Bouton CTA selon l'état */}
               {isCurrent && user?.stripeCustomerId ? (
-                // Plan payant actif → portail Stripe
                 <button className="ps-cta ps-cta-manage" onClick={handleManage} disabled={portalLoading}>
                   {portalLoading ? '⏳ Chargement...' : '⚙️ Gérer mon abonnement'}
                 </button>
               ) : isCurrent ? (
-                // Plan actuel sans Stripe (trial) → grisé non cliquable
                 <button className="ps-cta ps-cta-current" disabled>
                   ✦ Plan actuel
                 </button>
               ) : (
-                // Autre plan → souscription
                 <button
                   className={`ps-cta ${plan.popular ? 'ps-cta-primary' : 'ps-cta-secondary'}`}
                   disabled={!!loading}
                   onClick={() => handleSelect(plan)}
                 >
-                  {loading === plan.id
-                    ? '⏳ Chargement...'
-                    : `Passer à ${plan.name}`}
+                  {loading === plan.id ? '⏳ Chargement...' : `Passer à ${plan.name}`}
                 </button>
               )}
             </div>
