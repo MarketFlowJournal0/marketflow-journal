@@ -153,16 +153,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    loggingOut.current = true; // ← bloquer onAuthStateChange
-    // Vider le state immédiatement
+    loggingOut.current = true;
+    // Vider le state React immédiatement
     setUser(null); setSession(null); setProfile(null); setProfileLoaded(true);
-    try {
-      await supabase.auth.signOut();
-    } catch (_) {}
-    // Nettoyer le storage Supabase
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('sb-') || k.startsWith('mfj'))
-      .forEach(k => localStorage.removeItem(k));
+    try { await supabase.auth.signOut(); } catch (_) {}
+    // Vider TOUT le localStorage et sessionStorage (sessions Supabase incluses)
+    localStorage.clear();
+    sessionStorage.clear();
   }, []);
 
   const updateProfile = useCallback(async (updates) => {

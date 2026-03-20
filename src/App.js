@@ -179,11 +179,10 @@ function AppInner() {
   };
 
   const handleLogout = async () => {
-    // Nettoyer le storage AVANT le signOut pour éviter la re-détection
+    try { await logout(); } catch (_) {}
+    // Tout vider puis recharger — Supabase ne pourra pas restaurer la session
     localStorage.clear();
     sessionStorage.clear();
-    try { await logout(); } catch (_) {}
-    // replace() évite le retour arrière et force un reload complet
     window.location.replace('/');
   };
 
