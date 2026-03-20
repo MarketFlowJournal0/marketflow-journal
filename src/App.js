@@ -76,15 +76,12 @@ function AppInner() {
     () => sessionStorage.getItem(BACK_FROM_PLAN_KEY) === '1'
   );
 
-  const [paymentOk, setPaymentOk] = useState(() => {
-    const ts = localStorage.getItem(PAYMENT_SUCCESS_KEY);
-    if (ts && Date.now() - parseInt(ts, 10) < 10 * 60 * 1000) return true;
-    if (ts) localStorage.removeItem(PAYMENT_SUCCESS_KEY);
-    return false;
-  });
+  const [paymentOk, setPaymentOk] = useState(false);
 
-  // ── Détection route /abonnement ──────────────────────────────────────────────
-  const isAbonnementRoute = window.location.pathname === '/abonnement';
+  // ── Détection route /abonnement (supporte aussi /#/abonnement) ──────────────
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  const isAbonnementRoute = pathname === '/abonnement' || hash === '#/abonnement' || hash.startsWith('#/abonnement');
 
   useEffect(() => {
     if (forceLanding) sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
@@ -181,7 +178,7 @@ function AppInner() {
       <>
         <PlanSelection
           user={user}
-          onSkip={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }}
+          onSkip={() => { window.location.href = '/'; }}
         />
         <SupportWidget onOpenPage={() => {}} />
       </>
@@ -218,8 +215,9 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement → PlanSelection avec bouton déconnexion ────────────────
-  if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
+  // ── Pas d'abonnement → PlanSelection (vérification stricte Supabase) ─────────
+  // On attend profileLoaded pour être sûr que stripeCustomerId est à jour
+  if (profileLoaded && !user.stripeCustomerId) {
     return <PlanSelection user={user} onLogout={() => { logout().catch(()=>{}); window.location.href = '/'; }} />;
   }
 
