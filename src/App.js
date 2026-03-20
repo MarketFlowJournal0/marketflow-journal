@@ -23,9 +23,9 @@ import AuthCallback from './pages/AuthCallback';
 import './App.css';
 import './theme.css';
 
-const PAYMENT_SUCCESS_KEY  = 'mfj_payment_success';
-const BACK_FROM_PLAN_KEY   = 'mfj_back_from_plan';
-const ONBOARDING_DONE_KEY  = 'mfj_onboarding_done';
+const PAYMENT_SUCCESS_KEY = 'mfj_payment_success';
+const BACK_FROM_PLAN_KEY  = 'mfj_back_from_plan';
+const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
 
 function LoadingScreen() {
   return (
@@ -43,44 +43,21 @@ function LoadingScreen() {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18,
         animation: 'mf-pulse 2.2s ease-in-out infinite',
       }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: 20, overflow: 'hidden',
-          animation: 'mf-glow 2.2s ease-in-out infinite',
-        }}>
-          <img
-            src="/logo192.png" alt="MarketFlow"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={e => {
-              e.target.style.display = 'none';
-              e.target.parentElement.style.background = 'linear-gradient(135deg,#06E6FF,#00FF88)';
-            }}
-          />
+        <div style={{ width: 72, height: 72, borderRadius: 20, overflow: 'hidden', animation: 'mf-glow 2.2s ease-in-out infinite' }}>
+          <img src="/logo192.png" alt="MarketFlow" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={e => { e.target.style.display = 'none'; e.target.parentElement.style.background = 'linear-gradient(135deg,#06E6FF,#00FF88)'; }} />
         </div>
         <div style={{ textAlign: 'center', lineHeight: 1 }}>
-          <div style={{
-            fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22,
-            color: '#fff', letterSpacing: '-0.6px',
-          }}>
+          <div style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, color: '#fff', letterSpacing: '-0.6px' }}>
             Market<span style={{ color: '#06E6FF' }}>Flow</span>
           </div>
-          <div style={{
-            fontFamily: "'Inter',sans-serif", fontSize: 11,
-            color: 'rgba(122,144,184,0.7)', marginTop: 4,
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-          }}>
+          <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, color: 'rgba(122,144,184,0.7)', marginTop: 4, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Journal
           </div>
         </div>
       </div>
-      <div style={{
-        width: 100, height: 2, borderRadius: 2,
-        background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginTop: 8,
-      }}>
-        <div style={{
-          width: '35%', height: '100%',
-          background: 'linear-gradient(90deg,transparent,#06E6FF,#00FF88,transparent)',
-          borderRadius: 2, animation: 'mf-shimmer 1.6s ease-in-out infinite',
-        }} />
+      <div style={{ width: 100, height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginTop: 8 }}>
+        <div style={{ width: '35%', height: '100%', background: 'linear-gradient(90deg,transparent,#06E6FF,#00FF88,transparent)', borderRadius: 2, animation: 'mf-shimmer 1.6s ease-in-out infinite' }} />
       </div>
     </div>
   );
@@ -89,14 +66,11 @@ function LoadingScreen() {
 function AppInner() {
   const { user, loading, profileLoaded, logout, refreshProfile } = useAuth();
 
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [collapsed,   setCollapsed]   = useState(false);
-  const [authModal,   setAuthModal]   = useState(null);
-
-  // Onboarding : affiché une seule fois après la toute première inscription
+  const [currentPage,   setCurrentPage]   = useState('dashboard');
+  const [collapsed,     setCollapsed]      = useState(false);
+  const [authModal,     setAuthModal]      = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  // Flag pour détecter une nouvelle inscription (vs connexion)
-  const [isNewSignup, setIsNewSignup] = useState(false);
+  const [isNewSignup,   setIsNewSignup]    = useState(false);
 
   const [forceLanding, setForceLanding] = useState(
     () => sessionStorage.getItem(BACK_FROM_PLAN_KEY) === '1'
@@ -108,6 +82,9 @@ function AppInner() {
     if (ts) localStorage.removeItem(PAYMENT_SUCCESS_KEY);
     return false;
   });
+
+  // ── Détection route /abonnement ──────────────────────────────────────────────
+  const isAbonnementRoute = window.location.pathname === '/abonnement';
 
   useEffect(() => {
     if (forceLanding) sessionStorage.removeItem(BACK_FROM_PLAN_KEY);
@@ -123,36 +100,26 @@ function AppInner() {
       refreshProfile?.().catch(() => {});
       setTimeout(() => toast.success('🎉 Abonnement activé !', {
         duration: 6000,
-        style: {
-          background: '#0D1627', color: '#00FF88',
-          border: '1px solid rgba(0,255,136,0.3)',
-          borderRadius: '12px', fontSize: '15px',
-        },
+        style: { background: '#0D1627', color: '#00FF88', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', fontSize: '15px' },
       }), 500);
     }
     if (params.get('payment') === 'cancelled') {
       window.history.replaceState({}, '', window.location.pathname);
-      toast('Paiement annulé. 👋', {
-        style: { background: '#0D1627', color: '#fff', borderRadius: '12px' },
-      });
+      toast('Paiement annulé. 👋', { style: { background: '#0D1627', color: '#fff', borderRadius: '12px' } });
     }
   }, []); // eslint-disable-line
 
-  // Quand l'user se connecte après signup → montrer onboarding si pas déjà fait
   useEffect(() => {
     if (user && isNewSignup) {
       const done = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
-      if (!done) {
-        setShowOnboarding(true);
-      }
+      if (!done) setShowOnboarding(true);
       setIsNewSignup(false);
     }
   }, [user, isNewSignup]);
 
-  const openLogin  = () => { setForceLanding(false); setAuthModal('login'); };
-  const openSignup = () => { setForceLanding(false); setAuthModal('signup'); };
-  const closeAuth  = () => setAuthModal(null);
-
+  const openLogin          = () => { setForceLanding(false); setAuthModal('login'); };
+  const openSignup         = () => { setForceLanding(false); setAuthModal('signup'); };
+  const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
     sessionStorage.setItem('pending_price_id', priceId);
     setForceLanding(false);
@@ -168,15 +135,12 @@ function AppInner() {
       });
       const { url } = await res.json();
       if (url) window.location.href = url;
-    } catch (err) {
-      console.error('Checkout error:', err);
-    }
+    } catch (err) { console.error('Checkout error:', err); }
   };
 
   const handleAuthSuccess = async (userData) => {
     setAuthModal(null);
     setForceLanding(false);
-    // Marquer comme nouvelle inscription pour déclencher l'onboarding
     setIsNewSignup(true);
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
@@ -186,11 +150,7 @@ function AppInner() {
   };
 
   const handleOnboardingComplete = (answers) => {
-    // Sauvegarder les réponses (optionnel : envoyer au backend)
-    if (user?.id) {
-      localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
-      // On pourrait aussi sauvegarder les réponses dans Supabase ici
-    }
+    if (user?.id) localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
     setShowOnboarding(false);
   };
 
@@ -201,31 +161,40 @@ function AppInner() {
     window.location.href = '/';
   };
 
-  const handleSkipPlan = () => {
-    sessionStorage.setItem(BACK_FROM_PLAN_KEY, '1');
-    window.location.reload();
-  };
-
   // ── Callback OAuth ──────────────────────────────────────────────────────────
   if (window.location.pathname === '/auth/callback') return <AuthCallback />;
 
-  // ── forceLanding EN PREMIER ─────────────────────────────────────────────────
+  // ── Route /abonnement — accessible même connecté sans abo ───────────────────
+  // Permet de "s'échapper" de la page bloquante via l'URL
+  if (isAbonnementRoute) {
+    if (!user) {
+      return (
+        <>
+          <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
+          <SupportWidget onOpenPage={() => {}} />
+          {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
+        </>
+      );
+    }
+    // Connecté → affiche PlanSelection avec bouton retour vers landing
+    return (
+      <>
+        <PlanSelection
+          user={user}
+          onSkip={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }}
+        />
+        <SupportWidget onOpenPage={() => {}} />
+      </>
+    );
+  }
+
+  // ── forceLanding ─────────────────────────────────────────────────────────────
   if (forceLanding) {
     return (
       <>
-        <LandingPage
-          onLogin={openLogin}
-          onSignup={openSignup}
-          onSignupWithPlan={openSignupWithPlan}
-        />
+        <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
         <SupportWidget onOpenPage={() => {}} />
-        {authModal && (
-          <AuthModal
-            defaultTab={authModal}
-            onClose={closeAuth}
-            onSuccess={handleAuthSuccess}
-          />
-        )}
+        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
     );
   }
@@ -233,36 +202,50 @@ function AppInner() {
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading && !profileLoaded) return <LoadingScreen />;
 
-  // ── Non connecté → LandingPage ───────────────────────────────────────────────
+  // ── Non connecté ─────────────────────────────────────────────────────────────
   if (!user) {
     return (
       <>
-        <LandingPage
-          onLogin={openLogin}
-          onSignup={openSignup}
-          onSignupWithPlan={openSignupWithPlan}
-        />
+        <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
         <SupportWidget onOpenPage={() => {}} />
-        {authModal && (
-          <AuthModal
-            defaultTab={authModal}
-            onClose={closeAuth}
-            onSuccess={handleAuthSuccess}
-          />
-        )}
+        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
     );
   }
 
-  // ── Onboarding (nouvelle inscription, avant plan) ────────────────────────────
+  // ── Onboarding (première inscription) ────────────────────────────────────────
   if (showOnboarding) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement → PlanSelection (SANS bouton retour) ────────────────────
-  // onSkip = undefined → le bouton retour est masqué dans PlanSelection
+  // ── Pas d'abonnement → PlanSelection SANS bouton retour ──────────────────────
   if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
-    return <PlanSelection user={user} />;
+    return (
+      <>
+        {/* Bouton discret "Changer de compte" en bas */}
+        <div style={{
+          position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9999,
+        }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 20, padding: '7px 16px',
+              color: '#334566', fontSize: 12, fontWeight: 500,
+              cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'all 0.18s',
+            }}
+            onMouseEnter={e => { e.target.style.color = '#7A90B8'; e.target.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+            onMouseLeave={e => { e.target.style.color = '#334566'; e.target.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+          >
+            ↩ Changer de compte
+          </button>
+        </div>
+        <PlanSelection user={user} />
+      </>
+    );
   }
 
   // ── App principale ──────────────────────────────────────────────────────────
@@ -283,7 +266,6 @@ function AppInner() {
       case 'ai-chat':          return <AIChat />;
       case 'account-settings':
         return <AccountSettings user={user} onBack={() => setCurrentPage('dashboard')} />;
-      // Gestion abonnement depuis la sidebar → onSkip activé → bouton retour visible
       case 'subscription':
         return <PlanSelection user={user} onSkip={() => setCurrentPage('dashboard')} />;
       case 'support':
@@ -294,17 +276,9 @@ function AppInner() {
 
   return (
     <TradingProvider>
-      <div style={{
-        display: 'flex', minHeight: '100vh',
-        backgroundColor: 'var(--bg)',
-        fontFamily: "'Inter',sans-serif",
-      }}>
+      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)', fontFamily: "'Inter',sans-serif" }}>
         {!isFullscreen && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, bottom: 0,
-            width: sidebarWidth, zIndex: 100,
-            transition: 'width 0.30s cubic-bezier(0.4,0,0.2,1)',
-          }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: sidebarWidth, zIndex: 100, transition: 'width 0.30s cubic-bezier(0.4,0,0.2,1)' }}>
             <Sidebar
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
@@ -315,18 +289,13 @@ function AppInner() {
             />
           </div>
         )}
-        <div
-          className="mf-main"
-          style={{
-            marginLeft: sidebarWidth, flex: 1, minHeight: '100vh',
-            transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)',
-            backgroundColor: 'var(--bg)', overflow: 'auto',
-          }}
-        >
+        <div className="mf-main" style={{
+          marginLeft: sidebarWidth, flex: 1, minHeight: '100vh',
+          transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)',
+          backgroundColor: 'var(--bg)', overflow: 'auto',
+        }}>
           {renderPage()}
         </div>
-
-        {/* SupportWidget flottant bas-droite */}
         <SupportWidget onOpenPage={(page) => setCurrentPage(page)} />
       </div>
     </TradingProvider>
