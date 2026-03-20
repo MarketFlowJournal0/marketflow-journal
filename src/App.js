@@ -180,6 +180,9 @@ function AppInner() {
 
   const handleLogout = async () => {
     try { await logout(); } catch (_) {}
+    // Forcer le nettoyage complet même si logout() échoue
+    localStorage.clear();
+    sessionStorage.clear();
     window.location.href = '/';
   };
 
