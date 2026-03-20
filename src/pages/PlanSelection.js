@@ -448,25 +448,13 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       <style>{STYLES}</style>
       <div className="ps-glow-top" />
 
-      {/* Bouton retour — uniquement depuis la sidebar (onSkip défini) */}
-      {onSkip && (
-        <button type="button" className="ps-back" onClick={onSkip}>
+      {/* Bouton retour — renvoie toujours vers la landing */}
+      {onLogout && (
+        <button type="button" className="ps-back" onClick={onLogout}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Retour au dashboard
-        </button>
-      )}
-
-      {/* Bouton déconnexion — uniquement pour les nouveaux users sans abo */}
-      {!onSkip && onLogout && (
-        <button type="button" className="ps-logout" onClick={onLogout}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          Changer de compte
+          Retour
         </button>
       )}
 

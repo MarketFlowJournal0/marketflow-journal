@@ -220,7 +220,7 @@ function AppInner() {
 
   // ── Pas d'abonnement → PlanSelection avec bouton déconnexion ────────────────
   if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
-    return <PlanSelection user={user} onLogout={handleLogout} />;
+    return <PlanSelection user={user} onLogout={() => { logout().catch(()=>{}); window.location.href = '/'; }} />;
   }
 
   // ── App principale ──────────────────────────────────────────────────────────
