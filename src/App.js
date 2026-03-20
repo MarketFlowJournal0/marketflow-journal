@@ -186,8 +186,8 @@ function AppInner() {
       if (k.startsWith('sb-') || k.startsWith('mfj')) localStorage.removeItem(k);
     });
     sessionStorage.clear();
-    // Petit délai pour laisser signOut() terminer avant reload
-    setTimeout(() => { window.location.replace('/'); }, 200);
+    // Forcer retour sur la racine proprement
+    window.location.href = 'https://marketflowjournal.com/';
   };
 
   const handleOnboardingComplete = (answers) => {
