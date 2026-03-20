@@ -13,6 +13,7 @@ import AIChat from './pages/AIChat';
 import AccountSettings from './pages/AccountSettings';
 import PlanSelection from './pages/PlanSelection';
 import SupportPage from './pages/SupportPage';
+import OnboardingFlow from './pages/OnboardingFlow';
 import SupportWidget from './components/supportwidget';
 import { TradingProvider } from './context/TradingContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -22,8 +23,9 @@ import AuthCallback from './pages/AuthCallback';
 import './App.css';
 import './theme.css';
 
-const PAYMENT_SUCCESS_KEY = 'mfj_payment_success';
-const BACK_FROM_PLAN_KEY  = 'mfj_back_from_plan';
+const PAYMENT_SUCCESS_KEY  = 'mfj_payment_success';
+const BACK_FROM_PLAN_KEY   = 'mfj_back_from_plan';
+const ONBOARDING_DONE_KEY  = 'mfj_onboarding_done';
 
 function LoadingScreen() {
   return (
@@ -91,6 +93,11 @@ function AppInner() {
   const [collapsed,   setCollapsed]   = useState(false);
   const [authModal,   setAuthModal]   = useState(null);
 
+  // Onboarding : affiché une seule fois après la toute première inscription
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  // Flag pour détecter une nouvelle inscription (vs connexion)
+  const [isNewSignup, setIsNewSignup] = useState(false);
+
   const [forceLanding, setForceLanding] = useState(
     () => sessionStorage.getItem(BACK_FROM_PLAN_KEY) === '1'
   );
@@ -131,9 +138,21 @@ function AppInner() {
     }
   }, []); // eslint-disable-line
 
-  const openLogin          = () => { setForceLanding(false); setAuthModal('login'); };
-  const openSignup         = () => { setForceLanding(false); setAuthModal('signup'); };
-  const closeAuth          = () => setAuthModal(null);
+  // Quand l'user se connecte après signup → montrer onboarding si pas déjà fait
+  useEffect(() => {
+    if (user && isNewSignup) {
+      const done = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
+      if (!done) {
+        setShowOnboarding(true);
+      }
+      setIsNewSignup(false);
+    }
+  }, [user, isNewSignup]);
+
+  const openLogin  = () => { setForceLanding(false); setAuthModal('login'); };
+  const openSignup = () => { setForceLanding(false); setAuthModal('signup'); };
+  const closeAuth  = () => setAuthModal(null);
+
   const openSignupWithPlan = (priceId) => {
     sessionStorage.setItem('pending_price_id', priceId);
     setForceLanding(false);
@@ -157,11 +176,22 @@ function AppInner() {
   const handleAuthSuccess = async (userData) => {
     setAuthModal(null);
     setForceLanding(false);
+    // Marquer comme nouvelle inscription pour déclencher l'onboarding
+    setIsNewSignup(true);
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
       setTimeout(() => launchCheckout(pendingPriceId, userData?.email), 800);
     }
+  };
+
+  const handleOnboardingComplete = (answers) => {
+    // Sauvegarder les réponses (optionnel : envoyer au backend)
+    if (user?.id) {
+      localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
+      // On pourrait aussi sauvegarder les réponses dans Supabase ici
+    }
+    setShowOnboarding(false);
   };
 
   const handleLogout = async () => {
@@ -203,7 +233,7 @@ function AppInner() {
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading && !profileLoaded) return <LoadingScreen />;
 
-  // ── Non connecté → LandingPage + SupportWidget ──────────────────────────────
+  // ── Non connecté → LandingPage ───────────────────────────────────────────────
   if (!user) {
     return (
       <>
@@ -224,9 +254,15 @@ function AppInner() {
     );
   }
 
-  // ── Pas d'abonnement → PlanSelection ────────────────────────────────────────
+  // ── Onboarding (nouvelle inscription, avant plan) ────────────────────────────
+  if (showOnboarding) {
+    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
+  }
+
+  // ── Pas d'abonnement → PlanSelection (SANS bouton retour) ────────────────────
+  // onSkip = undefined → le bouton retour est masqué dans PlanSelection
   if (!user.stripeCustomerId && !paymentOk && profileLoaded) {
-    return <PlanSelection user={user} onSkip={handleSkipPlan} />;
+    return <PlanSelection user={user} />;
   }
 
   // ── App principale ──────────────────────────────────────────────────────────
@@ -247,6 +283,7 @@ function AppInner() {
       case 'ai-chat':          return <AIChat />;
       case 'account-settings':
         return <AccountSettings user={user} onBack={() => setCurrentPage('dashboard')} />;
+      // Gestion abonnement depuis la sidebar → onSkip activé → bouton retour visible
       case 'subscription':
         return <PlanSelection user={user} onSkip={() => setCurrentPage('dashboard')} />;
       case 'support':
@@ -289,9 +326,8 @@ function AppInner() {
           {renderPage()}
         </div>
 
-        {/* ── SupportWidget flottant bas-droite ── */}
+        {/* SupportWidget flottant bas-droite */}
         <SupportWidget onOpenPage={(page) => setCurrentPage(page)} />
-
       </div>
     </TradingProvider>
   );
