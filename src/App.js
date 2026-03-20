@@ -148,17 +148,15 @@ function AppInner() {
     }
   }, []); // eslint-disable-line
 
-  // Onboarding après nouvelle inscription — détecté via sessionStorage
+  // Onboarding — affiché pour tout user sans abonnement qui ne l'a pas encore fait
   useEffect(() => {
-    if (user) {
-      const isNew = sessionStorage.getItem('mfj_new_signup') === '1';
-      const done  = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
-      if (isNew && !done) {
-        sessionStorage.removeItem('mfj_new_signup');
+    if (user && profileLoaded && !user.stripeCustomerId) {
+      const done = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
+      if (!done) {
         setShowOnboarding(true);
       }
     }
-  }, [user]);
+  }, [user, profileLoaded]);
 
   const openLogin          = () => setAuthModal('login');
   const openSignup         = () => setAuthModal('signup');
@@ -207,7 +205,7 @@ function AppInner() {
   const handleOnboardingComplete = (answers) => {
     if (user?.id) localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
     setShowOnboarding(false);
-    navigate('/plan');
+    // navigate vers /plan géré automatiquement par le gate ci-dessous
   };
 
   // ── Auth callback ──
