@@ -69,7 +69,7 @@ module.exports = async (req, res) => {
       // ✅ Succès → page d'accueil avec paramètre payment=success
       success_url: `${BASE_URL}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       // ✅ Annulation → retour sur la page abonnement, PAS /plan
-      cancel_url: `${BASE_URL}/?payment=cancelled`,
+      cancel_url: `${BASE_URL}/plan`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
       locale: 'fr',
