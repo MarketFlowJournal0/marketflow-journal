@@ -73,6 +73,8 @@ export function AuthProvider({ children }) {
         // Ignorer tous les events pendant un logout en cours
         if (loggingOut.current) return;
         if (event === 'INITIAL_SESSION') return;
+        // Si la clé mfj-auth n'existe plus, ignorer tout SIGNED_IN
+        if (event === 'SIGNED_IN' && !localStorage.getItem('mfj-auth')) return;
         if (!mounted) return;
 
         if (event === 'SIGNED_OUT' || !session) {
