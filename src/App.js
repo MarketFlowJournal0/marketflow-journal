@@ -179,11 +179,12 @@ function AppInner() {
   };
 
   const handleLogout = async () => {
-    try { await logout(); } catch (_) {}
-    // Forcer le nettoyage complet même si logout() échoue
+    // Nettoyer le storage AVANT le signOut pour éviter la re-détection
     localStorage.clear();
     sessionStorage.clear();
-    window.location.href = '/';
+    try { await logout(); } catch (_) {}
+    // replace() évite le retour arrière et force un reload complet
+    window.location.replace('/');
   };
 
   const handleOnboardingComplete = (answers) => {

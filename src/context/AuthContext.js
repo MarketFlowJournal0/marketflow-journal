@@ -11,7 +11,8 @@ export function AuthProvider({ children }) {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [error,         setError]         = useState(null);
   const [authLoading,   setAuthLoading]   = useState(false);
-  const initDone = useRef(false);
+  const initDone     = useRef(false);
+  const loggingOut   = useRef(false); // ← flag pour bloquer onAuthStateChange pendant logout
 
   const fetchProfile = useCallback(async (userId) => {
     if (!userId) {
@@ -39,12 +40,8 @@ export function AuthProvider({ children }) {
 
     let mounted = true;
 
-    // Timeout sécurité 4s max
     const t = setTimeout(() => {
-      if (mounted) {
-        setProfileLoaded(true);
-        setLoading(false);
-      }
+      if (mounted) { setProfileLoaded(true); setLoading(false); }
     }, 4000);
 
     const init = async () => {
@@ -54,11 +51,8 @@ export function AuthProvider({ children }) {
         if (!mounted) return;
 
         if (!session?.user) {
-          setUser(null);
-          setSession(null);
-          setProfile(null);
-          setProfileLoaded(true);
-          setLoading(false);
+          setUser(null); setSession(null); setProfile(null);
+          setProfileLoaded(true); setLoading(false);
           return;
         }
 
@@ -68,11 +62,7 @@ export function AuthProvider({ children }) {
         if (mounted) setLoading(false);
       } catch (err) {
         clearTimeout(t);
-        console.error('Auth init error:', err);
-        if (mounted) {
-          setProfileLoaded(true);
-          setLoading(false);
-        }
+        if (mounted) { setProfileLoaded(true); setLoading(false); }
       }
     };
 
@@ -80,6 +70,8 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Ignorer tous les events pendant un logout en cours
+        if (loggingOut.current) return;
         if (event === 'INITIAL_SESSION') return;
         if (!mounted) return;
 
@@ -161,11 +153,16 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('sb-') || k.startsWith('mfj-'))
-      .forEach(k => localStorage.removeItem(k));
+    loggingOut.current = true; // ← bloquer onAuthStateChange
+    // Vider le state immédiatement
     setUser(null); setSession(null); setProfile(null); setProfileLoaded(true);
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {}
+    // Nettoyer le storage Supabase
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-') || k.startsWith('mfj'))
+      .forEach(k => localStorage.removeItem(k));
   }, []);
 
   const updateProfile = useCallback(async (updates) => {
