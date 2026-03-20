@@ -1,9 +1,6 @@
 // api/create-checkout-session.js
-// Vercel Serverless Function
-
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
-
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -22,8 +19,8 @@ module.exports = async (req, res) => {
   const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://marketflowjournal.com';
 
   try {
-    // Chercher si l'user a déjà un customer Stripe
     let customerId = null;
+
     if (userId) {
       const { data: profile } = await supabase
         .from('profiles')
@@ -33,37 +30,26 @@ module.exports = async (req, res) => {
       customerId = profile?.stripe_customer_id || null;
     }
 
-    // Vérifier que le customer existe vraiment dans Stripe (live vs test mismatch)
     if (customerId) {
       try {
         await stripe.customers.retrieve(customerId);
       } catch (err) {
-        // Customer inexistant dans cet environnement (ex: ID test utilisé en live) → reset
-        console.log(`Customer ${customerId} introuvable dans Stripe, création d'un nouveau`);
+        console.log(`Customer ${customerId} introuvable, création d'un nouveau`);
         customerId = null;
         if (userId) {
-          await supabase
-            .from('profiles')
-            .update({ stripe_customer_id: null })
-            .eq('id', userId);
+          await supabase.from('profiles').update({ stripe_customer_id: null }).eq('id', userId);
         }
       }
     }
 
-    // Créer le customer Stripe si besoin
     if (!customerId && (email || userId)) {
       const customer = await stripe.customers.create({
         ...(email ? { email } : {}),
         metadata: { supabase_user_id: userId || '' },
       });
       customerId = customer.id;
-
-      // Sauvegarder immédiatement le customer_id dans Supabase
       if (userId) {
-        await supabase
-          .from('profiles')
-          .update({ stripe_customer_id: customerId })
-          .eq('id', userId);
+        await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', userId);
       }
     }
 
@@ -71,28 +57,20 @@ module.exports = async (req, res) => {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-
-      // Customer existant ou email
       ...(customerId ? { customer: customerId } : email ? { customer_email: email } : {}),
-
-      // Essai gratuit 14 jours — TOUJOURS collecter la CB dès le checkout
       subscription_data: {
         trial_period_days: 14,
         trial_settings: {
-          end_behavior: {
-            missing_payment_method: 'cancel',
-          },
+          end_behavior: { missing_payment_method: 'cancel' },
         },
         metadata: { supabase_user_id: userId || '' },
       },
-
-      // FORCER la collecte de la CB même pendant le trial
       payment_method_collection: 'always',
-
-      success_url: `${BASE_URL}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${BASE_URL}/plan`,
-
-      allow_promotion_codes:      true,
+      // ✅ Succès → page d'accueil avec paramètre payment=success
+      success_url: `${BASE_URL}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      // ✅ Annulation → retour sur la page abonnement, PAS /plan
+      cancel_url: `${BASE_URL}/?payment=cancelled`,
+      allow_promotion_codes: true,
       billing_address_collection: 'auto',
       locale: 'fr',
     });
