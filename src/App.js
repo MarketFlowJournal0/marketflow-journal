@@ -117,7 +117,6 @@ function AppInner() {
 
   const [authModal,      setAuthModal]      = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isNewSignup,    setIsNewSignup]    = useState(false);
 
   // Gestion payment=success / cancelled depuis Stripe
   useEffect(() => {
@@ -139,14 +138,17 @@ function AppInner() {
     }
   }, []); // eslint-disable-line
 
-  // Onboarding après nouvelle inscription
+  // Onboarding après nouvelle inscription — détecté via sessionStorage
   useEffect(() => {
-    if (user && isNewSignup) {
-      const done = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
-      if (!done) setShowOnboarding(true);
-      setIsNewSignup(false);
+    if (user) {
+      const isNew = sessionStorage.getItem('mfj_new_signup') === '1';
+      const done  = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
+      if (isNew && !done) {
+        sessionStorage.removeItem('mfj_new_signup');
+        setShowOnboarding(true);
+      }
     }
-  }, [user, isNewSignup]);
+  }, [user]);
 
   const openLogin          = () => setAuthModal('login');
   const openSignup         = () => setAuthModal('signup');
@@ -170,7 +172,8 @@ function AppInner() {
 
   const handleAuthSuccess = async (userData) => {
     setAuthModal(null);
-    setIsNewSignup(true);
+    // Marquer nouvelle inscription dans sessionStorage (survit au re-render)
+    sessionStorage.setItem('mfj_new_signup', '1');
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
