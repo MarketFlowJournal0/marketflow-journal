@@ -150,11 +150,13 @@ function AppInner() {
     }
   }, []); // eslint-disable-line
 
-  // Onboarding — affiché pour tout user sans abonnement qui ne l'a pas encore fait
+  // Onboarding — uniquement après une nouvelle inscription
   useEffect(() => {
     if (user && profileLoaded && !user.stripeCustomerId) {
-      const done = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
-      if (!done) {
+      const isNew = sessionStorage.getItem('mfj_new_signup') === '1';
+      const done  = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
+      if (isNew && !done) {
+        sessionStorage.removeItem('mfj_new_signup');
         setShowOnboarding(true);
       }
     }
@@ -180,10 +182,12 @@ function AppInner() {
     } catch (err) { console.error('Checkout error:', err); }
   };
 
-  const handleAuthSuccess = async (userData) => {
+  const handleAuthSuccess = async (userData, isNewAccount = false) => {
     setAuthModal(null);
-    // Marquer nouvelle inscription dans sessionStorage (survit au re-render)
-    sessionStorage.setItem('mfj_new_signup', '1');
+    // Poser le flag UNIQUEMENT si c'est une nouvelle inscription
+    if (isNewAccount) {
+      sessionStorage.setItem('mfj_new_signup', '1');
+    }
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
@@ -238,7 +242,7 @@ function AppInner() {
           } />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
-        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
+        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={(userData) => handleAuthSuccess(userData, authModal === 'signup')} />}
       </>
     );
   }
