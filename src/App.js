@@ -184,8 +184,8 @@ function AppInner() {
 
   const handleAuthSuccess = async (userData, isNewAccount = false) => {
     setAuthModal(null);
-    // Poser le flag UNIQUEMENT si c'est une nouvelle inscription
-    if (isNewAccount) {
+    // Flag posé uniquement pour une vraie inscription (pas une connexion)
+    if (isNewAccount === true) {
       sessionStorage.setItem('mfj_new_signup', '1');
     }
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
@@ -242,7 +242,7 @@ function AppInner() {
           } />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
-        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={(userData) => handleAuthSuccess(userData, authModal === 'signup')} />}
+        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
     );
   }
