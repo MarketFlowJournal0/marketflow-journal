@@ -15,6 +15,7 @@ import AccountSettings from './pages/AccountSettings';
 import PlanSelection from './pages/PlanSelection';
 import SupportPage from './pages/SupportPage';
 import OnboardingFlow from './pages/OnboardingFlow';
+import OnboardingStats from './pages/OnboardingStats';
 import SupportWidget from './components/supportwidget';
 import { TradingProvider } from './context/TradingContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -101,6 +102,7 @@ function AppLayout({ user, onLogout }) {
             <Route path="/account-settings" element={<AccountSettings user={user} onBack={() => navigate('/dashboard')} />} />
             <Route path="/subscription"     element={<PlanSelection user={user} onSkip={() => navigate('/dashboard')} />} />
             <Route path="/support"          element={<SupportPage user={user} onBack={() => navigate('/dashboard')} />} />
+            <Route path="/onboarding-stats"  element={<OnboardingStats onBack={() => navigate('/dashboard')} />} />
             <Route path="*"                 element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
@@ -202,10 +204,19 @@ function AppInner() {
     window.location.href = 'https://marketflowjournal.com/';
   };
 
-  const handleOnboardingComplete = (answers) => {
-    if (user?.id) localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
+  const handleOnboardingComplete = async (answers) => {
+    if (user?.id) {
+      localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
+      // Sauvegarder les réponses dans Supabase
+      try {
+        const { supabase } = await import('./lib/supabase');
+        await supabase
+          .from('profiles')
+          .update({ onboarding: answers })
+          .eq('id', user.id);
+      } catch (_) {}
+    }
     setShowOnboarding(false);
-    // navigate vers /plan géré automatiquement par le gate ci-dessous
   };
 
   // ── Auth callback ──
