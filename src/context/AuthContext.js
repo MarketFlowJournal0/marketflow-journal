@@ -46,6 +46,16 @@ export function AuthProvider({ children }) {
 
     const init = async () => {
       try {
+        // Si flag logout présent → ne pas restaurer la session
+        if (localStorage.getItem('mfj_force_logout') === '1') {
+          localStorage.removeItem('mfj_force_logout');
+          localStorage.removeItem('mfj-auth');
+          try { await supabase.auth.signOut(); } catch (_) {}
+          clearTimeout(t);
+          if (mounted) { setUser(null); setSession(null); setProfile(null); setProfileLoaded(true); setLoading(false); }
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         clearTimeout(t);
         if (!mounted) return;

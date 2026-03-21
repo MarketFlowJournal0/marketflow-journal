@@ -192,15 +192,18 @@ function AppInner() {
   };
 
   const handleLogout = async () => {
-    try { await logout(); } catch (_) {}
-    // Supprimer explicitement la session Supabase
+    // Flag lu au prochain init() pour bloquer la restauration de session
+    localStorage.setItem('mfj_force_logout', '1');
     localStorage.removeItem('mfj-auth');
     Object.keys(localStorage).forEach(k => {
-      if (k.startsWith('sb-') || k.startsWith('mfj')) localStorage.removeItem(k);
+      if (k.startsWith('sb-') || k.startsWith('mfj') && k !== 'mfj_force_logout') localStorage.removeItem(k);
     });
     sessionStorage.clear();
-    // Forcer retour sur la racine proprement
-    sessionStorage.setItem('mfj_logged_out', '1');
+    try { await logout(); } catch (_) {}
+    try {
+      const dbs = await window.indexedDB.databases();
+      dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
+    } catch (_) {}
     window.location.href = 'https://marketflowjournal.com/';
   };
 
