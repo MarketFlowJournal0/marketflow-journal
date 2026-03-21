@@ -12,14 +12,10 @@ export function AuthProvider({ children }) {
   const [error,         setError]         = useState(null);
   const [authLoading,   setAuthLoading]   = useState(false);
   const initDone     = useRef(false);
-  const loggingOut   = useRef(false); // ← flag pour bloquer onAuthStateChange pendant logout
+  const loggingOut   = useRef(false);
 
   const fetchProfile = useCallback(async (userId) => {
-    if (!userId) {
-      setProfile(null);
-      setProfileLoaded(true);
-      return;
-    }
+    if (!userId) { setProfile(null); setProfileLoaded(true); return; }
     try {
       const { data } = await supabase
         .from('profiles')
@@ -27,17 +23,13 @@ export function AuthProvider({ children }) {
         .eq('id', userId)
         .maybeSingle();
       setProfile(data || null);
-    } catch (_) {
-      setProfile(null);
-    } finally {
-      setProfileLoaded(true);
-    }
+    } catch (_) { setProfile(null); }
+    finally { setProfileLoaded(true); }
   }, []);
 
   useEffect(() => {
     if (initDone.current) return;
     initDone.current = true;
-
     let mounted = true;
 
     const t = setTimeout(() => {
@@ -46,7 +38,6 @@ export function AuthProvider({ children }) {
 
     const init = async () => {
       try {
-        // Si flag logout présent → ne pas restaurer la session
         if (localStorage.getItem('mfj_force_logout') === '1') {
           localStorage.removeItem('mfj_force_logout');
           localStorage.removeItem('mfj-auth');
@@ -55,17 +46,14 @@ export function AuthProvider({ children }) {
           if (mounted) { setUser(null); setSession(null); setProfile(null); setProfileLoaded(true); setLoading(false); }
           return;
         }
-
         const { data: { session } } = await supabase.auth.getSession();
         clearTimeout(t);
         if (!mounted) return;
-
         if (!session?.user) {
           setUser(null); setSession(null); setProfile(null);
           setProfileLoaded(true); setLoading(false);
           return;
         }
-
         setSession(session);
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -80,12 +68,19 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Ignorer tous les events pendant un logout en cours
         if (loggingOut.current) return;
         if (event === 'INITIAL_SESSION') return;
-        // Si la clé mfj-auth n'existe plus, ignorer tout SIGNED_IN
-        if (event === 'SIGNED_IN' && !localStorage.getItem('mfj-auth')) return;
         if (!mounted) return;
+
+        // Détecter nouvelle inscription OAuth (compte créé il y a moins de 15s)
+        if (event === 'SIGNED_IN' && session?.user) {
+          const createdAt = new Date(session.user.created_at).getTime();
+          const isNewUser = Date.now() - createdAt < 15000;
+          const alreadyDone = localStorage.getItem('mfj_onboarding_done_' + session.user.id);
+          if (isNewUser && !alreadyDone) {
+            sessionStorage.setItem('mfj_new_signup', '1');
+          }
+        }
 
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null); setSession(null); setProfile(null);
@@ -99,11 +94,7 @@ export function AuthProvider({ children }) {
       }
     );
 
-    return () => {
-      mounted = false;
-      clearTimeout(t);
-      subscription.unsubscribe();
-    };
+    return () => { mounted = false; clearTimeout(t); subscription.unsubscribe(); };
   }, [fetchProfile]);
 
   const signup = useCallback(async ({ firstName, lastName, email, password }) => {
@@ -111,12 +102,7 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: {
-          first_name: firstName.trim(),
-          last_name:  lastName.trim(),
-          full_name:  `${firstName.trim()} ${lastName.trim()}`,
-          plan:       'trial',
-        },
+        data: { first_name: firstName.trim(), last_name: lastName.trim(), full_name: `${firstName.trim()} ${lastName.trim()}`, plan: 'trial' },
         emailRedirectTo: window.location.origin,
       },
     });
