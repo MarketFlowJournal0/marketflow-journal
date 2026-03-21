@@ -610,7 +610,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       <div className="ps-trial-note">
         🔒 <span>Paiement 100% sécurisé par Stripe</span>
         {' · '}Annulation en 1 clic
-        {' · '}14 jours gratuits — CB requise
+        {' · '}14 jours gratuits 
       </div>
     </div>
   );
