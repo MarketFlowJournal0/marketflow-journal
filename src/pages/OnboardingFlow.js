@@ -294,8 +294,6 @@ export default function OnboardingFlow({ onComplete }) {
     }
   };
 
-  const handleSkipAll = () => onComplete({});
-
   return (
     <div className="ob-root">
       <style>{STYLES}</style>
@@ -311,9 +309,7 @@ export default function OnboardingFlow({ onComplete }) {
             <div className="ob-logo-dot" />
             MarketFlow Journal
           </div>
-          <button className="ob-skip" onClick={handleSkipAll}>
-            Passer →
-          </button>
+          <div />
         </div>
 
         {/* Progress */}
