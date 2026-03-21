@@ -27,10 +27,11 @@ const PLANS = [
     glow:     'rgba(0,245,212,0.15)',
     icon:     '⚡',
     desc:     'Parfait pour commencer à tracker tes trades',
-    monthly:  15,
-    annual:   11,
+    monthly:  19,
+    annual:   19,
+    noAnnualDiscount: true,
     priceMonthly: 'price_1T9t9L2Ouddv7uendIMAR6IP',
-    priceAnnual:  'price_1T9t9K2Ouddv7uengELbKBaO',
+    priceAnnual:  'price_1TDQ7w2Ouddv7ueno5CuaNTH',
     features: [
       'Journal de trading illimité',
       'Dashboard & statistiques de base',
@@ -46,8 +47,8 @@ const PLANS = [
     glow:     'rgba(6,230,255,0.15)',
     icon:     '🚀',
     desc:     'Pour les traders sérieux qui veulent progresser',
-    monthly:  22,
-    annual:   15,
+    monthly:  26,
+    annual:   18,
     priceMonthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
     priceAnnual:  'price_1T9t9U2Ouddv7uenK6oT1O13',
     popular:  true,
@@ -68,8 +69,8 @@ const PLANS = [
     glow:     'rgba(255,215,0,0.12)',
     icon:     '👑',
     desc:     'Pour les pros qui veulent le meilleur outil',
-    monthly:  38,
-    annual:   27,
+    monthly:  42,
+    annual:   29,
     priceMonthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
     priceAnnual:  'price_1T9t9K2Ouddv7uennnWOJ44p',
     features: [
@@ -529,7 +530,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         <button className={`ps-toggle-btn ${billing === 'annual' ? 'active' : ''}`} onClick={() => setBilling('annual')}>
           Annuel
         </button>
-        {billing === 'annual' && <span className="ps-toggle-badge">-30% 🎉</span>}
+        {billing === 'annual' && <span className="ps-toggle-badge">-30% sur Pro & Elite 🎉</span>}
       </div>
 
       <div className="ps-grid">
@@ -562,10 +563,15 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                   </span>
                   <span className="ps-price-period">/mois</span>
                 </div>
-                {billing === 'annual' && (
+                {billing === 'annual' && !plan.noAnnualDiscount && (
                   <div className="ps-price-annual">
                     Facturé ${plan.annual * 12}/an —{' '}
                     <span>économise ${(plan.monthly - plan.annual) * 12}/an</span>
+                  </div>
+                )}
+                {billing === 'annual' && plan.noAnnualDiscount && (
+                  <div className="ps-price-annual">
+                    Facturé ${plan.annual * 12}/an
                   </div>
                 )}
               </div>
