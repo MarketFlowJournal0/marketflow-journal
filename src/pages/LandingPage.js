@@ -24,8 +24,8 @@ const STYLES = `
 
   /* NAV */
   .lp-nav {
-    position:fixed;top:0;left:0;right:0;z-index:1000;
-    padding:0 48px;height:72px;
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:0 64px;height:90px;
     display:flex;align-items:center;justify-content:space-between;
     background:rgba(6,9,18,0.82);
     backdrop-filter:blur(20px) saturate(180%);
@@ -35,7 +35,8 @@ const STYLES = `
   .lp-nav.scrolled { background:rgba(6,9,18,0.96); border-bottom-color:var(--brd); }
 .lp-nav-logo { display:flex;align-items:center;gap:6px;text-decoration:none; cursor:pointer; margin-left:80px; }
 .lp-nav-logo-icon {
-  width:68px;height:68px;border-radius:15px;
+  width:78px;height:78px;border-radius:17px;
+font-size:36px;
   background:linear-gradient(135deg,#06E6FF,#00FF88);
   display:flex;align-items:center;justify-content:center;
   font-size:22px;box-shadow:0 0 24px rgba(6,230,255,0.45);
