@@ -224,6 +224,7 @@ function AppInner() {
       } catch (_) {}
     }
     setShowOnboarding(false);
+    navigate('/plan');
   };
 
   // ── Auth callback ──
