@@ -14,6 +14,8 @@ const STYLES = `
 
   .lp-root { font-family:'Inter',sans-serif; background:var(--bg); color:var(--t1); overflow-x:hidden; line-height:1.6; }
   .lp-root *,:before,:after { box-sizing:border-box; margin:0; padding:0; }
+  @keyframes flowgrad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+  .flow-anim { background:linear-gradient(90deg,#06E6FF,#00FF88,#4D7CFF,#06E6FF); background-size:300% 300%; animation:flowgrad 3s ease infinite; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
   /* SCROLLBAR */
   .lp-root ::-webkit-scrollbar{width:4px;}
