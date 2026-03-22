@@ -33,14 +33,14 @@ const STYLES = `
     transition:all 0.3s;
   }
   .lp-nav.scrolled { background:rgba(6,9,18,0.96); border-bottom-color:var(--brd); }
-  .lp-nav-logo { display:flex;align-items:center;gap:5px;text-decoration:none;cursor:pointer; }
-  .lp-nav-logo-icon {
-    width:34px;height:34px;border-radius:9px;
-    background:linear-gradient(135deg,#06E6FF,#00FF88);
-    display:flex;align-items:center;justify-content:center;
-    font-size:17px;box-shadow:0 0 20px rgba(6,230,255,0.4);
-  }
-  .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:22px;color:var(--t0);letter-spacing:-0.5px; }
+.lp-nav-logo { display:flex;align-items:center;gap:14px;text-decoration:none; cursor:pointer; }
+.lp-nav-logo-icon {
+  width:42px;height:42px;border-radius:11px;
+  background:linear-gradient(135deg,#06E6FF,#00FF88);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;box-shadow:0 0 24px rgba(6,230,255,0.45);
+}
+.lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:24px;color:var(--t0);letter-spacing:-0.5px; }
   .lp-nav-logo-text span { color:var(--cyan); }
   .lp-nav-links { display:flex;align-items:center;gap:6px; }
   .lp-nav-links a {
@@ -212,7 +212,7 @@ const STYLES = `
   .lp-chart-lbl { font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px; }
 
   /* LOGOS */
-  .lp-logos { padding:76px 84px;text-align:center;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);background:rgba(10,15,30,0.5); }
+  .lp-logos { padding:56px 64px;text-align:center;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);background:rgba(10,15,30,0.5); }
   .lp-logos p { font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:28px; }
   .lp-logos-row { display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;opacity:0.35;filter:grayscale(1); }
   .lp-logo-item { font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;color:var(--t0); }
