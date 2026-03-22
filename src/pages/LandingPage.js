@@ -33,15 +33,15 @@ const STYLES = `
     transition:all 0.3s;
   }
   .lp-nav.scrolled { background:rgba(6,9,18,0.96); border-bottom-color:var(--brd); }
-.lp-nav-logo { display:flex;align-items:center;gap:5px;text-decoration:none; cursor:pointer; }
+.lp-nav-logo { display:flex;align-items:center;gap:6px;text-decoration:none; cursor:pointer; margin-left:auto; margin-right:auto; }
 .lp-nav-logo-icon {
-  width:42px;height:42px;border-radius:11px;
+  width:56px;height:56px;border-radius:13px;
   background:linear-gradient(135deg,#06E6FF,#00FF88);
   display:flex;align-items:center;justify-content:center;
   font-size:22px;box-shadow:0 0 24px rgba(6,230,255,0.45);
 }
 .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:24px;color:var(--t0);letter-spacing:-0.5px; }
-  .lp-nav-logo-text span { color:var(--cyan); }
+  .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:26px;
   .lp-nav-links { display:flex;align-items:center;gap:6px; margin:0 auto; }
   .lp-nav-links a {
     padding:8px 16px;border-radius:8px;color:var(--t2);
