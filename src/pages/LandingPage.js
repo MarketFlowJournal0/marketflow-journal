@@ -33,9 +33,9 @@ const STYLES = `
     transition:all 0.3s;
   }
   .lp-nav.scrolled { background:rgba(6,9,18,0.96); border-bottom-color:var(--brd); }
-.lp-nav-logo { display:flex;align-items:center;gap:6px;text-decoration:none; cursor:pointer; }
+.lp-nav-logo { display:flex;align-items:center;gap:6px;text-decoration:none; cursor:pointer; margin-left:80px; }
 .lp-nav-logo-icon {
-  width:56px;height:56px;border-radius:11px;
+  width:68px;height:68px;border-radius:15px;
   background:linear-gradient(135deg,#06E6FF,#00FF88);
   display:flex;align-items:center;justify-content:center;
   font-size:22px;box-shadow:0 0 24px rgba(6,230,255,0.45);
