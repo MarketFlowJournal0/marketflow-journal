@@ -39,7 +39,7 @@ const STYLES = `
 font-size:36px;
   background:linear-gradient(135deg,#06E6FF,#00FF88);
   display:flex;align-items:center;justify-content:center;
-  font-size:22px;box-shadow:0 0 24px rgba(6,230,255,0.45);
+  font-size:36px;box-shadow:0 0 24px rgba(6,230,255,0.45);
 }
 .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:24px;color:var(--t0);letter-spacing:-0.5px; }
   .lp-nav-logo-text span { color:var(--cyan); }
