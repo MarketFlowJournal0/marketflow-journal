@@ -212,7 +212,7 @@ const STYLES = `
   .lp-chart-lbl { font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px; }
 
   /* LOGOS */
-  .lp-logos { padding:56px 64px;text-align:center;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);background:rgba(10,15,30,0.5); }
+  .lp-logos { padding:76px 84px;text-align:center;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);background:rgba(10,15,30,0.5); }
   .lp-logos p { font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:28px; }
   .lp-logos-row { display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;opacity:0.35;filter:grayscale(1); }
   .lp-logo-item { font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;color:var(--t0); }
