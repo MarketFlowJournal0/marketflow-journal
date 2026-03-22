@@ -33,7 +33,7 @@ const STYLES = `
     transition:all 0.3s;
   }
   .lp-nav.scrolled { background:rgba(6,9,18,0.96); border-bottom-color:var(--brd); }
-  .lp-nav-logo { display:flex;align-items:center;gap:9px;text-decoration:none; cursor:pointer; }
+  .lp-nav-logo { display:flex;align-items:center;gap:4px;text-decoration:none;cursor:pointer; }
   .lp-nav-logo-icon {
     width:34px;height:34px;border-radius:9px;
     background:linear-gradient(135deg,#06E6FF,#00FF88);
