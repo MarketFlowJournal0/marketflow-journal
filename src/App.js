@@ -254,7 +254,7 @@ function AppInner() {
   }
 
   // ── Pas d'abonnement → /plan ── (sauf si on vient de logout)
-  if (profileLoaded && !user.stripeCustomerId && !forceLoggedOut) {
+  if (profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut) {
     return (
       <>
         <Routes>
