@@ -32,6 +32,8 @@ const NAV_SECTIONS = [
   },
 ];
 
+const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
+
 /* ── Icons ── */
 function DashboardIcon({ color }) {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2" fill={color} opacity="0.9"/><rect x="13" y="3" width="8" height="8" rx="2" fill={color} opacity="0.6"/><rect x="3" y="13" width="8" height="8" rx="2" fill={color} opacity="0.6"/><rect x="13" y="13" width="8" height="8" rx="2" fill={color} opacity="0.4"/></svg>;
@@ -325,7 +327,63 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         display: 'flex', flexDirection: 'column', gap: 0,
         transition: 'padding 0.30s ease', scrollbarWidth: 'none',
       }}>
-        {NAV_SECTIONS.map((section, si) => (
+        {email === ADMIN_EMAIL && (
+            <div style={{ marginBottom: 4 }}>
+              <AnimatePresence>
+                {!collapsed && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    style={{ fontSize: 9, fontWeight: 700, color: '#FFD700', letterSpacing: '2px', textTransform: 'uppercase', padding: '10px 12px 6px', overflow: 'hidden', whiteSpace: 'nowrap' }}
+                  >Admin</motion.div>
+                )}
+              </AnimatePresence>
+              {collapsed && <div style={{ height: 1, margin: '7px 5px 9px', background: 'linear-gradient(90deg,transparent,#162034,transparent)' }}/>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {(() => {
+                  const isActive = currentPage === 'onboarding-stats';
+                  const isHov = hoveredItem === 'onboarding-stats';
+                  const iconColor = isActive ? '#FFD700' : isHov ? '#E8EEFF' : '#7A90B8';
+                  const btn = (
+                    <motion.button
+                      onClick={() => setCurrentPage('onboarding-stats')}
+                      onMouseEnter={() => setHoveredItem('onboarding-stats')}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      whileHover={{ x: collapsed ? 0 : 2 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ duration: 0.12 }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center',
+                        justifyContent: collapsed ? 'center' : 'space-between',
+                        padding: collapsed ? '9px 0' : '8px 11px',
+                        borderRadius: 10, border: 'none', cursor: 'pointer',
+                        position: 'relative', overflow: 'hidden',
+                        background: isActive ? 'rgba(255,215,0,0.10)' : isHov ? 'rgba(255,215,0,0.05)' : 'transparent',
+                        transition: 'background .14s ease, padding 0.30s ease',
+                      }}
+                    >
+                      {isActive && <motion.div layoutId="activeBorderAdmin" style={{ position: 'absolute', left: 0, top: '18%', bottom: '18%', width: 3, borderRadius: 2, background: '#FFD700', boxShadow: '0 0 10px #FFD700' }}/>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 11, justifyContent: collapsed ? 'center' : 'flex-start', width: collapsed ? '100%' : 'auto', position: 'relative' }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,215,0,0.13)' : isHov ? 'rgba(255,215,0,0.07)' : 'rgba(255,255,255,0.04)', border: isActive ? '1px solid rgba(255,215,0,0.28)' : '1px solid rgba(255,255,255,0.05)', fontSize: 16 }}>📋</div>
+                        <AnimatePresence>
+                          {!collapsed && (
+                            <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.17, delay: 0.04 }}
+                              style={{ fontSize: 13.5, fontWeight: isActive ? 700 : 500, color: isActive ? '#FFD700' : isHov ? '#E8EEFF' : '#7A90B8', transition: 'color .14s', letterSpacing: '-0.1px', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                              Stats Admin
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.button>
+                  );
+                  return collapsed
+                    ? <Tooltip key="onboarding-stats" label="Stats Admin">{btn}</Tooltip>
+                    : <React.Fragment key="onboarding-stats">{btn}</React.Fragment>;
+                })()}
+              </div>
+            </div>
+          )}
+          {NAV_SECTIONS.map((section, si) => (
           <div key={section.label} style={{ marginBottom: 4 }}>
 
             {/* Section label */}
