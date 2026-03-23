@@ -7,6 +7,7 @@
 ║   ✅ 6 stats cards (+ Profit Factor + Max DD)                               ║
 ║   ✅ Filtres avancés : Session, Bias, Date range                            ║
 ║   ✅ Bulk actions premium                                                    ║
+║   ✅ ImportModal UNIVERSEL v2 (aperçu, mapping visuel, extra columns)       ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 */
 
@@ -342,7 +343,6 @@ const FilterBar = ({ filters, setFilters, trades, onReset }) => {
     <motion.div variants={fadeInUp} initial="hidden" animate="visible"
       style={{backgroundColor:C.bgCard,border:`1px solid ${C.brd}`,borderRadius:10,padding:'10px 13px',marginBottom:10}}
     >
-      {/* Row 1 - Base filters */}
       <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
         <input type="text" placeholder="🔍  Symbole, setup, notes..."
           value={filters.search||''} onChange={e=>setFilters({...filters,search:e.target.value})}
@@ -375,7 +375,6 @@ const FilterBar = ({ filters, setFilters, trades, onReset }) => {
         )}
       </div>
 
-      {/* Row 2 - Advanced filters */}
       <AnimatePresence>
         {expanded&&(
           <motion.div initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}}
@@ -563,7 +562,6 @@ const Pagination = ({ page, total, perPage, onPage, onPerPage }) => {
 // 🎯 TRADE DETAIL PANEL (slide depuis la droite)
 // ══════════════════════════════════════════════════════════════════════════════
 
-/** Mini progress bar */
 const PBar = ({ label, value, max=100, color }) => (
   <div style={{marginBottom:10}}>
     <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
@@ -578,7 +576,6 @@ const PBar = ({ label, value, max=100, color }) => (
   </div>
 );
 
-/** Section titre avec ligne */
 const SecTitle = ({ icon, title, color=C.cyan }) => (
   <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,marginTop:4}}>
     <span style={{fontSize:13}}>{icon}</span>
@@ -587,7 +584,6 @@ const SecTitle = ({ icon, title, color=C.cyan }) => (
   </div>
 );
 
-/** Ligne métrique label / valeur */
 const MRow = ({ label, value, color, sub, icon }) => (
   <div style={{
     display:'flex',justifyContent:'space-between',alignItems:'center',
@@ -604,7 +600,6 @@ const MRow = ({ label, value, color, sub, icon }) => (
   </div>
 );
 
-/** Mini chart simulé entry→exit */
 const MiniChart = ({ trade }) => {
   const pnl   = parseFloat(trade?.pnl||0);
   const isWin = pnl >= 0;
@@ -666,7 +661,6 @@ const MiniChart = ({ trade }) => {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      {/* P&L strip */}
       <motion.div initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:0.35}}
         style={{
           marginTop:10,padding:'8px 12px',borderRadius:7,
@@ -684,7 +678,6 @@ const MiniChart = ({ trade }) => {
   );
 };
 
-/** Score psycho visuel */
 const PsychoCard = ({ score }) => {
   const s     = parseInt(score)||0;
   const color = s>=80?C.green:s>=60?C.warn:C.danger;
@@ -716,7 +709,6 @@ const PsychoCard = ({ score }) => {
   );
 };
 
-/** Panel principal */
 const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
   const panelRef = useRef(null);
 
@@ -743,13 +735,10 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
 
   return (
     <AnimatePresence>
-      {/* Backdrop */}
       <motion.div key="bd" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
         transition={{duration:0.22}} onClick={onClose}
         style={{position:'fixed',inset:0,backgroundColor:'rgba(7,10,20,0.6)',backdropFilter:'blur(3px)',zIndex:200}}
       />
-
-      {/* Panel */}
       <motion.div key="pnl"
         initial={{x:'100%',opacity:0.6}} animate={{x:0,opacity:1}}
         exit={{x:'100%',opacity:0}}
@@ -763,14 +752,11 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
           fontFamily:'system-ui,-apple-system,sans-serif',
         }}
       >
-        {/* Ambient glow */}
         <div style={{
           position:'absolute',top:-100,right:-100,width:320,height:320,
           borderRadius:'50%',background:`radial-gradient(circle,${pColor}18,transparent 70%)`,
           pointerEvents:'none',zIndex:0,
         }}/>
-
-        {/* ─── HEADER ─── */}
         <div style={{
           position:'relative',zIndex:1,
           padding:'18px 18px 14px',
@@ -778,7 +764,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
           background:`linear-gradient(180deg,${C.bgHigh},${C.bgCard})`,
           flexShrink:0,
         }}>
-          {/* Symbol row */}
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
             <div style={{display:'flex',alignItems:'center',gap:12}}>
               <motion.div initial={{scale:0.5,opacity:0}} animate={{scale:1,opacity:1}}
@@ -811,8 +796,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
                 transition:'all 0.18s',
               }}>✕</motion.button>
           </div>
-
-          {/* Tags */}
           <motion.div initial={{y:5,opacity:0}} animate={{y:0,opacity:1}} transition={{delay:0.17}}
             style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:12}}>
             <Tag label={trade.type==='Long'?'↗ Long':'↘ Short'} color={typeC} bg={`${typeC}14`}/>
@@ -821,8 +804,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
             {trade.newsImpact&&<Tag label={`📰 ${trade.newsImpact}`} color={newsC} bg={`${newsC}12`}/>}
             {trade.setup&&<Tag label={trade.setup} color={C.purple} bg="rgba(167,139,250,0.1)"/>}
           </motion.div>
-
-          {/* P&L Hero */}
           <motion.div initial={{scale:0.88,opacity:0}} animate={{scale:1,opacity:1}}
             transition={{type:'spring',delay:0.16,stiffness:180}}
             style={{
@@ -848,8 +829,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
               </div>
             </div>
           </motion.div>
-
-          {/* Actions */}
           <motion.div initial={{y:5,opacity:0}} animate={{y:0,opacity:1}} transition={{delay:0.24}}
             style={{display:'flex',gap:7,marginTop:11}}>
             <GlassBtn variant="primary" icon="✏️" size="sm" onClick={()=>onEdit?.(trade)}>Modifier</GlassBtn>
@@ -863,18 +842,13 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
             }}/>
           </motion.div>
         </div>
-
-        {/* ─── BODY SCROLLABLE ─── */}
         <div ref={panelRef} style={{
           flex:1,overflowY:'auto',overflowX:'hidden',padding:'18px',
           scrollbarWidth:'thin',scrollbarColor:`${C.brd} transparent`,
         }}>
-          {/* Chart */}
           <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.2}}>
             <MiniChart trade={trade}/>
           </motion.div>
-
-          {/* Métriques */}
           <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.24}}>
             <SecTitle icon="📊" title="Métriques" color={C.cyan}/>
             <div style={{backgroundColor:C.bgDeep,borderRadius:10,padding:'2px 14px',border:`1px solid ${C.brd}`,marginBottom:16}}>
@@ -891,8 +865,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
               {trade.tp&&parseFloat(trade.tp)>0&&<MRow label="Take Profit" value={fmt(trade.tp,5)} color={C.green} icon="✨"/>}
             </div>
           </motion.div>
-
-          {/* Contexte */}
           <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.28}}>
             <SecTitle icon="🌍" title="Contexte" color={C.blue}/>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16}}>
@@ -913,8 +885,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
               ))}
             </div>
           </motion.div>
-
-          {/* Psychologie */}
           <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.32}}>
             <SecTitle icon="🧠" title="Psychologie" color={C.purple}/>
             <PsychoCard score={trade.psychologyScore}/>
@@ -923,8 +893,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
             <PBar label="Confiance" value={Math.min(100,(parseInt(trade.psychologyScore)||0)+10)} color={C.cyan}/>
             <div style={{marginBottom:16}}/>
           </motion.div>
-
-          {/* Notes */}
           {trade.notes&&(
             <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.36}}>
               <SecTitle icon="📝" title="Notes" color={C.warn}/>
@@ -940,8 +908,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
               </div>
             </motion.div>
           )}
-
-          {/* Meta */}
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.42}}
             style={{padding:'9px 13px',borderRadius:8,backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`,marginBottom:8}}>
             <div style={{fontSize:9,color:C.t3,fontFamily:'monospace',wordBreak:'break-all'}}>ID: {trade.id||'—'}</div>
@@ -949,7 +915,6 @@ const TradeDetailPanel = ({ trade, onClose, onEdit, onDelete }) => {
               Modifié: {new Date(trade.lastModified).toLocaleString('fr-FR')}
             </div>}
           </motion.div>
-
           <div style={{height:20}}/>
         </div>
       </motion.div>
@@ -1001,165 +966,588 @@ const AddMethodModal = ({ isOpen, onClose, onSelectMethod }) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 📂 IMPORT MODAL (CSV parser universel)
+// 📂 IMPORT MODAL UNIVERSEL v2
 // ══════════════════════════════════════════════════════════════════════════════
+
+// Dictionnaire de mapping : nom normalisé → champ interne
+const FIELD_MAP = {
+  // Symbol
+  symbol:'symbol', symbole:'symbol', instrument:'symbol', asset:'symbol',
+  pair:'symbol', ticker:'symbol', market:'symbol', currency:'symbol',
+  currencypair:'symbol',
+  // Type / Direction
+  type:'type', direction:'type', side:'side', ordertype:'type', buysell:'type',
+  // Entry
+  entry:'entry', entryprice:'entry', openprice:'entry', open:'entry',
+  prixentree:'entry', prix:'entry', price:'entry', openrate:'entry',
+  // Exit
+  exit:'exit', exitprice:'exit', closeprice:'exit', close:'exit',
+  prixsortie:'exit', closerate:'exit',
+  // PnL
+  pnl:'pnl', pl:'pnl', profitloss:'pnl', profit:'pnl', gain:'pnl',
+  result:'pnl', resultat:'pnl', netprofit:'pnl', grossprofit:'pnl',
+  realizedpnl:'pnl',
+  // Date
+  date:'date', tradedate:'date', opendate:'date', entrydate:'date',
+  opentime:'date', datetime:'date', closetime:'date', timestamp:'date',
+  // Time
+  time:'time', heure:'time', entrytime:'time',
+  // Session
+  session:'session', marketsession:'session',
+  // SL / TP
+  sl:'sl', stoploss:'sl', stop:'sl', stoplosslevel:'sl',
+  tp:'tp', takeprofit:'tp', target:'tp', profittarget:'tp',
+  // Setup / Strategy
+  setup:'setup', strategy:'setup', strategie:'setup', pattern:'setup',
+  setuptype:'setup', tradestyle:'setup',
+  // Notes
+  notes:'notes', note:'notes', comment:'notes', commentaire:'notes',
+  remarks:'notes', description:'notes',
+  // Bias
+  bias:'bias', sentiment:'bias', trend:'bias', markettend:'bias',
+  // News
+  news:'newsImpact', newsimpact:'newsImpact', impact:'newsImpact',
+  newsevent:'newsImpact',
+  // Psycho
+  psychology:'psychologyScore', psychologyscore:'psychologyScore',
+  psycho:'psychologyScore', mentalstate:'psychologyScore',
+  // Misc
+  lots:'lots', lot:'lots', volume:'lots', quantity:'lots', size:'lots',
+  commission:'commission', swap:'swap', fee:'fee', fees:'fee',
+};
+
+// Normalise un nom de colonne pour le matching
+const normalizeKey = (k) =>
+  k.toString().trim().toLowerCase()
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+    .replace(/[^\w]/g, '');
+
+// Détecte le séparateur dominant dans la première ligne
+const detectSeparator = (content) => {
+  const firstLine = content.split(/\r?\n/)[0];
+  const seps = [',', ';', '\t', '|'];
+  const counts = seps.map(s => (firstLine.match(new RegExp(`\\${s === '\t' ? 't' : s}`, 'g')) || []).length);
+  return seps[counts.indexOf(Math.max(...counts))];
+};
+
+// Parse une ligne CSV en respectant les guillemets
+const parseCSVLine = (line, sep) => {
+  const vals = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === sep && !inQ) {
+      vals.push(cur.trim().replace(/^["']|["']$/g, '').replace(/""/g, '"').trim());
+      cur = '';
+    } else cur += c;
+  }
+  vals.push(cur.trim().replace(/^["']|["']$/g, '').replace(/""/g, '"').trim());
+  return vals;
+};
+
+// Liste des champs internes connus (pour le menu déroulant de mapping)
+const KNOWN_FIELDS = [
+  { value: 'symbol',         label: 'Symbole' },
+  { value: 'type',           label: 'Type (Long/Short)' },
+  { value: 'entry',          label: 'Prix Entrée' },
+  { value: 'exit',           label: 'Prix Sortie' },
+  { value: 'pnl',            label: 'P&L ($)' },
+  { value: 'date',           label: 'Date' },
+  { value: 'time',           label: 'Heure' },
+  { value: 'session',        label: 'Session' },
+  { value: 'bias',           label: 'Bias' },
+  { value: 'sl',             label: 'Stop Loss' },
+  { value: 'tp',             label: 'Take Profit' },
+  { value: 'setup',          label: 'Setup' },
+  { value: 'notes',          label: 'Notes' },
+  { value: 'newsImpact',     label: 'News Impact' },
+  { value: 'psychologyScore',label: 'Score Psycho' },
+  { value: 'lots',           label: 'Lots / Volume' },
+  { value: 'commission',     label: 'Commission' },
+  { value: 'swap',           label: 'Swap' },
+  { value: '_ignore',        label: '— Ignorer —' },
+  { value: '_extra',         label: '+ Garder comme extra' },
+];
+
+// Étape 1 — Upload + aperçu
+// Étape 2 — Mapping colonnes
+// Étape 3 — Confirmation + import
+
 const ImportModal = ({ isOpen, onClose, onImport }) => {
-  const [file, setFile]       = useState(null);
-  const [drag, setDrag]       = useState(false);
-  const [loading, setLoading] = useState(false);
-  const fileRef               = useRef(null);
+  const [step,        setStep]       = useState(1);
+  const [file,        setFile]       = useState(null);
+  const [drag,        setDrag]       = useState(false);
+  const [parsing,     setParsing]    = useState(false);
+  const [rawHeaders,  setRawHeaders] = useState([]);
+  const [previewRows, setPreviewRows]= useState([]);
+  const [mapping,     setMapping]    = useState({}); // rawHeader → internalField
+  const [importing,   setImporting]  = useState(false);
+  const [importResult,setImportResult]=useState(null);
+  const [sep,         setSep]        = useState(',');
+  const [allLines,    setAllLines]   = useState([]);
+  const fileRef = useRef(null);
 
-  const detectSep = c => {
-    const l = c.split(/\r?\n/)[0];
-    const seps=[',',';','\t','|'];
-    const counts=seps.map(s=>(l.match(new RegExp(`\\${s}`,'g'))||[]).length);
-    return seps[counts.indexOf(Math.max(...counts))];
+  // Reset complet à la fermeture
+  const handleClose = () => {
+    setStep(1); setFile(null); setDrag(false); setParsing(false);
+    setRawHeaders([]); setPreviewRows([]); setMapping({});
+    setImporting(false); setImportResult(null); setAllLines([]);
+    onClose();
   };
 
-  const cleanVal = v => {
-    if(!v) return '';
-    return v.toString().trim().replace(/^["']|["']$/g,'').replace(/""/g,'"').replace(/\s+/g,' ').trim();
-  };
-
-  const parseCSVLine = (line, sep=',') => {
-    const vals=[]; let cur='', inQ=false;
-    for(let i=0;i<line.length;i++){
-      const c=line[i];
-      if(c==='"'){ if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ; }
-      else if(c===sep&&!inQ){ vals.push(cleanVal(cur)); cur=''; }
-      else cur+=c;
-    }
-    vals.push(cleanVal(cur));
-    return vals;
-  };
-
-  const mapCol = name => {
-    const n=name.toString().trim().toLowerCase().replace(/[\u{1F300}-\u{1F9FF}]/gu,'').replace(/[^\w\s]/g,'').replace(/\s+/g,'');
-    const m={
-      symbol:'symbol',symbole:'symbol',instrument:'symbol',asset:'symbol',pair:'symbol',ticker:'symbol',
-      type:'type',direction:'type',side:'type',
-      entry:'entry',entryprice:'entry',open:'entry',prixentree:'entry',
-      exit:'exit',exitprice:'exit',close:'exit',prixsortie:'exit',
-      pnl:'pnl',pl:'pnl',profit:'pnl',gain:'pnl',result:'pnl',resultat:'pnl',
-      date:'date',tradedate:'date',opendate:'date',entrydate:'date',
-      time:'time',heure:'time',
-      session:'session',market:'session',
-      sl:'sl',stoploss:'sl',stop:'sl',
-      tp:'tp',takeprofit:'tp',target:'tp',
-      setup:'setup',strategy:'setup',strategie:'setup',pattern:'setup',
-      notes:'notes',note:'notes',comment:'notes',commentaire:'notes',
-      bias:'bias',sentiment:'bias',trend:'bias',
-      news:'newsImpact',newsimpact:'newsImpact',impact:'newsImpact',
-      psychology:'psychologyScore',psychologyscore:'psychologyScore',psycho:'psychologyScore',
-    };
-    return m[n]||name;
-  };
-
-  const handleImport = () => {
-    if(!file){ toast.error('Sélectionnez un fichier CSV'); return; }
-    setLoading(true);
-    const reader=new FileReader();
-    reader.onload=e=>{
-      try{
-        const bytes=new Uint8Array(e.target.result);
+  // Étape 1 → parse headers + preview
+  const handleFileLoad = (f) => {
+    if (!f) return;
+    setFile(f);
+    setParsing(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const bytes = new Uint8Array(e.target.result);
         let content;
-        if(bytes[0]===0xEF&&bytes[1]===0xBB&&bytes[2]===0xBF) content=new TextDecoder('utf-8').decode(bytes.slice(3));
-        else content=new TextDecoder('utf-8').decode(bytes);
-        content=content.trim();
-        const sep=detectSep(content);
-        const lines=content.split(/\r?\n/).filter(l=>l.trim());
-        if(lines.length<2){toast.error('Fichier trop court');setLoading(false);return;}
-        const rawH=parseCSVLine(lines[0],sep);
-        const mappedH=rawH.map(mapCol);
-        const results=[], errors=[];
-        for(let i=1;i<lines.length;i++){
-          const vals=parseCSVLine(lines[i],sep);
-          const raw={};
-          rawH.forEach((h,idx)=>{raw[h]=vals[idx]||'';});
-          const mapped={};
-          Object.keys(raw).forEach(k=>{mapped[mapCol(k)]=raw[k];});
-          if(!mapped.symbol||!mapped.entry||!mapped.exit||!mapped.pnl){
-            errors.push(i+1); continue;
+        if (bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF)
+          content = new TextDecoder('utf-8').decode(bytes.slice(3));
+        else content = new TextDecoder('utf-8').decode(bytes);
+        content = content.trim();
+
+        const detectedSep = detectSeparator(content);
+        setSep(detectedSep);
+
+        const lines = content.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) { toast.error('Fichier trop court (moins de 2 lignes)'); setParsing(false); return; }
+
+        const headers = parseCSVLine(lines[0], detectedSep);
+        const preview = lines.slice(1, 6).map(l => parseCSVLine(l, detectedSep));
+
+        // Auto-mapping
+        const autoMap = {};
+        headers.forEach(h => {
+          const norm = normalizeKey(h);
+          autoMap[h] = FIELD_MAP[norm] || '_extra';
+        });
+
+        setRawHeaders(headers);
+        setPreviewRows(preview);
+        setMapping(autoMap);
+        setAllLines(lines.slice(1));
+        setParsing(false);
+        setStep(2);
+      } catch(err) {
+        toast.error(`Erreur lecture: ${err.message}`);
+        setParsing(false);
+      }
+    };
+    reader.readAsArrayBuffer(f);
+  };
+
+  // Étape 3 → import réel
+  const handleImport = () => {
+    setImporting(true);
+    setTimeout(() => {
+      try {
+        const results = [];
+        const errors  = [];
+
+        allLines.forEach((line, idx) => {
+          const vals = parseCSVLine(line, sep);
+          // Reconstruire objet brut
+          const raw = {};
+          rawHeaders.forEach((h, i) => { raw[h] = vals[i] || ''; });
+
+          // Appliquer mapping
+          const mapped = {};
+          const extra  = {};
+          rawHeaders.forEach(h => {
+            const target = mapping[h] || '_extra';
+            const val    = (raw[h] || '').toString().trim().replace(/^["']|["']$/g,'').trim();
+            if (target === '_ignore') return;
+            if (target === '_extra') { if (val) extra[h] = val; }
+            else mapped[target] = mapped[target] || val; // premier non-vide gagne
+          });
+
+          // Validation minimum
+          if (!mapped.symbol || (!mapped.entry && !mapped.pnl)) {
+            errors.push(idx + 2);
+            return;
           }
-          const entry=parseFloat(cleanVal(mapped.entry))||0;
-          const exit=parseFloat(cleanVal(mapped.exit))||0;
-          const sl=mapped.sl?parseFloat(cleanVal(mapped.sl)):null;
-          const tp=mapped.tp?parseFloat(cleanVal(mapped.tp)):null;
-          const risk=sl?Math.abs(entry-sl):0;
-          const reward=Math.abs(exit-entry);
+
+          const entry  = parseFloat(mapped.entry)  || 0;
+          const exit   = parseFloat(mapped.exit)   || 0;
+          const sl     = mapped.sl  ? parseFloat(mapped.sl)  : null;
+          const tp     = mapped.tp  ? parseFloat(mapped.tp)  : null;
+          const pnlVal = parseFloat(mapped.pnl)    || 0;
+          const risk   = sl ? Math.abs(entry - sl) : 0;
+          const reward = Math.abs(exit - entry);
+
+          // Normaliser type
+          let tradeType = (mapped.type || mapped.side || 'Long');
+          const tLow = tradeType.toLowerCase();
+          if (tLow === 'buy' || tLow === 'long' || tLow === 'b') tradeType = 'Long';
+          else if (tLow === 'sell' || tLow === 'short' || tLow === 's') tradeType = 'Short';
+          else tradeType = 'Long';
+
           results.push({
-            id:`imp_${Date.now()}_${i}_${Math.random().toString(36).slice(2,7)}`,
-            symbol:cleanVal(mapped.symbol).toUpperCase(),
-            type:cleanVal(mapped.type)||'Long',
-            entry, exit,
-            pnl:parseFloat(cleanVal(mapped.pnl))||0,
-            date:cleanVal(mapped.date)||new Date().toISOString().split('T')[0],
-            time:cleanVal(mapped.time)||'00:00',
-            session:cleanVal(mapped.session)||'NY',
-            bias:cleanVal(mapped.bias)||'Neutral',
-            newsImpact:cleanVal(mapped.newsImpact)||'Low',
-            setup:cleanVal(mapped.setup)||'',
-            notes:cleanVal(mapped.notes)||'',
-            sl, tp,
-            psychologyScore:mapped.psychologyScore?parseInt(cleanVal(mapped.psychologyScore)):80,
-            win:parseFloat(cleanVal(mapped.pnl))>0,
-            metrics:{
-              rrReel:risk>0?(reward/risk).toFixed(2):'0',
-              tpPercent:tp?Math.abs(tp-entry)>0?((reward/Math.abs(tp-entry))*100).toFixed(1):'0':'0',
+            id: `imp_${Date.now()}_${idx}_${Math.random().toString(36).slice(2,6)}`,
+            symbol:  mapped.symbol.toUpperCase().trim(),
+            type:    tradeType,
+            entry,   exit,
+            pnl:     pnlVal,
+            date:    mapped.date  || new Date().toISOString().split('T')[0],
+            time:    mapped.time  || '00:00',
+            session: mapped.session || 'NY',
+            bias:    mapped.bias  || 'Neutral',
+            newsImpact: mapped.newsImpact || 'Low',
+            setup:   mapped.setup  || '',
+            notes:   mapped.notes  || '',
+            sl,      tp,
+            lots:    mapped.lots   ? parseFloat(mapped.lots)   : null,
+            commission: mapped.commission ? parseFloat(mapped.commission) : null,
+            swap:    mapped.swap   ? parseFloat(mapped.swap)   : null,
+            psychologyScore: mapped.psychologyScore ? parseInt(mapped.psychologyScore) : 80,
+            win:     pnlVal > 0,
+            extra:   Object.keys(extra).length ? extra : undefined,
+            metrics: {
+              rrReel:    risk > 0 ? (reward / risk).toFixed(2) : '0',
+              tpPercent: tp && Math.abs(tp - entry) > 0
+                ? ((reward / Math.abs(tp - entry)) * 100).toFixed(1)
+                : '0',
             },
           });
+        });
+
+        setImportResult({ count: results.length, errors: errors.length });
+
+        if (!results.length) {
+          toast.error('Aucun trade valide détecté. Vérifiez le mapping.');
+          setImporting(false);
+          return;
         }
-        if(!results.length){toast.error('Aucun trade valide');setLoading(false);return;}
+
         onImport(results);
-        toast.success(`🎉 ${results.length} trades importés !`);
-        if(errors.length) toast.error(`⚠️ ${errors.length} lignes ignorées`);
-        setLoading(false); setFile(null); onClose();
-      }catch(err){toast.error(`Erreur: ${err.message}`);setLoading(false);}
-    };
-    reader.readAsArrayBuffer(file);
+        toast.success(`🎉 ${results.length} trade(s) importé(s) avec succès !`);
+        if (errors.length) toast(`⚠️ ${errors.length} ligne(s) ignorée(s)`, { icon: '⚠️' });
+        setImporting(false);
+        setStep(3);
+      } catch(err) {
+        toast.error(`Erreur import: ${err.message}`);
+        setImporting(false);
+      }
+    }, 300);
   };
 
-  if(!isOpen) return null;
+  if (!isOpen) return null;
+
+  const iStyle = {
+    padding:'6px 10px', borderRadius:6, border:`1px solid ${C.brd}`,
+    backgroundColor:C.bgDeep, color:C.t1, fontSize:11, outline:'none',
+    fontFamily:'inherit', cursor:'pointer', width:'100%',
+  };
+
+  // Compter les champs requis mappés
+  const requiredMapped = ['symbol','pnl'].filter(f => Object.values(mapping).includes(f)).length;
+  const canImport = requiredMapped >= 1 && Object.values(mapping).includes('symbol');
+
   return (
     <AnimatePresence>
-      <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose}
-        style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.7)',backdropFilter:'blur(4px)',
-          zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-        <motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} onClick={e=>e.stopPropagation()}
-          style={{backgroundColor:C.bgCard,borderRadius:16,border:`1px solid ${C.brd}`,maxWidth:480,width:'100%'}}>
-          <div style={{padding:'18px 22px',borderBottom:`1px solid ${C.brd}`}}>
-            <h3 style={{margin:0,fontSize:16,fontWeight:700,color:C.t1}}>📥 Import CSV</h3>
-          </div>
-          <div style={{padding:'22px'}}>
-            <div
-              onDragEnter={e=>{e.preventDefault();setDrag(true);}}
-              onDragLeave={e=>{e.preventDefault();setDrag(false);}}
-              onDragOver={e=>{e.preventDefault();setDrag(true);}}
-              onDrop={e=>{e.preventDefault();setDrag(false);if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0]);}}
-              onClick={()=>fileRef.current?.click()}
-              style={{
-                border:`2px dashed ${drag?C.cyan:C.brd}`,borderRadius:11,padding:36,textAlign:'center',
-                backgroundColor:drag?'rgba(0,212,255,0.05)':C.bgDeep,cursor:'pointer',transition:'all 0.25s',
-              }}>
-              <input ref={fileRef} type="file" accept=".csv" style={{display:'none'}}
-                onChange={e=>e.target.files[0]&&setFile(e.target.files[0])}/>
-              <div style={{fontSize:44,marginBottom:12}}>📁</div>
-              {file
-                ? <div style={{fontSize:13,fontWeight:600,color:C.cyan}}>{file.name} ({(file.size/1024).toFixed(1)} KB)</div>
-                : <div style={{fontSize:13,color:C.t2}}>Glissez votre CSV ou cliquez</div>}
+      <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={handleClose}
+        style={{
+          position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.75)',
+          backdropFilter:'blur(5px)',zIndex:300,
+          display:'flex',alignItems:'center',justifyContent:'center',padding:20,
+        }}>
+        <motion.div
+          initial={{scale:0.92,opacity:0,y:20}}
+          animate={{scale:1,opacity:1,y:0}}
+          exit={{scale:0.92,opacity:0,y:10}}
+          transition={{type:'spring',stiffness:280,damping:28}}
+          onClick={e=>e.stopPropagation()}
+          style={{
+            backgroundColor:C.bgCard,borderRadius:16,
+            border:`1px solid ${C.brd}`,
+            width:'100%',maxWidth: step===2 ? 860 : 520,
+            maxHeight:'92vh',overflow:'hidden',
+            display:'flex',flexDirection:'column',
+            boxShadow:'0 40px 100px rgba(0,0,0,0.6)',
+          }}>
+
+          {/* ── HEADER ── */}
+          <div style={{
+            padding:'18px 22px',borderBottom:`1px solid ${C.brd}`,
+            background:`linear-gradient(135deg,${C.bgHigh},${C.bgCard})`,
+            display:'flex',justifyContent:'space-between',alignItems:'center',
+            flexShrink:0,
+          }}>
+            <div>
+              <h3 style={{margin:0,fontSize:16,fontWeight:800,color:C.t1}}>
+                {step===1 && '📥 Import CSV Universel'}
+                {step===2 && '🔀 Mapping des colonnes'}
+                {step===3 && '✅ Import terminé'}
+              </h3>
+              <p style={{margin:'3px 0 0',fontSize:11,color:C.t3}}>
+                {step===1 && 'Compatible MT4, MT5, cTrader, TradingView, tous brokers'}
+                {step===2 && `${rawHeaders.length} colonnes détectées · Séparateur: "${sep==='\t'?'Tab':sep}"`}
+                {step===3 && `${importResult?.count} trades importés`}
+              </p>
             </div>
-            <div style={{marginTop:16,padding:12,borderRadius:8,backgroundColor:'rgba(0,212,255,0.05)',border:`1px solid rgba(0,212,255,0.15)`}}>
-              <div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:6}}>Format attendu :</div>
-              <div style={{fontSize:10,color:C.t3,fontFamily:'monospace',lineHeight:1.7}}>
-                date,symbol,type,entry,exit,pnl,session,bias<br/>
-                2024-01-15,EURUSD,Long,1.0850,1.0900,150,NY,Bullish
+            {/* Stepper */}
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              {[1,2,3].map(s=>(
+                <React.Fragment key={s}>
+                  <div style={{
+                    width:26,height:26,borderRadius:'50%',
+                    background: s===step ? C.grad : s<step ? C.greenDim : C.bgDeep,
+                    border:`1px solid ${s<=step ? 'transparent' : C.brd}`,
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    fontSize:10,fontWeight:800,color: s<=step ? C.bgDeep : C.t3,
+                    transition:'all 0.3s',
+                  }}>{s<step ? '✓' : s}</div>
+                  {s<3&&<div style={{width:16,height:1,backgroundColor:s<step?C.greenDim:C.brd}}/>}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {/* ── STEP 1 : UPLOAD ── */}
+          {step===1&&(
+            <div style={{padding:'26px 22px',flex:1,overflowY:'auto'}}>
+              {/* Drop zone */}
+              <div
+                onDragEnter={e=>{e.preventDefault();setDrag(true);}}
+                onDragLeave={e=>{e.preventDefault();setDrag(false);}}
+                onDragOver={e=>{e.preventDefault();setDrag(true);}}
+                onDrop={e=>{e.preventDefault();setDrag(false);if(e.dataTransfer.files[0])handleFileLoad(e.dataTransfer.files[0]);}}
+                onClick={()=>fileRef.current?.click()}
+                style={{
+                  border:`2px dashed ${drag?C.cyan:file?C.green:C.brd}`,
+                  borderRadius:12,padding:'44px 24px',textAlign:'center',
+                  backgroundColor:drag?'rgba(0,212,255,0.04)':file?'rgba(0,230,118,0.03)':C.bgDeep,
+                  cursor:'pointer',transition:'all 0.25s',
+                  position:'relative',overflow:'hidden',
+                }}>
+                <input ref={fileRef} type="file" accept=".csv,.txt" style={{display:'none'}}
+                  onChange={e=>e.target.files[0]&&handleFileLoad(e.target.files[0])}/>
+                {parsing
+                  ? <div style={{fontSize:13,color:C.cyan}}>
+                      <motion.div animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}
+                        style={{width:28,height:28,border:`3px solid ${C.cyan}`,borderTopColor:'transparent',
+                          borderRadius:'50%',margin:'0 auto 12px'}}/>
+                      Analyse du fichier…
+                    </div>
+                  : file
+                    ? <>
+                        <div style={{fontSize:40,marginBottom:10}}>✅</div>
+                        <div style={{fontSize:14,fontWeight:700,color:C.green,marginBottom:4}}>{file.name}</div>
+                        <div style={{fontSize:11,color:C.t3}}>{(file.size/1024).toFixed(1)} KB · Cliquez pour changer</div>
+                      </>
+                    : <>
+                        <div style={{fontSize:52,marginBottom:14}}>📁</div>
+                        <div style={{fontSize:14,fontWeight:600,color:C.t1,marginBottom:6}}>
+                          Glissez votre CSV ici
+                        </div>
+                        <div style={{fontSize:11,color:C.t3}}>ou cliquez pour parcourir</div>
+                      </>
+                }
+              </div>
+
+              {/* Info brokers */}
+              <div style={{
+                marginTop:18,padding:'13px 16px',borderRadius:10,
+                backgroundColor:'rgba(0,212,255,0.04)',border:`1px solid rgba(0,212,255,0.12)`,
+              }}>
+                <div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8,letterSpacing:'0.5px'}}>
+                  🔌 BROKERS & PLATEFORMES SUPPORTÉS
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                  {['MT4','MT5','cTrader','TradingView','FTMO','TopStep','E8 Funding','The5%ers','Interactive Brokers','Forex.com','OANDA','Binance','Bybit','eToro','Excel / Google Sheets'].map(b=>(
+                    <span key={b} style={{
+                      padding:'3px 8px',borderRadius:4,fontSize:10,fontWeight:600,
+                      color:C.t2,backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`,
+                    }}>{b}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Format hint */}
+              <div style={{
+                marginTop:12,padding:'11px 14px',borderRadius:9,
+                backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`,
+              }}>
+                <div style={{fontSize:10,fontWeight:700,color:C.t3,marginBottom:6}}>Colonnes reconnues automatiquement :</div>
+                <div style={{fontSize:10,color:C.t4,lineHeight:1.8,fontFamily:'monospace'}}>
+                  symbol/instrument/pair · date/opentime · type/direction/side · entry/open · exit/close
+                  · pnl/profit · sl/stoploss · tp/takeprofit · session · bias · setup · notes · lots · commission…
+                </div>
               </div>
             </div>
-          </div>
-          <div style={{padding:'14px 22px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}>
-            <GlassBtn onClick={onClose}>Annuler</GlassBtn>
-            <GlassBtn variant="primary" onClick={handleImport} disabled={!file} loading={loading}>Importer</GlassBtn>
-          </div>
+          )}
+
+          {/* ── STEP 2 : MAPPING ── */}
+          {step===2&&(
+            <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>
+              {/* Aperçu */}
+              <div style={{padding:'14px 20px 10px',borderBottom:`1px solid ${C.brd}`,flexShrink:0}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.t3,marginBottom:8,letterSpacing:'0.8px'}}>
+                  APERÇU (5 premières lignes)
+                </div>
+                <div style={{overflowX:'auto'}}>
+                  <table style={{width:'100%',borderCollapse:'collapse',minWidth:500}}>
+                    <thead>
+                      <tr>
+                        {rawHeaders.map(h=>(
+                          <th key={h} style={{
+                            padding:'6px 10px',fontSize:9,fontWeight:700,
+                            color:C.cyan,backgroundColor:C.bgDeep,
+                            border:`1px solid ${C.brd}`,whiteSpace:'nowrap',
+                            textTransform:'uppercase',letterSpacing:'0.5px',
+                          }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewRows.map((row,ri)=>(
+                        <tr key={ri}>
+                          {rawHeaders.map((_,ci)=>(
+                            <td key={ci} style={{
+                              padding:'5px 10px',fontSize:10,color:C.t2,
+                              border:`1px solid ${C.brd}30`,whiteSpace:'nowrap',
+                              maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',
+                            }}>{row[ci]||''}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Mapping table */}
+              <div style={{padding:'14px 20px',flex:1,overflowY:'auto'}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.t3,marginBottom:10,letterSpacing:'0.8px'}}>
+                  MAPPING DES COLONNES — associez chaque colonne à un champ MarketFlow
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                  {rawHeaders.map(h=>{
+                    const currentVal = mapping[h] || '_extra';
+                    const isRequired = ['symbol','entry','exit','pnl'].includes(currentVal);
+                    const isIgnored  = currentVal === '_ignore';
+                    const isExtra    = currentVal === '_extra';
+                    return (
+                      <div key={h} style={{
+                        padding:'10px 12px',borderRadius:8,
+                        backgroundColor:C.bgDeep,
+                        border:`1px solid ${isRequired?`${C.cyan}40`:isIgnored?C.brd:isExtra?`${C.purple}30`:C.brd}`,
+                        display:'flex',flexDirection:'column',gap:5,
+                      }}>
+                        <div style={{
+                          fontSize:10,fontWeight:700,color:isIgnored?C.t3:C.t1,
+                          display:'flex',alignItems:'center',justifyContent:'space-between',
+                        }}>
+                          <span style={{
+                            maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                          }}>{h}</span>
+                          {isRequired&&<span style={{fontSize:9,color:C.cyan,fontWeight:800}}>REQUIS</span>}
+                          {isExtra&&<span style={{fontSize:9,color:C.purple}}>extra</span>}
+                        </div>
+                        <select
+                          value={currentVal}
+                          onChange={e=>setMapping(m=>({...m,[h]:e.target.value}))}
+                          style={{
+                            ...iStyle,
+                            borderColor: isRequired?`${C.cyan}50`:isIgnored?C.brd:C.brd,
+                            color: isIgnored?C.t3:C.t1,
+                          }}>
+                          {KNOWN_FIELDS.map(f=>(
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
+                        {/* Sample value */}
+                        {previewRows[0]&&(
+                          <div style={{fontSize:9,color:C.t4,fontFamily:'monospace',
+                            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                            ex: {previewRows[0][rawHeaders.indexOf(h)]||'—'}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Warning si symbol non mappé */}
+                {!Object.values(mapping).includes('symbol')&&(
+                  <motion.div initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}}
+                    style={{
+                      marginTop:12,padding:'10px 14px',borderRadius:8,
+                      backgroundColor:'rgba(255,71,87,0.06)',border:`1px solid ${C.danger}30`,
+                      fontSize:11,color:C.danger,
+                    }}>
+                    ⚠️ La colonne <strong>Symbole</strong> est obligatoire pour importer.
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3 : RÉSULTAT ── */}
+          {step===3&&(
+            <div style={{padding:'40px 22px',textAlign:'center',flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+              <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type:'spring',delay:0.1,stiffness:160}}>
+                <div style={{fontSize:70,marginBottom:20}}>🎉</div>
+              </motion.div>
+              <h2 style={{margin:'0 0 8px',fontSize:24,fontWeight:900,
+                background:C.grad,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                Import réussi !
+              </h2>
+              <div style={{fontSize:14,color:C.t2,marginBottom:6}}>
+                <span style={{color:C.green,fontWeight:800,fontSize:22}}>{importResult?.count}</span> trades importés
+              </div>
+              {importResult?.errors>0&&(
+                <div style={{fontSize:12,color:C.warn,marginBottom:14}}>
+                  ⚠️ {importResult.errors} ligne(s) ignorée(s)
+                </div>
+              )}
+              <div style={{marginTop:24}}>
+                <GlassBtn variant="primary" icon="✓" onClick={handleClose}>Fermer et voir les trades</GlassBtn>
+              </div>
+            </div>
+          )}
+
+          {/* ── FOOTER ── */}
+          {step!==3&&(
+            <div style={{
+              padding:'13px 20px',borderTop:`1px solid ${C.brd}`,
+              display:'flex',justifyContent:'space-between',alignItems:'center',
+              flexShrink:0,backgroundColor:C.bgDeep,
+            }}>
+              <GlassBtn onClick={step===1?handleClose:()=>setStep(1)} icon={step===2?'←':undefined}>
+                {step===1?'Annuler':'Retour'}
+              </GlassBtn>
+
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                {step===2&&(
+                  <span style={{fontSize:11,color:C.t3}}>
+                    {allLines.length} ligne(s) à importer
+                  </span>
+                )}
+                {step===1&&file&&!parsing&&(
+                  <GlassBtn variant="primary" onClick={()=>setStep(2)} icon="→">
+                    Configurer le mapping
+                  </GlassBtn>
+                )}
+                {step===2&&(
+                  <GlassBtn
+                    variant="primary"
+                    icon="📥"
+                    loading={importing}
+                    disabled={!canImport}
+                    onClick={handleImport}>
+                    Importer {allLines.length} trades
+                  </GlassBtn>
+                )}
+              </div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -1352,7 +1740,6 @@ export default function AllTrades() {
   const totalPages = Math.max(1,Math.ceil(sorted.length/perPage));
   const paginated  = useMemo(()=>sorted.slice((page-1)*perPage, page*perPage),[sorted,page,perPage]);
 
-  // Cumulative PnL map
   const cumulMap = useMemo(()=>{
     let running=0;
     const m={};
@@ -1406,7 +1793,6 @@ export default function AllTrades() {
     toast.success('Filtres réinitialisés');
   },[]);
 
-  // ─── RENDER ───
   return (
     <div style={{ backgroundColor:C.bgPage, minHeight:'100vh', fontFamily:'system-ui,-apple-system,sans-serif', color:C.t1, padding:'24px' }}>
 
@@ -1560,7 +1946,7 @@ export default function AllTrades() {
       )}
 
       {/* ── Modals ── */}
-      <AddMethodModal isOpen={modalAdd}   onClose={()=>setModalAdd(false)}   onSelectMethod={handleMethodSelect}/>
+      <AddMethodModal isOpen={modalAdd}    onClose={()=>setModalAdd(false)}    onSelectMethod={handleMethodSelect}/>
       <ImportModal    isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport}/>
       <TradeFormModal isOpen={modalForm}   onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade}/>
 
