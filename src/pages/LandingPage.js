@@ -1395,6 +1395,97 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         </div>
       </section>
 
+
+      {/* ── BIG FEATURE 3 - PSYCHOLOGY ── */}
+      <section className="lp-section" style={{paddingTop:60,paddingBottom:60}}>
+        <div className="lp-section-inner">
+          <div className="lp-big-feat fade-in">
+            <div>
+              <div className="lp-section-tag">🧠 Psychology</div>
+              <h3>Maîtrise ton <em>mental de trader.</em></h3>
+              <p>Le Psychology Tracker analyse automatiquement tes patterns comportementaux à partir de tes trades. Identifie tes biais émotionnels et améliore ta discipline trade après trade.</p>
+              <ul className="lp-check-list">
+                {['Score psychologique composite sur 8 dimensions','Corrélation entre ton état mental et ton P&L','Détection automatique des patterns comportementaux','Radar 7 axes : discipline, patience, confiance…','Journal de sessions avec suivi des émotions'].map((item,i)=>(
+                  <li key={i}><div className="lp-check-ico">✓</div><span>{item}</span></li>
+                ))}
+              </ul>
+            </div>
+            <div className="lp-big-visual">
+              <div className="lp-visual-header">
+                <span style={{fontSize:14}}>🧠</span>
+                <span className="lp-visual-title">Psychology Tracker · Overview</span>
+                <div className="lp-visual-badge" style={{background:'rgba(176,110,255,0.1)',color:'#B06EFF',borderColor:'rgba(176,110,255,0.2)'}}>PRO</div>
+              </div>
+              <div className="lp-visual-body">
+                {/* Score + label */}
+                <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:14}}>
+                  <div style={{position:'relative',flexShrink:0}}>
+                    <svg width="72" height="72" viewBox="0 0 72 72">
+                      <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(176,110,255,0.12)" strokeWidth="7"/>
+                      <circle cx="36" cy="36" r="30" fill="none" stroke="url(#psyGrad)" strokeWidth="7"
+                        strokeDasharray="143.3 45.2"
+                        strokeDashoffset="47.1" strokeLinecap="round"/>
+                      <defs>
+                        <linearGradient id="psyGrad" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#B06EFF"/>
+                          <stop offset="100%" stopColor="#4D7CFF"/>
+                        </linearGradient>
+                      </defs>
+                      <text x="36" y="40" textAnchor="middle" fontSize="16" fontWeight="900" fill="#E8EEFF">76</text>
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:800,color:'#B06EFF',marginBottom:3}}>🔥 Excellent</div>
+                    <div style={{fontSize:10,color:'#3A5070'}}>Score composite · Moy. 72 · +9.9%</div>
+                    <div style={{marginTop:6,display:'flex',gap:6}}>
+                      {[{l:'Humeur',v:'😊 Bien',c:'#06E6FF'},{l:'Routine',v:'✓ OK',c:'#00FF88'},{l:'Sommeil',v:'7/10',c:'#FFB31A'}].map(({l,v,c})=>(
+                        <div key={l} style={{padding:'3px 7px',borderRadius:5,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)'}}>
+                          <div style={{fontSize:7,color:'#3A5070',marginBottom:1}}>{l}</div>
+                          <div style={{fontSize:9,fontWeight:700,color:c}}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* 7 axes bars */}
+                <div style={{marginBottom:12}}>
+                  {[
+                    {l:'Discipline',    v:74, c:'#06E6FF'},
+                    {l:'Patience',      v:70, c:'#00FF88'},
+                    {l:'Confiance',     v:76, c:'#B06EFF'},
+                    {l:'Risk Control',  v:72, c:'#00F5D4'},
+                    {l:'Consistency',   v:68, c:'#FFB31A'},
+                    {l:'Émot. Control', v:72, c:'#FF4DC4'},
+                    {l:'Plan Follow',   v:78, c:'#4D7CFF'},
+                  ].map(({l,v,c})=>(
+                    <div key={l} style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                      <span style={{fontSize:9,color:'#8BA3CC',width:78,flexShrink:0}}>{l}</span>
+                      <div style={{flex:1,height:4,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
+                        <div style={{width:`${v}%`,height:'100%',background:`linear-gradient(90deg,${c}60,${c})`,borderRadius:2}}/>
+                      </div>
+                      <span style={{fontSize:9,fontWeight:800,color:c,width:22,textAlign:'right'}}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Radar mini preview */}
+                <div style={{display:'flex',gap:8}}>
+                  {[
+                    {l:'Sessions analysées', v:'30',  c:'#B06EFF'},
+                    {l:'Discipline rate',    v:'71%', c:'#4D7CFF'},
+                    {l:'P&L optimal',        v:'+$20k',c:'#00FF88'},
+                  ].map(({l,v,c})=>(
+                    <div key={l} style={{flex:1,padding:'8px 10px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',textAlign:'center'}}>
+                      <div style={{fontSize:14,fontWeight:900,color:c,fontFamily:'JetBrains Mono,monospace'}}>{v}</div>
+                      <div style={{fontSize:8,color:'#3A5070',marginTop:2}}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── COMPARISON TABLE ── */}
       <section className="lp-section" style={{paddingTop:60}}>
         <div className="lp-section-inner">
