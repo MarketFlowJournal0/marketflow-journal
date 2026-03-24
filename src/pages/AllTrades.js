@@ -557,49 +557,43 @@ const ImportModal=({isOpen,onClose,onImport})=>{
           const sessionNorm = normalizeSession(mapped.session);
           const dateStr = parseDate(mapped.date);
 
-          // 🔧 Structure exacte attendue par addTrade() dans TradingContext
+          // IMPORTANT : ne jamais passer id, user_id, created_at
+          // addTrade() dans TradingContext gère user_id lui-même depuis la session
+          // Supabase génère id et created_at automatiquement
           results.push({
-            // Champs principaux mappés sur les colonnes Supabase
-            symbol:   mapped.symbol.toUpperCase().trim().replace(/[^A-Z0-9\/\.\-_]/g,''),
-            pair:     mapped.symbol.toUpperCase().trim().replace(/[^A-Z0-9\/\.\-_]/g,''), // alias pour TradingContext
-            direction:typeNorm,   // TradingContext attend "direction"
-            type:     typeNorm,   // garde aussi "type" pour compatibilité
-            dir:      typeNorm,   // autre alias utilisé dans TradingContext
-            entry:    entry||0,
-            entry_price: entry||0,
-            exit:     exit||0,
-            exit_price:  exit||0,
-            tp:       tpVal,
-            take_profit: tpVal,
-            sl:       slVal,
-            stop_loss:   slVal,
-            size:     lotsVal||1,  // TradingContext utilise "size" pour quantity
-            quantity: lotsVal||1,
-            pnl:      pnlVal,
-            profit_loss: pnlVal,   // TradingContext attend "profit_loss"
-            date:     dateStr,
-            open_date:   dateStr,  // TradingContext attend "open_date"
-            time:     mapped.time||'00:00',
-            session:  sessionNorm,
-            bias:     normalizeBias(mapped.bias),
-            newsImpact:   normalizeNews(mapped.newsImpact),
-            setup:    mapped.setup||'',
-            notes:    mapped.notes||'',
+            symbol:      mapped.symbol.toUpperCase().trim().replace(/[^A-Z0-9\/\.\-_]/g,''),
+            pair:        mapped.symbol.toUpperCase().trim().replace(/[^A-Z0-9\/\.\-_]/g,''),
+            direction:   typeNorm,
+            type:        typeNorm,
+            dir:         typeNorm,
+            entry:       entry||0,
+            exit:        exit||0,
+            tp:          tpVal,
+            sl:          slVal,
+            size:        lotsVal||0,
+            pnl:         pnlVal,
+            open_date:   dateStr,
+            date:        dateStr,
+            time:        mapped.time||'',
+            session:     sessionNorm,
+            bias:        normalizeBias(mapped.bias),
+            newsImpact:  normalizeNews(mapped.newsImpact),
+            setup:       mapped.setup||'',
+            notes:       mapped.notes||'',
             breakEven:   beVal,
-            trailingStop: tsVal,
-            lots:     lotsVal,
+            trailingStop:tsVal,
+            lots:        lotsVal,
             commission:  commVal,
-            swap:     swapVal,
-            risk:     riskVal,
-            tags:     mapped.tags||null,
+            swap:        swapVal,
+            risk:        riskVal,
+            tags:        mapped.tags||null,
             marketType:  mapped.marketType||'',
-            exchange: mapped.exchange||'',
-            account:  mapped.account||'',
-            duration: mapped.duration||'',
+            exchange:    mapped.exchange||'',
+            account:     mapped.account||'',
+            duration:    mapped.duration||'',
             psychologyScore: mapped.psychologyScore?parseInt(mapped.psychologyScore):80,
-            win:      pnlVal>0,
-            extra:    Object.keys(extra).length?extra:undefined,
-            metrics:  {rrReel:rrCalc,tpPercent:tpPctCalc},
+            extra:       Object.keys(extra).length?extra:undefined,
+            metrics:     {rrReel:rrCalc,tpPercent:tpPctCalc},
           });
         });
 
