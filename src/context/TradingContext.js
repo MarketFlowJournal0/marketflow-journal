@@ -7,7 +7,6 @@ export function TradingProvider({ children }) {
   const [trades,  setTrades]  = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Charger les trades depuis Supabase
   const fetchTrades = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -26,44 +25,85 @@ export function TradingProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Timeout de sécurité : si ça ne répond pas en 5s → setLoading(false)
     const t = setTimeout(() => setLoading(false), 5000);
     fetchTrades().finally(() => clearTimeout(t));
   }, [fetchTrades]);
 
-  // Ajouter un trade
+  // ── addTrade — mappe tous les champs vers les colonnes Supabase ──────
   const addTrade = useCallback(async (tradeData) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user?.id) return null;
-    const pnl = tradeData.pnl != null
-      ? Number(tradeData.pnl)
-      : calcPnl(tradeData);
-    const { data, error } = await supabase.from('trades').insert([{
-      user_id:          session.user.id,
-      symbol:           tradeData.pair   || tradeData.symbol || '',
-      direction:        tradeData.dir    || tradeData.direction || 'Long',
-      entry_price:      Number(tradeData.entry)  || 0,
-      exit_price:       Number(tradeData.tp)     || 0,
-      stop_loss:        Number(tradeData.sl)      || 0,
-      quantity:         Number(tradeData.size)    || 0,
-      profit_loss:      pnl,
-      status:           pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
-      open_date:        tradeData.date   || new Date().toISOString().split('T')[0],
-      notes:            tradeData.notes  || '',
-      session:          tradeData.session || detectSession(),
-      emotion_before:   tradeData.emotion_before  || '',
-      emotion_during:   tradeData.emotion_during  || '',
-      emotion_after:    tradeData.emotion_after   || '',
-      psychological_tags: tradeData.tags || null,
-    }]).select().single();
-    if (!error && data) {
-      setTrades(prev => [data, ...prev]);
-      return data;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return null;
+
+      const pnl = tradeData.pnl != null
+        ? Number(tradeData.pnl)
+        : tradeData.profit_loss != null
+          ? Number(tradeData.profit_loss)
+          : calcPnl(tradeData);
+
+      const symbol = tradeData.symbol || tradeData.pair || '';
+      const direction = tradeData.direction || tradeData.type || tradeData.dir || 'Long';
+      const entryPrice = Number(tradeData.entry_price ?? tradeData.entry ?? 0);
+      const exitPrice  = Number(tradeData.exit_price  ?? tradeData.exit  ?? 0);
+      const stopLoss   = Number(tradeData.stop_loss   ?? tradeData.sl    ?? 0);
+      const qty        = Number(tradeData.quantity    ?? tradeData.size  ?? tradeData.lots ?? 0);
+      const openDate   = tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0];
+
+      // Déterminer le statut
+      const status = pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE';
+
+      const payload = {
+        user_id:            session.user.id,
+        symbol,
+        direction,
+        entry_price:        entryPrice,
+        exit_price:         exitPrice,
+        stop_loss:          stopLoss || null,
+        quantity:           qty || null,
+        profit_loss:        pnl,
+        status,
+        open_date:          openDate,
+        notes:              tradeData.notes || '',
+        session:            tradeData.session || detectSession(),
+        emotion_before:     tradeData.emotion_before  || '',
+        emotion_during:     tradeData.emotion_during  || '',
+        emotion_after:      tradeData.emotion_after   || '',
+        psychological_tags: tradeData.psychological_tags || tradeData.tags || null,
+        // Nouvelles colonnes
+        bias:               tradeData.bias        || null,
+        setup:              tradeData.setup       || null,
+        news_impact:        tradeData.newsImpact  || tradeData.news_impact || null,
+        psychology_score:   tradeData.psychologyScore ?? tradeData.psychology_score ?? null,
+        break_even:         tradeData.breakEven   ?? tradeData.break_even ?? null,
+        trailing_stop:      tradeData.trailingStop ?? tradeData.trailing_stop ?? null,
+        lots:               tradeData.lots        ?? null,
+        commission:         tradeData.commission  ?? null,
+        swap:               tradeData.swap        ?? null,
+        market_type:        tradeData.marketType  || tradeData.market_type || null,
+        time:               tradeData.time        || null,
+      };
+
+      const { data, error } = await supabase
+        .from('trades')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('addTrade error:', error.message, error.details);
+        return null;
+      }
+      if (data) {
+        setTrades(prev => [data, ...prev]);
+        return data;
+      }
+      return null;
+    } catch (err) {
+      console.error('addTrade exception:', err);
+      return null;
     }
-    return null;
   }, []);
 
-  // Modifier un trade
   const updateTrade = useCallback(async (id, updates) => {
     const { data, error } = await supabase
       .from('trades').update(updates).eq('id', id).select().single();
@@ -74,14 +114,12 @@ export function TradingProvider({ children }) {
     return null;
   }, []);
 
-  // Supprimer un trade
   const deleteTrade = useCallback(async (id) => {
     const { error } = await supabase.from('trades').delete().eq('id', id);
     if (!error) setTrades(prev => prev.filter(t => t.id !== id));
     return !error;
   }, []);
 
-  // Stats calculées depuis les vrais trades
   const stats = useMemo(() => {
     if (!trades.length) return emptyStats();
     const closed = trades.filter(t => t.status === 'TP' || t.status === 'SL' || t.status === 'BE');
@@ -96,7 +134,6 @@ export function TradingProvider({ children }) {
     const best    = Math.max(...closed.map(t => t.profit_loss || 0));
     const worst   = Math.min(...closed.map(t => t.profit_loss || 0));
 
-    // Equity curve
     const sorted  = [...closed].sort((a,b) => new Date(a.open_date)-new Date(b.open_date));
     let running = 0;
     const equity = sorted.map(t => {
@@ -104,7 +141,6 @@ export function TradingProvider({ children }) {
       return { d: fmtDate(t.open_date), v: Math.round(running) };
     });
 
-    // Daily PnL (7 derniers jours)
     const byDay = {};
     sorted.forEach(t => {
       const d = t.open_date?.split('T')[0] || '';
@@ -116,7 +152,6 @@ export function TradingProvider({ children }) {
       v: Math.round(v), w: v >= 0
     }));
 
-    // Sessions
     const sessionMap = {};
     closed.forEach(t => {
       const s = t.session || 'Autre';
@@ -129,7 +164,6 @@ export function TradingProvider({ children }) {
     });
     const sessionData = Object.values(sessionMap).sort((a,b)=>b.pnl-a.pnl);
 
-    // Pairs
     const pairMap = {};
     const COLORS = ['#06E6FF','#00F5D4','#FFD700','#B06EFF','#FF4DC4','#4D7CFF'];
     closed.forEach(t => {
@@ -143,7 +177,6 @@ export function TradingProvider({ children }) {
       .sort((a,b)=>b.pnl-a.pnl).slice(0,6)
       .map((p,i) => ({ ...p, wr: Math.round((p.wins/p.n)*100), col: COLORS[i] }));
 
-    // Biais
     const longs  = closed.filter(t => t.direction === 'Long');
     const shorts = closed.filter(t => t.direction === 'Short');
     const total  = closed.length || 1;
@@ -152,7 +185,6 @@ export function TradingProvider({ children }) {
       { name:'Bearish', value:Math.round((shorts.length/total)*100), color:'#FF3D57', pnl: fmt(shorts.reduce((a,t)=>a+(t.profit_loss||0),0)) },
     ].filter(b=>b.value>0);
 
-    // Drawdown
     let peak = 0, dd = 0, runDd = 0;
     sorted.forEach(t => {
       runDd += (t.profit_loss||0);
@@ -161,7 +193,6 @@ export function TradingProvider({ children }) {
       if (cur < dd) dd = cur;
     });
 
-    // Streaks
     let wStreak = 0, lStreak = 0, curW = 0, curL = 0;
     sorted.forEach(t => {
       if ((t.profit_loss||0) > 0) { curW++; curL=0; }
@@ -170,7 +201,6 @@ export function TradingProvider({ children }) {
       if (curL > lStreak) lStreak = curL;
     });
 
-    // Heatmap horaire
     const heatmap = ['Lun','Mar','Mer','Jeu','Ven'].map(day => {
       const h = {};
       ['8h','10h','12h','14h','16h'].forEach(hr => { h[hr] = 0; });
@@ -178,7 +208,7 @@ export function TradingProvider({ children }) {
     });
     closed.forEach(t => {
       const d = new Date(t.open_date);
-      const dayIdx = (d.getDay() + 6) % 7; // Lun=0
+      const dayIdx = (d.getDay() + 6) % 7;
       if (dayIdx < 5) {
         const hr = d.getHours();
         const hrKey = hr < 9 ? '8h' : hr < 11 ? '10h' : hr < 13 ? '12h' : hr < 15 ? '14h' : '16h';
@@ -186,7 +216,6 @@ export function TradingProvider({ children }) {
       }
     });
 
-    // Radar
     const radarData = [
       { m:'Win Rate',   v: Math.min(100, Math.round(winRate)) },
       { m:'Profit F.',  v: Math.min(100, Math.round(pf * 25)) },
@@ -249,7 +278,6 @@ export function useTradingContext() {
   return useContext(TradingContext) || { trades:[], loading:false, stats:emptyStats(), addTrade:()=>null, updateTrade:()=>null, deleteTrade:()=>null };
 }
 
-// Alias pour compatibilité
 export function useTrades() {
   return useTradingContext();
 }
@@ -266,22 +294,23 @@ function emptyStats() {
 }
 
 function calcPnl(t) {
-  const entry = Number(t.entry) || 0;
-  const tp    = Number(t.tp)    || 0;
-  const sl    = Number(t.sl)    || 0;
-  const size  = Number(t.size)  || 0;
+  const entry = Number(t.entry_price ?? t.entry ?? 0);
+  const tp    = Number(t.exit_price  ?? t.exit  ?? t.tp ?? 0);
+  const sl    = Number(t.stop_loss   ?? t.sl    ?? 0);
+  const size  = Number(t.quantity    ?? t.size  ?? t.lots ?? 0);
   if (!entry || !size) return 0;
   const target = tp || sl;
-  const diff   = t.dir === 'Long' ? target - entry : entry - target;
+  const dir    = t.direction || t.type || t.dir || 'Long';
+  const diff   = dir === 'Long' ? target - entry : entry - target;
   return Math.round(diff * size * 100000 * 100) / 100;
 }
 
 function detectSession() {
   const h = new Date().getUTCHours();
-  if (h >= 22 || h < 7)  return 'Asie';
-  if (h >= 7  && h < 12) return 'Londres';
-  if (h >= 12 && h < 21) return 'New-York';
-  return 'Autre';
+  if (h >= 22 || h < 7)  return 'Asia';
+  if (h >= 7  && h < 12) return 'London';
+  if (h >= 12 && h < 21) return 'NY';
+  return 'NY';
 }
 
 function fmtDate(d) {
