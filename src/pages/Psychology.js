@@ -1368,9 +1368,80 @@ const TABS=[
 
 export default function Psychology(){
   const[tab,setTab]=useState('overview');
-  const sessions=DEMO;
+  const { trades } = useTradingContext();
+
+  // ── Convertir les trades Supabase en sessions Psychology ──────────────
+  // Chaque "session" = groupe de trades par jour
+  const sessions = useMemo(() => {
+    if (!trades || trades.length === 0) return [];
+
+    // Grouper par date
+    const byDate = {};
+    trades.forEach(t => {
+      const date = (t.open_date || t.date || '').substring(0, 10);
+      if (!date) return;
+      if (!byDate[date]) byDate[date] = [];
+      byDate[date].push(t);
+    });
+
+    return Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, dayTrades], idx) => {
+        const pnl = dayTrades.reduce((s, t) => s + parseFloat(t.profit_loss ?? t.pnl ?? 0), 0);
+        const wins = dayTrades.filter(t => parseFloat(t.profit_loss ?? t.pnl ?? 0) > 0).length;
+
+        // Score psycho depuis les données disponibles
+        // Si les trades ont un psychologyScore, on l'utilise, sinon on le déduit du P&L
+        const psychScores = dayTrades.map(t => t.psychologyScore).filter(Boolean);
+        const avgPsychScore = psychScores.length > 0
+          ? psychScores.reduce((s, v) => s + v, 0) / psychScores.length
+          : null;
+
+        // Déduire les axes depuis le P&L et les données disponibles
+        const perfScore = pnl > 0 ? Math.min(100, 60 + (wins / dayTrades.length) * 40) : Math.max(20, 60 - Math.abs(pnl) / 50);
+        const baseScore = avgPsychScore ?? perfScore;
+
+        // Humeur déduite du P&L et win rate
+        const wr = wins / dayTrades.length;
+        const mood = pnl > 500 && wr > 0.7 ? 'excellent'
+          : pnl > 0 && wr >= 0.5 ? 'bien'
+          : pnl >= -50 ? 'neutre'
+          : pnl > -200 ? 'difficile'
+          : 'terrible';
+
+        const axeBase = Math.round(baseScore);
+
+        return {
+          id: idx + 1,
+          date,
+          mood,
+          sleep: 7,  // non disponible dans les trades
+          energy: 7,
+          routine: pnl > 0,
+          discipline:  Math.min(100, Math.round(axeBase * (0.9 + wr * 0.2))),
+          patience:    Math.min(100, Math.round(axeBase * (0.85 + wr * 0.15))),
+          confidence:  Math.min(100, Math.round(axeBase * (0.88 + wr * 0.12))),
+          riskCtrl:    Math.min(100, Math.round(axeBase * (0.92 + wr * 0.08))),
+          consistency: Math.min(100, Math.round(axeBase * (0.87 + wr * 0.13))),
+          emotional:   Math.min(100, Math.round(axeBase * (0.83 + wr * 0.17))),
+          planFollow:  Math.min(100, Math.round(axeBase * (0.90 + wr * 0.10))),
+          pnl:         Math.round(pnl),
+          trades:      dayTrades.length,
+          wins,
+          maxTrades:   dayTrades.length + 2,
+          maxLoss:     200,
+          stressors:   '',
+          objectives:  '',
+          notes:       dayTrades.map(t => t.notes).filter(Boolean).join(' | ') || '',
+        };
+      });
+  }, [trades]);
+
+  // ── État vide si pas de trades ────────────────────────────────────────
+  const hasData = sessions.length > 0;
 
   const stats=useMemo(()=>{
+    if(!sessions.length) return{avgScore:0,disciplineRate:0,emotionalPct:0,highPnl:0,totalPnl:0,latestScore:0,prevScore:0,scoreTrend:0};
     const scores=sessions.map(calcPsych);
     const avgScore=Math.round(scores.reduce((s,v)=>s+v,0)/scores.length);
     const disciplineRate=Math.round(sessions.reduce((s,v)=>s+(v.discipline||0),0)/sessions.length);
@@ -1389,6 +1460,27 @@ export default function Psychology(){
     const scoreTrend=Math.round((avgSecond-avgFirst)*10)/10;
     return{avgScore,disciplineRate,emotionalPct,highPnl,totalPnl,latestScore,prevScore,scoreTrend};
   },[sessions]);
+
+  // Empty state
+  if(!hasData){
+    return(
+      <div style={{background:'radial-gradient(ellipse 130% 60% at 50% -10%,rgba(176,110,255,0.10) 0%,#030508 65%)',minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:40}}>
+        <motion.div initial={{scale:0.8,opacity:0}} animate={{scale:1,opacity:1}} transition={{type:'spring',stiffness:120}}>
+          <div style={{fontSize:72,marginBottom:20}}>🧠</div>
+          <h2 style={{fontSize:28,fontWeight:900,background:C.gradPurple,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:12}}>Psychology Tracker</h2>
+          <p style={{fontSize:15,color:C.t2,maxWidth:440,lineHeight:1.7,marginBottom:8}}>
+            Aucun trade enregistré pour le moment.
+          </p>
+          <p style={{fontSize:13,color:C.t3,maxWidth:400,lineHeight:1.7}}>
+            Importe ou ajoute tes trades dans <strong style={{color:C.cyan}}>All Trades</strong> — les données psychology apparaîtront automatiquement ici.
+          </p>
+          <motion.div animate={{opacity:[0.4,0.9,0.4]}} transition={{duration:2.5,repeat:Infinity}} style={{marginTop:28,display:'inline-flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:12,background:`${C.purple}14`,border:`1px solid ${C.purple}30`,fontSize:12,color:C.purple,fontWeight:700}}>
+            📊 Tes statistiques apparaîtront ici
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return(
     <div style={{background:`radial-gradient(ellipse 130% 60% at 50% -10%,rgba(176,110,255,0.10) 0%,#030508 65%)`,minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,position:'relative'}}>
