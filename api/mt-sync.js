@@ -21,52 +21,37 @@ module.exports = async function handler(req, res) {
     const { api_token, trades } = req.body
 
     // 1. Validation basique
-    if (!api_token || !trades || !Array.isArray(trades)) {
-      return res.status(400).json({ error: 'api_token and trades[] required' })
-    }
+if (!api_token || !trades || !Array.isArray(trades)) {
+  return res.status(400).json({ error: 'api_token and trades[] required' })
+}
 
-    if (trades.length === 0) {
-      return res.status(200).json({ inserted: 0, message: 'No trades to sync' })
-    }
+if (trades.length > 500) {
+  return res.status(400).json({ error: 'Max 500 trades per request' })
+}
 
-    if (trades.length > 500) {
-      return res.status(400).json({ error: 'Max 500 trades per request' })
-    }
+// 2. Vérifier le token EN PREMIER
+const { data: account, error: accountError } = await supabase
+  .from('broker_accounts')
+  .select('id, user_id, broker_type, is_active')
+  .eq('api_token', api_token)
+  .single()
 
-    // 2. Vérifier le token et récupérer le compte
-    const { data: account, error: accountError } = await supabase
-      .from('broker_accounts')
-      .select('id, user_id, broker_type, is_active')
-      .eq('api_token', api_token)
-      .single()
+if (accountError || !account) {
+  return res.status(401).json({ error: 'Invalid api_token' })
+}
 
-    if (accountError || !account) {
-      return res.status(401).json({ error: 'Invalid api_token' })
-    }
+if (!account.is_active) {
+  return res.status(403).json({ error: 'Account is disabled' })
+}
 
-    if (!account.is_active) {
-      return res.status(403).json({ error: 'Account is disabled' })
-    }
-
-    // 3. Récupérer les tickets déjà existants (dédoublonnage)
-    const incomingTickets = trades
-      .map(t => t.ticket?.toString())
-      .filter(Boolean)
-
-    let existingTickets = new Set()
-
-    if (incomingTickets.length > 0) {
-      const { data: existing } = await supabase
-        .from('trades')
-        .select('ticket')
-        .eq('user_id', account.user_id)
-        .eq('account_id', account.id)
-        .in('ticket', incomingTickets)
-
-      if (existing) {
-        existing.forEach(t => existingTickets.add(t.ticket))
-      }
-    }
+// 3. Vérifier trades vides APRÈS auth
+if (trades.length === 0) {
+  await supabase
+    .from('broker_accounts')
+    .update({ last_sync_at: new Date().toISOString() })
+    .eq('id', account.id)
+  return res.status(200).json({ inserted: 0, message: 'No trades to sync' })
+}
 
     // 4. Filtrer les nouveaux trades uniquement
     const newTrades = trades
