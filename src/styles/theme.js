@@ -1,6 +1,6 @@
 import { colors } from './colors';
 
-// 🏛️ SYSTÈME DE DESIGN INSTITUTIONNEL MARKETFLOW
+// 🏛️ MARKETFLOW INSTITUTIONAL DESIGN SYSTEM
 
 export const theme = {
   colors,
@@ -30,7 +30,7 @@ export const theme = {
     },
   },
 
-  // Spacing - Système 4px
+  // Spacing - 4px System
   spacing: {
     0: '0',
     1: '0.25rem',  // 4px
@@ -57,7 +57,7 @@ export const theme = {
     full: '9999px',
   },
 
-  // Shadows - Subtiles
+  // Shadows - Subtle
   shadows: {
     sm: '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
     base: '0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3)',
@@ -67,7 +67,7 @@ export const theme = {
     none: 'none',
   },
 
-  // Transitions - Subtiles uniquement
+  // Transitions - Subtle only
   transitions: {
     fast: '150ms cubic-bezier(0.4, 0, 0.2, 1)',
     base: '200ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -118,11 +118,11 @@ export const theme = {
   },
 };
 
-// 🎯 PRINCIPES DE DESIGN
-// ✅ Sobre, mature, premium
-// ✅ Hiérarchie visuelle forte
-// ✅ Espacement généreux
-// ✅ Contraste maîtrisé
-// ❌ Pas d'animations flashy
-// ❌ Pas de gradients excessifs
-// ❌ Pas d'effets décoratifs
+// 🎯 DESIGN PRINCIPLES
+// ✅ Sober, mature, premium
+// ✅ Strong visual hierarchy
+// ✅ Generous spacing
+// ✅ Controlled contrast
+// ❌ No flashy animations
+// ❌ No excessive gradients
+// ❌ No decorative effects

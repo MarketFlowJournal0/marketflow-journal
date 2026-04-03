@@ -5,7 +5,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 function Analytics() {
   const { trades, globalStats, confluences } = useTradingContext();
 
-  // Calculs avancés pour les graphiques
+  // Advanced calculations for charts
   const analyticsData = useMemo(() => {
     if (trades.length === 0) {
       return {
@@ -19,7 +19,7 @@ function Analytics() {
       };
     }
 
-    // Performance cumulative
+    // Cumulative performance
     let cumulative = 0;
     const performanceData = [...trades].reverse().map(trade => {
       cumulative += parseFloat(trade.pnl || 0);
@@ -30,7 +30,7 @@ function Analytics() {
       };
     });
 
-    // Performance par setup
+    // Performance by setup
     const setupMap = {};
     trades.forEach(trade => {
       const setup = trade.setup || 'Other';
@@ -52,7 +52,7 @@ function Analytics() {
       avgRR: (s.avgRR / s.count).toFixed(2),
     }));
 
-    // Performance par heure (mock - on simule des tranches horaires)
+    // Performance by time (mock - simulating time slots)
     const timeOfDayMap = {
       '9:30-10:30': { time: '9:30-10:30', pnl: 0, trades: 0 },
       '10:30-11:30': { time: '10:30-11:30', pnl: 0, trades: 0 },
@@ -82,7 +82,7 @@ function Analytics() {
 
     const timeOfDayData = Object.values(timeOfDayMap).filter(t => t.trades > 0);
 
-    // Performance par jour de la semaine
+    // Performance by day of the week
     const dayOfWeekMap = {
       0: { day: 'Sunday', pnl: 0, winRate: 0, trades: 0, wins: 0 },
       1: { day: 'Monday', pnl: 0, winRate: 0, trades: 0, wins: 0 },
@@ -113,7 +113,7 @@ function Analytics() {
       { name: 'Losses', value: globalStats.losses || 0, color: '#ef4444' },
     ];
 
-    // Performance par confluence
+    // Performance by confluence
     const confluenceMap = {};
     trades.forEach(trade => {
       if (trade.confluences && trade.confluences.length > 0) {
@@ -133,7 +133,7 @@ function Analytics() {
       winRate: parseFloat(((c.wins / (c.wins + c.losses)) * 100).toFixed(1)),
     }));
 
-    // Performance par type de marché
+    // Performance by market type
     const marketTypeMap = {};
     trades.forEach(trade => {
       const market = trade.marketType || 'Unknown';

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
 const FAQS = [
-  { q: 'Comment importer mes trades MetaTrader ?', a: 'Va dans Fichier → Export CSV dans MT4/MT5, puis glisse-dépose le fichier dans MarketFlow. L\'import prend moins de 30 secondes. Nous reconnaissons automatiquement les formats MT4, MT5 et cTrader.' },
-  { q: 'L\'AI Coach est-il vraiment utile pour les débutants ?', a: 'Oui, c\'est même là qu\'il est le plus efficace. Pour les débutants, il guide sur la gestion du risque et l\'identification des erreurs les plus coûteuses. Pour les traders avancés, il détecte des patterns subtils.' },
-  { q: 'Puis-je utiliser MarketFlow avec une prop firm ?', a: 'Absolument. MarketFlow est conçu pour les prop traders — FTMO, The5%ers, MyForexFunds, E8, TopStep. Le rapport PDF exportable est formaté pour être envoyé directement aux prop firms.' },
-  { q: 'Est-ce que mes données sont sécurisées ?', a: 'Tes données sont chiffrées AES-256 en transit et au repos. Nous sommes conformes RGPD. Tes données ne sont jamais revendues ni partagées. Tu peux exporter ou supprimer ton compte à tout moment.' },
-  { q: 'Comment annuler mon abonnement ?', a: 'Tu peux annuler à tout moment depuis Paramètres → Gérer l\'abonnement. L\'accès reste actif jusqu\'à la fin de la période en cours.' },
+  { q: 'How do I import my MetaTrader trades?', a: 'Go to File → Export CSV in MT4/MT5, then drag and drop the file into MarketFlow. Import takes less than 30 seconds. We automatically recognize MT4, MT5 and cTrader formats.' },
+  { q: 'Is the AI Coach really useful for beginners?', a: 'Yes, that\'s actually where it\'s most effective. For beginners, it guides you on risk management and identifying the most costly mistakes. For advanced traders, it detects subtle patterns.' },
+  { q: 'Can I use MarketFlow with a prop firm?', a: 'Absolutely. MarketFlow is designed for prop traders — FTMO, The5%ers, MyForexFunds, E8, TopStep. The exportable PDF report is formatted to be sent directly to prop firms.' },
+  { q: 'Is my data secure?', a: 'Your data is encrypted with AES-256 in transit and at rest. We are GDPR compliant. Your data is never sold or shared. You can export or delete your account at any time.' },
+  { q: 'How do I cancel my subscription?', a: 'You can cancel at any time from Settings → Manage Subscription. Access remains active until the end of the current period.' },
 ];
 
 const inputStyle = {
@@ -37,7 +37,7 @@ function ContactForm({ user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.message.trim()) { setError('Le message est requis.'); return; }
+    if (!form.message.trim()) { setError('Message is required.'); return; }
     setSending(true); setError('');
     try {
       const res = await fetch('/api/support', {
@@ -48,7 +48,7 @@ function ContactForm({ user }) {
       if (!res.ok) throw new Error();
       setSent(true);
     } catch {
-      setError('Erreur lors de l\'envoi. Réessaie ou écris-nous directement.');
+      setError('Error sending message. Try again or email us directly.');
     } finally {
       setSending(false);
     }
@@ -63,9 +63,9 @@ function ContactForm({ user }) {
         fontSize: 28, margin: '0 auto 20px',
         boxShadow: '0 0 30px rgba(0,255,136,0.4)',
       }}>✓</div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Message envoyé !</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Message sent!</div>
       <div style={{ fontSize: 14, color: '#7A90B8', lineHeight: 1.7 }}>
-        Merci ! On te répond sous 24h à <span style={{ color: '#06E6FF' }}>{form.email}</span>.
+        Thank you! We\'ll get back to you within 24h at <span style={{ color: '#06E6FF' }}>{form.email}</span>.
       </div>
     </div>
   );
@@ -74,33 +74,33 @@ function ContactForm({ user }) {
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label style={labelStyle}>Nom</label>
-          <input style={inputStyle} placeholder="Ton nom" value={form.name} onChange={set('name')} />
+          <label style={labelStyle}>Name</label>
+          <input style={inputStyle} placeholder="Your name" value={form.name} onChange={set('name')} />
         </div>
         <div>
           <label style={labelStyle}>Email <span style={{ color: '#06E6FF' }}>*</span></label>
-          <input style={inputStyle} type="email" placeholder="ton@email.com" value={form.email} onChange={set('email')} required />
+          <input style={inputStyle} type="email" placeholder="you@email.com" value={form.email} onChange={set('email')} required />
         </div>
       </div>
       <div>
-        <label style={labelStyle}>Catégorie</label>
+        <label style={labelStyle}>Category</label>
         <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.category} onChange={set('category')}>
-          <option value="general">Question générale</option>
-          <option value="billing">Facturation / Abonnement</option>
-          <option value="technical">Problème technique</option>
-          <option value="feature">Suggestion de feature</option>
-          <option value="other">Autre</option>
+          <option value="general">General question</option>
+          <option value="billing">Billing / Subscription</option>
+          <option value="technical">Technical issue</option>
+          <option value="feature">Feature suggestion</option>
+          <option value="other">Other</option>
         </select>
       </div>
       <div>
-        <label style={labelStyle}>Sujet</label>
-        <input style={inputStyle} placeholder="Résumé de ta demande..." value={form.subject} onChange={set('subject')} />
+        <label style={labelStyle}>Subject</label>
+        <input style={inputStyle} placeholder="Summary of your request..." value={form.subject} onChange={set('subject')} />
       </div>
       <div>
         <label style={labelStyle}>Message <span style={{ color: '#06E6FF' }}>*</span></label>
         <textarea
           style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, minHeight: 120 }}
-          placeholder="Décris ta demande en détail..."
+          placeholder="Describe your request in detail..."
           value={form.message}
           onChange={set('message')}
           required
@@ -126,7 +126,7 @@ function ContactForm({ user }) {
           transition: 'all 0.2s', fontFamily: 'inherit',
         }}
       >
-        {sending ? '⏳ Envoi en cours...' : '✉️ Envoyer le message'}
+        {sending ? '⏳ Sending...' : '✉️ Send message'}
       </button>
     </form>
   );
@@ -137,7 +137,7 @@ export default function SupportPage({ user, onBack }) {
 
   const plan = user?.user_metadata?.plan || 'starter';
   const responseTime = plan === 'elite' ? '< 2h' : plan === 'pro' ? '< 12h' : '< 24h';
-  const priority = plan === 'elite' ? '🔴 Prioritaire' : plan === 'pro' ? '🟡 Standard' : '🟢 Normal';
+  const priority = plan === 'elite' ? '🔴 Priority' : plan === 'pro' ? '🟡 Standard' : '🟢 Normal';
 
   return (
     <div style={{
@@ -169,14 +169,14 @@ export default function SupportPage({ user, onBack }) {
             fontFamily: 'inherit', transition: 'all 0.18s',
           }}
         >
-          ← Retour
+          ← Back
         </button>
         <div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
-            Centre de support
+            Support Center
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#3A5070' }}>
-            {priority} · Réponse estimée {responseTime}
+            {priority} · Estimated response {responseTime}
           </p>
         </div>
       </div>
@@ -184,17 +184,17 @@ export default function SupportPage({ user, onBack }) {
       {/* Grid */}
       <div className="sp-grid" style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 32, alignItems: 'start' }}>
 
-        {/* Colonne gauche */}
+        {/* Left column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Infos contact */}
+          {/* Contact info */}
           <div className="sp-card">
             <div style={{ fontSize: 12, fontWeight: 700, color: '#06E6FF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>
-              Nous contacter
+              Contact Us
             </div>
             {[
-              { icon: '📧', label: 'Email support', value: 'support@marketflowjournal.com', href: 'mailto:support@marketflowjournal.com' },
-              { icon: '💬', label: 'Discord communauté', value: 'discord.gg/Cvh6H8yK8m', href: 'https://discord.gg/Cvh6H8yK8m' },
+              { icon: '📧', label: 'Support email', value: 'support@marketflowjournal.com', href: 'mailto:support@marketflowjournal.com' },
+              { icon: '💬', label: 'Community Discord', value: 'discord.gg/Cvh6H8yK8m', href: 'https://discord.gg/Cvh6H8yK8m' },
             ].map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i === 0 ? 12 : 0 }}>
                 <div style={{
@@ -213,14 +213,14 @@ export default function SupportPage({ user, onBack }) {
               background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.15)',
               fontSize: 12, color: '#7A90B8', lineHeight: 1.6,
             }}>
-              ⏱ Réponse estimée : <strong style={{ color: '#00FF88' }}>{responseTime}</strong> — Plan <strong style={{ color: '#fff', textTransform: 'capitalize' }}>{plan}</strong>
+              ⏱ Estimated response: <strong style={{ color: '#00FF88' }}>{responseTime}</strong> — <strong style={{ color: '#fff', textTransform: 'capitalize' }}>{plan}</strong> plan
             </div>
           </div>
 
           {/* FAQ */}
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#3A5070', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-              Questions fréquentes
+              Frequently Asked Questions
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {FAQS.map((f, i) => (
@@ -242,10 +242,10 @@ export default function SupportPage({ user, onBack }) {
           </div>
         </div>
 
-        {/* Colonne droite : formulaire */}
+        {/* Right column: form */}
         <div className="sp-form-card">
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Envoie-nous un message</div>
-          <div style={{ fontSize: 12, color: '#3A5070', marginBottom: 24 }}>On répond à toutes les demandes, sans exception.</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Send us a message</div>
+          <div style={{ fontSize: 12, color: '#3A5070', marginBottom: 24 }}>We respond to every request, no exceptions.</div>
           <ContactForm user={user} />
         </div>
 

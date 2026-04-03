@@ -78,7 +78,7 @@ const ChartTip = ({ active, payload, label, prefix='$' }) => {
 const Empty = ({ label }) => (
   <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'28px 0',gap:8}}>
     <span style={{fontSize:24,opacity:0.3}}>📭</span>
-    <span style={{fontSize:10,color:C.t3}}>{label||'Aucun trade enregistré'}</span>
+    <span style={{fontSize:10,color:C.t3}}>{label||'No trades recorded'}</span>
   </div>
 );
 
@@ -89,10 +89,10 @@ const KpiStrip = () => {
     { label:'P&L Total',     value: stats.pnl >= 0 ? `+$${stats.pnl.toLocaleString()}` : `-$${Math.abs(stats.pnl).toLocaleString()}`, delta: stats.pnlPct, sub:`$${stats.expectancy}/trade`,   color:C.green,  icon:'💰' },
     { label:'Win Rate',      value:`${stats.winRate}%`,  delta: null, sub:`${stats.wins}W · ${stats.losses}L · ${stats.breakevens}BE`, color:C.cyan,   icon:'🎯' },
     { label:'Profit Factor', value: stats.profitFactor || '—', delta: null, sub:`Avg W $${stats.avgWin}`, color:C.teal, icon:'⚖️' },
-    { label:'Avg R:R',       value: stats.avgRR,         delta: null, sub:'Ratio moyen',                  color:C.blue,   icon:'📐' },
-    { label:'Sharpe',        value: stats.sharpe || '—', delta: null, sub:'Annualisé',                    color:C.purple, icon:'📏' },
-    { label:'Max Drawdown',  value:`${Math.abs(stats.maxDrawdown)}%`, delta: stats.maxDrawdown !== 0 ? stats.maxDrawdown : null, sub:'Depuis le début', color:C.danger, icon:'⚠️', invert:true },
-    { label:'Expectancy',    value:`$${stats.expectancy}`, delta: null, sub:'Par trade',                  color:C.gold,   icon:'🧮' },
+    { label:'Avg R:R',       value: stats.avgRR,         delta: null, sub:'Average ratio',                  color:C.blue,   icon:'📐' },
+    { label:'Sharpe',        value: stats.sharpe || '—', delta: null, sub:'Annualized',                    color:C.purple, icon:'📏' },
+    { label:'Max Drawdown',  value:`${Math.abs(stats.maxDrawdown)}%`, delta: stats.maxDrawdown !== 0 ? stats.maxDrawdown : null, sub:'Since the beginning', color:C.danger, icon:'⚠️', invert:true },
+    { label:'Expectancy',    value:`$${stats.expectancy}`, delta: null, sub:'Per trade',                  color:C.gold,   icon:'🧮' },
   ];
   return (
     <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8,marginBottom:14}}>
@@ -135,7 +135,7 @@ const EquityPanel = () => {
               {pnl>=0?'+':''}{pnl>=0?'$'+pnl.toLocaleString():'-$'+Math.abs(pnl).toLocaleString()}
             </span>
             {pnlPct !== 0 && <Delta value={pnlPct} suffix="%"/>}
-            <span style={{fontSize:9,color:C.t3}}>depuis le début</span>
+            <span style={{fontSize:9,color:C.t3}}>since the beginning</span>
           </div>
         </div>
         <div style={{display:'flex',gap:3}}>
@@ -149,8 +149,8 @@ const EquityPanel = () => {
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:14}}>
         {[
           {l:'Max DD',  v:`${Math.abs(stats.maxDrawdown)}%`, c:C.danger},
-          {l:'Meilleur',v:`+$${stats.bestTrade?.toLocaleString()||0}`,c:C.green},
-          {l:'Pire',    v:`-$${Math.abs(stats.worstTrade||0).toLocaleString()}`,c:C.danger},
+          {l:'Best',v:`+$${stats.bestTrade?.toLocaleString()||0}`,c:C.green},
+          {l:'Worst',    v:`-$${Math.abs(stats.worstTrade||0).toLocaleString()}`,c:C.danger},
           {l:'Trades',  v:`${stats.wins||0}W/${stats.losses||0}L`,c:C.cyan},
         ].map(x=>(
           <div key={x.l} style={{padding:'6px 10px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.brd}`,textAlign:'center'}}>
@@ -178,7 +178,7 @@ const EquityPanel = () => {
             <Area type="monotone" dataKey="v" stroke="url(#el)" strokeWidth={2.5} fill="url(#eg)" dot={false} activeDot={{r:5,fill:C.green,stroke:'#fff',strokeWidth:2}}/>
           </AreaChart>
         </ResponsiveContainer>
-      ) : <Empty label="Ajoutez des trades pour voir l'equity curve"/>}
+      ) : <Empty label="Add trades to see the equity curve"/>}
     </Card>
   );
 };
@@ -191,7 +191,7 @@ const DailyPnl = () => {
   return (
     <Card custom={8} glow={C.cyan} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-        <SectionTitle color={C.cyan} icon="📅">Performance par jour</SectionTitle>
+        <SectionTitle color={C.cyan} icon="📅">Daily Performance</SectionTitle>
         {bestDay && (
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
             <Badge color={bestDay.v>=0?C.green:C.danger}>{bestDay.d} {bestDay.v>=0?'+':''}{bestDay.v}$</Badge>
@@ -223,7 +223,7 @@ const DailyPnl = () => {
             ))}
           </div>
         </>
-      ) : <Empty label="Aucun trade cette semaine"/>}
+      ) : <Empty label="No trades this week"/>}
     </Card>
   );
 };
@@ -239,7 +239,7 @@ const PerformanceScore = () => {
     {l:'Trades',    v:Math.min(100,Math.round((stats.totalTrades||0)*3)),   c:C.purple},
     {l:'Constance', v:Math.min(100,Math.round(stats.winRate||0)),            c:C.teal},
     {l:'Discipline',v:Math.min(100,100-Math.round((stats.streakLoss||0)*10)),c:C.warn},
-    {l:'Activité',  v:Math.min(100,Math.round((stats.totalTrades||0)*5)),   c:C.blue},
+    {l:'Activity',  v:Math.min(100,Math.round((stats.totalTrades||0)*5)),   c:C.blue},
   ];
   return (
     <Card custom={9} glow={C.purple} hover={false} style={{padding:'18px 18px'}}>
@@ -294,7 +294,7 @@ const BiaisPanel = () => {
   return (
     <Card custom={10} glow={C.teal} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
-        <SectionTitle color={C.teal} icon="🧭">Analyse des Biais</SectionTitle>
+        <SectionTitle color={C.teal} icon="🧭">Bias Analysis</SectionTitle>
         <Badge color={C.cyan}>{stats.totalTrades||0} trades</Badge>
       </div>
       {data.length > 0 ? (
@@ -350,7 +350,7 @@ const BiaisPanel = () => {
             ))}
           </div>
         </>
-      ) : <Empty label="Aucun trade pour analyser les biais"/>}
+      ) : <Empty label="No trades to analyze biases"/>}
     </Card>
   );
 };
@@ -364,7 +364,7 @@ const RentabiliteGauge = () => {
   return (
     <Card custom={11} glow={C.orange} hover={false} style={{padding:'18px 18px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
-        <SectionTitle color={C.orange} icon="🔥">Rentabilité</SectionTitle>
+        <SectionTitle color={C.orange} icon="🔥">Profitability</SectionTitle>
         <Badge color={C.cyan}>{stats.totalTrades||0} trades</Badge>
       </div>
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',paddingTop:4}}>
@@ -432,7 +432,7 @@ const RecentTrades = () => {
       {trades.length > 0 && (
         <div style={{display:'flex',gap:8,marginBottom:12}}>
           <div style={{padding:'4px 10px',borderRadius:7,background:`${weekPnl>=0?C.green:C.danger}12`,border:`1px solid ${weekPnl>=0?C.green:C.danger}25`,display:'flex',gap:6,alignItems:'center'}}>
-            <span style={{fontSize:8,color:C.t3}}>P&L récent</span>
+            <span style={{fontSize:8,color:C.t3}}>Recent P&L</span>
             <span style={{fontSize:10,fontWeight:900,color:weekPnl>=0?C.green:C.danger,fontFamily:'monospace'}}>{weekPnl>=0?'+':''}{weekPnl>=0?'$'+weekPnl.toLocaleString():'-$'+Math.abs(weekPnl).toLocaleString()}</span>
           </div>
           <div style={{padding:'4px 10px',borderRadius:7,background:`${C.cyan}12`,border:`1px solid ${C.cyan}25`,display:'flex',gap:6,alignItems:'center'}}>
@@ -473,7 +473,7 @@ const RecentTrades = () => {
             );
           })}
         </div>
-      ) : <Empty label={filter==='All'?"Aucun trade enregistré":`Aucun trade ${filter}`}/>}
+      ) : <Empty label={filter==='All'?"No trades recorded":`Aucun trade ${filter}`}/>}
     </Card>
   );
 };
@@ -525,11 +525,11 @@ const PairPanel = () => {
   const data = stats.pairData || [];
   return (
     <Card custom={14} glow={C.gold} hover={false} style={{padding:'18px 18px'}}>
-      <SectionTitle color={C.gold} icon="💱">Par Paire</SectionTitle>
+      <SectionTitle color={C.gold} icon="💱">By Pair</SectionTitle>
       {data.length > 0 ? (
         <div style={{display:'flex',flexDirection:'column',gap:4}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 32px 42px 60px',gap:8,padding:'0 8px 6px',borderBottom:`1px solid ${C.brd}`}}>
-            {['Paire','#','WR','P&L'].map(h=><span key={h} style={{fontSize:7,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:'right'}}>{h}</span>)}
+            {['Pair','#','WR','P&L'].map(h=><span key={h} style={{fontSize:7,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:'right'}}>{h}</span>)}
           </div>
           {data.map((p,i)=>(
             <motion.div key={i} initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} transition={{delay:0.1+i*0.06}}
@@ -560,7 +560,7 @@ const TimeHeatmap = () => {
   const maxV  = Math.max(...data.flatMap(w=>Object.values(w.h).map(Math.abs)),1);
   return (
     <Card custom={15} glow={C.teal} hover={false} style={{padding:'18px 18px'}}>
-      <SectionTitle color={C.teal} icon="🌡️">Heatmap Heure × Jour</SectionTitle>
+      <SectionTitle color={C.teal} icon="🌡️">Hour × Day Heatmap</SectionTitle>
       {data.length > 0 ? (
         <div style={{overflowX:'auto'}}>
           <table style={{borderCollapse:'separate',borderSpacing:3,minWidth:'100%'}}>
@@ -596,7 +596,7 @@ const TimeHeatmap = () => {
             </tbody>
           </table>
         </div>
-      ) : <Empty label="Aucune donnée horaire"/>}
+      ) : <Empty label="No hourly data"/>}
     </Card>
   );
 };
@@ -629,14 +629,14 @@ const LiveTicker = () => {
 const GoalProgress = () => {
   const { stats } = useDashData();
   const goals = [
-    {l:'Objectif mensuel',  cur:stats.pnl||0,        target:10000, c:C.cyan,   prefix:'$'},
-    {l:'Win Rate cible',    cur:stats.winRate||0,     target:70,    c:C.green,  suffix:'%'},
-    {l:'Trades ce mois',    cur:stats.totalTrades||0, target:20,    c:C.purple},
-    {l:'Drawdown max',      cur:Math.abs(stats.maxDrawdown||0), target:20, c:C.danger, invert:true, suffix:'%'},
+    {l:'Monthly goal',  cur:stats.pnl||0,        target:10000, c:C.cyan,   prefix:'$'},
+    {l:'Target Win Rate',    cur:stats.winRate||0,     target:70,    c:C.green,  suffix:'%'},
+    {l:'Trades this month',    cur:stats.totalTrades||0, target:20,    c:C.purple},
+    {l:'Max Drawdown',      cur:Math.abs(stats.maxDrawdown||0), target:20, c:C.danger, invert:true, suffix:'%'},
   ];
   return (
     <Card custom={16} glow={C.cyan} hover={false} style={{padding:'18px 18px'}}>
-      <SectionTitle color={C.cyan} icon="🏆">Objectifs du Mois</SectionTitle>
+      <SectionTitle color={C.cyan} icon="🏆">Monthly Goals</SectionTitle>
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
         {goals.map((g,i)=>{
           const pct = Math.min(100,(g.cur/g.target)*100);
@@ -669,10 +669,10 @@ const GoalProgress = () => {
 // ─── JOURNAL NOTE ─────────────────────────────────────────────────────────────
 const JournalNote = () => (
   <Card custom={17} glow={C.warn} hover={false} style={{padding:'18px 18px'}}>
-    <SectionTitle color={C.warn} icon="📝">Note du jour</SectionTitle>
+    <SectionTitle color={C.warn} icon="📝">Today's Note</SectionTitle>
     <div style={{fontSize:9.5,color:C.t2,lineHeight:1.75,background:'rgba(255,255,255,0.02)',borderRadius:10,padding:'10px 12px',border:`1px solid ${C.brd}`,marginBottom:10,minHeight:64}}>
-      <span style={{color:C.gold,fontWeight:700}}>Points forts :</span> Excellente lecture du contexte London open. EURUSD reaction propre sur le RB 1H.
-      <br/><span style={{color:C.danger,fontWeight:700}}>À améliorer :</span> Attendre confirmation après CISD avant d'entrer.
+      <span style={{color:C.gold,fontWeight:700}}>Strengths :</span> Excellent reading of the London open context. Clean EURUSD reaction on the 1H RB.
+      <br/><span style={{color:C.danger,fontWeight:700}}>To improve :</span> Wait for confirmation after CISD before entering.
     </div>
     <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
       {['Discipline ✓','Patience ✓','FOMO ✗','Overtrading ✗'].map((t,i)=>(
@@ -686,14 +686,14 @@ const JournalNote = () => (
 
 // ─── MARKETFLOW RANK ──────────────────────────────────────────────────────────
 const MF_RANKS = [
-  { rank:'Iron',        min:0,   max:19,  color:'#8B7355', icon:'🔩', desc:'Débutant' },
-  { rank:'Bronze',      min:20,  max:39,  color:'#CD7F32', icon:'🥉', desc:'En progression' },
-  { rank:'Silver',      min:40,  max:59,  color:'#C0C0C0', icon:'🥈', desc:'Régulier' },
-  { rank:'Gold',        min:60,  max:74,  color:'#FFD700', icon:'🥇', desc:'Performant' },
+  { rank:'Iron',        min:0,   max:19,  color:'#8B7355', icon:'🔩', desc:'Beginner' },
+  { rank:'Bronze',      min:20,  max:39,  color:'#CD7F32', icon:'🥉', desc:'Progressing' },
+  { rank:'Silver',      min:40,  max:59,  color:'#C0C0C0', icon:'🥈', desc:'Regular' },
+  { rank:'Gold',        min:60,  max:74,  color:'#FFD700', icon:'🥇', desc:'Performing' },
   { rank:'Platinum',    min:75,  max:84,  color:'#00F5D4', icon:'💎', desc:'Expert' },
-  { rank:'Diamond',     min:85,  max:92,  color:'#06E6FF', icon:'💠', desc:'Élite' },
+  { rank:'Diamond',     min:85,  max:92,  color:'#06E6FF', icon:'💠', desc:'Elite' },
   { rank:'Master',      min:93,  max:97,  color:'#B06EFF', icon:'👑', desc:'Master Trader' },
-  { rank:'Grandmaster', min:98,  max:100, color:'#FF4DC4', icon:'⚡', desc:'Légende' },
+  { rank:'Grandmaster', min:98,  max:100, color:'#FF4DC4', icon:'⚡', desc:'Legend' },
 ];
 
 function getRank(score) {
@@ -716,7 +716,7 @@ const TradingCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(()=>new Date());
   const year  = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
-  const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const DAYS   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const firstDay  = new Date(year, month, 1);
   const lastDay   = new Date(year, month+1, 0);
@@ -743,7 +743,7 @@ const TradingCalendar = () => {
   return (
     <Card custom={18} glow={rank.color} hover={false} style={{padding:'20px 22px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:12}}>
-        <SectionTitle color={rank.color} icon="📅">Calendrier de Trading</SectionTitle>
+        <SectionTitle color={rank.color} icon="📅">Trading Calendar</SectionTitle>
         <div style={{display:'flex',alignItems:'center',gap:12,background:'rgba(255,255,255,0.03)',border:`1px solid ${rank.color}30`,borderRadius:12,padding:'8px 14px'}}>
           <div style={{textAlign:'center'}}>
             <div style={{fontSize:22}}>{rank.icon}</div>
@@ -772,9 +772,9 @@ const TradingCalendar = () => {
 
       <div style={{display:'flex',gap:16,marginBottom:16,flexWrap:'wrap'}}>
         {[
-          {l:'P&L du mois',    v:monthPnl>=0?`+$${Math.round(monthPnl).toLocaleString()}`:`-$${Math.abs(Math.round(monthPnl)).toLocaleString()}`, c:monthPnl>=0?C.green:C.danger},
-          {l:'Jours tradés',   v:tradingDays,         c:C.cyan},
-          {l:'Trades ce mois', v:monthTrades.length,  c:C.purple},
+          {l:'Monthly P&L',    v:monthPnl>=0?`+$${Math.round(monthPnl).toLocaleString()}`:`-$${Math.abs(Math.round(monthPnl)).toLocaleString()}`, c:monthPnl>=0?C.green:C.danger},
+          {l:'Trading days',   v:tradingDays,         c:C.cyan},
+          {l:'Trades this month', v:monthTrades.length,  c:C.purple},
         ].map((s,i)=>(
           <div key={i} style={{background:'rgba(255,255,255,0.03)',borderRadius:8,padding:'8px 14px',border:`1px solid ${C.brd}`}}>
             <div style={{fontSize:9,color:C.t3,fontWeight:600,marginBottom:3,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.l}</div>
@@ -831,7 +831,7 @@ const TradingCalendar = () => {
       </div>
 
       <div style={{display:'flex',gap:16,marginTop:14,flexWrap:'wrap'}}>
-        {[{c:C.green,'l':'Jour positif'},{c:C.danger,l:'Jour négatif'},{c:C.warn,l:'Breakeven'},{c:C.t4,l:'Pas de trade'}].map(({c,l})=>(
+        {[{c:C.green,'l':'Profitable day'},{c:C.danger,l:'Losing day'},{c:C.warn,l:'Breakeven'},{c:C.t4,l:'No trades'}].map(({c,l})=>(
           <div key={l} style={{display:'flex',alignItems:'center',gap:5}}>
             <div style={{width:10,height:10,borderRadius:3,background:`${c}30`,border:`1px solid ${c}60`}}/>
             <span style={{fontSize:9,color:C.t3}}>{l}</span>
@@ -846,7 +846,7 @@ const TradingCalendar = () => {
 export default function Dashboard() {
   const [greeting] = useState(()=>{
     const h = new Date().getHours();
-    return h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
+    return h<12?'Good morning':h<18?'Good afternoon':'Good evening';
   });
 
   const ctx = useTradingContext();
@@ -880,11 +880,11 @@ export default function Dashboard() {
               <div style={{display:'flex',alignItems:'center',gap:10,paddingLeft:2}}>
                 <span style={{fontSize:10,color:C.t3}}>{(()=>{
                   const now=new Date();
-                  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-                  const months=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+                  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
                   const startOfYear=new Date(now.getFullYear(),0,1);
                   const week=Math.ceil(((now-startOfYear)/86400000+startOfYear.getDay()+1)/7);
-                  return `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} · Semaine ${week}`;
+                  return `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} · Week ${week}`;
                 })()}</span>
                 <div style={{width:4,height:4,borderRadius:'50%',background:C.t4}}/>
                 <motion.div animate={{opacity:[1,0.4,1]}} transition={{duration:1.5,repeat:Infinity}} style={{display:'flex',alignItems:'center',gap:4}}>
@@ -895,13 +895,13 @@ export default function Dashboard() {
                     if(h>=2&&h<9)  return 'Tokyo · Session Active';
                     if(h>=7&&h<16) return 'London · Session Active';
                     if(h>=13&&h<22)return 'New York · Session Active';
-                    return 'Marché Fermé';
+                    return 'Market Closed';
                   })()}</span>
                 </motion.div>
               </div>
             </div>
             <div style={{display:'flex',gap:8,alignItems:'center'}}>
-              {/* Stats résumé */}
+              {/* Summary stats */}
               <div style={{padding:'6px 14px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,display:'flex',gap:16,alignItems:'center'}}>
                 <div style={{textAlign:'center'}}>
                   <div style={{fontSize:8,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px'}}>Trades</div>

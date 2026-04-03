@@ -26,18 +26,18 @@ const PLANS = [
     accent:   C.teal,
     glow:     'rgba(0,245,212,0.15)',
     icon:     '⚡',
-    desc:     'Parfait pour commencer à tracker tes trades',
+    desc:     'Perfect to start tracking your trades',
     monthly:  15,
     annual:   11,
     noAnnualDiscount: true,
     priceMonthly: 'price_1T9t9L2Ouddv7uendIMAR6IP',
     priceAnnual:  'price_1TDQ7w2Ouddv7ueno5CuaNTH',
     features: [
-      'Journal de trading illimité',
-      'Dashboard & statistiques de base',
-      'Import CSV',
-      'Calendrier de performance',
-      '1 compte de trading',
+      'Unlimited trading journal',
+      'Dashboard & basic statistics',
+      'CSV import',
+      'Performance calendar',
+      '1 trading account',
     ],
   },
   {
@@ -46,20 +46,20 @@ const PLANS = [
     accent:   C.cyan,
     glow:     'rgba(6,230,255,0.15)',
     icon:     '🚀',
-    desc:     'Pour les traders sérieux qui veulent progresser',
+    desc:     'For serious traders who want to improve',
     monthly:  22,
     annual:   15,
     priceMonthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
     priceAnnual:  'price_1T9t9U2Ouddv7uenK6oT1O13',
     popular:  true,
     features: [
-      'Tout le plan Starter',
-      'Analytics Pro avancés',
+      'Everything in Starter plan',
+      'Advanced Pro analytics',
       'Psychology & mental tracking',
       'Equity curve & drawdown',
-      'Backtesting stratégies',
-      '3 comptes de trading',
-      'Export PDF rapports',
+      'Strategy backtesting',
+      '3 trading accounts',
+      'PDF report export',
     ],
   },
   {
@@ -68,19 +68,19 @@ const PLANS = [
     accent:   C.gold,
     glow:     'rgba(255,215,0,0.12)',
     icon:     '👑',
-    desc:     'Pour les pros qui veulent le meilleur outil',
+    desc:     'For pros who want the best tool',
     monthly:  38,
     annual:   27,
     priceMonthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
     priceAnnual:  'price_1T9t9K2Ouddv7uennnWOJ44p',
     features: [
-      'Tout le plan Pro',
+      'Everything in Pro plan',
       'AI Trading Coach (GPT-4)',
-      'Comptes illimités',
-      'Alertes & notifications',
+      'Unlimited accounts',
+      'Alerts & notifications',
       'API access',
-      'Support prioritaire 24/7',
-      'Accès bêta fonctionnalités',
+      '24/7 priority support',
+      'Beta features access',
     ],
   },
 ];
@@ -108,7 +108,7 @@ const STYLES = `
     pointer-events: none;
     z-index: 0;
   }
-  /* Bouton retour (sidebar) */
+  /* Back button (sidebar) */
   .ps-back {
     position: fixed;
     top: 28px; left: 28px;
@@ -133,7 +133,7 @@ const STYLES = `
   .ps-back svg { transition: transform 0.2s; flex-shrink: 0; }
   .ps-back:hover svg { transform: translateX(-3px); }
 
-  /* Bouton déconnexion (user sans abo) */
+  /* Logout button (user without subscription) */
   .ps-logout {
     position: fixed;
     top: 28px; right: 28px;
@@ -390,7 +390,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
-      setSuccessMsg('🎉 Abonnement activé ! Redirection...');
+      setSuccessMsg('🎉 Subscription activated! Redirecting...');
       const doRefresh = async () => {
         try { await refreshProfile?.(); } catch (_) {}
         setTimeout(() => { window.location.href = window.location.origin; }, 1500);
@@ -449,13 +449,13 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       <style>{STYLES}</style>
       <div className="ps-glow-top" />
 
-      {/* Bouton retour — renvoie toujours vers la landing */}
+      {/* Back button — always returns to landing */}
       {onLogout && (
         <button type="button" className="ps-back" onClick={onLogout}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Retour
+          Back
         </button>
       )}
 
@@ -470,12 +470,12 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         <div className="ps-trial-banner">
           <span className="ps-trial-icon">⏱</span>
           <div>
-            <strong>Essai gratuit — {daysLeft} jour{daysLeft > 1 ? 's' : ''} restant{daysLeft > 1 ? 's' : ''}</strong>
-            <span> · Ta carte sera débitée à la fin du trial</span>
+            <strong>Free trial — {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
+            <span> · Your card will be charged at the end of the trial</span>
           </div>
           {user.stripeCustomerId && (
             <button className="ps-manage-btn" onClick={handleManage} disabled={portalLoading}>
-              {portalLoading ? '…' : 'Gérer ma CB'}
+              {portalLoading ? '…' : 'Manage my card'}
             </button>
           )}
         </div>
@@ -485,8 +485,8 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         <div className="ps-alert-banner">
           <span>⚠️</span>
           <div>
-            <strong>Paiement requis</strong>
-            <span> — Ton essai est terminé. Choisis un plan pour continuer.</span>
+            <strong>Payment required</strong>
+            <span> — Your trial has ended. Choose a plan to continue.</span>
           </div>
         </div>
       )}
@@ -496,28 +496,28 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
           <>
             <div className="ps-step">
               <div className="ps-step-dot" />
-              Étape 2 sur 2 — Choisir ton plan
+              Step 2 of 2 — Choose your plan
             </div>
             <h1 className="ps-title">
-              Commence ton <span>essai gratuit</span><br />de 14 jours
+              Start your <span>free trial</span><br />of 14 days
             </h1>
             <p className="ps-subtitle">
-              Entre ta carte maintenant, rien n'est débité pendant 14 jours.
+              Enter your card now, nothing is charged for 14 days.
             </p>
           </>
         ) : (
           <>
             <h1 className="ps-title">
-              {needsPayment ? 'Choisis ton plan' : <>Ton <span>abonnement</span></>}
+              {needsPayment ? 'Choose your plan' : <>Your <span>subscription</span></>}
             </h1>
             <p className="ps-subtitle">
               {subStatus === 'active'
-                ? `Plan actif · ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`
+                ? `Active plan · ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`
                 : isTrialing
-                ? `Essai gratuit en cours · ${daysLeft}j restants`
+                ? `Free trial in progress · ${daysLeft}d remaining`
                 : subStatus === 'canceled'
-                ? 'Abonnement annulé — Réactive un plan'
-                : 'Gère ou change ton abonnement ci-dessous'}
+                ? 'Subscription canceled — Reactivate a plan'
+                : 'Manage or change your subscription below'}
             </p>
           </>
         )}
@@ -525,12 +525,12 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
 
       <div className="ps-toggle">
         <button className={`ps-toggle-btn ${billing === 'monthly' ? 'active' : ''}`} onClick={() => setBilling('monthly')}>
-          Mensuel
+          Monthly
         </button>
         <button className={`ps-toggle-btn ${billing === 'annual' ? 'active' : ''}`} onClick={() => setBilling('annual')}>
-          Annuel
+          Annual
         </button>
-        {billing === 'annual' && <span className="ps-toggle-badge">-30% sur Pro & Elite 🎉</span>}
+        {billing === 'annual' && <span className="ps-toggle-badge">-30% on Pro & Elite 🎉</span>}
       </div>
 
       <div className="ps-grid">
@@ -544,11 +544,11 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
             >
               {isCurrent && (
                 <div className="ps-current-badge">
-                  {isTrialing ? `⏱ Essai · ${daysLeft}j restants` : '✦ Plan actuel'}
+                  {isTrialing ? `⏱ Trial · ${daysLeft}d remaining` : '✦ Current plan'}
                 </div>
               )}
               {plan.popular && !isCurrent && (
-                <div className="ps-popular-badge">✦ Le plus populaire</div>
+                <div className="ps-popular-badge">✦ Most popular</div>
               )}
               <div className="ps-card-glow" />
               <span className="ps-card-icon">{plan.icon}</span>
@@ -561,17 +561,17 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                   <span className="ps-price-amount">
                     {billing === 'monthly' ? plan.monthly : plan.annual}
                   </span>
-                  <span className="ps-price-period">/mois</span>
+                  <span className="ps-price-period">/mo</span>
                 </div>
                 {billing === 'annual' && !plan.noAnnualDiscount && (
                   <div className="ps-price-annual">
-                    Facturé ${plan.annual * 12}/an —{' '}
-                    <span>économise ${(plan.monthly - plan.annual) * 12}/an</span>
+                    Billed ${plan.annual * 12}/yr —{' '}
+                    <span>save ${(plan.monthly - plan.annual) * 12}/yr</span>
                   </div>
                 )}
                 {billing === 'annual' && plan.noAnnualDiscount && (
                   <div className="ps-price-annual">
-                    Facturé ${plan.annual * 12}/an
+                    Billed ${plan.annual * 12}/yr
                   </div>
                 )}
               </div>
@@ -587,11 +587,11 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
 
               {isCurrent && user?.stripeCustomerId ? (
                 <button className="ps-cta ps-cta-manage" onClick={handleManage} disabled={portalLoading}>
-                  {portalLoading ? '⏳ Chargement...' : '⚙️ Gérer mon abonnement'}
+                  {portalLoading ? '⏳ Loading...' : '⚙️ Manage my subscription'}
                 </button>
               ) : isCurrent ? (
                 <button className="ps-cta ps-cta-current" disabled>
-                  ✦ Plan actuel
+                  ✦ Current plan
                 </button>
               ) : (
                 <button
@@ -599,7 +599,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                   disabled={!!loading}
                   onClick={() => handleSelect(plan)}
                 >
-                  {loading === plan.id ? '⏳ Chargement...' : `Passer à ${plan.name}`}
+                  {loading === plan.id ? '⏳ Loading...' : `Upgrade to ${plan.name}`}
                 </button>
               )}
             </div>
@@ -608,9 +608,9 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       </div>
 
       <div className="ps-trial-note">
-        🔒 <span>Paiement 100% sécurisé par Stripe</span>
-        {' · '}Annulation en 1 clic
-        {' · '}14 jours gratuits 
+        🔒 <span>100% secure payment by Stripe</span>
+        {' · '}Cancel in 1 click
+        {' · '}14 days free 
       </div>
     </div>
   );

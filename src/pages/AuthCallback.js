@@ -1,6 +1,6 @@
 // src/pages/AuthCallback.js
-// Gère les redirections depuis les emails Supabase
-// (confirmation compte, reset password)
+// Handles redirects from Supabase emails
+// (account confirmation, password reset)
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -32,7 +32,7 @@ export default function AuthCallback() {
         const accessToken = hash.get('access_token');
         const refreshToken = hash.get('refresh_token');
 
-        // ── Cas 1 : token_hash (nouveau flow Supabase) ────────────────────
+        // ── Case 1: token_hash (new Supabase flow) ────────────────────
         if (token_hash && type) {
           const { error } = await supabase.auth.verifyOtp({
             token_hash,
@@ -46,15 +46,15 @@ export default function AuthCallback() {
           }
 
           if (type === 'recovery') {
-            setStatus('reset'); // Afficher le formulaire de reset
+            setStatus('reset'); // Show reset form
           } else {
-            setStatus('success'); // Confirmation email OK
+            setStatus('success'); // Email confirmation OK
             setTimeout(() => { window.location.href = '/'; }, 2500);
           }
           return;
         }
 
-        // ── Cas 2 : access_token dans le hash (ancien flow) ───────────────
+        // ── Case 2: access_token in hash (old flow) ───────────────
         if (accessToken && refreshToken) {
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -72,7 +72,7 @@ export default function AuthCallback() {
           return;
         }
 
-        // Aucun token trouvé
+        // No token found
         setStatus('error');
       } catch (err) {
         console.error('AuthCallback error:', err);
@@ -88,11 +88,11 @@ export default function AuthCallback() {
     setError('');
 
     if (newPassword.length < 8) {
-      setError('Le mot de passe doit faire au moins 8 caractères.');
+      setError('Password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirm) {
-      setError('Les mots de passe ne correspondent pas.');
+      setError('Passwords do not match.');
       return;
     }
 
@@ -193,39 +193,39 @@ export default function AuthCallback() {
       `}</style>
 
       <div style={s.card}>
-        {/* ── Chargement ── */}
+        {/* ── Loading ── */}
         {status === 'loading' && (
           <>
             <div style={s.spinner} />
-            <div style={s.title}>Vérification en cours…</div>
-            <div style={s.subtitle}>Merci de patienter quelques secondes.</div>
+            <div style={s.title}>Verifying…</div>
+            <div style={s.subtitle}>Please wait a few seconds.</div>
           </>
         )}
 
-        {/* ── Succès ── */}
+        {/* ── Success ── */}
         {status === 'success' && (
           <>
             <span style={s.icon}>✅</span>
-            <div style={s.title}>C'est confirmé !</div>
+            <div style={s.title}>Confirmed!</div>
             <div style={s.subtitle}>
-              Ton compte est activé. Tu vas être redirigé vers MarketFlow Journal…
+              Your account is activated. You will be redirected to MarketFlow Journal…
             </div>
             <button style={s.btn} onClick={() => window.location.href = '/'}>
-              Accéder à l'app →
+              Go to the app →
             </button>
           </>
         )}
 
-        {/* ── Erreur ── */}
+        {/* ── Error ── */}
         {status === 'error' && (
           <>
             <span style={s.icon}>❌</span>
-            <div style={s.title}>Lien invalide</div>
+            <div style={s.title}>Invalid link</div>
             <div style={s.subtitle}>
-              Ce lien a expiré ou est invalide. Essaie de te reconnecter ou de redemander un email.
+              This link has expired or is invalid. Try logging in again or requesting a new email.
             </div>
             <button style={s.btn} onClick={() => window.location.href = '/'}>
-              Retour à l'accueil
+              Back to home
             </button>
           </>
         )}
@@ -234,13 +234,13 @@ export default function AuthCallback() {
         {status === 'reset' && (
           <>
             <span style={s.icon}>🔐</span>
-            <div style={s.title}>Nouveau mot de passe</div>
-            <div style={s.subtitle}>Choisis un mot de passe sécurisé pour ton compte.</div>
+            <div style={s.title}>New password</div>
+            <div style={s.subtitle}>Choose a secure password for your account.</div>
             <form onSubmit={handleResetPassword} style={{ textAlign: 'left' }}>
               <input
                 style={s.input}
                 type="password"
-                placeholder="Nouveau mot de passe"
+                placeholder="New password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 required
@@ -249,14 +249,14 @@ export default function AuthCallback() {
               <input
                 style={s.input}
                 type="password"
-                placeholder="Confirmer le mot de passe"
+                placeholder="Confirm password"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
                 required
               />
               {error && <div style={s.error}>⚠️ {error}</div>}
               <button style={s.btn} type="submit" disabled={saving}>
-                {saving ? '⏳ Enregistrement…' : 'Enregistrer le mot de passe'}
+                {saving ? '⏳ Saving…' : 'Save password'}
               </button>
             </form>
           </>

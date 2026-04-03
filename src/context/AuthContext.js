@@ -72,7 +72,7 @@ export function AuthProvider({ children }) {
         if (event === 'INITIAL_SESSION') return;
         if (!mounted) return;
 
-        // Détecter nouvelle inscription OAuth (compte créé il y a moins de 15s)
+        // Detect new OAuth signup (account created less than 15s ago)
         if (event === 'SIGNED_IN' && session?.user) {
           const createdAt = new Date(session.user.created_at).getTime();
           const isNewUser = Date.now() - createdAt < 15000;
@@ -109,7 +109,7 @@ export function AuthProvider({ children }) {
     setAuthLoading(false);
     if (error) { setError(translateError(error.message)); return { success: false }; }
     if (data?.user && data.user.identities?.length === 0) {
-      setError('Un compte existe déjà avec cet email.');
+      setError('An account already exists with this email.');
       return { success: false };
     }
     return { success: true, needsConfirmation: !data.session };
@@ -216,20 +216,20 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth doit être utilisé dans AuthProvider');
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
 
 function translateError(msg) {
-  if (!msg) return 'Une erreur est survenue.';
-  if (msg.includes('Invalid login credentials'))        return 'Email ou mot de passe incorrect.';
-  if (msg.includes('Email not confirmed'))              return 'Confirme ton email avant de te connecter.';
-  if (msg.includes('User already registered'))          return 'Un compte existe déjà avec cet email.';
-  if (msg.includes('Password should be at least'))      return 'Le mot de passe doit contenir au moins 6 caractères.';
-  if (msg.includes('Unable to validate email address')) return 'Adresse email invalide.';
-  if (msg.includes('Email rate limit exceeded'))        return 'Trop de tentatives. Attends quelques minutes.';
-  if (msg.includes('Invalid email'))                    return 'Adresse email invalide.';
-  if (msg.includes('signup is disabled'))               return 'Les inscriptions sont temporairement désactivées.';
-  if (msg.includes('network'))                          return 'Erreur réseau. Vérifie ta connexion.';
+  if (!msg) return 'An error occurred.';
+  if (msg.includes('Invalid login credentials'))        return 'Incorrect email or password.';
+  if (msg.includes('Email not confirmed'))              return 'Confirm your email before logging in.';
+  if (msg.includes('User already registered'))          return 'An account already exists with this email.';
+  if (msg.includes('Password should be at least'))      return 'Password must contain at least 6 characters.';
+  if (msg.includes('Unable to validate email address')) return 'Invalid email address.';
+  if (msg.includes('Email rate limit exceeded'))        return 'Too many attempts. Wait a few minutes.';
+  if (msg.includes('Invalid email'))                    return 'Invalid email address.';
+  if (msg.includes('signup is disabled'))               return 'Sign-ups are temporarily disabled.';
+  if (msg.includes('network'))                          return 'Network error. Check your connection.';
   return msg;
 }

@@ -3,29 +3,29 @@ import { supabase } from '../lib/supabase';
 
 const QUESTIONS = {
   experience: {
-    label: 'Niveau de trading',
+    label: 'Trading Level',
     emoji: '📊',
     options: {
-      beginner:     { label: 'Débutant',       emoji: '🌱' },
-      intermediate: { label: 'Intermédiaire',  emoji: '📈' },
-      advanced:     { label: 'Avancé',         emoji: '🎯' },
-      professional: { label: 'Professionnel',  emoji: '👑' },
+      beginner:     { label: 'Beginner',       emoji: '🌱' },
+      intermediate: { label: 'Intermediate',  emoji: '📈' },
+      advanced:     { label: 'Advanced',         emoji: '🎯' },
+      professional: { label: 'Professional',  emoji: '👑' },
     },
   },
   market: {
-    label: 'Marchés tradés',
+    label: 'Traded Markets',
     emoji: '🌍',
     options: {
       forex:   { label: 'Forex',    emoji: '💱' },
       indices: { label: 'Indices',  emoji: '📉' },
       crypto:  { label: 'Crypto',   emoji: '₿'  },
-      stocks:  { label: 'Actions',  emoji: '🏦' },
+      stocks:  { label: 'Stocks',  emoji: '🏦' },
       futures: { label: 'Futures',  emoji: '⚡' },
       options: { label: 'Options',  emoji: '🔧' },
     },
   },
   style: {
-    label: 'Style de trading',
+    label: 'Trading Style',
     emoji: '⏱',
     options: {
       scalping:   { label: 'Scalping',     emoji: '⚡' },
@@ -35,17 +35,17 @@ const QUESTIONS = {
     },
   },
   goal: {
-    label: 'Objectif principal',
+    label: 'Main Goal',
     emoji: '🎯',
     options: {
-      improve:    { label: 'Améliorer performances', emoji: '🚀' },
-      prop:       { label: 'Challenge prop firm',    emoji: '🏆' },
-      consistent: { label: 'Devenir consistent',     emoji: '🎯' },
-      manage:     { label: 'Gérer plusieurs comptes',emoji: '💼' },
+      improve:    { label: 'Improve Performance', emoji: '🚀' },
+      prop:       { label: 'Prop Firm Challenge',    emoji: '🏆' },
+      consistent: { label: 'Become Consistent',     emoji: '🎯' },
+      manage:     { label: 'Manage Multiple Accounts',emoji: '💼' },
     },
   },
   platform: {
-    label: 'Plateforme utilisée',
+    label: 'Platform Used',
     emoji: '💻',
     options: {
       mt4:         { label: 'MetaTrader 4',  emoji: '📟' },
@@ -53,7 +53,7 @@ const QUESTIONS = {
       ctrader:     { label: 'cTrader',       emoji: '💹' },
       tradingview: { label: 'TradingView',   emoji: '📊' },
       ninjatrader: { label: 'NinjaTrader',   emoji: '🥷' },
-      other:       { label: 'Autre',         emoji: '🔧' },
+      other:       { label: 'Other',         emoji: '🔧' },
     },
   },
 };
@@ -115,7 +115,7 @@ export default function OnboardingStats({ onBack }) {
         const responses = data.map(r => r.onboarding).filter(Boolean);
         setTotal(responses.length);
 
-        // Calculer les stats pour chaque question
+        // Calculate stats for each question
         const computed = {};
         Object.keys(QUESTIONS).forEach(qKey => {
           const q = QUESTIONS[qKey];
@@ -132,7 +132,7 @@ export default function OnboardingStats({ onBack }) {
             }
           });
 
-          // Trier du + au - fréquent
+          // Sort from most to least frequent
           computed[qKey] = Object.entries(counts)
             .map(([id, count]) => ({
               id,
@@ -184,13 +184,13 @@ export default function OnboardingStats({ onBack }) {
           borderRadius: 10, color: '#7A90B8', cursor: 'pointer',
           padding: '8px 16px', fontSize: 13, fontWeight: 600,
           fontFamily: 'inherit', transition: 'all 0.18s',
-        }}>← Retour</button>
+        }}>← Back</button>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>
-            📋 Données Onboarding
+            📋 Onboarding Data
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#3A5070' }}>
-            {loading ? 'Chargement...' : `${total} réponse${total > 1 ? 's' : ''} collectée${total > 1 ? 's' : ''}`}
+            {loading ? 'Loading...' : `${total} response${total > 1 ? 's' : ''} collected`}
           </p>
         </div>
       </div>
@@ -198,13 +198,13 @@ export default function OnboardingStats({ onBack }) {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: '#3A5070' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-          Chargement des données...
+          Loading data...
         </div>
       ) : total === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: '#3A5070' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
-          <div style={{ fontSize: 16, color: '#7A90B8', fontWeight: 600 }}>Aucune donnée onboarding pour l'instant</div>
-          <div style={{ fontSize: 13, marginTop: 8 }}>Les réponses apparaîtront ici après les premières inscriptions.</div>
+          <div style={{ fontSize: 16, color: '#7A90B8', fontWeight: 600 }}>No onboarding data yet</div>
+          <div style={{ fontSize: 13, marginTop: 8 }}>Responses will appear here after the first sign-ups.</div>
         </div>
       ) : (
         <div className="os-grid" style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
@@ -226,7 +226,7 @@ export default function OnboardingStats({ onBack }) {
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{q.label}</div>
                     {top && (
                       <div style={{ fontSize: 11, color: '#3A5070', marginTop: 2 }}>
-                        Top : <span style={{ color: COLORS[0], fontWeight: 600 }}>{top.emoji} {top.label}</span>
+                        Top: <span style={{ color: COLORS[0], fontWeight: 600 }}>{top.emoji} {top.label}</span>
                         <span style={{ color: '#2A4060' }}> ({qTotal > 0 ? Math.round((top.count / qTotal) * 100) : 0}%)</span>
                       </div>
                     )}

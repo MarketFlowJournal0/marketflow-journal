@@ -29,7 +29,7 @@ export function TradingProvider({ children }) {
     fetchTrades().finally(() => clearTimeout(t));
   }, [fetchTrades]);
 
-  // ── addTrade — mappe tous les champs vers les colonnes Supabase ──────
+  // ── addTrade — maps all fields to Supabase columns ──────
   const addTrade = useCallback(async (tradeData) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -49,7 +49,7 @@ export function TradingProvider({ children }) {
       const qty        = Number(tradeData.quantity    ?? tradeData.size  ?? tradeData.lots ?? 0);
       const openDate   = tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0];
 
-      // Déterminer le statut
+      // Determine status
       const status = pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE';
 
       const payload = {
@@ -69,7 +69,7 @@ export function TradingProvider({ children }) {
         emotion_during:     tradeData.emotion_during  || '',
         emotion_after:      tradeData.emotion_after   || '',
         psychological_tags: tradeData.psychological_tags || tradeData.tags || null,
-        // Nouvelles colonnes
+        // New columns
         bias:               tradeData.bias        || null,
         setup:              tradeData.setup       || null,
         news_impact:        tradeData.newsImpact  || tradeData.news_impact || null,
@@ -148,13 +148,13 @@ export function TradingProvider({ children }) {
       byDay[d] += (t.profit_loss || 0);
     });
     const dailyPnl = Object.entries(byDay).slice(-7).map(([d, v]) => ({
-      d: new Date(d).toLocaleDateString('fr-FR',{weekday:'short'}),
+      d: new Date(d).toLocaleDateString('en-US',{weekday:'short'}),
       v: Math.round(v), w: v >= 0
     }));
 
     const sessionMap = {};
     closed.forEach(t => {
-      const s = t.session || 'Autre';
+      const s = t.session || 'Other';
       if (!sessionMap[s]) sessionMap[s] = { s, tp:0, sl:0, be:0, pnl:0 };
       const pnlT = t.profit_loss || 0;
       if (pnlT > 0) sessionMap[s].tp++;
@@ -167,7 +167,7 @@ export function TradingProvider({ children }) {
     const pairMap = {};
     const COLORS = ['#06E6FF','#00F5D4','#FFD700','#B06EFF','#FF4DC4','#4D7CFF'];
     closed.forEach(t => {
-      const p = t.symbol || 'Autre';
+      const p = t.symbol || 'Other';
       if (!pairMap[p]) pairMap[p] = { p, n:0, wins:0, pnl:0 };
       pairMap[p].n++;
       if ((t.profit_loss||0) > 0) pairMap[p].wins++;
@@ -201,7 +201,7 @@ export function TradingProvider({ children }) {
       if (curL > lStreak) lStreak = curL;
     });
 
-    const heatmap = ['Lun','Mar','Mer','Jeu','Ven'].map(day => {
+    const heatmap = ['Mon','Tue','Wed','Thu','Fri'].map(day => {
       const h = {};
       ['8h','10h','12h','14h','16h'].forEach(hr => { h[hr] = 0; });
       return { day, h };
@@ -222,7 +222,7 @@ export function TradingProvider({ children }) {
       { m:'Risk/Rew.',  v: avgLoss > 0 ? Math.min(100, Math.round((avgWin/avgLoss)*30)) : 0 },
       { m:'Sharpe',     v: Math.min(100, Math.round(Math.abs(pnl / (avgLoss||1)) * 5)) },
       { m:'Discipline', v: Math.min(100, Math.round((1 - lStreak/10)*100)) },
-      { m:'Constance',  v: closed.length >= 10 ? Math.min(100, Math.round(winRate)) : Math.round(closed.length * 10) },
+      { m:'Consistency',v: closed.length >= 10 ? Math.min(100, Math.round(winRate)) : Math.round(closed.length * 10) },
     ];
 
     return {
@@ -316,7 +316,7 @@ function detectSession() {
 function fmtDate(d) {
   if (!d) return '';
   const dt = new Date(d);
-  return dt.toLocaleDateString('fr-FR',{month:'short',day:'numeric'});
+  return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 
 function fmt(n) {

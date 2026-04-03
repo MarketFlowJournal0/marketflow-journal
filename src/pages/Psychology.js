@@ -1,15 +1,15 @@
 /*
 ╔══════════════════════════════════════════════════════════════════════╗
-║   🧠 MARKETFLOW — PSYCHOLOGIE & MENTAL v3.0 ULTRA                   ║
-║   ✦ Score psychologique composite (8 dimensions pondérées)         ║
-║   ✦ 30 sessions de démo avec données riches                        ║
-║   ✦ Gauge score animée + évolution temporelle                      ║
-║   ✦ Radar 7 axes avec comparaison multi-sessions                   ║
-║   ✦ Corrélation score/P&L + heatmap calendrier                     ║
-║   ✦ Distribution émotions + impact P&L détaillé                    ║
-║   ✦ Patterns comportementaux auto-détectés                         ║
-║   ✦ Performance par tranche de score                               ║
-║   ✦ Journal sessions accordéon premium                             ║
+║   🧠 MARKETFLOW — PSYCHOLOGY & MENTAL v3.0 ULTRA                    ║
+║   ✦ Composite psychological score (8 weighted dimensions)          ║
+║   ✦ 30 demo sessions with rich data                                ║
+║   ✦ Animated score gauge + time evolution                          ║
+║   ✦ 7-axis radar with multi-session comparison                     ║
+║   ✦ Score/P&L correlation + calendar heatmap                       ║
+║   ✦ Emotion distribution + detailed P&L impact                     ║
+║   ✦ Auto-detected behavioral patterns                              ║
+║   ✦ Performance by score range                                     ║
+║   ✦ Premium accordion session journal                              ║
 ╚══════════════════════════════════════════════════════════════════════╝
 */
 
@@ -80,27 +80,27 @@ const ST=({children,sub,color=C.cyan,icon,mb=14})=>(
 );
 
 // ═══════════════════════════════════════════════════════════════════
-// 📊 DATA RICHE — 30 sessions
+// 📊 RICH DATA — 30 sessions
 // ═══════════════════════════════════════════════════════════════════
 const MOODS=[
   {id:'excellent',label:'Excellent',emoji:'🔥',color:C.green},
-  {id:'bien',     label:'Bien',     emoji:'😊',color:C.cyan},
-  {id:'neutre',   label:'Neutre',   emoji:'😐',color:C.warn},
-  {id:'difficile',label:'Difficile',emoji:'😔',color:C.orange},
+  {id:'bien',     label:'Good',       emoji:'😊',color:C.cyan},
+  {id:'neutre',   label:'Neutral',    emoji:'😐',color:C.warn},
+  {id:'difficile',label:'Difficult',  emoji:'😔',color:C.orange},
   {id:'terrible', label:'Terrible', emoji:'😤',color:C.danger},
 ];
-const DAYS_FR=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const DAYS_FR=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const AXES7=[
-  {key:'discipline', label:'Discipline',   color:C.cyan,   weight:0.18,desc:'Respect des règles'},
-  {key:'patience',   label:'Patience',     color:C.green,  weight:0.14,desc:'Attente du bon moment'},
-  {key:'confidence', label:'Confiance',    color:C.purple, weight:0.12,desc:'Estime de soi dans le trade'},
-  {key:'riskCtrl',   label:'Risk Control', color:C.teal,   weight:0.18,desc:'Gestion de la taille'},
-  {key:'consistency',label:'Consistency',  color:C.warn,   weight:0.14,desc:'Régularité du process'},
-  {key:'emotional',  label:'Émot. Control',color:C.pink,   weight:0.14,desc:'Contrôle des émotions'},
-  {key:'planFollow', label:'Plan Follow',  color:C.blue,   weight:0.10,desc:'Suivi du plan de trading'},
+  {key:'discipline', label:'Discipline',   color:C.cyan,   weight:0.18,desc:'Rule adherence'},
+  {key:'patience',   label:'Patience',     color:C.green,  weight:0.14,desc:'Waiting for the right moment'},
+  {key:'confidence', label:'Confidence',   color:C.purple, weight:0.12,desc:'Self-esteem in trading'},
+  {key:'riskCtrl',   label:'Risk Control', color:C.teal,   weight:0.18,desc:'Position size management'},
+  {key:'consistency',label:'Consistency',  color:C.warn,   weight:0.14,desc:'Process consistency'},
+  {key:'emotional',  label:'Emot. Control',color:C.pink,   weight:0.14,desc:'Emotional control'},
+  {key:'planFollow', label:'Plan Follow',  color:C.blue,   weight:0.10,desc:'Trading plan adherence'},
 ];
 
-// Score psychologique composite (pondéré)
+// Composite psychological score (weighted)
 const calcPsych=s=>{
   if(!s)return 0;
   const moodScore={excellent:100,bien:80,neutre:60,difficile:35,terrible:15}[s.mood]||50;
@@ -109,48 +109,48 @@ const calcPsych=s=>{
     return acc+v*ax.weight;
   },0)/AXES7.reduce((a,ax)=>a+ax.weight,0);
   const physScore=(((s.sleep||5)/10)*100*0.5+((s.energy||5)/10)*100*0.5);
-  // Pondération: humeur 20%, axes 55%, physique 15%, routine 10%
+  // Weighting: mood 20%, axes 55%, physical 15%, routine 10%
   const routineBonus=(s.routine?10:0);
   const raw=moodScore*0.20+axeScore*0.55+physScore*0.15+routineBonus;
   return Math.min(100,Math.max(0,Math.round(raw)));
 };
 
 const sColor=s=>s>=75?C.green:s>=60?C.cyan:s>=45?C.warn:s>=30?C.orange:C.danger;
-const sLabel=s=>s>=80?'Elite':s>=70?'Excellent':s>=60?'Solide':s>=50?'Correct':s>=40?'Fragile':s>=30?'Difficile':'Critique';
+const sLabel=s=>s>=80?'Elite':s>=70?'Excellent':s>=60?'Solid':s>=50?'Fair':s>=40?'Fragile':s>=30?'Difficult':'Critical';
 const sEmoji=s=>s>=80?'🏆':s>=70?'🔥':s>=60?'😊':s>=50?'😐':s>=40?'😔':'😤';
 
-// 30 sessions riches
+// 30 rich sessions
 const DEMO=[
-  {id:1, date:'2025-11-03',mood:'bien',     sleep:7,energy:7,discipline:72,patience:68,confidence:75,riskCtrl:70,consistency:68,emotional:70,planFollow:76,pnl:340, trades:3,wins:2,stressors:'',     objectives:'RR 1:2 minimum',    routine:true, maxTrades:4,maxLoss:120,notes:'Bonne session calme.'},
-  {id:2, date:'2025-11-04',mood:'excellent',sleep:9,energy:9,discipline:92,patience:88,confidence:94,riskCtrl:90,consistency:88,emotional:92,planFollow:96,pnl:2100,trades:2,wins:2,stressors:'',     objectives:'Setups A+ only',    routine:true, maxTrades:3,maxLoss:200,notes:'Parfait, 2/2.'},
-  {id:3, date:'2025-11-05',mood:'neutre',   sleep:6,energy:6,discipline:58,patience:52,confidence:60,riskCtrl:55,consistency:56,emotional:52,planFollow:62,pnl:-85, trades:3,wins:1,stressors:'Fatigue',objectives:'Limiter overtrade', routine:false,maxTrades:3,maxLoss:100,notes:'Sortie prématurée sur 2 trades.'},
-  {id:4, date:'2025-11-06',mood:'difficile',sleep:5,energy:5,discipline:38,patience:32,confidence:42,riskCtrl:36,consistency:40,emotional:34,planFollow:44,pnl:-320,trades:5,wins:1,stressors:'Stress perso', objectives:'Ne pas revenge', routine:false,maxTrades:2,maxLoss:80, notes:'Revenge trading x3. Stop loss non respecté.'},
-  {id:5, date:'2025-11-10',mood:'bien',     sleep:8,energy:8,discipline:78,patience:74,confidence:80,riskCtrl:76,consistency:72,emotional:76,planFollow:82,pnl:620, trades:3,wins:2,stressors:'',     objectives:'Scalp propre',      routine:true, maxTrades:4,maxLoss:150,notes:'Très bonne patience sur les entries.'},
-  {id:6, date:'2025-11-11',mood:'excellent',sleep:8,energy:9,discipline:88,patience:86,confidence:90,riskCtrl:86,consistency:84,emotional:88,planFollow:92,pnl:1750,trades:3,wins:3,stressors:'',     objectives:'Journée swing',     routine:true, maxTrades:3,maxLoss:180,notes:'3/3. Journée parfaite.'},
-  {id:7, date:'2025-11-12',mood:'neutre',   sleep:6,energy:7,discipline:62,patience:58,confidence:64,riskCtrl:60,consistency:58,emotional:60,planFollow:66,pnl:110, trades:2,wins:1,stressors:'Nuit courte',objectives:'Focus 2 trades max', routine:true,maxTrades:2,maxLoss:80,notes:'Respecté les limites malgré la fatigue.'},
-  {id:8, date:'2025-11-13',mood:'bien',     sleep:7,energy:8,discipline:76,patience:72,confidence:78,riskCtrl:74,consistency:70,emotional:74,planFollow:80,pnl:480, trades:4,wins:3,stressors:'',     objectives:'Tendance longue',    routine:true, maxTrades:4,maxLoss:150,notes:'Bon suivi de tendance.'},
-  {id:9, date:'2025-11-17',mood:'terrible', sleep:4,energy:4,discipline:28,patience:24,confidence:30,riskCtrl:26,consistency:28,emotional:22,planFollow:32,pnl:-450,trades:6,wins:1,stressors:'Problème perso grave',objectives:'',routine:false,maxTrades:2,maxLoss:80,notes:'Aurais dû ne pas trader. Décision impulsive.'},
-  {id:10,date:'2025-11-18',mood:'neutre',   sleep:6,energy:6,discipline:55,patience:50,confidence:58,riskCtrl:52,consistency:54,emotional:50,planFollow:60,pnl:60,  trades:1,wins:1,stressors:'',     objectives:'Un seul trade',      routine:true, maxTrades:1,maxLoss:60, notes:'Sage décision après hier.'},
-  {id:11,date:'2025-11-19',mood:'bien',     sleep:7,energy:7,discipline:74,patience:70,confidence:76,riskCtrl:72,consistency:68,emotional:72,planFollow:78,pnl:390, trades:3,wins:2,stressors:'',     objectives:'Back to basics',     routine:true, maxTrades:4,maxLoss:120,notes:'Bonne reprise.'},
-  {id:12,date:'2025-11-20',mood:'excellent',sleep:9,energy:8,discipline:90,patience:86,confidence:92,riskCtrl:88,consistency:86,emotional:90,planFollow:94,pnl:1920,trades:3,wins:3,stressors:'',     objectives:'Confirmation trend', routine:true, maxTrades:3,maxLoss:200,notes:'Excellent timing sur toutes les entries.'},
-  {id:13,date:'2025-11-24',mood:'bien',     sleep:7,energy:8,discipline:80,patience:76,confidence:82,riskCtrl:78,consistency:74,emotional:78,planFollow:84,pnl:720, trades:3,wins:2,stressors:'',     objectives:'Continuité semaine', routine:true, maxTrades:4,maxLoss:150,notes:'Maintenu le niveau.'},
-  {id:14,date:'2025-11-25',mood:'difficile',sleep:5,energy:5,discipline:44,patience:38,confidence:46,riskCtrl:42,consistency:44,emotional:40,planFollow:48,pnl:-180,trades:4,wins:1,stressors:'Fatigue accum.', objectives:'Réduire taille',routine:false,maxTrades:2,maxLoss:80,notes:'Aurais dû réduire dès le matin.'},
-  {id:15,date:'2025-11-26',mood:'neutre',   sleep:6,energy:6,discipline:60,patience:56,confidence:62,riskCtrl:58,consistency:58,emotional:56,planFollow:64,pnl:150, trades:2,wins:1,stressors:'',     objectives:'Récupération',       routine:true, maxTrades:2,maxLoss:80, notes:'Retour progressif.'},
-  {id:16,date:'2025-12-01',mood:'excellent',sleep:8,energy:9,discipline:86,patience:84,confidence:88,riskCtrl:84,consistency:80,emotional:86,planFollow:90,pnl:1640,trades:3,wins:3,stressors:'',     objectives:'Semaine de reprise', routine:true, maxTrades:4,maxLoss:200,notes:'Parfaite semaine de retour.'},
-  {id:17,date:'2025-12-02',mood:'bien',     sleep:8,energy:8,discipline:78,patience:74,confidence:80,riskCtrl:76,consistency:72,emotional:76,planFollow:82,pnl:560, trades:3,wins:2,stressors:'',     objectives:'Consolider gains',   routine:true, maxTrades:3,maxLoss:150,notes:'Géré proprement.'},
-  {id:18,date:'2025-12-03',mood:'neutre',   sleep:6,energy:7,discipline:64,patience:60,confidence:66,riskCtrl:62,consistency:62,emotional:62,planFollow:68,pnl:200, trades:2,wins:1,stressors:'',     objectives:'Limiter risque',     routine:true, maxTrades:2,maxLoss:100,notes:'Conservateur mais ok.'},
-  {id:19,date:'2025-12-04',mood:'bien',     sleep:7,energy:8,discipline:76,patience:72,confidence:78,riskCtrl:74,consistency:70,emotional:74,planFollow:80,pnl:480, trades:3,wins:2,stressors:'',     objectives:'Entrées précises',   routine:true, maxTrades:4,maxLoss:130,notes:'Bonne lecture du marché.'},
-  {id:20,date:'2025-12-05',mood:'excellent',sleep:9,energy:9,discipline:94,patience:90,confidence:96,riskCtrl:92,consistency:90,emotional:94,planFollow:98,pnl:2850,trades:4,wins:4,stressors:'',     objectives:'Journée record',     routine:true, maxTrades:5,maxLoss:250,notes:'4/4 ! Meilleure journée de l\'année.'},
-  {id:21,date:'2025-12-08',mood:'difficile',sleep:5,energy:5,discipline:42,patience:36,confidence:44,riskCtrl:40,consistency:42,emotional:36,planFollow:46,pnl:-240,trades:4,wins:1,stressors:'Stress trav.', objectives:'Max 2 trades',routine:false,maxTrades:2,maxLoss:80,notes:'Respecté partiellement, 2 trades de trop.'},
-  {id:22,date:'2025-12-09',mood:'bien',     sleep:7,energy:7,discipline:72,patience:68,confidence:74,riskCtrl:70,consistency:66,emotional:70,planFollow:76,pnl:310, trades:2,wins:2,stressors:'',     objectives:'Retour propre',      routine:true, maxTrades:3,maxLoss:100,notes:'Bonne récupération.'},
-  {id:23,date:'2025-12-10',mood:'bien',     sleep:8,energy:8,discipline:80,patience:76,confidence:82,riskCtrl:78,consistency:74,emotional:78,planFollow:84,pnl:680, trades:3,wins:2,stressors:'',     objectives:'Suivre la tendance', routine:true, maxTrades:4,maxLoss:150,notes:'Bon trend following.'},
-  {id:24,date:'2025-12-11',mood:'excellent',sleep:8,energy:9,discipline:88,patience:86,confidence:90,riskCtrl:86,consistency:84,emotional:88,planFollow:92,pnl:1580,trades:3,wins:3,stressors:'',     objectives:'Semaine forte',      routine:true, maxTrades:4,maxLoss:200,notes:'Très belle semaine.'},
-  {id:25,date:'2025-12-15',mood:'neutre',   sleep:6,energy:6,discipline:62,patience:58,confidence:64,riskCtrl:60,consistency:60,emotional:60,planFollow:66,pnl:80,  trades:2,wins:1,stressors:'Vacances proches',objectives:'Prudence',routine:true,maxTrades:2,maxLoss:80,notes:'Distrait par les vacances.'},
-  {id:26,date:'2025-12-16',mood:'neutre',   sleep:7,energy:7,discipline:66,patience:62,confidence:68,riskCtrl:64,consistency:62,emotional:64,planFollow:70,pnl:220, trades:2,wins:2,stressors:'',     objectives:'Focus 2 trades',     routine:true, maxTrades:2,maxLoss:80, notes:'Discipliné dans la zone de prudence.'},
-  {id:27,date:'2026-01-05',mood:'bien',     sleep:8,energy:8,discipline:76,patience:72,confidence:78,riskCtrl:74,consistency:70,emotional:74,planFollow:80,pnl:420, trades:3,wins:2,stressors:'',     objectives:'Reprise janvier',    routine:true, maxTrades:4,maxLoss:130,notes:'Bonne reprise après vacances.'},
-  {id:28,date:'2026-01-06',mood:'excellent',sleep:9,energy:9,discipline:90,patience:88,confidence:92,riskCtrl:88,consistency:86,emotional:90,planFollow:94,pnl:2100,trades:3,wins:3,stressors:'',     objectives:'Année en beauté',    routine:true, maxTrades:4,maxLoss:200,notes:'Excellent début d\'année.'},
-  {id:29,date:'2026-01-07',mood:'bien',     sleep:7,energy:8,discipline:78,patience:74,confidence:80,riskCtrl:76,consistency:72,emotional:76,planFollow:82,pnl:690, trades:3,wins:2,stressors:'',     objectives:'Consolider',         routine:true, maxTrades:4,maxLoss:150,notes:'Solide.'},
-  {id:30,date:'2026-01-08',mood:'bien',     sleep:7,energy:7,discipline:74,patience:70,confidence:76,riskCtrl:72,consistency:68,emotional:72,planFollow:78,pnl:380, trades:2,wins:2,stressors:'',     objectives:'Fin de semaine propre',routine:true,maxTrades:3,maxLoss:120,notes:'Clôturé proprement la semaine.'},
+  {id:1, date:'2025-11-03',mood:'bien',     sleep:7,energy:7,discipline:72,patience:68,confidence:75,riskCtrl:70,consistency:68,emotional:70,planFollow:76,pnl:340, trades:3,wins:2,stressors:'',     objectives:'RR 1:2 minimum',       routine:true, maxTrades:4,maxLoss:120,notes:'Good calm session.'},
+  {id:2, date:'2025-11-04',mood:'excellent',sleep:9,energy:9,discipline:92,patience:88,confidence:94,riskCtrl:90,consistency:88,emotional:92,planFollow:96,pnl:2100,trades:2,wins:2,stressors:'',     objectives:'Setups A+ only',       routine:true, maxTrades:3,maxLoss:200,notes:'Perfect, 2/2.'},
+  {id:3, date:'2025-11-05',mood:'neutre',   sleep:6,energy:6,discipline:58,patience:52,confidence:60,riskCtrl:55,consistency:56,emotional:52,planFollow:62,pnl:-85, trades:3,wins:1,stressors:'Fatigue',objectives:'Limit overtrading',    routine:false,maxTrades:3,maxLoss:100,notes:'Premature exit on 2 trades.'},
+  {id:4, date:'2025-11-06',mood:'difficile',sleep:5,energy:5,discipline:38,patience:32,confidence:42,riskCtrl:36,consistency:40,emotional:34,planFollow:44,pnl:-320,trades:5,wins:1,stressors:'Personal stress', objectives:'No revenge trading',   routine:false,maxTrades:2,maxLoss:80, notes:'Revenge trading x3. Stop loss not respected.'},
+  {id:5, date:'2025-11-10',mood:'bien',     sleep:8,energy:8,discipline:78,patience:74,confidence:80,riskCtrl:76,consistency:72,emotional:76,planFollow:82,pnl:620, trades:3,wins:2,stressors:'',     objectives:'Clean scalp',            routine:true, maxTrades:4,maxLoss:150,notes:'Very good patience on entries.'},
+  {id:6, date:'2025-11-11',mood:'excellent',sleep:8,energy:9,discipline:88,patience:86,confidence:90,riskCtrl:86,consistency:84,emotional:88,planFollow:92,pnl:1750,trades:3,wins:3,stressors:'',     objectives:'Swing day',              routine:true, maxTrades:3,maxLoss:180,notes:'3/3. Perfect day.'},
+  {id:7, date:'2025-11-12',mood:'neutre',   sleep:6,energy:7,discipline:62,patience:58,confidence:64,riskCtrl:60,consistency:58,emotional:60,planFollow:66,pnl:110, trades:2,wins:1,stressors:'Short night',objectives:'Focus 2 trades max',  routine:true,maxTrades:2,maxLoss:80,notes:'Respected limits despite fatigue.'},
+  {id:8, date:'2025-11-13',mood:'bien',     sleep:7,energy:8,discipline:76,patience:72,confidence:78,riskCtrl:74,consistency:70,emotional:74,planFollow:80,pnl:480, trades:4,wins:3,stressors:'',     objectives:'Long trend',             routine:true, maxTrades:4,maxLoss:150,notes:'Good trend following.'},
+  {id:9, date:'2025-11-17',mood:'terrible', sleep:4,energy:4,discipline:28,patience:24,confidence:30,riskCtrl:26,consistency:28,emotional:22,planFollow:32,pnl:-450,trades:6,wins:1,stressors:'Serious personal issue',objectives:'',routine:false,maxTrades:2,maxLoss:80,notes:'Should not have traded. Impulsive decision.'},
+  {id:10,date:'2025-11-18',mood:'neutre',   sleep:6,energy:6,discipline:55,patience:50,confidence:58,riskCtrl:52,consistency:54,emotional:50,planFollow:60,pnl:60,  trades:1,wins:1,stressors:'',     objectives:'Only one trade',         routine:true, maxTrades:1,maxLoss:60, notes:'Wise decision after yesterday.'},
+  {id:11,date:'2025-11-19',mood:'bien',     sleep:7,energy:7,discipline:74,patience:70,confidence:76,riskCtrl:72,consistency:68,emotional:72,planFollow:78,pnl:390, trades:3,wins:2,stressors:'',     objectives:'Back to basics',         routine:true, maxTrades:4,maxLoss:120,notes:'Good comeback.'},
+  {id:12,date:'2025-11-20',mood:'excellent',sleep:9,energy:8,discipline:90,patience:86,confidence:92,riskCtrl:88,consistency:86,emotional:90,planFollow:94,pnl:1920,trades:3,wins:3,stressors:'',     objectives:'Trend confirmation',     routine:true, maxTrades:3,maxLoss:200,notes:'Excellent timing on all entries.'},
+  {id:13,date:'2025-11-24',mood:'bien',     sleep:7,energy:8,discipline:80,patience:76,confidence:82,riskCtrl:78,consistency:74,emotional:78,planFollow:84,pnl:720, trades:3,wins:2,stressors:'',     objectives:'Week continuity',        routine:true, maxTrades:4,maxLoss:150,notes:'Maintained the level.'},
+  {id:14,date:'2025-11-25',mood:'difficile',sleep:5,energy:5,discipline:44,patience:38,confidence:46,riskCtrl:42,consistency:44,emotional:40,planFollow:48,pnl:-180,trades:4,wins:1,stressors:'Accumulated fatigue', objectives:'Reduce position size',routine:false,maxTrades:2,maxLoss:80,notes:'Should have reduced from the morning.'},
+  {id:15,date:'2025-11-26',mood:'neutre',   sleep:6,energy:6,discipline:60,patience:56,confidence:62,riskCtrl:58,consistency:58,emotional:56,planFollow:64,pnl:150, trades:2,wins:1,stressors:'',     objectives:'Recovery',               routine:true, maxTrades:2,maxLoss:80, notes:'Progressive return.'},
+  {id:16,date:'2025-12-01',mood:'excellent',sleep:8,energy:9,discipline:86,patience:84,confidence:88,riskCtrl:84,consistency:80,emotional:86,planFollow:90,pnl:1640,trades:3,wins:3,stressors:'',     objectives:'Comeback week',          routine:true, maxTrades:4,maxLoss:200,notes:'Perfect comeback week.'},
+  {id:17,date:'2025-12-02',mood:'bien',     sleep:8,energy:8,discipline:78,patience:74,confidence:80,riskCtrl:76,consistency:72,emotional:76,planFollow:82,pnl:560, trades:3,wins:2,stressors:'',     objectives:'Consolidate gains',      routine:true, maxTrades:3,maxLoss:150,notes:'Managed cleanly.'},
+  {id:18,date:'2025-12-03',mood:'neutre',   sleep:6,energy:7,discipline:64,patience:60,confidence:66,riskCtrl:62,consistency:62,emotional:62,planFollow:68,pnl:200, trades:2,wins:1,stressors:'',     objectives:'Limit risk',             routine:true, maxTrades:2,maxLoss:100,notes:'Conservative but ok.'},
+  {id:19,date:'2025-12-04',mood:'bien',     sleep:7,energy:8,discipline:76,patience:72,confidence:78,riskCtrl:74,consistency:70,emotional:74,planFollow:80,pnl:480, trades:3,wins:2,stressors:'',     objectives:'Precise entries',        routine:true, maxTrades:4,maxLoss:130,notes:'Good market reading.'},
+  {id:20,date:'2025-12-05',mood:'excellent',sleep:9,energy:9,discipline:94,patience:90,confidence:96,riskCtrl:92,consistency:90,emotional:94,planFollow:98,pnl:2850,trades:4,wins:4,stressors:'',     objectives:'Record day',             routine:true, maxTrades:5,maxLoss:250,notes:'4/4! Best day of the year.'},
+  {id:21,date:'2025-12-08',mood:'difficile',sleep:5,energy:5,discipline:42,patience:36,confidence:44,riskCtrl:40,consistency:42,emotional:36,planFollow:46,pnl:-240,trades:4,wins:1,stressors:'Work stress', objectives:'Max 2 trades',routine:false,maxTrades:2,maxLoss:80,notes:'Partially respected, 2 trades too many.'},
+  {id:22,date:'2025-12-09',mood:'bien',     sleep:7,energy:7,discipline:72,patience:68,confidence:74,riskCtrl:70,consistency:66,emotional:70,planFollow:76,pnl:310, trades:2,wins:2,stressors:'',     objectives:'Clean comeback',         routine:true, maxTrades:3,maxLoss:100,notes:'Good recovery.'},
+  {id:23,date:'2025-12-10',mood:'bien',     sleep:8,energy:8,discipline:80,patience:76,confidence:82,riskCtrl:78,consistency:74,emotional:78,planFollow:84,pnl:680, trades:3,wins:2,stressors:'',     objectives:'Follow the trend',       routine:true, maxTrades:4,maxLoss:150,notes:'Good trend following.'},
+  {id:24,date:'2025-12-11',mood:'excellent',sleep:8,energy:9,discipline:88,patience:86,confidence:90,riskCtrl:86,consistency:84,emotional:88,planFollow:92,pnl:1580,trades:3,wins:3,stressors:'',     objectives:'Strong week',            routine:true, maxTrades:4,maxLoss:200,notes:'Very nice week.'},
+  {id:25,date:'2025-12-15',mood:'neutre',   sleep:6,energy:6,discipline:62,patience:58,confidence:64,riskCtrl:60,consistency:60,emotional:60,planFollow:66,pnl:80,  trades:2,wins:1,stressors:'Holidays approaching',objectives:'Caution',routine:true,maxTrades:2,maxLoss:80,notes:'Distracted by holidays.'},
+  {id:26,date:'2025-12-16',mood:'neutre',   sleep:7,energy:7,discipline:66,patience:62,confidence:68,riskCtrl:64,consistency:62,emotional:64,planFollow:70,pnl:220, trades:2,wins:2,stressors:'',     objectives:'Focus 2 trades',         routine:true, maxTrades:2,maxLoss:80, notes:'Disciplined in the caution zone.'},
+  {id:27,date:'2026-01-05',mood:'bien',     sleep:8,energy:8,discipline:76,patience:72,confidence:78,riskCtrl:74,consistency:70,emotional:74,planFollow:80,pnl:420, trades:3,wins:2,stressors:'',     objectives:'January restart',        routine:true, maxTrades:4,maxLoss:130,notes:'Good restart after holidays.'},
+  {id:28,date:'2026-01-06',mood:'excellent',sleep:9,energy:9,discipline:90,patience:88,confidence:92,riskCtrl:88,consistency:86,emotional:90,planFollow:94,pnl:2100,trades:3,wins:3,stressors:'',     objectives:'Start the year strong',  routine:true, maxTrades:4,maxLoss:200,notes:'Excellent start of the year.'},
+  {id:29,date:'2026-01-07',mood:'bien',     sleep:7,energy:8,discipline:78,patience:74,confidence:80,riskCtrl:76,consistency:72,emotional:76,planFollow:82,pnl:690, trades:3,wins:2,stressors:'',     objectives:'Consolidate',            routine:true, maxTrades:4,maxLoss:150,notes:'Solid.'},
+  {id:30,date:'2026-01-08',mood:'bien',     sleep:7,energy:7,discipline:74,patience:70,confidence:76,riskCtrl:72,consistency:68,emotional:72,planFollow:78,pnl:380, trades:2,wins:2,stressors:'',     objectives:'Clean end of week',      routine:true,maxTrades:3,maxLoss:120,notes:'Closed the week cleanly.'},
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -172,7 +172,7 @@ const TTBox=({active,payload,label,extra})=>{
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// 🏆 SCORE GAUGE — pièce maîtresse
+// 🏆 SCORE GAUGE — centerpiece
 // ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 // 🧠 SCORE CARD — Vertical stacked bars (pas circulaire)
@@ -209,7 +209,7 @@ const ScoreCard=({sessions})=>{
     <GlassCard custom={0} glow={sc} style={{padding:'24px 22px',display:'flex',flexDirection:'column',gap:0}}>
       {/* Header */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18}}>
-        <ST icon="🧠" color={sc} mb={0}>Score Psychologique</ST>
+        <ST icon="🧠" color={sc} mb={0}>Psychological Score</ST>
         <div style={{display:'flex',gap:7}}>
           <div style={{padding:'3px 10px',borderRadius:20,background:`${C.purple}18`,border:`1px solid ${C.purple}30`,fontSize:9,fontWeight:700,color:C.purple}}>Moy. {avgScore}</div>
           <div style={{padding:'3px 10px',borderRadius:20,background:`${C.gold}18`,border:`1px solid ${C.gold}30`,fontSize:9,fontWeight:700,color:C.gold}}>Best {bestScore}</div>
@@ -225,7 +225,7 @@ const ScoreCard=({sessions})=>{
         {/* Valeur + label */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:12}}>
           <div>
-            <div style={{fontSize:8,color:C.t3,marginBottom:4,textTransform:'uppercase',letterSpacing:'1px',fontWeight:700}}>Score du jour</div>
+            <div style={{fontSize:8,color:C.t3,marginBottom:4,textTransform:'uppercase',letterSpacing:'1px',fontWeight:700}}>Today's Score</div>
             <div style={{display:'flex',alignItems:'baseline',gap:6}}>
               <motion.span
                 key={score}
@@ -242,14 +242,14 @@ const ScoreCard=({sessions})=>{
             <div style={{fontSize:13,fontWeight:900,color:sc,letterSpacing:'-0.3px'}}>{sLabel(score)}</div>
             <div style={{fontSize:10,color:C.t2,marginTop:2,display:'flex',alignItems:'center',gap:4,justifyContent:'flex-end'}}>
               <span style={{color:trend>=0?C.green:C.danger,fontWeight:800}}>{trend>=0?'↗':'↘'} {trend>=0?'+':''}{trend} pts</span>
-              <span style={{color:C.t3}}>vs hier</span>
+              <span style={{color:C.t3}}>vs yesterday</span>
             </div>
           </div>
         </div>
 
-        {/* Barre segmentée 0→100 avec gradient de couleur */}
+        {/* Segmented bar 0→100 with color gradient */}
         <div style={{position:'relative',height:14,borderRadius:7,background:'rgba(255,255,255,0.05)',overflow:'hidden',marginBottom:6}}>
-          {/* Zones colorées fixes */}
+          {/* Fixed color zones */}
           <div style={{position:'absolute',inset:0,background:`linear-gradient(90deg,
             ${C.danger}45 0%,${C.danger}45 30%,
             ${C.orange}45 30%,${C.orange}45 45%,
@@ -257,7 +257,7 @@ const ScoreCard=({sessions})=>{
             ${C.cyan}45 60%,${C.cyan}45 75%,
             ${C.green}45 75%,${C.green}45 100%
           )`,borderRadius:7}}/>
-          {/* Fill animé */}
+          {/* Animated fill */}
           <motion.div
             initial={{width:0}}
             animate={{width:`${score}%`}}
@@ -279,20 +279,20 @@ const ScoreCard=({sessions})=>{
         </div>
         {/* Zone labels */}
         <div style={{display:'flex',justifyContent:'space-between',fontSize:7.5,color:C.t3,fontWeight:600}}>
-          <span>Critique</span><span>Fragile</span><span>Correct</span><span>Solide</span><span>Elite</span>
+          <span>Critical</span><span>Fragile</span><span>Fair</span><span>Solid</span><span>Elite</span>
         </div>
         <div style={{fontSize:8,color:C.t3,marginTop:4,display:'flex',alignItems:'center',gap:4}}>
           <div style={{width:8,height:1.5,background:'rgba(255,255,255,0.5)',borderRadius:1}}/>
-          Barre blanche = moyenne historique ({avgScore}/100)
+          White bar = historical average ({avgScore}/100)
         </div>
       </div>
 
-      {/* ── Info session : humeur + routine + physique ── */}
+      {/* ── Session info: mood + routine + physical ── */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
         {[
-          {l:'Humeur',     v:`${em?.emoji} ${em?.label}`,       c:em?.color||C.t3},
-          {l:'Routine',    v:latest.routine?'✓ Complétée':'✗ Non faite', c:latest.routine?C.green:C.danger},
-          {l:'Sommeil',    v:`${latest.sleep||'—'}/10`,         c:C.purple},
+          {l:'Mood',       v:`${em?.emoji} ${em?.label}`,       c:em?.color||C.t3},
+          {l:'Routine',    v:latest.routine?'✓ Completed':'✗ Not done', c:latest.routine?C.green:C.danger},
+          {l:'Sleep',      v:`${latest.sleep||'—'}/10`,         c:C.purple},
         ].map(({l,v,c})=>(
           <div key={l} style={{padding:'9px 10px',borderRadius:11,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,textAlign:'center'}}>
             <div style={{fontSize:7.5,color:C.t3,marginBottom:3,textTransform:'uppercase',letterSpacing:'0.5px'}}>{l}</div>
@@ -338,7 +338,7 @@ const ScoreCard=({sessions})=>{
       </div>
       <div style={{marginTop:8,fontSize:8,color:C.t3,display:'flex',alignItems:'center',gap:4}}>
         <div style={{width:10,height:1.5,background:'rgba(255,255,255,0.35)',borderRadius:1}}/>
-        Barre verticale blanche = moyenne historique par axe
+        White vertical bar = historical average per axis
       </div>
     </GlassCard>
   );
@@ -381,7 +381,7 @@ const PsychByDay=({sessions})=>{
     <GlassCard custom={6} glow={C.purple} style={{padding:'26px 24px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <ST icon="🗓️" color={C.purple} mb={0}>Psychology by Day of Week</ST>
-        {/* Résumé meilleur/pire */}
+        {/* Summary best/worst */}
         <div style={{display:'flex',gap:10}}>
           {bestDay&&<div style={{padding:'4px 12px',borderRadius:20,background:`${C.green}15`,border:`1px solid ${C.green}28`,fontSize:9,fontWeight:700,color:C.green}}>
             🏆 {bestDay.day} · {bestDay.score}
@@ -407,7 +407,7 @@ const PsychByDay=({sessions})=>{
               onMouseLeave={()=>setHovered(null)}
               style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',height:'100%',cursor:d.count?'pointer':'default',gap:6}}>
 
-              {/* Tooltip au survol */}
+              {/* Tooltip on hover */}
               <AnimatePresence>
                 {isHov&&d.count>0&&(
                   <motion.div initial={{opacity:0,y:6,scale:0.92}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:4,scale:0.95}}
@@ -417,15 +417,15 @@ const PsychByDay=({sessions})=>{
                       padding:'10px 12px',boxShadow:`0 12px 36px rgba(0,0,0,0.8),0 0 0 1px ${sc}20`,
                       pointerEvents:'none',minWidth:130,transform:'translateY(-210px)'}}>
                     <div style={{fontSize:11,fontWeight:900,color:sc,marginBottom:4}}>{d.day} — {d.count} session{d.count>1?'s':''}</div>
-                    <div style={{fontSize:10,color:C.t1,fontWeight:800,marginBottom:2}}>Score : {d.score}/100</div>
-                    <div style={{fontSize:10,color:d.avgPnl>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:800}}>P&L moy. : {d.avgPnl>=0?'+':''}${d.avgPnl}</div>
-                    <div style={{fontSize:9,color:C.t2,marginTop:3}}>Win Rate : {d.winRate}%</div>
-                    <div style={{fontSize:9,color:C.danger}}>Taux émot. : {d.emotRate}%</div>
+                    <div style={{fontSize:10,color:C.t1,fontWeight:800,marginBottom:2}}>Score: {d.score}/100</div>
+                    <div style={{fontSize:10,color:d.avgPnl>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:800}}>Avg P&L: {d.avgPnl>=0?'+':''}${d.avgPnl}</div>
+                    <div style={{fontSize:9,color:C.t2,marginTop:3}}>Win Rate: {d.winRate}%</div>
+                    <div style={{fontSize:9,color:C.danger}}>Emot. rate: {d.emotRate}%</div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Score label au dessus */}
+              {/* Score label above */}
               {d.count>0&&(
                 <div style={{fontSize:10,fontWeight:900,color:isHov?sc:C.t3,fontFamily:'monospace',
                   transition:'color 0.2s',marginBottom:2}}>
@@ -433,7 +433,7 @@ const PsychByDay=({sessions})=>{
                 </div>
               )}
 
-              {/* Barre principale */}
+              {/* Main bar */}
               <div style={{width:'100%',position:'relative',display:'flex',flexDirection:'column',alignItems:'center'}}>
                 {/* Glow halo */}
                 {d.count>0&&isHov&&(
@@ -457,7 +457,7 @@ const PsychByDay=({sessions})=>{
                     transition:'box-shadow 0.2s',
                     border:`1px solid ${d.count?(isHov?sc+'80':sc+'30'):'rgba(255,255,255,0.07)'}`,
                   }}>
-                  {/* Shimmer interne */}
+                  {/* Internal shimmer */}
                   {d.count>0&&(
                     <motion.div
                       animate={{x:['-100%','100%']}}
@@ -466,7 +466,7 @@ const PsychByDay=({sessions})=>{
                         background:`linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)`,
                         transform:'skewX(-15deg)'}}/>
                   )}
-                  {/* P&L indicator (petit point bas) */}
+                  {/* P&L indicator (small bottom dot) */}
                   {d.count>0&&(
                     <div style={{position:'absolute',bottom:4,left:'50%',transform:'translateX(-50%)',
                       width:5,height:5,borderRadius:'50%',
@@ -480,7 +480,7 @@ const PsychByDay=({sessions})=>{
                   )}
                 </motion.div>
 
-                {/* Barre émotionnelle en dessous */}
+                {/* Emotional bar below */}
                 {d.count>0&&d.emotRate>0&&(
                   <motion.div
                     initial={{height:0}} animate={{height:Math.max(3,Math.round(d.emotRate/100*20))}}
@@ -495,7 +495,7 @@ const PsychByDay=({sessions})=>{
         })}
       </div>
 
-      {/* ── Labels jours ── */}
+      {/* ── Day labels ── */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8,marginBottom:16}}>
         {data.map((d,i)=>(
           <div key={d.day} onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
@@ -509,10 +509,10 @@ const PsychByDay=({sessions})=>{
       {/* ── Stats row ── */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,paddingTop:14,borderTop:`1px solid ${C.brd}`}}>
         {[
-          {l:'Meilleur jour',v:bestDay?.day||'—',sub:`Score ${bestDay?.score||0}`,c:C.green},
-          {l:'P&L moy. max', v:bestDay?.avgPnl>=0?`+$${bestDay?.avgPnl||0}`:`-$${Math.abs(bestDay?.avgPnl||0)}`,sub:bestDay?.day||'—',c:C.green},
-          {l:'Win Rate max', v:`${Math.max(...data.filter(d=>d.count>0).map(d=>d.winRate),0)}%`,sub:`${data.filter(d=>d.count>0).sort((a,b)=>b.winRate-a.winRate)[0]?.day||'—'}`,c:C.cyan},
-          {l:'Taux émot. max',v:`${Math.max(...data.filter(d=>d.count>0).map(d=>d.emotRate),0)}%`,sub:data.filter(d=>d.count>0).sort((a,b)=>b.emotRate-a.emotRate)[0]?.day||'—',c:C.danger},
+          {l:'Best Day',v:bestDay?.day||'—',sub:`Score ${bestDay?.score||0}`,c:C.green},
+          {l:'Max Avg P&L', v:bestDay?.avgPnl>=0?`+$${bestDay?.avgPnl||0}`:`-$${Math.abs(bestDay?.avgPnl||0)}`,sub:bestDay?.day||'—',c:C.green},
+          {l:'Max Win Rate', v:`${Math.max(...data.filter(d=>d.count>0).map(d=>d.winRate),0)}%`,sub:`${data.filter(d=>d.count>0).sort((a,b)=>b.winRate-a.winRate)[0]?.day||'—'}`,c:C.cyan},
+          {l:'Max Emot. Rate',v:`${Math.max(...data.filter(d=>d.count>0).map(d=>d.emotRate),0)}%`,sub:data.filter(d=>d.count>0).sort((a,b)=>b.emotRate-a.emotRate)[0]?.day||'—',c:C.danger},
         ].map(({l,v,sub,c})=>(
           <div key={l} style={{padding:'9px 10px',borderRadius:10,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.brd}`,textAlign:'center'}}>
             <div style={{fontSize:7.5,color:C.t3,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.5px',fontWeight:700}}>{l}</div>
@@ -522,13 +522,13 @@ const PsychByDay=({sessions})=>{
         ))}
       </div>
 
-      {/* Légende */}
+      {/* Legend */}
       <div style={{display:'flex',gap:16,marginTop:12,flexWrap:'wrap'}}>
         {[
           {c:C.green, l:'Score ≥ 75 — Optimal'},
-          {c:C.cyan,  l:'60–75 — Solide'},
-          {c:C.warn,  l:'45–60 — Correct'},
-          {c:C.danger,l:'< 45 — Risqué'},
+          {c:C.cyan,  l:'60–75 — Solid'},
+          {c:C.warn,  l:'45–60 — Fair'},
+          {c:C.danger,l:'< 45 — Risky'},
         ].map(({c,l})=>(
           <div key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:8.5,color:C.t3}}>
             <div style={{width:8,height:8,borderRadius:2,background:c,opacity:0.9}}/>
@@ -537,7 +537,7 @@ const PsychByDay=({sessions})=>{
         ))}
         <div style={{display:'flex',alignItems:'center',gap:5,fontSize:8.5,color:C.t3}}>
           <div style={{width:5,height:5,borderRadius:'50%',background:C.danger}}/>
-          Point bas = taux émotionnel
+          Bottom dot = emotional rate
         </div>
       </div>
     </GlassCard>
@@ -563,7 +563,7 @@ const ProfileRadar=({sessions})=>{
         <ST icon="🕸️" color={C.purple} mb={0}>Psychological Profile</ST>
         <select value={compareIdx} onChange={e=>setCompareIdx(e.target.value)}
           style={{background:C.bgHigh,border:`1px solid ${C.brd}`,borderRadius:8,padding:'4px 8px',color:C.t2,fontSize:9,fontFamily:'inherit',outline:'none',cursor:'pointer'}}>
-          <option value="avg">vs Moyenne</option>
+          <option value="avg">vs Average</option>
           <option value="1">vs J-1</option>
           <option value="2">vs J-2</option>
           <option value="7">vs J-7</option>
@@ -609,7 +609,7 @@ const ProfileRadar=({sessions})=>{
         </svg>
       </div>
       <div style={{display:'flex',gap:16,justifyContent:'center',marginTop:2}}>
-        {[{c:C.purple,l:'Session actuelle'},{c:C.cyan,l:compareIdx==='avg'?'Moyenne':'Session précédente',dash:true}].map(({c,l,dash})=>(
+        {[{c:C.purple,l:'Current session'},{c:C.cyan,l:compareIdx==='avg'?'Average':'Previous session',dash:true}].map(({c,l,dash})=>(
           <span key={l} style={{fontSize:9,color:c,display:'flex',alignItems:'center',gap:5}}>
             <span style={{width:14,height:2,background:c,display:'inline-block',borderRadius:1,opacity:dash?0.7:1}}/>{l}
           </span>
@@ -639,8 +639,8 @@ const ScoreEvolution=({sessions})=>{
     return(
       <div style={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:11,padding:'10px 14px',fontSize:11,boxShadow:'0 12px 40px rgba(0,0,0,0.75)'}}>
         <div style={{color:C.t2,fontWeight:700,marginBottom:6,fontSize:10}}>{label}</div>
-        <div style={{color:sc,fontFamily:'monospace',fontWeight:800}}>Score : {d?.score}/100 — {sLabel(d?.score||0)}</div>
-        <div style={{color:d?.pnl>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:800,marginTop:2}}>P&L cumulé : {d?.pnl>=0?'+':''}${d?.pnl?.toLocaleString()}</div>
+        <div style={{color:sc,fontFamily:'monospace',fontWeight:800}}>Score: {d?.score}/100 — {sLabel(d?.score||0)}</div>
+        <div style={{color:d?.pnl>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:800,marginTop:2}}>Cumulative P&L: {d?.pnl>=0?'+':''}${d?.pnl?.toLocaleString()}</div>
         <div style={{color:C.t3,fontSize:9,marginTop:3}}>{MOODS.find(m=>m.id===d?.mood)?.emoji} {MOODS.find(m=>m.id===d?.mood)?.label}</div>
       </div>
     );
@@ -648,7 +648,7 @@ const ScoreEvolution=({sessions})=>{
   return(
     <GlassCard custom={5} glow={C.blue} style={{padding:'24px 22px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
-        <ST icon="📈" color={C.blue} mb={0}>Score Mental vs P&L Cumulatif</ST>
+        <ST icon="📈" color={C.blue} mb={0}>Mental Score vs Cumulative P&L</ST>
         <div style={{display:'flex',gap:14}}>
           {[{c:C.purple,l:'Score'},{c:C.green,l:'P&L cumulatif'}].map(({c,l})=>(
             <div key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:9,color:C.t3}}>
@@ -689,7 +689,7 @@ const ScoreEvolution=({sessions})=>{
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
-// 😊 DISTRIBUTION ÉMOTIONS
+// 😊 EMOTION DISTRIBUTION
 // ═══════════════════════════════════════════════════════════════════
 const EmotionDist=({sessions})=>{
   const data=useMemo(()=>{
@@ -717,7 +717,7 @@ const EmotionDist=({sessions})=>{
   const RINNER=40,ROUTER=68;
   return(
     <GlassCard custom={7} glow={C.warn} style={{padding:'24px 22px'}}>
-      <ST icon="😊" color={C.warn}>Distribution des États Émotionnels</ST>
+      <ST icon="😊" color={C.warn}>Emotional State Distribution</ST>
       <div style={{display:'flex',gap:20,alignItems:'center',marginBottom:20}}>
         <div style={{flexShrink:0,position:'relative',width:160,height:160}}>
           <svg width={160} height={160} viewBox="0 0 160 160">
@@ -763,7 +763,7 @@ const EmotionDist=({sessions})=>{
                   <motion.div initial={{width:0}} animate={{width:`${m.pct}%`}} transition={{duration:0.8,delay:i*0.06}}
                     style={{height:'100%',background:`linear-gradient(90deg,${m.color}55,${m.color})`,borderRadius:3,boxShadow:`0 0 5px ${m.color}40`}}/>
                 </div>
-                <div style={{fontSize:8,color:C.t3,marginTop:2}}>{m.count}× · WR {m.winRate}% · Score moy. {m.avgScore}</div>
+                <div style={{fontSize:8,color:C.t3,marginTop:2}}>{m.count}× · WR {m.winRate}% · Avg Score {m.avgScore}</div>
               </div>
             </div>
           ))}
@@ -771,8 +771,8 @@ const EmotionDist=({sessions})=>{
       </div>
       <div style={{borderRadius:12,overflow:'hidden',border:`1px solid ${C.brd}`}}>
         <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr',padding:'7px 12px',background:'rgba(255,255,255,0.04)',borderBottom:`1px solid ${C.brd}`}}>
-          {['Humeur','Sessions','P&L Total','Win Rate','Score Moy.'].map(h=>(
-            <div key={h} style={{fontSize:8,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:h==='Humeur'?'left':'center'}}>{h}</div>
+          {['Mood','Sessions','Total P&L','Win Rate','Avg Score'].map(h=>(
+            <div key={h} style={{fontSize:8,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.5px',textAlign:h==='Mood'?'left':'center'}}>{h}</div>
           ))}
         </div>
         {data.map((m,i)=>(
@@ -803,13 +803,13 @@ const EmotionHeatmap=({sessions})=>{
   const heat=v=>{if(v>=80)return{bg:`${C.green}28`,border:`${C.green}50`,c:C.green};if(v>=65)return{bg:`${C.cyan}22`,border:`${C.cyan}40`,c:C.cyan};if(v>=50)return{bg:`${C.warn}18`,border:`${C.warn}35`,c:C.warn};if(v>=35)return{bg:`${C.orange}18`,border:`${C.orange}30`,c:C.orange};return{bg:`${C.danger}18`,border:`${C.danger}30`,c:C.danger};};
   return(
     <GlassCard custom={8} glow={C.pink} style={{padding:'24px 22px'}}>
-      <ST icon="🌡️" color={C.pink}>Heatmap Humeur × Axes Psychologiques</ST>
+      <ST icon="🌡️" color={C.pink}>Heatmap Mood × Psychological Axes</ST>
       <div style={{overflowX:'auto'}}>
         <table style={{width:'100%',borderCollapse:'separate',borderSpacing:3}}>
           <thead><tr>
-            <th style={{fontSize:8,color:C.t3,fontWeight:700,textAlign:'left',padding:'0 6px 8px',textTransform:'uppercase'}}>Humeur</th>
+            <th style={{fontSize:8,color:C.t3,fontWeight:700,textAlign:'left',padding:'0 6px 8px',textTransform:'uppercase'}}>Mood</th>
             {AXES7.map(ax=><th key={ax.key} style={{fontSize:8,color:ax.color,fontWeight:700,padding:'0 2px 8px',textAlign:'center',textTransform:'uppercase',minWidth:54}}>{ax.label}</th>)}
-            <th style={{fontSize:8,color:C.green,fontWeight:700,padding:'0 2px 8px',textAlign:'center',textTransform:'uppercase'}}>P&L moy.</th>
+            <th style={{fontSize:8,color:C.green,fontWeight:700,padding:'0 2px 8px',textAlign:'center',textTransform:'uppercase'}}>Avg P&L</th>
           </tr></thead>
           <tbody>
             {matrix.map(row=>(
@@ -861,7 +861,7 @@ const EmotionImpact=({sessions})=>{
   }).filter(d=>d.count>0),[sessions]);
   return(
     <GlassCard custom={9} glow={C.cyan} style={{padding:'24px 22px'}}>
-      <ST icon="💰" color={C.cyan}>Impact Humeur → P&L moyen & Win Rate</ST>
+      <ST icon="💰" color={C.cyan}>Mood Impact → Avg P&L & Win Rate</ST>
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={data} margin={{top:16,right:20,bottom:0,left:0}}>
           <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
@@ -870,7 +870,7 @@ const EmotionImpact=({sessions})=>{
           <YAxis yAxisId="pnl" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} width={42}/>
           <YAxis yAxisId="wr" orientation="right" domain={[0,100]} tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={32}/>
           <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
-            formatter={(v,n)=>n==='avgPnl'?[<span style={{color:v>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:900}}>{v>=0?'+':''}${v}</span>,'P&L moyen']:[<span style={{color:C.purple,fontFamily:'monospace',fontWeight:900}}>{v}%</span>,'Win Rate']}/>
+             formatter={(v,n)=>n==='avgPnl'?[<span style={{color:v>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:900}}>{v>=0?'+':''}${v}</span>,'Avg P&L']:[<span style={{color:C.purple,fontFamily:'monospace',fontWeight:900}}>{v}%</span>,'Win Rate']}/>
           <ReferenceLine yAxisId="pnl" y={0} stroke="rgba(255,255,255,0.12)"/>
           <Bar yAxisId="pnl" dataKey="avgPnl" maxBarSize={52} radius={[6,6,0,0]} label={{position:'top',fontSize:8,fontWeight:700,fill:C.t3,formatter:v=>v?`${v>=0?'+':''}$${v}`:''}}>
             {data.map((d,i)=><Cell key={i} fill={d.color} fillOpacity={0.85}/>)}
@@ -894,9 +894,9 @@ const Patterns=({sessions})=>{
       const goodAvg=Math.round(goodS.reduce((s,v)=>s+(v.pnl||0),0)/goodS.length);
       const emoWR=Math.round(emoS.filter(s=>(s.pnl||0)>0).length/emoS.length*100);
       const goodWR=Math.round(goodS.filter(s=>(s.pnl||0)>0).length/goodS.length*100);
-      res.push({icon:'⚠️',color:C.danger,title:'Coût du trading émotionnel',
-        desc:`Score < 50 : P&L moy. ${emoAvg>=0?'+':''}$${emoAvg} · WR ${emoWR}%`,
-        sub:`Score ≥ 70 : P&L moy. +$${goodAvg} · WR ${goodWR}% — écart de $${goodAvg-emoAvg}/session`,
+      res.push({icon:'⚠️',color:C.danger,title:'Cost of emotional trading',
+        desc:`Score < 50: Avg P&L ${emoAvg>=0?'+':''}$${emoAvg} · WR ${emoWR}%`,
+        sub:`Score ≥ 70: Avg P&L +$${goodAvg} · WR ${goodWR}% — gap of $${goodAvg-emoAvg}/session`,
         badge:`Δ $${goodAvg-emoAvg}`});
     }
     const byMood={};
@@ -906,26 +906,26 @@ const Patterns=({sessions})=>{
       const m=MOODS.find(m=>m.id===best[0]);
       const avg=Math.round(best[1].pnl/best[1].n);
       const wr=Math.round(best[1].wins/best[1].n*100);
-      res.push({icon:'🎯',color:C.green,title:`Meilleure humeur : ${m?.emoji} ${m?.label||best[0]}`,
-        desc:`Moy. ${avg>=0?'+':''}$${avg}/session · WR ${wr}% · ${best[1].n} sessions`,
-        sub:'Prioriser le trading dans cet état — impact direct et mesurable',badge:`+$${avg}`});
+      res.push({icon:'🎯',color:C.green,title:`Best mood: ${m?.emoji} ${m?.label||best[0]}`,
+        desc:`Avg ${avg>=0?'+':''}$${avg}/session · WR ${wr}% · ${best[1].n} sessions`,
+        sub:'Prioritize trading in this state — direct and measurable impact',badge:`+$${avg}`});
     }
     const withR=sessions.filter(s=>s.routine),noR=sessions.filter(s=>!s.routine);
     if(withR.length>0&&noR.length>0){
       const rA=Math.round(withR.reduce((s,v)=>s+(v.pnl||0),0)/withR.length);
       const nA=Math.round(noR.reduce((s,v)=>s+(v.pnl||0),0)/noR.length);
       const rWR=Math.round(withR.filter(s=>(s.pnl||0)>0).length/withR.length*100);
-      res.push({icon:'📋',color:C.cyan,title:`Routine matinale : +$${rA-nA} d'impact moyen`,
-        desc:`Avec routine (${withR.length}×) : moy. ${rA>=0?'+':''}$${rA} · WR ${rWR}%`,
-        sub:`Sans routine (${noR.length}×) : moy. ${nA>=0?'+':''}$${nA} — la discipline paie`,badge:rA>nA?'✓ Crucial':'Neutre'});
+      res.push({icon:'📋',color:C.cyan,title:`Morning routine: +$${rA-nA} avg impact`,
+        desc:`With routine (${withR.length}×): avg ${rA>=0?'+':''}$${rA} · WR ${rWR}%`,
+        sub:`Without routine (${noR.length}×): avg ${nA>=0?'+':''}$${nA} — discipline pays off`,badge:rA>nA?'✓ Crucial':'Neutral'});
     }
     const overS=sessions.filter(s=>s.trades>(s.maxTrades||99));
     if(overS.length){
       const oPnl=Math.round(overS.reduce((s,v)=>s+(v.pnl||0),0)/overS.length);
       const nPnl=Math.round(sessions.filter(s=>s.trades<=(s.maxTrades||99)).reduce((s,v)=>s+(v.pnl||0),0)/Math.max(1,sessions.filter(s=>s.trades<=(s.maxTrades||99)).length));
-      res.push({icon:'📉',color:C.warn,title:`Overtrade : ${overS.length}/${sessions.length} sessions`,
-        desc:`P&L en overtrade : ${oPnl>=0?'+':''}$${oPnl} vs normal : ${nPnl>=0?'+':''}$${nPnl}`,
-        sub:`Respecter le max de trades éviterait ~$${nPnl-oPnl} de perte/session`,badge:`${Math.round(overS.length/sessions.length*100)}% des sess.`});
+      res.push({icon:'📉',color:C.warn,title:`Overtrading: ${overS.length}/${sessions.length} sessions`,
+        desc:`P&L while overtrading: ${oPnl>=0?'+':''}$${oPnl} vs normal: ${nPnl>=0?'+':''}$${nPnl}`,
+        sub:`Respecting max trades would avoid ~$${nPnl-oPnl} loss/session`,badge:`${Math.round(overS.length/sessions.length*100)}% of sess.`});
     }
     let maxS=1,maxSS=0,cur=1,curS=0;
     for(let i=1;i<sorted.length;i++){
@@ -936,9 +936,9 @@ const Patterns=({sessions})=>{
       const serie=sorted.slice(maxSS,maxSS+maxS);
       const avSc=Math.round(serie.reduce((s,v)=>s+calcPsych(v),0)/maxS);
       const serP=serie.reduce((s,v)=>s+(v.pnl||0),0);
-      res.push({icon:'🔥',color:C.orange,title:`Meilleure série : ${maxS} sessions gagnantes consécutives`,
-        desc:`Score moyen : ${avSc}/100 · P&L total : +$${serP.toLocaleString()}`,
-        sub:`Débutée le ${serie[0]?.date?.substring(5)||'—'} — score élevé et séries sont fortement corrélés`,badge:`+${maxS} wins`});
+      res.push({icon:'🔥',color:C.orange,title:`Best streak: ${maxS} consecutive winning sessions`,
+        desc:`Avg score: ${avSc}/100 · Total P&L: +$${serP.toLocaleString()}`,
+        sub:`Started on ${serie[0]?.date?.substring(5)||'—'} — high score and streaks are strongly correlated`,badge:`+${maxS} wins`});
     }
     const axeMeans=AXES7.map(ax=>{
       const mean=Math.round(sessions.reduce((s,v)=>s+(v[ax.key]||0),0)/sessions.length);
@@ -947,9 +947,9 @@ const Patterns=({sessions})=>{
     });
     const weakest=[...axeMeans].sort((a,b)=>a.mean-b.mean)[0];
     const highImpact=[...axeMeans].sort((a,b)=>b.impact-a.impact)[0];
-    res.push({icon:'💡',color:C.purple,title:`Axe prioritaire à renforcer : ${weakest?.label}`,
-      desc:`Score moyen de ${weakest?.mean}/100 — ${weakest?.desc}`,
-      sub:`Plus fort levier P&L : ${highImpact?.label} (+$${highImpact?.impact} d'écart moyen quand élevé)`,badge:`${weakest?.mean}/100`});
+    res.push({icon:'💡',color:C.purple,title:`Priority axis to strengthen: ${weakest?.label}`,
+      desc:`Average score of ${weakest?.mean}/100 — ${weakest?.desc}`,
+      sub:`Strongest P&L lever: ${highImpact?.label} (+$${highImpact?.impact} avg gap when high)`,badge:`${weakest?.mean}/100`});
     return res;
   },[sessions]);
   return(
@@ -999,14 +999,14 @@ const PerfByScore=({sessions})=>{
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:16}}>
         <GlassCard custom={4} glow={C.cyan} style={{padding:'24px 22px'}}>
-          <ST icon="📊" color={C.cyan}>P&L Moyen par Tranche de Score</ST>
+          <ST icon="📊" color={C.cyan}>Avg P&L by Score Range</ST>
           <ResponsiveContainer width="100%" height={195}>
             <BarChart data={buckets} margin={{top:22,right:4,bottom:0,left:0}}>
               <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
               <XAxis dataKey="range" tick={{fill:C.t2,fontSize:9,fontWeight:600}} axisLine={false} tickLine={false}/>
               <YAxis tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`}/>
               <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
-                formatter={(v,n,{payload:p})=>[<span style={{fontFamily:'monospace',fontWeight:900,color:v>=0?C.green:C.danger}}>{v>=0?'+':''}${v} ({p.count} sess.)</span>,'P&L moyen']}/>
+                formatter={(v,n,{payload:p})=>[<span style={{fontFamily:'monospace',fontWeight:900,color:v>=0?C.green:C.danger}}>{v>=0?'+':''}${v} ({p.count} sess.)</span>,'Avg P&L']}/>
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)"/>
               <Bar dataKey="avgPnl" maxBarSize={48} radius={[6,6,0,0]} label={{position:'top',fill:C.t3,fontSize:8,fontWeight:700,formatter:v=>v?`${v>=0?'+':''}$${v}`:''}}>
                 {buckets.map((b,i)=>(<Cell key={i} fill={b.color} fillOpacity={b.count?0.85:0.15}/>))}
@@ -1016,7 +1016,7 @@ const PerfByScore=({sessions})=>{
         </GlassCard>
 
         <GlassCard custom={5} glow={C.blue} style={{padding:'24px 22px'}}>
-          <ST icon="📈" color={C.blue}>Score vs P&L — Vue session par session</ST>
+          <ST icon="📈" color={C.blue}>Score vs P&L — Session by Session View</ST>
           <ResponsiveContainer width="100%" height={195}>
             <ComposedChart data={[...sessions].sort((a,b)=>a.date.localeCompare(b.date)).map(s=>({score:calcPsych(s),pnl:s.pnl||0,mood:s.mood}))} margin={{top:8,right:8,bottom:0,left:0}}>
               <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
@@ -1037,7 +1037,7 @@ const PerfByScore=({sessions})=>{
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:16}}>
         <GlassCard custom={6} glow={C.green} style={{padding:'24px 22px'}}>
-          <ST icon="🎯" color={C.green}>Win Rate par Tranche de Score</ST>
+          <ST icon="🎯" color={C.green}>Win Rate by Score Range</ST>
           <div style={{display:'flex',flexDirection:'column',gap:11,marginTop:4}}>
             {buckets.filter(b=>b.count>0).map((b,i)=>(
               <div key={b.range}>
@@ -1062,11 +1062,11 @@ const PerfByScore=({sessions})=>{
         </GlassCard>
 
         <GlassCard custom={7} glow={C.teal} style={{padding:'24px 22px'}}>
-          <ST icon="📋" color={C.teal}>Tableau Récapitulatif Complet</ST>
+          <ST icon="📋" color={C.teal}>Complete Summary Table</ST>
           <div style={{borderRadius:12,overflow:'hidden',border:`1px solid ${C.brd}`}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 0.7fr 0.9fr 1fr 1fr 0.8fr',padding:'7px 10px',
               background:'rgba(255,255,255,0.05)',borderBottom:`1px solid ${C.brd}`}}>
-              {['Score','Sess.','Win Rate','P&L Moy','P&L Total','Trades'].map(h=>(
+              {['Score','Sess.','Win Rate','Avg P&L','Total P&L','Trades'].map(h=>(
                 <div key={h} style={{fontSize:7.5,fontWeight:800,color:C.t3,textTransform:'uppercase',letterSpacing:'0.4px',textAlign:'center'}}>{h}</div>
               ))}
             </div>
@@ -1085,13 +1085,13 @@ const PerfByScore=({sessions})=>{
             ))}
           </div>
           <div style={{marginTop:12,padding:'10px 14px',borderRadius:11,background:`${C.teal}08`,border:`1px solid ${C.teal}22`}}>
-            <div style={{fontSize:10,fontWeight:800,color:C.teal,marginBottom:4}}>💡 Recommandation</div>
+            <div style={{fontSize:10,fontWeight:800,color:C.teal,marginBottom:4}}>💡 Recommendation</div>
             <div style={{fontSize:9.5,color:C.t2,lineHeight:1.7}}>
               {(()=>{
                 const best=buckets.filter(b=>b.count>0).sort((a,b)=>b.avgPnl-a.avgPnl)[0];
                 const total=buckets.reduce((s,b)=>s+b.count,0);
                 const highPct=Math.round(buckets.filter(b=>b.min>=70).reduce((s,b)=>s+b.count,0)/total*100);
-                return best?`Les sessions avec score ${best.range} génèrent le meilleur P&L moyen (+$${best.avgPnl}). Actuellement ${highPct}% des sessions atteignent score ≥ 70 — viser 60%+.`:'Accumuler plus de données pour des conclusions fiables.';
+                return best?`Sessions with score ${best.range} generate the best avg P&L (+$${best.avgPnl}). Currently ${highPct}% of sessions reach score ≥ 70 — aim for 60%+.`:'Accumulate more data for reliable conclusions.';
               })()}
             </div>
           </div>
@@ -1116,7 +1116,7 @@ const Journal=({sessions})=>{
     return sorted;
   },[sorted,filter]);
 
-  // Score badge inline — barre segmentée horizontale compacte
+  // Score badge inline — compact horizontal segmented bar
   const ScoreBadge=({score,size='md'})=>{
     const sc=sColor(score);
     const zones=[
@@ -1174,9 +1174,9 @@ const Journal=({sessions})=>{
   return(
     <GlassCard custom={9} style={{padding:'26px 26px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
-        <ST icon="📓" color={C.teal} mb={0}>Journal des Sessions</ST>
+        <ST icon="📓" color={C.teal} mb={0}>Session Journal</ST>
         <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-          {[{k:'all',l:'Toutes'},{k:'high',l:'Score ≥70'},{k:'low',l:'Score <50'},{k:'win',l:'Gains'},{k:'loss',l:'Pertes'}].map(({k,l})=>(
+          {[{k:'all',l:'All'},{k:'high',l:'Score ≥70'},{k:'low',l:'Score <50'},{k:'win',l:'Wins'},{k:'loss',l:'Losses'}].map(({k,l})=>(
             <motion.button key={k} onClick={()=>setFilter(k)} whileHover={{scale:1.04}} whileTap={{scale:0.96}}
               style={{padding:'5px 10px',borderRadius:8,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',border:'none',
                 background:filter===k?`${C.teal}20`:'rgba(255,255,255,0.04)',
@@ -1229,21 +1229,21 @@ const Journal=({sessions})=>{
                 {isOpen&&(
                   <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} style={{overflow:'hidden'}}>
                     <div style={{padding:'12px 12px 8px',borderLeft:`2px solid ${sc}22`,marginLeft:4,display:'flex',flexDirection:'column',gap:10}}>
-                      {/* ── Score détaillé — version barre segmentée ── */}
+                      {/* ── Detailed score — segmented bar version ── */}
                       <div style={{padding:'14px 16px',borderRadius:14,background:`${sc}08`,border:`1px solid ${sc}22`,overflow:'hidden',position:'relative'}}>
                         {/* Orb glow */}
                         <div style={{position:'absolute',top:-20,right:-20,width:100,height:100,borderRadius:'50%',background:`radial-gradient(circle,${sc}25,transparent 70%)`,filter:'blur(20px)',pointerEvents:'none'}}/>
                         <div style={{position:'relative',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16}}>
                           {/* Gauche: valeur + label */}
                           <div>
-                            <div style={{fontSize:8,color:C.t3,marginBottom:5,textTransform:'uppercase',letterSpacing:'1px',fontWeight:700}}>Score psychologique</div>
+                            <div style={{fontSize:8,color:C.t3,marginBottom:5,textTransform:'uppercase',letterSpacing:'1px',fontWeight:700}}>Psychological score</div>
                             <div style={{display:'flex',alignItems:'flex-end',gap:6,marginBottom:8}}>
                               <span style={{fontSize:48,fontWeight:900,fontFamily:'monospace',lineHeight:1,color:sc,textShadow:`0 0 32px ${sc}70`,letterSpacing:'-2px'}}>{score}</span>
                               <span style={{fontSize:14,color:C.t3,fontWeight:700,marginBottom:4}}>/100</span>
                             </div>
                             {/* Segmented bar large */}
                             <div style={{display:'flex',gap:3,marginBottom:6}}>
-                              {[{max:30,c:C.danger,l:'Critique'},{max:45,c:C.orange,l:'Fragile'},{max:60,c:C.warn,l:'Correct'},{max:75,c:C.cyan,l:'Solide'},{max:100,c:C.green,l:'Elite'}].map((z,i,arr)=>{
+                              {[{max:30,c:C.danger,l:'Critical'},{max:45,c:C.orange,l:'Fragile'},{max:60,c:C.warn,l:'Fair'},{max:75,c:C.cyan,l:'Solid'},{max:100,c:C.green,l:'Elite'}].map((z,i,arr)=>{
                                 const prev=i>0?arr[i-1].max:0;
                                 const filled=score>prev;
                                 const partial=filled&&score<=z.max;
@@ -1259,14 +1259,14 @@ const Journal=({sessions})=>{
                               })}
                             </div>
                             <div style={{display:'flex',gap:3}}>
-                              {[{max:30,c:C.danger,l:'Crit.'},{max:45,c:C.orange,l:'Frag.'},{max:60,c:C.warn,l:'Corr.'},{max:75,c:C.cyan,l:'Solid'},{max:100,c:C.green,l:'Elite'}].map((z,i,arr)=>{
+                              {[{max:30,c:C.danger,l:'Crit.'},{max:45,c:C.orange,l:'Frag.'},{max:60,c:C.warn,l:'Fair'},{max:75,c:C.cyan,l:'Solid'},{max:100,c:C.green,l:'Elite'}].map((z,i,arr)=>{
                                 const prev=i>0?arr[i-1].max:0;
                                 const active=score>prev&&score<=(z.max);
                                 return<div key={i} style={{flex:1,fontSize:7,fontWeight:700,color:active?z.c:'rgba(255,255,255,0.2)',textAlign:'center',textTransform:'uppercase',letterSpacing:'0.2px'}}>{z.l}</div>;
                               })}
                             </div>
                           </div>
-                          {/* Droite: mini radar */}
+                          {/* Right: mini radar */}
                           <svg width={90} height={90} viewBox="0 0 90 90" style={{flexShrink:0}}>
                             {[0.35,0.7,1].map(r=>(
                               <polygon key={r} stroke={r===1?`${sc}35`:'rgba(255,255,255,0.07)'} fill={r===1?`${sc}07`:'none'} strokeWidth={0.7}
@@ -1278,7 +1278,7 @@ const Journal=({sessions})=>{
                             {AXES7.map((ax,ii)=>{const v=(s[ax.key]||0)/100;const a=(2*Math.PI*ii/7)-Math.PI/2;const px=45+38*v*Math.cos(a),py=45+38*v*Math.sin(a);return<circle key={ii} cx={px} cy={py} r={2.5} fill={ax.color} stroke="rgba(255,255,255,0.7)" strokeWidth={0.8}/>;} )}
                           </svg>
                         </div>
-                        {/* Label niveau */}
+                        {/* Level label */}
                         <div style={{marginTop:8,display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:`${sc}18`,border:`1px solid ${sc}35`}}>
                           <span style={{fontSize:12}}>{sEmoji(score)}</span>
                           <span style={{fontSize:10,fontWeight:800,color:sc}}>{sLabel(score)}</span>
@@ -1297,12 +1297,12 @@ const Journal=({sessions})=>{
                       {/* Stats */}
                       <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:6}}>
                         {[
-                          {l:'Sommeil',v:`${s.sleep}/10`,c:C.purple},
-                          {l:'Énergie', v:`${s.energy}/10`,c:C.cyan},
+                          {l:'Sleep',   v:`${s.sleep}/10`,c:C.purple},
+                          {l:'Energy',  v:`${s.energy}/10`,c:C.cyan},
                           {l:'Trades',  v:`${s.trades||0}`,c:C.t1},
                           {l:'Wins',    v:`${s.wins||0}`,  c:C.green},
                           {l:'Max T.',  v:`${s.maxTrades||'—'}`,c:C.warn},
-                          {l:'Max L.',  v:`${s.maxLoss||0}€`,c:C.danger},
+                          {l:'Max L.',  v:`$${s.maxLoss||0}`,c:C.danger},
                         ].map(({l,v,c})=>(
                           <div key={l} style={{padding:'6px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.05)',textAlign:'center'}}>
                             <div style={{fontSize:7,color:C.t3,marginBottom:2,textTransform:'uppercase',letterSpacing:'0.3px'}}>{l}</div>
@@ -1312,9 +1312,9 @@ const Journal=({sessions})=>{
                       </div>
                       {/* Objectifs + Notes */}
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                        {[{cond:s.objectives,icon:'🎯',label:'Objectifs',val:s.objectives,c:C.cyan},
+                        {[{cond:s.objectives,icon:'🎯',label:'Objectives',val:s.objectives,c:C.cyan},
                           {cond:s.notes,icon:'📝',label:'Notes',val:s.notes,c:C.purple},
-                          {cond:s.stressors,icon:'⚠️',label:'Stresseurs',val:s.stressors,c:C.warn},
+                          {cond:s.stressors,icon:'⚠️',label:'Stressors',val:s.stressors,c:C.warn},
                         ].filter(x=>x.cond).map(({icon,label,val,c})=>(
                           <div key={label} style={{padding:'9px 12px',borderRadius:9,background:`${c}08`,border:`1px solid ${c}18`}}>
                             <div style={{fontSize:8,color:c,marginBottom:3,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.5px'}}>{icon} {label}</div>
@@ -1350,7 +1350,7 @@ const KpiCard=({label,value,sub,color,icon,custom,trend})=>(
     <div style={{fontSize:9.5,color:C.t2,lineHeight:1.4}}>{sub}</div>
     {trend!==undefined&&(
       <div style={{marginTop:6,fontSize:9,fontWeight:700,color:trend>=0?C.green:C.danger,display:'flex',alignItems:'center',gap:4}}>
-        <span>{trend>=0?'↗':'↘'}</span><span>{Math.abs(trend).toFixed(1)}% vs période préc.</span>
+        <span>{trend>=0?'↗':'↘'}</span><span>{Math.abs(trend).toFixed(1)}% vs prev. period</span>
       </div>
     )}
     <motion.div animate={{opacity:[0.4,0.8,0.4]}} transition={{duration:2.5,repeat:Infinity,delay:(custom||0)*0.3}}
@@ -1360,7 +1360,7 @@ const KpiCard=({label,value,sub,color,icon,custom,trend})=>(
 
 const TABS=[
   {id:'overview',  label:'Overview',    icon:'📊'},
-  {id:'emotions',  label:'Émotions',    icon:'😊'},
+  {id:'emotions',  label:'Emotions',    icon:'😊'},
   {id:'patterns',  label:'Patterns',    icon:'🔍'},
   {id:'perf',      label:'Performance', icon:'📈'},
   {id:'journal',   label:'Journal',     icon:'📓'},
@@ -1371,11 +1371,11 @@ export default function Psychology(){
   const { trades } = useTradingContext();
 
   // ── Convertir les trades Supabase en sessions Psychology ──────────────
-  // Chaque "session" = groupe de trades par jour
+  // Each "session" = group of trades per day
   const sessions = useMemo(() => {
     if (!trades || trades.length === 0) return [];
 
-    // Grouper par date
+    // Group by date
     const byDate = {};
     trades.forEach(t => {
       const date = (t.open_date || t.date || '').substring(0, 10);
@@ -1390,18 +1390,18 @@ export default function Psychology(){
         const pnl = dayTrades.reduce((s, t) => s + parseFloat(t.profit_loss ?? t.pnl ?? 0), 0);
         const wins = dayTrades.filter(t => parseFloat(t.profit_loss ?? t.pnl ?? 0) > 0).length;
 
-        // Score psycho depuis les données disponibles
-        // Si les trades ont un psychologyScore, on l'utilise, sinon on le déduit du P&L
+        // Psycho score from available data
+        // If trades have a psychologyScore, use it, otherwise deduce from P&L
         const psychScores = dayTrades.map(t => t.psychologyScore).filter(Boolean);
         const avgPsychScore = psychScores.length > 0
           ? psychScores.reduce((s, v) => s + v, 0) / psychScores.length
           : null;
 
-        // Déduire les axes depuis le P&L et les données disponibles
+        // Deduce axes from P&L and available data
         const perfScore = pnl > 0 ? Math.min(100, 60 + (wins / dayTrades.length) * 40) : Math.max(20, 60 - Math.abs(pnl) / 50);
         const baseScore = avgPsychScore ?? perfScore;
 
-        // Humeur déduite du P&L et win rate
+        // Mood deduced from P&L and win rate
         const wr = wins / dayTrades.length;
         const mood = pnl > 500 && wr > 0.7 ? 'excellent'
           : pnl > 0 && wr >= 0.5 ? 'bien'
@@ -1415,7 +1415,7 @@ export default function Psychology(){
           id: idx + 1,
           date,
           mood,
-          sleep: 7,  // non disponible dans les trades
+          sleep: 7,  // not available in trades
           energy: 7,
           routine: pnl > 0,
           discipline:  Math.min(100, Math.round(axeBase * (0.9 + wr * 0.2))),
@@ -1437,7 +1437,7 @@ export default function Psychology(){
       });
   }, [trades]);
 
-  // ── État vide si pas de trades ────────────────────────────────────────
+  // ── Empty state if no trades ────────────────────────────────────────
   const hasData = sessions.length > 0;
 
   const stats=useMemo(()=>{
@@ -1452,7 +1452,7 @@ export default function Psychology(){
     const latest=sessions[sessions.length-1];
     const latestScore=calcPsych(latest);
     const prevScore=sessions.length>1?calcPsych(sessions[sessions.length-2]):latestScore;
-    // Tendances
+    // Trends
     const mid=Math.floor(scores.length/2);
     const firstHalf=scores.slice(0,mid),secondHalf=scores.slice(mid);
     const avgFirst=firstHalf.reduce((s,v)=>s+v,0)/firstHalf.length;
@@ -1469,13 +1469,13 @@ export default function Psychology(){
           <div style={{fontSize:72,marginBottom:20}}>🧠</div>
           <h2 style={{fontSize:28,fontWeight:900,background:C.gradPurple,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:12}}>Psychology Tracker</h2>
           <p style={{fontSize:15,color:C.t2,maxWidth:440,lineHeight:1.7,marginBottom:8}}>
-            Aucun trade enregistré pour le moment.
+            No trades recorded yet.
           </p>
           <p style={{fontSize:13,color:C.t3,maxWidth:400,lineHeight:1.7}}>
-            Importe ou ajoute tes trades dans <strong style={{color:C.cyan}}>All Trades</strong> — les données psychology apparaîtront automatiquement ici.
+            Import or add your trades in <strong style={{color:C.cyan}}>All Trades</strong> — psychology data will appear automatically here.
           </p>
           <motion.div animate={{opacity:[0.4,0.9,0.4]}} transition={{duration:2.5,repeat:Infinity}} style={{marginTop:28,display:'inline-flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:12,background:`${C.purple}14`,border:`1px solid ${C.purple}30`,fontSize:12,color:C.purple,fontWeight:700}}>
-            📊 Tes statistiques apparaîtront ici
+            📊 Your statistics will appear here
           </motion.div>
         </motion.div>
       </div>
@@ -1514,7 +1514,7 @@ export default function Psychology(){
                   </h1>
                   <span style={{padding:'2px 9px',borderRadius:6,background:`${C.blue}20`,border:`1px solid ${C.blue}40`,fontSize:9,fontWeight:800,color:C.blue,letterSpacing:'0.5px'}}>v3.0</span>
                 </div>
-                <div style={{fontSize:11,color:C.t3}}>Score composite · 8 dimensions · {sessions.length} sessions analysées</div>
+                <div style={{fontSize:11,color:C.t3}}>Composite score · 8 dimensions · {sessions.length} sessions analyzed</div>
               </div>
             </div>
             {/* Tabs */}
@@ -1535,20 +1535,20 @@ export default function Psychology(){
 
         {/* ── KPI ROW ── */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20}}>
-          <KpiCard custom={0} label="Score Actuel"         icon="🧠"
+          <KpiCard custom={0} label="Current Score"         icon="🧠"
             value={stats.latestScore}
             sub={`${sEmoji(stats.latestScore)} ${sLabel(stats.latestScore)} · Moy. ${stats.avgScore}`}
             color={sColor(stats.latestScore)} trend={stats.scoreTrend}/>
           <KpiCard custom={1} label="Discipline Rate"      icon="📐"
             value={`${stats.disciplineRate}%`}
-            sub="Score discipline moyen" color={C.blue}/>
-          <KpiCard custom={2} label="Sessions Émotionnelles" icon="😤"
+            sub="Avg discipline score" color={C.blue}/>
+          <KpiCard custom={2} label="Emotional Sessions" icon="😤"
             value={`${stats.emotionalPct}%`}
-            sub={`${Math.round(sessions.length*stats.emotionalPct/100)} sessions score < 50`}
+            sub={`${Math.round(sessions.length*stats.emotionalPct/100)} sessions with score < 50`}
             color={C.danger}/>
-          <KpiCard custom={3} label="P&L Sessions Optimales" icon="💹"
+          <KpiCard custom={3} label="Optimal Session P&L" icon="💹"
             value={stats.highPnl>=0?`+$${stats.highPnl.toLocaleString()}`:`-$${Math.abs(stats.highPnl).toLocaleString()}`}
-            sub="Sessions avec score ≥ 70" color={C.green}/>
+            sub="Sessions with score ≥ 70" color={C.green}/>
         </div>
 
         {/* ── CONTENT ── */}

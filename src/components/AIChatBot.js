@@ -9,27 +9,27 @@ const LOGO_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA2QAAAMPCAYAAAC
 /* ── Knowledge base for smart responses ── */
 const KNOWLEDGE = {
   pricing: {
-    keywords: ['price', 'prix', 'cost', 'combien', 'plan', 'starter', 'pro', 'elite', 'subscription', 'abonnement', 'pay', 'payer'],
+    keywords: ['price', 'cost', 'how much', 'plan', 'starter', 'pro', 'elite', 'subscription', 'pay', 'pricing', 'fee', 'fees'],
     response: "MarketFlow Journal offers 3 plans:\n\n\u2022 Starter: $15/mo or $11/mo annually\n\u2022 Pro: $22/mo or $15/mo annually\n\u2022 Elite: $38/mo or $27/mo annually\n\nAll plans include a free trial. You can manage your subscription in Account Settings.",
   },
   import: {
-    keywords: ['import', 'csv', 'upload', 'charger', 'broker', 'mt4', 'mt5', 'metatrader', 'export', 'trades'],
+    keywords: ['import', 'csv', 'upload', 'upload', 'broker', 'mt4', 'mt5', 'metatrader', 'export', 'trades', 'load'],
     response: "You can import your trades in several ways:\n\n\u2022 Universal CSV Import (All Trades page) - compatible with any broker\n\u2022 MetaTrader 4/5 auto-sync via our EA (Connections > Brokers)\n\u2022 Manual trade entry\n\nThe CSV importer auto-detects separators and maps columns automatically.",
   },
   ai: {
-    keywords: ['ai', 'ia', 'intelligence', 'coach', 'analysis', 'analyse', 'pattern', 'bias', 'psychology'],
+    keywords: ['ai', 'intelligence', 'coach', 'analysis', 'analyze', 'pattern', 'bias', 'psychology'],
     response: "MarketFlow Journal includes powerful AI tools:\n\n\u2022 AI Coach - analyzes your trading patterns and psychological biases\n\u2022 Psychology dashboard - tracks emotional patterns and performance\n\u2022 Smart trade analysis with pattern recognition\n\nI'm here to help you right now too!",
   },
   backtest: {
-    keywords: ['backtest', 'back test', 'historical', 'strategy', 'strategie', 'test'],
+    keywords: ['backtest', 'back test', 'historical', 'strategy', 'test'],
     response: "The Backtest module lets you test strategies on historical data with visual charts. Access it from the Trading section in the sidebar.",
   },
   cancel: {
-    keywords: ['cancel', 'annuler', 'refund', 'remboursement', 'unsubscribe', 'desabonner', 'stop'],
+    keywords: ['cancel', 'refund', 'unsubscribe', 'stop'],
     response: "You can cancel your subscription anytime from Account Settings > Manage Plan. You'll keep access until the end of your billing period.\n\nFor refund requests, please contact our support team.",
   },
   support: {
-    keywords: ['support', 'help', 'aide', 'problem', 'probleme', 'bug', 'error', 'issue', 'contact', 'email'],
+    keywords: ['support', 'help', 'problem', 'bug', 'error', 'issue', 'contact', 'email'],
     response: "I can help with most questions! For specific issues:\n\n\u2022 Technical bugs or feature requests: use the Support page\n\u2022 Account issues: check Account Settings\n\u2022 General questions: just ask me!\n\nYou can also reach us at marketflowjournal0@gmail.com",
   },
   prop: {
@@ -37,11 +37,11 @@ const KNOWLEDGE = {
     response: "MarketFlow Journal is designed with prop firm traders in mind. You can:\n\n\u2022 Track multiple prop firm accounts\n\u2022 Monitor challenge progress\n\u2022 Generate prop firm-style reports\n\u2022 Track rules compliance (drawdown, daily loss, etc.)",
   },
   features: {
-    keywords: ['feature', 'functionality', 'what can', 'que peut', 'capable', 'offer', 'offre'],
+    keywords: ['feature', 'functionality', 'what can', 'capable', 'offer', 'offers'],
     response: "MarketFlow Journal features:\n\n\u2022 Complete trade journal with analytics\n\u2022 Universal CSV import from any broker\n\u2022 MT4/MT5 auto-sync\n\u2022 AI Trade Coach & Psychology analysis\n\u2022 Visual backtesting\n\u2022 Equity curve tracking\n\u2022 Calendar view\n\u2022 Multi-account support\n\u2022 Prop firm tracking\n\u2022 PDF report exports",
   },
   account: {
-    keywords: ['account', 'compte', 'login', 'signin', 'register', 'signup', 'inscription', 'connexion'],
+    keywords: ['account', 'login', 'signin', 'register', 'signup', 'sign in', 'sign up'],
     response: "You can sign up with:\n\n\u2022 Email & password\n\u2022 Google account\n\u2022 GitHub account\n\nAfter signup, you'll go through onboarding and can choose your plan. Your account settings are accessible from the sidebar.",
   },
 };
@@ -57,7 +57,7 @@ function getSmartResponse(message, userData, trades, profile) {
   }
 
   // Personal data queries
-  if (lower.includes('my trades') || lower.includes('mes trades') || lower.includes('how many') || lower.includes('combien')) {
+  if (lower.includes('my trades') || lower.includes('my trade') || lower.includes('how many') || lower.includes('how much')) {
     if (trades && trades.length > 0) {
       const wins = trades.filter(t => t.pnl > 0).length;
       const losses = trades.filter(t => t.pnl <= 0).length;
@@ -80,7 +80,7 @@ function getSmartResponse(message, userData, trades, profile) {
     return "No trade data yet. Import your trades first!";
   }
 
-  if (lower.includes('best') || lower.includes('worst') || lower.includes('top') || lower.includes('pire') || lower.includes('meilleur')) {
+  if (lower.includes('best') || lower.includes('worst') || lower.includes('top') || lower.includes('biggest loss') || lower.includes('best trade')) {
     if (trades && trades.length > 0) {
       const sorted = [...trades].sort((a, b) => (b.pnl || 0) - (a.pnl || 0));
       const best = sorted[0];
@@ -90,12 +90,12 @@ function getSmartResponse(message, userData, trades, profile) {
     return "No trades to analyze yet.";
   }
 
-  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey') || lower.includes('salut') || lower.includes('bonjour')) {
+  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey') || lower.includes('greetings') || lower.includes('good morning')) {
     const name = userData?.user_metadata?.first_name || userData?.email?.split('@')[0] || 'Trader';
     return `Hey ${name}! I'm your MarketFlow AI assistant. I have access to all your trading data and can help with:\n\n\u2022 Trade analysis & stats\n\u2022 Performance insights\n\u2022 Platform questions\n\u2022 Technical support\n\nWhat can I help you with?`;
   }
 
-  if (lower.includes('thank') || lower.includes('merci')) {
+  if (lower.includes('thank')) {
     return "Happy to help! Let me know if you need anything else.";
   }
 

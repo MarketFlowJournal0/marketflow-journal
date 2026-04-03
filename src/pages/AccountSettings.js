@@ -62,7 +62,7 @@ export default function AccountSettings({ user, onBack }) {
     starter: { label: 'Starter',       color: '#00F5D4' },
     pro:     { label: 'Pro',           color: '#06E6FF' },
     elite:   { label: 'Elite ✦',       color: '#FFD700' },
-    trial:   { label: 'Essai gratuit', color: '#00FF88' },
+    trial:   { label: 'Free Trial',    color: '#00FF88' },
   };
   const planInfo = PLAN_LABELS[plan] || PLAN_LABELS.trial;
 
@@ -73,7 +73,7 @@ export default function AccountSettings({ user, onBack }) {
   const [saving,      setSaving]      = useState(false);
   const [savingPw,    setSavingPw]    = useState(false);
 
-  // Mettre à jour nom/prénom
+  // Update first/last name
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
@@ -81,24 +81,24 @@ export default function AccountSettings({ user, onBack }) {
         data: { first_name: fname, last_name: lname },
       });
       if (error) throw error;
-      toast.success('Profil mis à jour ✓', {
+      toast.success('Profile updated ✓', {
         style: { background: '#0D1627', color: '#00FF88', borderRadius: '10px' },
       });
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la mise à jour');
+      toast.error(err.message || 'Error during update');
     } finally {
       setSaving(false);
     }
   };
 
-  // Changer le mot de passe
+  // Change password
   const handleChangePassword = async () => {
     if (newPassword.length < 8) {
-      toast.error('Le mot de passe doit faire au moins 8 caractères');
+      toast.error('Password must be at least 8 characters');
       return;
     }
     if (newPassword !== confirmPw) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error('Passwords do not match');
       return;
     }
     setSavingPw(true);
@@ -107,11 +107,11 @@ export default function AccountSettings({ user, onBack }) {
       if (error) throw error;
       setNewPassword('');
       setConfirmPw('');
-      toast.success('Mot de passe mis à jour ✓', {
+      toast.success('Password updated ✓', {
         style: { background: '#0D1627', color: '#00FF88', borderRadius: '10px' },
       });
     } catch (err) {
-      toast.error(err.message || 'Erreur lors du changement de mot de passe');
+      toast.error(err.message || 'Error changing password');
     } finally {
       setSavingPw(false);
     }
@@ -120,7 +120,7 @@ export default function AccountSettings({ user, onBack }) {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', padding: '32px 32px 60px', fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
 
-      {/* Fond ambiance */}
+      {/* Ambient background */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ position: 'absolute', top: 0, left: '20%', width: 500, height: 350, background: 'radial-gradient(ellipse,rgba(77,124,255,0.05) 0%,transparent 70%)', filter: 'blur(40px)' }}/>
       </div>
@@ -144,13 +144,13 @@ export default function AccountSettings({ user, onBack }) {
           </button>
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: C.t0, letterSpacing: '-0.4px' }}>
-              Paramètres du compte
+              Account Settings
             </h1>
-            <p style={{ margin: '3px 0 0', fontSize: 12, color: C.t3 }}>Gérez vos informations personnelles</p>
+            <p style={{ margin: '3px 0 0', fontSize: 12, color: C.t3 }}>Manage your personal information</p>
           </div>
         </div>
 
-        {/* ── Infos du compte ── */}
+        {/* ── Account Info ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           style={{
@@ -161,7 +161,7 @@ export default function AccountSettings({ user, onBack }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <div style={{ width: 2, height: 14, background: C.cyan, borderRadius: 2 }}/>
-            <span style={{ fontSize: 12, fontWeight: 800, color: C.t1, letterSpacing: '-0.1px' }}>Informations du profil</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.t1, letterSpacing: '-0.1px' }}>Profile Information</span>
           </div>
 
           {/* Avatar + plan */}
@@ -190,27 +190,27 @@ export default function AccountSettings({ user, onBack }) {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
-            <Field label="Prénom">
-              <Input value={fname} onChange={e => setFname(e.target.value)} placeholder="Ton prénom"/>
+            <Field label="First Name">
+              <Input value={fname} onChange={e => setFname(e.target.value)} placeholder="Your first name"/>
             </Field>
-            <Field label="Nom">
-              <Input value={lname} onChange={e => setLname(e.target.value)} placeholder="Ton nom"/>
+            <Field label="Last Name">
+              <Input value={lname} onChange={e => setLname(e.target.value)} placeholder="Your last name"/>
             </Field>
           </div>
 
-          <Field label="Adresse e-mail">
+          <Field label="Email Address">
             <Input value={email} disabled placeholder="Email" />
             <div style={{ fontSize: 10.5, color: C.t3, marginTop: 5 }}>
-              L'adresse e-mail ne peut pas être modifiée ici.
+              Email address cannot be changed here.
             </div>
           </Field>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Btn onClick={handleSaveProfile} loading={saving}>Enregistrer</Btn>
+            <Btn onClick={handleSaveProfile} loading={saving}>Save</Btn>
           </div>
         </motion.div>
 
-        {/* ── Sécurité ── */}
+        {/* ── Security ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }}
           style={{
@@ -221,24 +221,24 @@ export default function AccountSettings({ user, onBack }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <div style={{ width: 2, height: 14, background: '#B06EFF', borderRadius: 2 }}/>
-            <span style={{ fontSize: 12, fontWeight: 800, color: C.t1 }}>Sécurité</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.t1 }}>Security</span>
           </div>
 
-          <Field label="Nouveau mot de passe">
-            <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="8 caractères minimum"/>
+          <Field label="New Password">
+            <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 8 characters"/>
           </Field>
-          <Field label="Confirmer le mot de passe">
-            <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Répète le mot de passe"/>
+          <Field label="Confirm Password">
+            <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Repeat password"/>
           </Field>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Btn onClick={handleChangePassword} loading={savingPw} color="#B06EFF">
-              Changer le mot de passe
+              Change Password
             </Btn>
           </div>
         </motion.div>
 
-        {/* ── Zone danger ── */}
+        {/* ── Danger Zone ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.14 }}
           style={{
@@ -248,18 +248,18 @@ export default function AccountSettings({ user, onBack }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <div style={{ width: 2, height: 14, background: C.danger, borderRadius: 2 }}/>
-            <span style={{ fontSize: 12, fontWeight: 800, color: C.t1 }}>Zone de danger</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.t1 }}>Danger Zone</span>
           </div>
           <p style={{ margin: '0 0 14px', fontSize: 12, color: C.t3, lineHeight: 1.6 }}>
-            La suppression du compte est permanente. Toutes tes données de trading seront effacées définitivement.
+            Account deletion is permanent. All your trading data will be permanently erased.
           </p>
           <Btn
             danger
-            onClick={() => toast.error('Contacte le support pour supprimer ton compte.', {
+            onClick={() => toast.error('Contact support to delete your account.', {
               style: { background: '#0D1627', color: '#FF3D57', borderRadius: '10px' },
             })}
           >
-            Supprimer mon compte
+            Delete my account
           </Btn>
         </motion.div>
 

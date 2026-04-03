@@ -11,7 +11,7 @@ function AIChat() {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  // Questions suggérées
+  // Suggested questions
   const suggestedQuestions = [
     '📊 What are my best trading setups?',
     '⏰ When do I perform best during the day?',
@@ -21,7 +21,7 @@ function AIChat() {
     '🎯 What\'s my average risk/reward ratio?',
   ];
 
-  // Réponses pré-programmées (simulation IA)
+  // Pre-programmed responses (AI simulation)
   const getAIResponse = (question) => {
     const responses = {
       'best trading setups': 'Based on your trading history, your **Breakout Strategy** has the highest win rate at **80%** with an average profit of **$245**. Your **Trend Following** setup also performs well at **78.9%** win rate. I recommend focusing more on these two setups during high-volume market hours (9:30-11:00 AM).',
@@ -72,7 +72,7 @@ function AIChat() {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simuler le délai de réponse de l'IA
+    // Simulate AI response delay
     setTimeout(() => {
       const aiResponse = {
         role: 'assistant',

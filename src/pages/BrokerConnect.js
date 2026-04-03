@@ -44,7 +44,7 @@ export default function BrokerConnect() {
   async function handleAdd(e) {
     e.preventDefault();
     if (!form.account_number.trim()) {
-      toast.error('Numero de compte requis');
+      toast.error('Account number required');
       return;
     }
     const token = generateToken();
@@ -64,7 +64,7 @@ export default function BrokerConnect() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Compte ajoute avec succes');
+      toast.success('Account added successfully');
       setForm({ broker_type: 'mt4', account_number: '', account_name: '', server_name: '' });
       setShowForm(false);
       fetchAccounts();
@@ -77,7 +77,7 @@ export default function BrokerConnect() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Compte supprime');
+      toast.success('Account deleted');
       fetchAccounts();
     }
     setDeletingId(null);
@@ -87,7 +87,7 @@ export default function BrokerConnect() {
     navigator.clipboard.writeText(token);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
-    toast.success('Token copie');
+    toast.success('Token copied');
   }
 
   return (
@@ -95,7 +95,7 @@ export default function BrokerConnect() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0 }}>Broker Connect</h1>
-          <p style={{ fontSize: 14, color: '#7A90B8', margin: '6px 0 0' }}>Connectez vos comptes MetaTrader pour synchroniser vos trades automatiquement</p>
+          <p style={{ fontSize: 14, color: '#7A90B8', margin: '6px 0 0' }}>Connect your MetaTrader accounts to automatically sync your trades</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -110,7 +110,7 @@ export default function BrokerConnect() {
             cursor: 'pointer',
           }}
         >
-          {showForm ? 'Annuler' : '+ Ajouter un compte'}
+          {showForm ? 'Cancel' : '+ Add Account'}
         </button>
       </div>
 
@@ -124,7 +124,7 @@ export default function BrokerConnect() {
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Type de broker</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Broker Type</label>
               <select
                 value={form.broker_type}
                 onChange={e => setForm(f => ({ ...f, broker_type: e.target.value }))}
@@ -137,11 +137,11 @@ export default function BrokerConnect() {
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Numero de compte</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Account Number</label>
               <input
                 value={form.account_number}
                 onChange={e => setForm(f => ({ ...f, account_number: e.target.value }))}
-                placeholder="Ex: 50123456"
+                placeholder="e.g. 50123456"
                 style={{
                   width: '100%', padding: '10px 12px', background: '#060D1A', color: '#fff',
                   border: '1px solid #162034', borderRadius: 8, fontSize: 13, outline: 'none',
@@ -149,11 +149,11 @@ export default function BrokerConnect() {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Nom du compte (optionnel)</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Account Name (optional)</label>
               <input
                 value={form.account_name}
                 onChange={e => setForm(f => ({ ...f, account_name: e.target.value }))}
-                placeholder="Ex: FTMO Challenge"
+                placeholder="e.g. FTMO Challenge"
                 style={{
                   width: '100%', padding: '10px 12px', background: '#060D1A', color: '#fff',
                   border: '1px solid #162034', borderRadius: 8, fontSize: 13, outline: 'none',
@@ -161,11 +161,11 @@ export default function BrokerConnect() {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Server (optionnel)</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Server (optional)</label>
               <input
                 value={form.server_name}
                 onChange={e => setForm(f => ({ ...f, server_name: e.target.value }))}
-                placeholder="Ex: ICMarkets-Demo"
+                placeholder="e.g. ICMarkets-Demo"
                 style={{
                   width: '100%', padding: '10px 12px', background: '#060D1A', color: '#fff',
                   border: '1px solid #162034', borderRadius: 8, fontSize: 13, outline: 'none',
@@ -183,20 +183,20 @@ export default function BrokerConnect() {
             fontSize: 13,
             cursor: 'pointer',
           }}>
-            Generer le token
+            Generate Token
           </button>
         </form>
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#7A90B8' }}>Chargement...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: '#7A90B8' }}>Loading...</div>
       ) : accounts.length === 0 ? (
         <div style={{
           textAlign: 'center', padding: 60, background: '#0C1422',
           border: '1px solid #162034', borderRadius: 12,
         }}>
-          <p style={{ color: '#7A90B8', fontSize: 14 }}>Aucun compte connecte</p>
-          <p style={{ color: '#334566', fontSize: 13 }}>Cliquez sur "Ajouter un compte" pour commencer</p>
+          <p style={{ color: '#7A90B8', fontSize: 14 }}>No connected accounts</p>
+          <p style={{ color: '#334566', fontSize: 13 }}>Click "Add Account" to get started</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -226,7 +226,7 @@ export default function BrokerConnect() {
                       color: acc.status === 'connected' ? '#00FF88' : '#7A90B8',
                       borderRadius: 4, fontSize: 11, fontWeight: 500,
                     }}>
-                      {acc.status === 'connected' ? 'Connecte' : 'Deconnecte'}
+                      {acc.status === 'connected' ? 'Connected' : 'Disconnected'}
                     </span>
                   </div>
                   {acc.server_name && (
@@ -247,7 +247,7 @@ export default function BrokerConnect() {
                         fontSize: 11, cursor: 'pointer', fontWeight: 500,
                       }}
                     >
-                      {copiedToken === acc.api_token ? 'Copie !' : 'Copier'}
+                      {copiedToken === acc.api_token ? 'Copied!' : 'Copy'}
                     </button>
                   </div>
                 </div>
@@ -260,7 +260,7 @@ export default function BrokerConnect() {
                     fontSize: 11, cursor: 'pointer', fontWeight: 500,
                   }}
                 >
-                  {deletingId === acc.id ? '...' : 'Supprimer'}
+                  {deletingId === acc.id ? '...' : 'Delete'}
                 </button>
               </div>
             </div>

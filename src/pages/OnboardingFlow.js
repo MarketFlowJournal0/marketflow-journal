@@ -10,27 +10,27 @@ const STEPS = [
   {
     id: 'experience',
     emoji: '📊',
-    question: 'Quel est ton niveau en trading ?',
-    subtitle: 'On adaptera tes analytics à ton profil.',
+    question: 'What is your trading level?',
+    subtitle: 'We\'ll tailor analytics to your profile.',
     type: 'single',
     options: [
-      { id: 'beginner',      label: 'Débutant',        desc: 'Moins de 6 mois',         emoji: '🌱' },
-      { id: 'intermediate',  label: 'Intermédiaire',   desc: '6 mois – 2 ans',          emoji: '📈' },
-      { id: 'advanced',      label: 'Avancé',          desc: '2 – 5 ans',               emoji: '🎯' },
-      { id: 'professional',  label: 'Professionnel',   desc: '5+ ans / funded trader',  emoji: '👑' },
+      { id: 'beginner',      label: 'Beginner',        desc: 'Less than 6 months',         emoji: '🌱' },
+      { id: 'intermediate',  label: 'Intermediate',   desc: '6 months – 2 years',          emoji: '📈' },
+      { id: 'advanced',      label: 'Advanced',          desc: '2 – 5 years',               emoji: '🎯' },
+      { id: 'professional',  label: 'Professional',   desc: '5+ years / funded trader',  emoji: '👑' },
     ],
   },
   {
     id: 'market',
     emoji: '🌍',
-    question: 'Quels marchés trades-tu ?',
-    subtitle: 'Sélectionne tout ce qui s\'applique.',
+    question: 'Which markets do you trade?',
+    subtitle: 'Select all that apply.',
     type: 'multi',
     options: [
       { id: 'forex',    label: 'Forex',          emoji: '💱' },
       { id: 'indices',  label: 'Indices',         emoji: '📉' },
       { id: 'crypto',   label: 'Crypto',          emoji: '₿'  },
-      { id: 'stocks',   label: 'Actions',         emoji: '🏦' },
+      { id: 'stocks',   label: 'Stocks',         emoji: '🏦' },
       { id: 'futures',  label: 'Futures',         emoji: '⚡' },
       { id: 'options',  label: 'Options',         emoji: '🔧' },
     ],
@@ -38,34 +38,34 @@ const STEPS = [
   {
     id: 'style',
     emoji: '⏱',
-    question: 'Quel est ton style de trading ?',
-    subtitle: 'On optimisera tes rapports en conséquence.',
+    question: 'What is your trading style?',
+    subtitle: 'We\'ll optimize your reports accordingly.',
     type: 'single',
     options: [
       { id: 'scalping',  label: 'Scalping',       desc: 'Trades < 15 min',         emoji: '⚡' },
       { id: 'daytrading',label: 'Day Trading',    desc: 'Intraday',                emoji: '☀️' },
-      { id: 'swing',     label: 'Swing Trading',  desc: 'Quelques jours',          emoji: '🌊' },
-      { id: 'position',  label: 'Position',       desc: 'Semaines / mois',         emoji: '🏔️' },
+      { id: 'swing',     label: 'Swing Trading',  desc: 'Few days',          emoji: '🌊' },
+      { id: 'position',  label: 'Position',       desc: 'Weeks / months',         emoji: '🏔️' },
     ],
   },
   {
     id: 'goal',
     emoji: '🎯',
-    question: 'Quel est ton objectif principal ?',
-    subtitle: 'Ça nous aide à personnaliser ton dashboard.',
+    question: 'What is your main goal?',
+    subtitle: 'This helps us personalize your dashboard.',
     type: 'single',
     options: [
-      { id: 'improve',   label: 'Améliorer mes performances',  emoji: '🚀' },
-      { id: 'prop',      label: 'Passer un challenge prop firm', emoji: '🏆' },
-      { id: 'consistent',label: 'Devenir consistent',           emoji: '🎯' },
-      { id: 'manage',    label: 'Gérer plusieurs comptes',      emoji: '💼' },
+      { id: 'improve',   label: 'Improve my performance',  emoji: '🚀' },
+      { id: 'prop',      label: 'Pass a prop firm challenge', emoji: '🏆' },
+      { id: 'consistent',label: 'Become consistent',           emoji: '🎯' },
+      { id: 'manage',    label: 'Manage multiple accounts',      emoji: '💼' },
     ],
   },
   {
     id: 'platform',
     emoji: '💻',
-    question: 'Quelle plateforme utilises-tu ?',
-    subtitle: 'On configurera l\'import automatiquement.',
+    question: 'Which platform do you use?',
+    subtitle: 'We\'ll set up import automatically.',
     type: 'multi',
     options: [
       { id: 'mt4',      label: 'MetaTrader 4',   emoji: '📟' },
@@ -73,7 +73,7 @@ const STEPS = [
       { id: 'ctrader',  label: 'cTrader',         emoji: '💹' },
       { id: 'tradingview', label: 'TradingView',  emoji: '📊' },
       { id: 'ninjatrader', label: 'NinjaTrader',  emoji: '🥷' },
-      { id: 'other',    label: 'Autre',           emoji: '🔧' },
+      { id: 'other',    label: 'Other',           emoji: '🔧' },
     ],
   },
 ];
@@ -326,7 +326,7 @@ export default function OnboardingFlow({ onComplete }) {
         <p className="ob-subtitle">{current.subtitle}</p>
 
         {current.type === 'multi' && (
-          <div className="ob-multi-hint">Tu peux en sélectionner plusieurs</div>
+          <div className="ob-multi-hint">You can select multiple</div>
         )}
 
         {/* Options */}
@@ -351,7 +351,7 @@ export default function OnboardingFlow({ onComplete }) {
         <div className="ob-footer">
           {step > 0 ? (
             <button className="ob-btn-prev" onClick={goPrev}>
-              ← Retour
+              ← Back
             </button>
           ) : (
             <div />
@@ -361,7 +361,7 @@ export default function OnboardingFlow({ onComplete }) {
             onClick={goNext}
             disabled={!canNext}
           >
-            {step === total - 1 ? 'Voir les plans 🚀' : 'Continuer →'}
+            {step === total - 1 ? 'View plans 🚀' : 'Continue →'}
           </button>
         </div>
       </div>

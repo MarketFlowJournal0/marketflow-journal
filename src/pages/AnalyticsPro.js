@@ -1,9 +1,9 @@
 /*
-╔══════════════════════════════════════════════════════════════════════════════╗
+══════════════════════════════════════════════════════════════════════════════╗
 ║   📊 ANALYTICS PRO v2 - MARKETFLOW JOURNAL                                  ║
-║   ✅ FIX: useState sorti du .map() → KpiCard = composant dédié             ║
-║   ✅ NOUVEAU: Monthly P&L, Cumulative WR, Long vs Short, News Impact        ║
-║   ✅ 16 blocs d'analytics complets                                          ║
+║   ✅ FIX: useState extracted from .map() → KpiCard = dedicated component   ║
+║   ✅ NEW: Monthly P&L, Cumulative WR, Long vs Short, News Impact           ║
+║   ✅ 16 complete analytics blocks                                           ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 */
 
@@ -141,11 +141,11 @@ const PeriodFilter = ({ value, onChange }) => (
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ✅ FIX CRITIQUE — KpiCard = composant React indépendant
-//    useState() appelé ici, PAS dans un .map()
+// ✅ CRITICAL FIX — KpiCard = independent React component
+//    useState() called here, NOT in a .map()
 // ─────────────────────────────────────────────────────────────────────────────
 const KpiCard = ({ label, value, color, icon, sub, index }) => {
-  const [hov, setHov] = useState(false); // ← Hook légal ici : composant React
+  const [hov, setHov] = useState(false); // ← Legal hook here: React component
   return (
     <motion.div
       variants={fadeUp} initial="hidden" animate="visible" custom={index}
@@ -188,7 +188,7 @@ const KpiCard = ({ label, value, color, icon, sub, index }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📊 BLOC 1 — KPI CARDS (10 métriques)
+// 📊 BLOCK 1 — KPI CARDS (10 metrics)
 // ─────────────────────────────────────────────────────────────────────────────
 const KpiCards = ({ trades }) => {
   const metrics = useMemo(() => {
@@ -214,7 +214,7 @@ const KpiCards = ({ trades }) => {
       if (d > maxDD) maxDD = d;
     });
 
-    // Consistency (% jours profitables)
+    // Consistency (% profitable days)
     const dayMap = {};
     trades.forEach(t => {
       if (!t.date) return;
@@ -224,7 +224,7 @@ const KpiCards = ({ trades }) => {
     const days = Object.values(dayMap);
     const consistency = days.length ? (days.filter(v => v > 0).length / days.length) * 100 : 0;
 
-    // Streak actuel
+    // Current streak
     const sorted = [...trades].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     let streak = 0;
     if (sorted.length) {
@@ -240,26 +240,26 @@ const KpiCards = ({ trades }) => {
       { label: 'Total P&L',    value: fmtPnl(totalPnL),          color: totalPnL >= 0 ? C.green : C.danger, icon: '💰', sub: `${trades.length} trades` },
       { label: 'Win Rate',     value: `${winRate.toFixed(1)}%`,   color: winRate >= 55 ? C.green : winRate >= 45 ? C.warn : C.danger, icon: '🎯', sub: `${wins.length}W / ${losses.length}L` },
       { label: 'Profit Factor',value: pf.toFixed(2),              color: pf >= 2 ? C.green : pf >= 1.5 ? C.warn : C.danger, icon: '📈', sub: 'Gross W / Gross L' },
-      { label: 'Avg Win',      value: fmtPnl(avgWin),             color: C.green, icon: '✅', sub: `Loss moy: ${fmtPnl(-avgLoss)}` },
-      { label: 'Avg R:R',      value: `1:${avgRR.toFixed(2)}`,    color: avgRR >= 2 ? C.green : avgRR >= 1 ? C.warn : C.danger, icon: '⚖️', sub: 'Risk/Reward réel' },
-      { label: 'Expectancy',   value: fmtPnl(expectancy),         color: expectancy >= 0 ? C.green : C.danger, icon: '🎲', sub: 'Par trade' },
-      { label: 'Max Drawdown', value: `-${maxDD.toFixed(1)}%`,    color: C.danger, icon: '📉', sub: 'Du pic à la vallée' },
-      { label: 'Consistency',  value: `${consistency.toFixed(0)}%`, color: consistency >= 60 ? C.green : consistency >= 40 ? C.warn : C.danger, icon: '📆', sub: 'Jours profitables' },
-      { label: 'Streak actuel',value: streak > 0 ? `+${streak}W` : `${Math.abs(streak)}L`, color: streak > 0 ? C.green : C.danger, icon: streak > 0 ? '🔥' : '❄️', sub: 'Série en cours' },
-      { label: 'Trades / jour',value: (trades.length / Math.max(days.length, 1)).toFixed(1), color: C.cyan, icon: '📊', sub: `${days.length} jours actifs` },
+      { label: 'Avg Win',      value: fmtPnl(avgWin),             color: C.green, icon: '✅', sub: `Avg Loss: ${fmtPnl(-avgLoss)}` },
+      { label: 'Avg R:R',      value: `1:${avgRR.toFixed(2)}`,    color: avgRR >= 2 ? C.green : avgRR >= 1 ? C.warn : C.danger, icon: '⚖️', sub: 'Actual Risk/Reward' },
+      { label: 'Expectancy',   value: fmtPnl(expectancy),         color: expectancy >= 0 ? C.green : C.danger, icon: '🎲', sub: 'Per trade' },
+      { label: 'Max Drawdown', value: `-${maxDD.toFixed(1)}%`,    color: C.danger, icon: '📉', sub: 'Peak to trough' },
+      { label: 'Consistency',  value: `${consistency.toFixed(0)}%`, color: consistency >= 60 ? C.green : consistency >= 40 ? C.warn : C.danger, icon: '📆', sub: 'Profitable days' },
+      { label: 'Current Streak',value: streak > 0 ? `+${streak}W` : `${Math.abs(streak)}L`, color: streak > 0 ? C.green : C.danger, icon: streak > 0 ? '🔥' : '❄️', sub: 'Current streak' },
+      { label: 'Trades / Day',value: (trades.length / Math.max(days.length, 1)).toFixed(1), color: C.cyan, icon: '📊', sub: `${days.length} active days` },
     ];
   }, [trades]);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 11, marginBottom: 24 }}>
-      {/* ✅ KpiCard = composant React → useState() est légal */}
+      {/* ✅ KpiCard = React component → useState() is legal */}
       {metrics.map((k, i) => <KpiCard key={k.label} {...k} index={i} />)}
     </div>
   );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📈 BLOC 2 — EQUITY CURVE + DRAWDOWN
+// 📈 BLOCK 2 — EQUITY CURVE + DRAWDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const EquityDrawdown = ({ trades }) => {
   const data = useMemo(() => {
@@ -279,10 +279,10 @@ const EquityDrawdown = ({ trades }) => {
   return (
     <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon="📈" title="Equity Curve + Drawdown" sub="Progression du capital en temps réel" color={C.green} />
+        <STitle icon="📈" title="Equity Curve + Drawdown" sub="Real-time capital progression" color={C.green} />
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 24, fontWeight: 900, color: finalEq >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(finalEq)}</div>
-          <div style={{ fontSize: 10, color: C.danger, marginTop: 2 }}>Max DD : {maxDD.toFixed(1)}%</div>
+          <div style={{ fontSize: 10, color: C.danger, marginTop: 2 }}>Max DD: {maxDD.toFixed(1)}%</div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={230}>
@@ -331,7 +331,7 @@ const EquityDrawdown = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🗓️ BLOC 3 — MONTHLY P&L
+// 🗓️ BLOCK 3 — MONTHLY P&L
 // ─────────────────────────────────────────────────────────────────────────────
 const MonthlyPnl = ({ trades }) => {
   const data = useMemo(() => {
@@ -355,10 +355,10 @@ const MonthlyPnl = ({ trades }) => {
   return (
     <Card index={1}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon="🗓️" title="P&L Mensuel" sub="Résultats mois par mois" color={C.blue} />
+        <STitle icon="🗓️" title="Monthly P&L" sub="Month-by-month results" color={C.blue} />
         <div style={{ display: 'flex', gap: 14, fontSize: 10, flexShrink: 0 }}>
-          <div><span style={{ color: C.t3 }}>Meilleur </span><span style={{ color: C.green, fontWeight: 800 }}>{best.month} {fmtPnl(best.pnl)}</span></div>
-          <div><span style={{ color: C.t3 }}>Pire </span><span style={{ color: C.danger, fontWeight: 800 }}>{worst.month} {fmtPnl(worst.pnl)}</span></div>
+          <div><span style={{ color: C.t3 }}>Best </span><span style={{ color: C.green, fontWeight: 800 }}>{best.month} {fmtPnl(best.pnl)}</span></div>
+          <div><span style={{ color: C.t3 }}>Worst </span><span style={{ color: C.danger, fontWeight: 800 }}>{worst.month} {fmtPnl(worst.pnl)}</span></div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={190}>
@@ -389,7 +389,7 @@ const MonthlyPnl = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📉 BLOC 4 — CUMULATIVE WIN RATE
+// 📉 BLOCK 4 — CUMULATIVE WIN RATE
 // ─────────────────────────────────────────────────────────────────────────────
 const CumulativeWinRate = ({ trades }) => {
   const data = useMemo(() => {
@@ -406,10 +406,10 @@ const CumulativeWinRate = ({ trades }) => {
   return (
     <Card index={2}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon="📉" title="Win Rate cumulatif" sub="Convergence vers la vraie moyenne" color={C.cyan} />
+        <STitle icon="📉" title="Cumulative Win Rate" sub="Convergence toward true average" color={C.cyan} />
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: final >= 50 ? C.green : C.danger, fontFamily: 'monospace' }}>{final}%</div>
-          <div style={{ fontSize: 9, color: C.t3 }}>Win Rate final</div>
+          <div style={{ fontSize: 9, color: C.t3 }}>Final Win Rate</div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={155}>
@@ -440,10 +440,10 @@ const CumulativeWinRate = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🕐 BLOC 5 — HEATMAP PAR HEURE (HourHeatmap a son propre state)
+// 🕐 BLOCK 5 — HOURLY HEATMAP
 // ─────────────────────────────────────────────────────────────────────────────
 const HourHeatmap = ({ trades }) => {
-  const [hov, setHov] = useState(null); // ✅ légal : composant React
+  const [hov, setHov] = useState(null); // ✅ legal: React component
 
   const data = useMemo(() => {
     const hours = Array.from({ length: 24 }, (_, h) => ({ h, wins: 0, total: 0, pnl: 0 }));
@@ -469,7 +469,7 @@ const HourHeatmap = ({ trades }) => {
 
   return (
     <Card index={3}>
-      <STitle icon="🕐" title="Heatmap par heure" sub="Win rate et P&L par heure de trading" color={C.cyan} />
+      <STitle icon="🕐" title="Hourly Heatmap" sub="Win rate and P&L by trading hour" color={C.cyan} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 5, marginBottom: 12 }}>
         {data.map(d => (
           <motion.div key={d.h}
@@ -496,7 +496,7 @@ const HourHeatmap = ({ trades }) => {
             style={{ padding: '10px 14px', borderRadius: 9, backgroundColor: C.bgHigh, border: `1px solid ${C.brd}`, display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'center' }}
           >
             {[
-              { label: 'HEURE',    value: `${String(hov.h).padStart(2, '0')}:00`, color: C.cyan },
+              { label: 'HOUR',     value: `${String(hov.h).padStart(2, '0')}:00`, color: C.cyan },
               { label: 'TRADES',   value: hov.total,                               color: C.t1  },
               { label: 'WIN RATE', value: `${((hov.wins / hov.total) * 100).toFixed(1)}%`, color: hov.wins / hov.total >= 0.5 ? C.green : C.danger },
               { label: 'P&L',      value: fmtPnl(hov.pnl), color: hov.pnl >= 0 ? C.green : C.danger },
@@ -516,7 +516,7 @@ const HourHeatmap = ({ trades }) => {
           { label: '50–70%',  bg: 'rgba(0,201,167,0.55)' },
           { label: '30–50%',  bg: 'rgba(255,179,0,0.5)'  },
           { label: '<30%',    bg: 'rgba(255,71,87,0.55)'  },
-          { label: 'Aucun',   bg: C.bgDeep, border: `1px solid ${C.brd}` },
+          { label: 'None',    bg: C.bgDeep, border: `1px solid ${C.brd}` },
         ].map(l => (
           <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: l.bg, border: l.border }} />
@@ -529,16 +529,16 @@ const HourHeatmap = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📅 BLOC 6 — JOUR DE SEMAINE
+// 📅 BLOCK 6 — WEEKDAY
 // ─────────────────────────────────────────────────────────────────────────────
 const WeekdayPerf = ({ trades }) => {
   const data = useMemo(() => {
     const map = {
-      1: { d: 'Lundi',    wins: 0, total: 0, pnl: 0 },
-      2: { d: 'Mardi',    wins: 0, total: 0, pnl: 0 },
-      3: { d: 'Mercredi', wins: 0, total: 0, pnl: 0 },
-      4: { d: 'Jeudi',    wins: 0, total: 0, pnl: 0 },
-      5: { d: 'Vendredi', wins: 0, total: 0, pnl: 0 },
+      1: { d: 'Monday',     wins: 0, total: 0, pnl: 0 },
+      2: { d: 'Tuesday',    wins: 0, total: 0, pnl: 0 },
+      3: { d: 'Wednesday',  wins: 0, total: 0, pnl: 0 },
+      4: { d: 'Thursday',   wins: 0, total: 0, pnl: 0 },
+      5: { d: 'Friday',     wins: 0, total: 0, pnl: 0 },
     };
     trades.forEach(t => {
       if (!t.date) return;
@@ -550,7 +550,7 @@ const WeekdayPerf = ({ trades }) => {
 
   return (
     <Card index={4}>
-      <STitle icon="📅" title="Par jour de semaine" sub="Win rate & P&L par jour" color={C.purple} />
+      <STitle icon="📅" title="By Weekday" sub="Win rate & P&L by day" color={C.purple} />
       <ResponsiveContainer width="100%" height={170}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
           <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
@@ -588,15 +588,15 @@ const WeekdayPerf = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🍩 BLOC 7 — SETUP DONUT
+// 🍩 BLOCK 7 — SETUP DONUT
 // ─────────────────────────────────────────────────────────────────────────────
 const SetupDonut = ({ trades }) => {
-  const [active, setActive] = useState(null); // ✅ légal
+  const [active, setActive] = useState(null); // ✅ legal
 
   const data = useMemo(() => {
     const map = {};
     trades.forEach(t => {
-      const s = t.setup || 'Sans setup';
+      const s = t.setup || 'No setup';
       if (!map[s]) map[s] = { name: s, count: 0, wins: 0, pnl: 0 };
       map[s].count++;
       if (parseFloat(t.pnl) > 0) map[s].wins++;
@@ -611,7 +611,7 @@ const SetupDonut = ({ trades }) => {
 
   return (
     <Card index={5}>
-      <STitle icon="🎯" title="Confluence & Setups" sub="Distribution et win rate par setup" color={C.orange} />
+      <STitle icon="🎯" title="Confluence & Setups" sub="Distribution and win rate by setup" color={C.orange} />
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         <div style={{ flexShrink: 0 }}>
           <ResponsiveContainer width={170} height={170}>
@@ -659,7 +659,7 @@ const SetupDonut = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🌍 BLOC 8 — SESSION BREAKDOWN
+// 🌍 BLOCK 8 — SESSION BREAKDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const SessionBreakdown = ({ trades }) => {
   const sessionMeta = { NY: { emoji: '🗽', color: C.cyan }, London: { emoji: '🎡', color: C.purple }, Asia: { emoji: '🏯', color: C.orange } };
@@ -673,7 +673,7 @@ const SessionBreakdown = ({ trades }) => {
 
   return (
     <Card index={6}>
-      <STitle icon="🌍" title="Sessions de trading" sub="NY · London · Asia" color={C.blue} />
+      <STitle icon="🌍" title="Trading Sessions" sub="NY · London · Asia" color={C.blue} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {data.map(d => (
           <div key={d.name}>
@@ -703,7 +703,7 @@ const SessionBreakdown = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ↕️ BLOC 9 — LONG vs SHORT
+// ↕️ BLOCK 9 — LONG vs SHORT
 // ─────────────────────────────────────────────────────────────────────────────
 const LongVsShort = ({ trades }) => {
   const data = useMemo(() => ['Long', 'Short'].map(type => {
@@ -718,7 +718,7 @@ const LongVsShort = ({ trades }) => {
 
   return (
     <Card index={7}>
-      <STitle icon="↕️" title="Long vs Short" sub="Comparaison des deux directions" color={C.teal} />
+      <STitle icon="↕️" title="Long vs Short" sub="Comparison of both directions" color={C.teal} />
       {data.map(d => (
         <div key={d.type} style={{ marginBottom: 18 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
@@ -757,7 +757,7 @@ const LongVsShort = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 💱 BLOC 10 — WIN RATE PAR SYMBOLE
+// 💱 BLOCK 10 — WIN RATE BY SYMBOL
 // ─────────────────────────────────────────────────────────────────────────────
 const SymbolWinRate = ({ trades }) => {
   const data = useMemo(() => {
@@ -777,7 +777,7 @@ const SymbolWinRate = ({ trades }) => {
 
   return (
     <Card index={8}>
-      <STitle icon="💱" title="Performance par symbole" sub="Top 8 instruments tradés" color={C.teal} />
+      <STitle icon="💱" title="Performance by Symbol" sub="Top 8 traded instruments" color={C.teal} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {data.map((d, i) => (
           <motion.div key={d.name} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
@@ -808,7 +808,7 @@ const SymbolWinRate = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📊 BLOC 11 — P&L DISTRIBUTION
+// 📊 BLOCK 11 — P&L DISTRIBUTION
 // ─────────────────────────────────────────────────────────────────────────────
 const PnlDistribution = ({ trades }) => {
   const data = useMemo(() => {
@@ -824,7 +824,7 @@ const PnlDistribution = ({ trades }) => {
 
   return (
     <Card index={9}>
-      <STitle icon="📊" title="Distribution des P&L" sub="Fréquence des résultats par tranche" color={C.warn} />
+      <STitle icon="📊" title="P&L Distribution" sub="Result frequency by range" color={C.warn} />
       <ResponsiveContainer width="100%" height={195}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 22, left: 0 }}>
           <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
@@ -851,7 +851,7 @@ const PnlDistribution = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🧠 BLOC 12 — PSYCHOLOGIE DANS LE TEMPS
+// 🧠 BLOCK 12 — PSYCHOLOGY OVER TIME
 // ─────────────────────────────────────────────────────────────────────────────
 const PsychoTimeline = ({ trades }) => {
   const data = useMemo(() => [...trades]
@@ -866,10 +866,10 @@ const PsychoTimeline = ({ trades }) => {
   return (
     <Card index={10}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon="🧠" title="Score psychologique" sub="Évolution sur les 40 derniers trades" color={C.purple} />
+        <STitle icon="🧠" title="Psychology Score" sub="Evolution over last 40 trades" color={C.purple} />
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: avgScore >= 75 ? C.green : avgScore >= 55 ? C.warn : C.danger, fontFamily: 'monospace' }}>{avgScore}</div>
-          <div style={{ fontSize: 9, color: C.t3 }}>Score moyen</div>
+          <div style={{ fontSize: 9, color: C.t3 }}>Average Score</div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={180}>
@@ -907,7 +907,7 @@ const PsychoTimeline = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ⏱️ BLOC 13 — DURATION ANALYSIS
+// ⏱️ BLOCK 13 — DURATION ANALYSIS
 // ─────────────────────────────────────────────────────────────────────────────
 const DurationAnalysis = ({ trades }) => {
   const data = useMemo(() => {
@@ -929,7 +929,7 @@ const DurationAnalysis = ({ trades }) => {
 
   return (
     <Card index={11}>
-      <STitle icon="⏱️" title="Durée des trades" sub="Performance selon la durée de détention" color={C.warn} />
+      <STitle icon="⏱️" title="Trade Duration" sub="Performance by holding duration" color={C.warn} />
       <ResponsiveContainer width="100%" height={155}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
           <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
@@ -966,7 +966,7 @@ const DurationAnalysis = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📡 BLOC 14 — MAE / MFE SCATTER
+// 📡 BLOCK 14 — MAE / MFE SCATTER
 // ─────────────────────────────────────────────────────────────────────────────
 const MaeMfeScatter = ({ trades }) => {
   const data = useMemo(() => trades.map(t => {
@@ -983,8 +983,8 @@ const MaeMfeScatter = ({ trades }) => {
     <Card index={12}>
       <STitle icon="📡" title="MAE / MFE Analysis" sub="Adverse vs Favorable Excursion" color={C.blue} />
       <div style={{ padding: '7px 11px', borderRadius: 7, backgroundColor: C.bgDeep, border: `1px solid ${C.brd}`, fontSize: 10, color: C.t3, lineHeight: 1.6, marginBottom: 12 }}>
-        <span style={{ color: C.green, fontWeight: 700 }}>MFE</span> = Meilleur mouvement favorable ·{' '}
-        <span style={{ color: C.danger, fontWeight: 700 }}>MAE</span> = Pire mouvement adverse
+        <span style={{ color: C.green, fontWeight: 700 }}>MFE</span> = Best favorable move ·{' '}
+        <span style={{ color: C.danger, fontWeight: 700 }}>MAE</span> = Worst adverse move
       </div>
       <ResponsiveContainer width="100%" height={185}>
         <ScatterChart margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
@@ -1015,7 +1015,7 @@ const MaeMfeScatter = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🔥 BLOC 15 — STREAK TRACKER
+// 🔥 BLOCK 15 — STREAK TRACKER
 // ─────────────────────────────────────────────────────────────────────────────
 const StreakTracker = ({ trades }) => {
   const { streaks, bestWin, worstLoss, current } = useMemo(() => {
@@ -1035,12 +1035,12 @@ const StreakTracker = ({ trades }) => {
 
   return (
     <Card index={13}>
-      <STitle icon="🔥" title="Streak Tracker" sub="Séries de wins & losses consécutifs" color={C.orange} />
+      <STitle icon="🔥" title="Streak Tracker" sub="Consecutive win & loss streaks" color={C.orange} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
         {[
-          { label: 'Meilleure série W', value: `${bestWin} wins`,  color: C.green  },
-          { label: 'Pire série L',      value: `${worstLoss} losses`, color: C.danger },
-          { label: 'Actuelle',          value: current ? `${current.count} ${current.isWin ? '✅' : '❌'}` : '—', color: current?.isWin ? C.green : C.danger },
+          { label: 'Best Win Streak',  value: `${bestWin} wins`,    color: C.green  },
+          { label: 'Worst Loss Streak',value: `${worstLoss} losses`, color: C.danger },
+          { label: 'Current',          value: current ? `${current.count} ${current.isWin ? '✅' : '❌'}` : '—', color: current?.isWin ? C.green : C.danger },
         ].map(s => (
           <div key={s.label} style={{ padding: '10px 8px', borderRadius: 8, backgroundColor: C.bgDeep, border: `1px solid ${C.brd}`, textAlign: 'center' }}>
             <div style={{ fontSize: 8, color: C.t3, fontWeight: 700, marginBottom: 5, textTransform: 'uppercase' }}>{s.label}</div>
@@ -1071,7 +1071,7 @@ const StreakTracker = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📰 BLOC 16 — NEWS IMPACT
+// 📰 BLOCK 16 — NEWS IMPACT
 // ─────────────────────────────────────────────────────────────────────────────
 const NewsImpact = ({ trades }) => {
   const data = useMemo(() => ['High', 'Medium', 'Low'].map(level => {
@@ -1086,7 +1086,7 @@ const NewsImpact = ({ trades }) => {
 
   return (
     <Card index={14}>
-      <STitle icon="📰" title="Impact des news" sub="Performance selon l'impact des actualités" color={C.warn} />
+      <STitle icon="📰" title="News Impact" sub="Performance by news impact level" color={C.warn} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {data.map(d => (
           <div key={d.level}>
@@ -1113,7 +1113,7 @@ const NewsImpact = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ⚖️ BLOC 17 — BIAS ANALYSIS
+// ⚖️ BLOCK 17 — BIAS ANALYSIS
 // ─────────────────────────────────────────────────────────────────────────────
 const BiasAnalysis = ({ trades }) => {
   const data = useMemo(() => ['Bullish', 'Bearish', 'Neutral'].map(b => {
@@ -1128,7 +1128,7 @@ const BiasAnalysis = ({ trades }) => {
 
   return (
     <Card index={15}>
-      <STitle icon="⚖️" title="Analyse des biais" sub="Performance selon le biais de marché" color={C.teal} />
+      <STitle icon="⚖️" title="Bias Analysis" sub="Performance by market bias" color={C.teal} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {data.map(d => (
           <div key={d.bias}>
@@ -1155,7 +1155,7 @@ const BiasAnalysis = ({ trades }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🏠 COMPOSANT PRINCIPAL
+// 🏠 MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AnalyticsPro() {
   const { trades }  = useTradingContext();
@@ -1181,7 +1181,7 @@ export default function AnalyticsPro() {
             </h1>
             <span style={{ padding: '3px 9px', borderRadius: 4, fontSize: 8, fontWeight: 800, background: C.grad, color: C.bgDeep, letterSpacing: '1px' }}>PRO</span>
           </div>
-          <p style={{ margin: 0, color: C.t2, fontSize: 12 }}>{filtered.length} trades analysés · Intelligence de marché complète</p>
+          <p style={{ margin: 0, color: C.t2, fontSize: 12 }}>{filtered.length} trades analyzed · Complete market intelligence</p>
         </div>
         <PeriodFilter value={period} onChange={setPeriod} />
       </motion.div>
@@ -1189,8 +1189,8 @@ export default function AnalyticsPro() {
       {filtered.length === 0 ? (
         <motion.div variants={fadeUp} initial="hidden" animate="visible" style={{ textAlign: 'center', padding: '80px 20px' }}>
           <div style={{ fontSize: 64, marginBottom: 16 }}>📊</div>
-          <h2 style={{ color: C.t1, marginBottom: 8 }}>Aucune donnée disponible</h2>
-          <p style={{ color: C.t3 }}>Ajoutez des trades pour voir vos analytics</p>
+          <h2 style={{ color: C.t1, marginBottom: 8 }}>No data available</h2>
+          <p style={{ color: C.t3 }}>Add trades to see your analytics</p>
         </motion.div>
       ) : (
         <>
@@ -1208,7 +1208,7 @@ export default function AnalyticsPro() {
             <CumulativeWinRate trades={filtered} />
           </div>
 
-          {/* ROW 3 — Heatmap heure + Weekday */}
+          {/* ROW 3 — Hourly heatmap + Weekday */}
           <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 16, marginBottom: 16 }}>
             <HourHeatmap trades={filtered} />
             <WeekdayPerf trades={filtered} />

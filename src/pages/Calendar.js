@@ -7,27 +7,27 @@ function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Obtenir le mois et l'année actuels
+  // Get current month and year
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Calculer les jours du mois
+  // Calculate days of the month
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
   const startingDayOfWeek = firstDay.getDay();
 
-  // Mois précédent
+  // Previous month
   const prevMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1));
   };
 
-  // Mois suivant
+  // Next month
   const nextMonth = () => {
     setCurrentDate(new Date(year, month + 1, 1));
   };
 
-  // Grouper les trades par date
+  // Group trades by date
   const tradesByDate = useMemo(() => {
     const grouped = {};
     trades.forEach(trade => {
@@ -39,7 +39,7 @@ function Calendar() {
     return grouped;
   }, [trades]);
 
-  // Stats par date
+  // Stats by date
   const getDateStats = (dateString) => {
     const dateTrades = tradesByDate[dateString] || [];
     if (dateTrades.length === 0) return null;
@@ -58,19 +58,19 @@ function Calendar() {
     };
   };
 
-  // Trades du jour sélectionné
+  // Selected day trades
   const selectedDayTrades = selectedDate ? (tradesByDate[selectedDate] || []) : [];
 
-  // Noms des mois
+  // Month names
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Jours de la semaine
+  // Days of the week
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Stats du mois
+  // Monthly stats
   const monthStats = useMemo(() => {
     const monthTrades = trades.filter(trade => {
       const tradeDate = new Date(trade.date);
@@ -227,12 +227,12 @@ function Calendar() {
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-3">
-            {/* Empty cells avant le 1er jour */}
+            {/* Empty cells before the 1st day */}
             {[...Array(startingDayOfWeek)].map((_, index) => (
               <div key={`empty-${index}`} className="aspect-square" />
             ))}
 
-            {/* Jours du mois */}
+            {/* Days of the month */}
             {[...Array(daysInMonth)].map((_, index) => {
               const day = index + 1;
               const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;

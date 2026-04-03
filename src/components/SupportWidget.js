@@ -6,66 +6,66 @@ const LOGO_FULL = '';
 const FAQ_ANSWERS = [
   {
     keywords: ['import', 'mt4', 'mt5', 'ctrader', 'csv', 'metatrader'],
-    answer: "📥 **Import de trades**\n\nTu peux importer tes trades de 3 façons :\n• **MT4/MT5** → Fichier > Exporter en CSV > glisser-déposer dans MFJ\n• **cTrader** → Historique > Export CSV\n• **Excel/CSV** → Import direct depuis le Dashboard\n\nL'import prend moins de 30 secondes ✅",
+    answer: "📥 **Trade Import**\n\nYou can import your trades in 3 ways:\n• **MT4/MT5** → File > Export as CSV > drag and drop into MFJ\n• **cTrader** → History > Export CSV\n• **Excel/CSV** → Direct import from the Dashboard\n\nImport takes less than 30 seconds ✅",
   },
   {
-    keywords: ['prix', 'tarif', 'abonnement', 'plan', 'starter', 'pro', 'elite', 'coût', 'combien'],
-    answer: "💳 **Nos plans**\n\n• **Starter** — $15/mois (ou $11 annuel)\n• **Pro** — $22/mois (ou $15 annuel) ⭐\n• **Elite** — $38/mois (ou $27 annuel)\n\nTous les plans incluent **14 jours gratuits**, sans carte bancaire 🎉",
+    keywords: ['price', 'pricing', 'subscription', 'plan', 'starter', 'pro', 'elite', 'cost', 'how much'],
+    answer: "💳 **Our Plans**\n\n• **Starter** — $15/month (or $11 annually)\n• **Pro** — $22/month (or $15 annually) ⭐\n• **Elite** — $38/month (or $27 annually)\n\nAll plans include **14 days free**, no credit card required 🎉",
   },
   {
-    keywords: ['ai', 'coach', 'intelligence', 'artificielle', 'analyse'],
-    answer: "🧠 **AI Trade Coach**\n\nNotre IA analyse tes trades après chaque session et :\n• Détecte tes biais récurrents (FOMO, revenge trading…)\n• Corrèle ton état émotionnel avec ton P&L\n• Génère des recommandations personnalisées chaque semaine\n\nDisponible sur les plans **Pro** et **Elite**.",
+    keywords: ['ai', 'coach', 'intelligence', 'artificial', 'analysis'],
+    answer: "🧠 **AI Trade Coach**\n\nOur AI analyzes your trades after each session and:\n• Detects your recurring biases (FOMO, revenge trading…)\n• Correlates your emotional state with your P&L\n• Generates personalized recommendations every week\n\nAvailable on **Pro** and **Elite** plans.",
   },
   {
-    keywords: ['backtest', 'backtesting', 'stratégie', 'historique'],
-    answer: "🔄 **Backtesting visuel**\n\nLe module Backtest te permet de :\n• Tester tes stratégies sur données historiques\n• Visualiser l'equity curve simulée\n• Calculer Sharpe, max drawdown, CAGR\n\nDisponible sur les plans **Pro** et **Elite**.",
+    keywords: ['backtest', 'backtesting', 'strategy', 'history'],
+    answer: "🔄 **Visual Backtesting**\n\nThe Backtest module lets you:\n• Test your strategies on historical data\n• Visualize the simulated equity curve\n• Calculate Sharpe, max drawdown, CAGR\n\nAvailable on **Pro** and **Elite** plans.",
   },
   {
-    keywords: ['annuler', 'annulation', 'résilier', 'résiliation', 'remboursement'],
-    answer: "❌ **Annulation**\n\nTu peux annuler ton abonnement à tout moment depuis **Paramètres > Gérer l'abonnement**.\n\nL'accès reste actif jusqu'à la fin de la période en cours. Aucun remboursement pour les périodes entamées.",
+    keywords: ['cancel', 'cancellation', 'unsubscribe', 'unsubscription', 'refund'],
+    answer: "❌ **Cancellation**\n\nYou can cancel your subscription at any time from **Settings > Manage Subscription**.\n\nAccess remains active until the end of the current period. No refunds for periods already started.",
   },
   {
-    keywords: ['sécurité', 'données', 'rgpd', 'confidentialité', 'chiffrement'],
-    answer: "🔒 **Sécurité & RGPD**\n\nTes données sont :\n• Chiffrées AES-256 en transit et au repos\n• Hébergées dans l'UE (Supabase EU)\n• Jamais vendues ni partagées\n\nTu peux exporter ou supprimer ton compte à tout moment.",
+    keywords: ['security', 'data', 'gdpr', 'privacy', 'encryption'],
+    answer: "🔒 **Security & GDPR**\n\nYour data is:\n• AES-256 encrypted in transit and at rest\n• Hosted in the EU (Supabase EU)\n• Never sold or shared\n\nYou can export or delete your account at any time.",
   },
   {
-    keywords: ['prop', 'ftmo', 'funded', 'challenge', 'pdf', 'rapport'],
-    answer: "📄 **Prop Firms**\n\nMarketFlow est parfait pour les prop traders !\n• Export **rapport PDF** formaté pour les prop firms\n• Suivi des règles de drawdown en temps réel\n• Analyse des performances par session\n\nCompatible FTMO, The5%ers, E8, TopStep et plus.",
+    keywords: ['prop', 'ftmo', 'funded', 'challenge', 'pdf', 'report'],
+    answer: "📄 **Prop Firms**\n\nMarketFlow is perfect for prop traders!\n• **PDF report** export formatted for prop firms\n• Real-time drawdown rule tracking\n• Performance analysis by session\n\nCompatible with FTMO, The5%ers, E8, TopStep and more.",
   },
   {
-    keywords: ['essai', 'gratuit', 'free', 'trial', 'tester'],
-    answer: "🎁 **Essai gratuit**\n\nOui ! Tous les plans incluent **14 jours d'essai gratuit**, sans carte bancaire requise.\n\nTu as accès à toutes les fonctionnalités du plan choisi pendant la période d'essai 🚀",
+    keywords: ['trial', 'free', 'free', 'trial', 'test'],
+    answer: "🎁 **Free Trial**\n\nYes! All plans include a **14-day free trial**, no credit card required.\n\nYou get access to all features of your chosen plan during the trial period 🚀",
   },
   {
-    keywords: ['bug', 'problème', 'erreur', 'marche pas', 'fonctionne pas', 'bug'],
-    answer: "🐛 **Signaler un bug**\n\nPour nous aider à résoudre rapidement :\n1. Décris le problème en détail\n2. Précise les étapes pour le reproduire\n3. Indique ton navigateur et OS\n\nEnvoie tout ça à **support@marketflowjournal.com** ou utilise le formulaire 👇",
+    keywords: ['bug', 'problem', 'error', 'not working', 'not working', 'bug'],
+    answer: "🐛 **Report a Bug**\n\nTo help us resolve issues quickly:\n1. Describe the problem in detail\n2. Specify the steps to reproduce it\n3. Indicate your browser and OS\n\nSend all that to **support@marketflowjournal.com** or use the form below 👇",
   },
   {
-    keywords: ['reçu', 'recoit', 'reçoit', 'journal', 'email', 'mail', 'newsletter', 'recevoir', 'envoi', 'envoyé'],
-    answer: "📬 **Problème de réception**\n\nSi tu n'as pas reçu un email de notre part :\n1. Vérifie tes **spams / courrier indésirable**\n2. Ajoute **support@marketflowjournal.com** à tes contacts\n3. Vérifie que l'adresse email de ton compte est correcte\n\nSi le problème persiste, contacte-nous directement 👇",
+    keywords: ['received', 'receive', 'receive', 'journal', 'email', 'mail', 'newsletter', 'receive', 'send', 'sent'],
+    answer: "📬 **Delivery Issue**\n\nIf you haven't received an email from us:\n1. Check your **spam / junk folder**\n2. Add **support@marketflowjournal.com** to your contacts\n3. Verify that your account email address is correct\n\nIf the issue persists, contact us directly 👇",
   },
   {
-    keywords: ['compte', 'mot de passe', 'connexion', 'connecter', 'login', 'accès', 'oublié'],
-    answer: "🔑 **Problème de connexion**\n\nSi tu ne peux pas te connecter :\n1. Clique sur **\"Mot de passe oublié\"** sur la page de connexion\n2. Vérifie tes spams pour l'email de réinitialisation\n3. Assure-toi d'utiliser la bonne adresse email\n\nToujours bloqué ? Écris-nous à **support@marketflowjournal.com**.",
+    keywords: ['account', 'password', 'login', 'connect', 'login', 'access', 'forgotten'],
+    answer: "🔑 **Login Issue**\n\nIf you can't log in:\n1. Click **\"Forgot Password\"** on the login page\n2. Check your spam for the reset email\n3. Make sure you're using the correct email address\n\nStill stuck? Email us at **support@marketflowjournal.com**.",
   },
   {
-    keywords: ['paiement', 'facture', 'carte', 'cb', 'billing', 'facturation', 'charge'],
-    answer: "💳 **Paiement & Facturation**\n\nLes paiements sont sécurisés via **Stripe**.\n\n• Les factures sont envoyées automatiquement par email\n• Tu peux télécharger tes factures depuis **Paramètres > Abonnement**\n• Pour tout litige de paiement, contacte-nous à **support@marketflowjournal.com**",
+    keywords: ['payment', 'invoice', 'card', 'credit card', 'billing', 'billing', 'charge'],
+    answer: "💳 **Payment & Billing**\n\nPayments are securely processed via **Stripe**.\n\n• Invoices are automatically sent by email\n• You can download your invoices from **Settings > Subscription**\n• For any payment disputes, contact us at **support@marketflowjournal.com**",
   },
 ];
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
   role: 'bot',
-  text: "👋 Bonjour ! Je suis l'assistant **MarketFlow**.\n\nJe peux t'aider sur :\n• 📊 Fonctionnalités & Analytics\n• 💳 Abonnements & Pricing\n• 📥 Import de trades\n• 🔒 Sécurité & RGPD\n• 📬 Problèmes de réception\n• 🔑 Connexion & Compte\n\nComment puis-je t'aider ?",
+  text: "👋 Hi! I'm the **MarketFlow** assistant.\n\nI can help you with:\n• 📊 Features & Analytics\n• 💳 Subscriptions & Pricing\n• 📥 Trade Import\n• 🔒 Security & GDPR\n• 📬 Delivery Issues\n• 🔑 Login & Account\n\nHow can I help you?",
   time: new Date(),
 };
 
 const QUICK_QUESTIONS = [
-  '💳 Voir les prix',
-  '📥 Importer mes trades',
-  '📬 Email non reçu',
-  '🎁 Essai gratuit ?',
+  '💳 See pricing',
+  '📥 Import my trades',
+  '📬 Email not received',
+  '🎁 Free trial?',
 ];
 
 function formatText(text) {
@@ -91,7 +91,7 @@ function getBotAnswer(input) {
       return faq.answer;
     }
   }
-  return "Je n'ai pas de réponse précise à cette question 🤔\n\nMais notre équipe est là pour toi ! Envoie-nous un email à **support@marketflowjournal.com**.\n\n⏱ Réponse garantie sous **24h ouvrées**.";
+  return "I don't have a precise answer to that question 🤔\n\nBut our team is here for you! Send us an email at **support@marketflowjournal.com**.\n\n⏱ Guaranteed response within **24 business hours**.";
 }
 
 export default function SupportWidget({ onOpenPage }) {
@@ -121,7 +121,7 @@ export default function SupportWidget({ onOpenPage }) {
     }, 900 + Math.random() * 500);
   };
 
-  const fmtTime = (d) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const fmtTime = (d) => d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <>
@@ -286,8 +286,8 @@ export default function SupportWidget({ onOpenPage }) {
         }
       `}</style>
 
-      {/* Bouton */}
-      <button className="mfw-btn" onClick={() => setOpen(o => !o)} aria-label="Support MarketFlow">
+      {/* Button */}
+      <button className="mfw-btn" onClick={() => setOpen(o => !o)} aria-label="MarketFlow Support">
         {open ? (
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#060912" strokeWidth="2.5" strokeLinecap="round">
             <path d="M18 6L6 18M6 6l12 12"/>
@@ -311,11 +311,11 @@ export default function SupportWidget({ onOpenPage }) {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
-                Assistant MarketFlow
+                MarketFlow Assistant
               </div>
               <div style={{ fontSize: 10.5, color: '#6AB8CC', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                 <div className="mfw-dot" />
-                En ligne · Répond instantanément
+                Online · Replies instantly
               </div>
             </div>
             <button className="mfw-x" onClick={() => setOpen(false)}>✕</button>
@@ -335,7 +335,7 @@ export default function SupportWidget({ onOpenPage }) {
             <div ref={bottomRef} />
           </div>
 
-          {/* Questions rapides */}
+          {/* Quick questions */}
           {messages.length <= 2 && !typing && (
             <div className="mfw-quick">
               {QUICK_QUESTIONS.map((q, i) => (
@@ -351,7 +351,7 @@ export default function SupportWidget({ onOpenPage }) {
                 <textarea
                   ref={inputRef}
                   className="mfw-ta"
-                  placeholder="Pose ta question…"
+                  placeholder="Ask your question…"
                   value={input}
                   rows={1}
                   onChange={e => setInput(e.target.value)}
@@ -368,9 +368,9 @@ export default function SupportWidget({ onOpenPage }) {
               </div>
             </form>
             <div className="mfw-link">
-              Besoin d'aide humaine ?{' '}
+              Need human help?{' '}
               <button onClick={() => { setOpen(false); onOpenPage?.('support'); }}>
-                Support complet →
+                Full support →
               </button>
             </div>
           </div>

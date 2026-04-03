@@ -1,12 +1,12 @@
 /*
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║  📈 MARKETFLOW — EQUITY  v1.0                                                ║
-║  ✦ Données : useTradingContext() → tous les trades (t.pnl / t.date)         ║
-║  ✦ Equity curve par trade + par mois + par année                             ║
-║  ✦ Drawdown profondeur / durée / récupération                                ║
-║  ✦ Statistiques avancées : Sharpe · Sortino · Calmar · Kelly                ║
-║  ✦ Heatmap mensuelle P&L                                                     ║
-║  ✦ Monte Carlo 1 000 runs avec bandes de confiance                          ║
+║  ✦ Data: useTradingContext() → all trades (t.pnl / t.date)                  ║
+║  ✦ Equity curve per trade + per month + per year                             ║
+║  ✦ Drawdown depth / duration / recovery                                      ║
+║  ✦ Advanced statistics: Sharpe · Sortino · Calmar · Kelly                   ║
+║  ✦ Monthly P&L Heatmap                                                       ║
+║  ✦ Monte Carlo 1,000 runs with confidence bands                             ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 */
 
@@ -20,7 +20,7 @@ import {
 import { useTradingContext } from '../context/TradingContext';
 
 // ══════════════════════════════════════════════════════
-// 🎨 DESIGN SYSTEM — identique MarketFlow DA
+// 🎨 DESIGN SYSTEM — same MarketFlow DA
 // ══════════════════════════════════════════════════════
 const C = {
   bg:      '#030508',
@@ -82,12 +82,12 @@ const ST = ({ children, sub, color = C.cyan, icon, mb = 16 }) => (
 );
 
 // ══════════════════════════════════════════════════════
-// 🧮 CALCULS STATISTIQUES
+// 🧮 STATISTICAL CALCULATIONS
 // ══════════════════════════════════════════════════════
 function buildEquityStats(trades) {
   if (!trades?.length) return null;
 
-  // Normalise & trie par date
+  // Normalize & sort by date
   const sorted = [...trades]
     .map(t => ({
       ...t,
@@ -104,7 +104,7 @@ function buildEquityStats(trades) {
   const losses = sorted.filter(t => !t._win && t._pnl <= 0);
   const bes   = sorted.filter(t => !t._win && t._pnl === 0);
 
-  // P&L global
+  // Global P&L
   const totalPnL   = parseFloat(sorted.reduce((s, t) => s + t._pnl, 0).toFixed(2));
   const grossW     = wins.reduce((s, t) => s + t._pnl, 0);
   const grossL     = Math.abs(losses.reduce((s, t) => s + t._pnl, 0));
@@ -140,7 +140,7 @@ function buildEquityStats(trades) {
   const maxDDDur  = Math.max(0, ...ddPeriods.map(d => d.dur));
   const worstDD   = [...ddPeriods].sort((a, b) => b.depth - a.depth).slice(0, 5);
 
-  // Volatilité / Sharpe / Sortino / Calmar
+  // Volatility / Sharpe / Sortino / Calmar
   const rets  = sorted.map(t => t._pnl);
   const mean  = totalPnL / n;
   const variance = rets.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
@@ -158,7 +158,7 @@ function buildEquityStats(trades) {
   let cW = 0, cL = 0, mW = 0, mL = 0;
   sorted.forEach(t => { if (t._win) { cW++; cL = 0; if (cW > mW) mW = cW; } else { cL++; cW = 0; if (cL > mL) mL = cL; } });
 
-  // Par mois
+  // Per month
   const byMonth = {};
   sorted.forEach(t => {
     const key = t._date.substring(0, 7);
@@ -174,7 +174,7 @@ function buildEquityStats(trades) {
     wr:    Math.round(d.wins / d.n * 100),
   }));
 
-  // Par année
+  // Per year
   const byYear = {};
   sorted.forEach(t => {
     const y = t._date.substring(0, 4);
@@ -189,7 +189,7 @@ function buildEquityStats(trades) {
     const ygL  = Math.abs(yl.reduce((s, t) => s + t._pnl, 0));
     let ybal = 0, ypeak = 0, ymaxDD = 0;
     ts.forEach(t => { ybal += t._pnl; if (ybal > ypeak) ypeak = ybal; const d = ypeak - ybal; if (d > ymaxDD) ymaxDD = d; });
-    // mini equity par mois dans l'année
+    // mini equity per month in the year
     const ym = {};
     ts.forEach(t => { const k = t._date.substring(5, 7); if (!ym[k]) ym[k] = 0; ym[k] += t._pnl; });
     const mCurve = Object.entries(ym).sort().map(([m, v]) => ({ m, v: parseFloat(v.toFixed(2)) }));
@@ -205,7 +205,7 @@ function buildEquityStats(trades) {
     };
   });
 
-  // Années disponibles
+  // Available years
   const years = yearStats.map(y => y.year);
 
   // Dates
@@ -283,14 +283,14 @@ const KpiBadge = ({ label, value, sub, color, icon, custom = 0 }) => (
 );
 
 // ══════════════════════════════════════════════════════
-// 📈 EQUITY CURVE PRINCIPALE
+// 📈 MAIN EQUITY CURVE
 // ══════════════════════════════════════════════════════
 const EquityCurve = ({ s }) => {
   const [view, setView] = useState('all');
 
   const data = useMemo(() => {
     if (view === 'all') return s.equity;
-    // filtrer par année
+    // filter by year
     let bal = 0;
     return s.equity.filter(e => e.date.startsWith(view)).map((e, i) => ({ ...e, i: i + 1, v: parseFloat((bal += e.pnl).toFixed(2)) }));
   }, [view, s.equity]);
@@ -300,7 +300,7 @@ const EquityCurve = ({ s }) => {
   const minV    = Math.min(0, ...data.map(d => d.v));
   const maxV    = Math.max(...data.map(d => d.v));
 
-  // Annote les runs de gains/pertes
+  // Annotate win/loss runs
   const annotations = [];
   let streak = 0, streakType = null, streakStart = 0;
   data.forEach((d, i) => {
@@ -313,7 +313,7 @@ const EquityCurve = ({ s }) => {
     <GlassCard hover={false} glow={col} style={{ padding: '24px 22px' }} custom={0}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
         <ST icon="📈" color={col} mb={0}>
-          Courbe d'Equity{view === 'all' ? ` · Globale (${data.length} trades)` : ` · ${view}`}
+          Equity Curve{view === 'all' ? ` · Global (${data.length} trades)` : ` · ${view}`}
         </ST>
         <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
           {['all', ...s.years].map(v => (
@@ -325,13 +325,13 @@ const EquityCurve = ({ s }) => {
         </div>
       </div>
 
-      {/* Stats rapides inline */}
+      {/* Quick inline stats */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
         {[
           { l: 'Total P&L', v: `${last >= 0 ? '+' : ''}${last}`, c: col },
           { l: 'Trades', v: data.length, c: C.t2 },
-          { l: 'Meilleur', v: `+${Math.max(...data.map(d => d.pnl)).toFixed(2)}`, c: C.green },
-          { l: 'Pire', v: `${Math.min(...data.map(d => d.pnl)).toFixed(2)}`, c: C.danger },
+          { l: 'Best', v: `+${Math.max(...data.map(d => d.pnl)).toFixed(2)}`, c: C.green },
+          { l: 'Worst', v: `${Math.min(...data.map(d => d.pnl)).toFixed(2)}`, c: C.danger },
         ].map(({ l, v, c }) => (
           <div key={l} style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 7, color: C.t4, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{l}</div>
@@ -374,15 +374,15 @@ const EquityCurve = ({ s }) => {
         </ComposedChart>
       </ResponsiveContainer>
 
-      {/* Légende */}
+      {/* Legend */}
       <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-        {[{ c: C.green, l: 'Trade gagnant' }, { c: C.danger, l: 'Trade perdant' }].map(({ c, l }) => (
+        {[{ c: C.green, l: 'Winning trade' }, { c: C.danger, l: 'Losing trade' }].map(({ c, l }) => (
           <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: `${c}40`, border: `1px solid ${c}` }} />
             <span style={{ fontSize: 8, color: C.t3 }}>{l}</span>
           </div>
         ))}
-        <span style={{ fontSize: 8, color: C.t4, marginLeft: 'auto' }}>Survol = détail du trade</span>
+        <span style={{ fontSize: 8, color: C.t4, marginLeft: 'auto' }}>Hover = trade details</span>
       </div>
     </GlassCard>
   );
@@ -393,15 +393,15 @@ const EquityCurve = ({ s }) => {
 // ══════════════════════════════════════════════════════
 const DrawdownChart = ({ s }) => (
   <GlassCard hover={false} glow={C.danger} style={{ padding: '24px 22px' }} custom={1}>
-    <ST icon="📉" color={C.danger} mb={14}>Analyse Drawdown</ST>
+    <ST icon="📉" color={C.danger} mb={14}>Drawdown Analysis</ST>
 
     {/* Summary KPIs */}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 16 }}>
       {[
         { l: 'Max DD', v: `-${s.maxDD.toFixed(2)}`, c: C.danger },
-        { l: 'Durée max', v: `${s.maxDDDur} trades`, c: C.warn },
-        { l: 'Nb périodes', v: s.ddPeriods.length, c: C.t2 },
-        { l: '% trades en DD', v: `${Math.round(s.ddSeries.filter(d => d.v < 0).length / s.n * 100)}%`, c: C.orange },
+        { l: 'Max duration', v: `${s.maxDDDur} trades`, c: C.warn },
+        { l: 'Nb periods', v: s.ddPeriods.length, c: C.t2 },
+        { l: '% trades in DD', v: `${Math.round(s.ddSeries.filter(d => d.v < 0).length / s.n * 100)}%`, c: C.orange },
       ].map(({ l, v, c }) => (
         <div key={l} style={{ padding: '8px 10px', borderRadius: 10, background: `${c}0A`, border: `1px solid ${c}20`, textAlign: 'center' }}>
           <div style={{ fontSize: 7, color: C.t3, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4, fontWeight: 700 }}>{l}</div>
@@ -431,7 +431,7 @@ const DrawdownChart = ({ s }) => (
     {/* Top 5 worst drawdowns */}
     {s.worstDD.length > 0 && (
       <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 8, color: C.t3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>Top 5 — Drawdowns les plus profonds</div>
+        <div style={{ fontSize: 8, color: C.t3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>Top 5 — Deepest Drawdowns</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {s.worstDD.map((d, i) => (
             <div key={i} style={{ display: 'grid', gridTemplateColumns: '22px 1fr 56px 64px', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 9, background: 'rgba(255,61,87,0.06)', border: '1px solid rgba(255,61,87,0.15)' }}>
@@ -451,51 +451,51 @@ const DrawdownChart = ({ s }) => (
 );
 
 // ══════════════════════════════════════════════════════
-// 🔬 STATISTIQUES AVANCÉES
+// 🔬 ADVANCED STATISTICS
 // ══════════════════════════════════════════════════════
 const AdvancedStats = ({ s }) => {
   const groups = [
     {
-      label: 'Rendement', color: C.green, icon: '💹',
+      label: 'Returns', color: C.green, icon: '💹',
       items: [
-        { l: 'Total P&L',   v: `${s.totalPnL >= 0 ? '+' : ''}${s.totalPnL.toFixed(2)}`,   c: s.totalPnL >= 0 ? C.green : C.danger, desc: 'Somme de tous les P&L' },
-        { l: 'Moy / trade', v: `${s.mean >= 0 ? '+' : ''}${s.mean.toFixed(2)}`,            c: s.mean >= 0 ? C.green : C.warn,       desc: 'P&L moyen par trade' },
-        { l: 'Expectancy',  v: `${s.exp >= 0 ? '+' : ''}${s.exp.toFixed(2)}`,              c: s.exp >= 0 ? C.green : C.danger,      desc: 'Gain attendu statistique' },
-        { l: 'Profit Factor', v: s.pf,                                                      c: s.pf >= 2 ? C.green : s.pf >= 1.3 ? C.cyan : s.pf >= 1 ? C.warn : C.danger, desc: 'Gains bruts / pertes brutes' },
+        { l: 'Total P&L',   v: `${s.totalPnL >= 0 ? '+' : ''}${s.totalPnL.toFixed(2)}`,   c: s.totalPnL >= 0 ? C.green : C.danger, desc: 'Sum of all P&L' },
+        { l: 'Avg / trade', v: `${s.mean >= 0 ? '+' : ''}${s.mean.toFixed(2)}`,            c: s.mean >= 0 ? C.green : C.warn,       desc: 'Average P&L per trade' },
+        { l: 'Expectancy',  v: `${s.exp >= 0 ? '+' : ''}${s.exp.toFixed(2)}`,              c: s.exp >= 0 ? C.green : C.danger,      desc: 'Statistical expected gain' },
+        { l: 'Profit Factor', v: s.pf,                                                      c: s.pf >= 2 ? C.green : s.pf >= 1.3 ? C.cyan : s.pf >= 1 ? C.warn : C.danger, desc: 'Gross gains / gross losses' },
       ],
     },
     {
       label: 'Risk-Adjusted', color: C.blue, icon: '📐',
       items: [
-        { l: 'Sharpe',  v: s.sharpe,  c: s.sharpe  >= 2 ? C.green : s.sharpe  >= 1 ? C.cyan : C.warn, desc: 'Rend. / vol totale · ×√252' },
-        { l: 'Sortino', v: s.sortino, c: s.sortino >= 2 ? C.green : s.sortino >= 1 ? C.cyan : C.warn, desc: 'Rend. / vol négative · ×√252' },
+        { l: 'Sharpe',  v: s.sharpe,  c: s.sharpe  >= 2 ? C.green : s.sharpe  >= 1 ? C.cyan : C.warn, desc: 'Ret. / total vol · ×√252' },
+        { l: 'Sortino', v: s.sortino, c: s.sortino >= 2 ? C.green : s.sortino >= 1 ? C.cyan : C.warn, desc: 'Ret. / negative vol · ×√252' },
         { l: 'Calmar',  v: s.calmar,  c: s.calmar  >= 2 ? C.green : s.calmar  >= 1 ? C.cyan : C.warn, desc: 'Total P&L / Max Drawdown' },
-        { l: 'Kelly %', v: `${s.kelly}%`,                                                              c: s.kelly >= 25 ? C.danger : s.kelly >= 10 ? C.green : C.warn, desc: 'Taille optimale de position' },
+        { l: 'Kelly %', v: `${s.kelly}%`,                                                              c: s.kelly >= 25 ? C.danger : s.kelly >= 10 ? C.green : C.warn, desc: 'Optimal position size' },
       ],
     },
     {
       label: 'Win / Loss', color: C.purple, icon: '🏆',
       items: [
         { l: 'Win Rate',     v: `${s.wr}%`,                                                            c: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, desc: `${s.wins}W · ${s.losses}L · ${s.bes}BE` },
-        { l: 'Avg Win',      v: `+${s.avgWin.toFixed(2)}`,                                             c: C.green,   desc: 'Moyenne gains' },
-        { l: 'Avg Loss',     v: `-${s.avgLoss.toFixed(2)}`,                                            c: C.danger,  desc: 'Moyenne pertes' },
-        { l: 'Ratio W/L',    v: parseFloat((s.avgWin / Math.max(0.01, s.avgLoss)).toFixed(2)),         c: s.avgWin / s.avgLoss >= 2 ? C.green : C.warn, desc: 'Taille moy gain / perte' },
+        { l: 'Avg Win',      v: `+${s.avgWin.toFixed(2)}`,                                             c: C.green,   desc: 'Average gains' },
+        { l: 'Avg Loss',     v: `-${s.avgLoss.toFixed(2)}`,                                            c: C.danger,  desc: 'Average losses' },
+        { l: 'Ratio W/L',    v: parseFloat((s.avgWin / Math.max(0.01, s.avgLoss)).toFixed(2)),         c: s.avgWin / s.avgLoss >= 2 ? C.green : C.warn, desc: 'Avg gain / loss size' },
       ],
     },
     {
       label: 'Drawdown', color: C.danger, icon: '⚠️',
       items: [
-        { l: 'Max DD',     v: `-${s.maxDD.toFixed(2)}`,     c: C.danger, desc: 'Pire drawdown absolu' },
-        { l: 'Durée max',  v: `${s.maxDDDur} trades`,       c: C.warn,   desc: 'Durée du plus long DD' },
-        { l: 'Streak W',   v: `${s.mW}× consec.`,          c: C.green,  desc: 'Plus longue série gagnante' },
-        { l: 'Streak L',   v: `${s.mL}× consec.`,          c: C.danger, desc: 'Plus longue série perdante' },
+        { l: 'Max DD',     v: `-${s.maxDD.toFixed(2)}`,     c: C.danger, desc: 'Worst absolute drawdown' },
+        { l: 'Max duration',  v: `${s.maxDDDur} trades`,       c: C.warn,   desc: 'Duration of longest DD' },
+        { l: 'Streak W',   v: `${s.mW}× consec.`,          c: C.green,  desc: 'Longest winning streak' },
+        { l: 'Streak L',   v: `${s.mL}× consec.`,          c: C.danger, desc: 'Longest losing streak' },
       ],
     },
   ];
 
   return (
     <GlassCard hover={false} glow={C.blue} style={{ padding: '24px 22px' }} custom={2}>
-      <ST icon="🔬" color={C.blue} mb={16}>Statistiques Avancées</ST>
+      <ST icon="🔬" color={C.blue} mb={16}>Advanced Statistics</ST>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
         {groups.map(({ label, color, icon, items }) => (
           <div key={label}>
@@ -523,21 +523,21 @@ const AdvancedStats = ({ s }) => {
 };
 
 // ══════════════════════════════════════════════════════
-// 📅 COMPARAISON PAR ANNÉE
+// 📅 YEARLY COMPARISON
 // ══════════════════════════════════════════════════════
 const YearBreakdown = ({ s }) => {
   const YEAR_COLORS = [C.cyan, C.purple, C.green, C.warn, C.pink];
 
-  // Bar chart mensuel global
+  // Global monthly bar chart
   const barData = s.monthlyData.map(d => ({ ...d, label: d.month.substring(5) + '/' + d.month.substring(2, 4) }));
 
   return (
     <GlassCard hover={false} glow={C.purple} style={{ padding: '24px 22px' }} custom={3}>
-      <ST icon="📅" color={C.purple} mb={16}>Comparaison par Année</ST>
+      <ST icon="📅" color={C.purple} mb={16}>Yearly Comparison</ST>
 
-      {/* Bar chart mensuel */}
+      {/* Monthly bar chart */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 8.5, color: C.t3, fontWeight: 700, marginBottom: 8 }}>P&L mensuel global (toutes années)</div>
+        <div style={{ fontSize: 8.5, color: C.t3, fontWeight: 700, marginBottom: 8 }}>Global monthly P&L (all years)</div>
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={barData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="5 5" vertical={false} />
@@ -554,7 +554,7 @@ const YearBreakdown = ({ s }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Cards par année */}
+      {/* Year cards */}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${s.yearStats.length}, 1fr)`, gap: 12 }}>
         {s.yearStats.map((y, i) => {
           const col = YEAR_COLORS[i % YEAR_COLORS.length];
@@ -573,7 +573,7 @@ const YearBreakdown = ({ s }) => {
                 { l: 'Win Rate', v: `${y.wr}%`, c: y.wr >= 60 ? C.green : y.wr >= 50 ? C.warn : C.danger },
                 { l: 'Total P&L', v: `${y.totalPnL >= 0 ? '+' : ''}${y.totalPnL.toFixed(2)}`, c: y.totalPnL >= 0 ? C.green : C.danger },
                 { l: 'PF', v: y.pf, c: y.pf >= 1.5 ? C.green : y.pf >= 1 ? C.warn : C.danger },
-                { l: 'Moy / trade', v: `${y.avgPnL >= 0 ? '+' : ''}${y.avgPnL.toFixed(2)}`, c: y.avgPnL >= 0 ? C.green : C.warn },
+                { l: 'Avg / trade', v: `${y.avgPnL >= 0 ? '+' : ''}${y.avgPnL.toFixed(2)}`, c: y.avgPnL >= 0 ? C.green : C.warn },
                 { l: 'Max DD', v: `-${y.maxDD.toFixed(2)}`, c: C.danger },
                 { l: 'Streak W/L', v: `${y.mW}W / ${y.mL}L`, c: C.t2 },
               ].map(({ l, v, c }) => (
@@ -601,12 +601,12 @@ const YearBreakdown = ({ s }) => {
 };
 
 // ══════════════════════════════════════════════════════
-// 🗓️ HEATMAP MENSUELLE
+// 🗓️ MONTHLY HEATMAP
 // ══════════════════════════════════════════════════════
 const MonthlyHeatmap = ({ s }) => {
   const [metric, setMetric] = useState('pnl');
 
-  // index [année][mois 1-12]
+  // index [year][month 1-12]
   const grid = {};
   s.monthlyData.forEach(d => {
     const [y, m] = d.month.split('-');
@@ -614,7 +614,7 @@ const MonthlyHeatmap = ({ s }) => {
     grid[y][parseInt(m)] = d;
   });
   const years = Object.keys(grid).sort();
-  const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const allVals = s.monthlyData.map(d => metric === 'pnl' ? d.pnl : d.wr);
   const maxAbs  = Math.max(...allVals.map(Math.abs), 1);
@@ -633,7 +633,7 @@ const MonthlyHeatmap = ({ s }) => {
   return (
     <GlassCard hover={false} glow={C.teal} style={{ padding: '24px 22px' }} custom={4}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-        <ST icon="🗓️" color={C.teal} mb={0}>Heatmap Mensuelle</ST>
+        <ST icon="🗓️" color={C.teal} mb={0}>Monthly Heatmap</ST>
         <div style={{ display: 'flex', gap: 3 }}>
           {[{ v: 'pnl', l: 'P&L' }, { v: 'wr', l: 'WR%' }, { v: 'n', l: '# Trades' }].map(({ v, l }) => (
             <button key={v} onClick={() => setMetric(v)}
@@ -682,7 +682,7 @@ const MonthlyHeatmap = ({ s }) => {
                       </td>
                     );
                   })}
-                  {/* Totale colonne */}
+                  {/* Total column */}
                   <td style={{ padding: 2 }}>
                     <div style={{ height: 44, borderRadius: 8, background: cellBg(yearTotal, true), border: `1px solid rgba(255,255,255,0.1)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                       <div style={{ fontSize: 9, fontWeight: 900, fontFamily: 'monospace', color: cellColor(yearTotal) }}>
@@ -697,8 +697,8 @@ const MonthlyHeatmap = ({ s }) => {
         </table>
       </div>
       <div style={{ display: 'flex', gap: 14, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 7.5, color: C.t4 }}>Survol = détail · clic = zoom (bientôt)</span>
-        {[{ c: C.green, l: metric === 'wr' ? 'WR ≥ 50%' : 'Positif' }, { c: C.danger, l: metric === 'wr' ? 'WR < 50%' : 'Négatif' }].map(({ c, l }) => (
+        <span style={{ fontSize: 7.5, color: C.t4 }}>Hover = details · click = zoom (coming soon)</span>
+        {[{ c: C.green, l: metric === 'wr' ? 'WR ≥ 50%' : 'Positive' }, { c: C.danger, l: metric === 'wr' ? 'WR < 50%' : 'Negative' }].map(({ c, l }) => (
           <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: `${c}30`, border: `1px solid ${c}60` }} />
             <span style={{ fontSize: 7.5, color: C.t3 }}>{l}</span>
@@ -730,7 +730,7 @@ const MonteCarlo = ({ s }) => {
   return (
     <GlassCard hover={false} glow={C.gold} style={{ padding: '24px 22px' }} custom={5}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-        <ST icon="🎲" color={C.gold} mb={0}>Monte Carlo — Simulation de trajectoires</ST>
+        <ST icon="🎲" color={C.gold} mb={0}>Monte Carlo — Trajectory Simulation</ST>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <select value={runs} onChange={e => setRuns(Number(e.target.value))}
             style={{ background: C.bgHigh, border: `1px solid ${C.brd}`, borderRadius: 8, padding: '5px 9px', color: C.t2, fontSize: 9, fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}>
@@ -739,7 +739,7 @@ const MonteCarlo = ({ s }) => {
           <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={launch} disabled={loading}
             style={{ padding: '7px 18px', borderRadius: 10, border: `1px solid ${C.gold}`, background: result ? `${C.gold}22` : `${C.gold}18`, color: C.gold, fontSize: 10, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, boxShadow: result ? `0 0 20px ${C.goldGlow}` : 'none', transition: 'all 0.2s' }}>
             {loading ? <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}>⟳</motion.span> : '▶'}
-            {loading ? 'Calcul…' : result ? `Relancer (${runs})` : `Lancer ${runs} simulations`}
+            {loading ? 'Calculating…' : result ? `Relaunch (${runs})` : `Run ${runs} simulations`}
           </motion.button>
         </div>
       </div>
@@ -751,10 +751,10 @@ const MonteCarlo = ({ s }) => {
             <motion.div animate={{ scale: [1, 1.08, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity }}
               style={{ fontSize: 44 }}>🎲</motion.div>
             <div style={{ textAlign: 'center', lineHeight: 1.7 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.t2 }}>Simulation Monte Carlo</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.t2 }}>Monte Carlo Simulation</div>
               <div style={{ fontSize: 9.5, color: C.t3, maxWidth: 340 }}>
-                Mélange aléatoirement tes {s.n} trades et projette {runs} trajectoires possibles<br />
-                pour estimer la distribution des résultats futurs
+                Randomly shuffles your {s.n} trades and projects {runs} possible trajectories<br />
+                to estimate the distribution of future results
               </div>
             </div>
           </motion.div>
@@ -765,7 +765,7 @@ const MonteCarlo = ({ s }) => {
             style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               style={{ width: 40, height: 40, borderRadius: '50%', border: `3px solid ${C.brd}`, borderTop: `3px solid ${C.gold}` }} />
-            <div style={{ fontSize: 11, color: C.t3 }}>Calcul de {runs} trajectoires…</div>
+            <div style={{ fontSize: 11, color: C.t3 }}>Calculating {runs} trajectories…</div>
           </motion.div>
         )}
 
@@ -784,29 +784,29 @@ const MonteCarlo = ({ s }) => {
                   formatter={(v, name) => [<span style={{ fontFamily: 'monospace', fontWeight: 800, color: C.t1 }}>{v >= 0 ? '+' : ''}{v}</span>, name]} />
                 <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeDasharray="5 4" />
 
-                {/* Bandes P5-P95 */}
+                {/* P5-P95 Bands */}
                 <Area type="monotone" dataKey="p95" stroke="none" fill="url(#mc95)" dot={false} legendType="none" />
                 <Area type="monotone" dataKey="p75" stroke="none" fill="url(#mc75)" dot={false} legendType="none" />
 
-                {/* Lignes percentiles */}
-                <Line type="monotone" dataKey="p95"    stroke={PCT_COLORS.p95}  strokeWidth={1}   dot={false} strokeDasharray="6 3" name="P95 (Optimiste)" />
+                {/* Percentile lines */}
+                <Line type="monotone" dataKey="p95"    stroke={PCT_COLORS.p95}  strokeWidth={1}   dot={false} strokeDasharray="6 3" name="P95 (Optimistic)" />
                 <Line type="monotone" dataKey="p75"    stroke={PCT_COLORS.p75}  strokeWidth={1.5} dot={false} name="P75" />
-                <Line type="monotone" dataKey="p50"    stroke={PCT_COLORS.p50}  strokeWidth={2.5} dot={false} name="Médiane P50" />
+                <Line type="monotone" dataKey="p50"    stroke={PCT_COLORS.p50}  strokeWidth={2.5} dot={false} name="Median P50" />
                 <Line type="monotone" dataKey="p25"    stroke={PCT_COLORS.p25}  strokeWidth={1.5} dot={false} name="P25" />
-                <Line type="monotone" dataKey="p5"     stroke={PCT_COLORS.p5}   strokeWidth={1}   dot={false} strokeDasharray="6 3" name="P5 (Pessimiste)" />
-                {/* Courbe réelle */}
-                <Line type="monotone" dataKey="actual" stroke={C.green}         strokeWidth={3}   dot={false} name="Réel" />
+                <Line type="monotone" dataKey="p5"     stroke={PCT_COLORS.p5}   strokeWidth={1}   dot={false} strokeDasharray="6 3" name="P5 (Pessimistic)" />
+                {/* Actual curve */}
+                <Line type="monotone" dataKey="actual" stroke={C.green}         strokeWidth={3}   dot={false} name="Actual" />
               </ComposedChart>
             </ResponsiveContainer>
 
-            {/* Résumé MC */}
+            {/* MC Summary */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 8, marginTop: 14 }}>
               {[
-                { l: '% runs positifs', v: `${result.pctPos}%`,              c: result.pctPos >= 75 ? C.green : result.pctPos >= 50 ? C.warn : C.danger },
-                { l: 'Médiane finale',  v: `${result.p50 >= 0 ? '+' : ''}${result.p50}`, c: result.p50 >= 0 ? C.green : C.danger },
-                { l: 'Pessimiste P5',   v: `${result.p5 >= 0 ? '+' : ''}${result.p5}`,  c: result.p5 >= 0 ? C.green : C.danger },
-                { l: 'Optimiste P95',   v: `+${result.p95}`,                 c: C.blue },
-                { l: 'DD médian',       v: `-${result.ddP50}`,               c: C.warn },
+                { l: '% positive runs', v: `${result.pctPos}%`,              c: result.pctPos >= 75 ? C.green : result.pctPos >= 50 ? C.warn : C.danger },
+                { l: 'Final median',  v: `${result.p50 >= 0 ? '+' : ''}${result.p50}`, c: result.p50 >= 0 ? C.green : C.danger },
+                { l: 'Pessimistic P5',   v: `${result.p5 >= 0 ? '+' : ''}${result.p5}`,  c: result.p5 >= 0 ? C.green : C.danger },
+                { l: 'Optimistic P95',   v: `+${result.p95}`,                 c: C.blue },
+                { l: 'Median DD',       v: `-${result.ddP50}`,               c: C.warn },
               ].map(({ l, v, c }) => (
                 <div key={l} style={{ padding: '9px 10px', borderRadius: 10, background: `${c}0A`, border: `1px solid ${c}22`, textAlign: 'center' }}>
                   <div style={{ fontSize: 7, color: C.t3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4, lineHeight: 1.4 }}>{l}</div>
@@ -815,11 +815,11 @@ const MonteCarlo = ({ s }) => {
               ))}
             </div>
 
-            {/* Légende */}
+            {/* Legend */}
             <div style={{ display: 'flex', gap: 14, marginTop: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
-                { c: C.green,  l: 'Réel', w: 3 },
-                { c: C.gold,   l: 'Médiane P50', w: 2.5 },
+                { c: C.green,  l: 'Actual', w: 3 },
+                { c: C.gold,   l: 'Median P50', w: 2.5 },
                 { c: C.cyan,   l: 'P75', w: 1.5 },
                 { c: C.blue,   l: 'P95', w: 1, dash: true },
                 { c: C.orange, l: 'P25', w: 1.5 },
@@ -839,7 +839,7 @@ const MonteCarlo = ({ s }) => {
 };
 
 // ══════════════════════════════════════════════════════
-// 🏠 PAGE PRINCIPALE — EQUITY
+// 🏠 MAIN PAGE — EQUITY
 // ══════════════════════════════════════════════════════
 export default function Equity() {
   const { trades } = useTradingContext();
@@ -860,8 +860,8 @@ export default function Equity() {
       <div style={{ background: `radial-gradient(ellipse 120% 50% at 50% -5%,rgba(77,124,255,0.12) 0%,#030508 60%)`, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif" }}>
         <GlassCard glow={C.blue} style={{ padding: '60px 48px', textAlign: 'center', maxWidth: 420 }}>
           <div style={{ fontSize: 48, marginBottom: 20 }}>📊</div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: C.t1, marginBottom: 8 }}>Aucun trade</div>
-          <div style={{ fontSize: 11, color: C.t3, lineHeight: 1.7 }}>Ajoutez des trades via <strong style={{ color: C.cyan }}>All Trades</strong> pour afficher votre analyse Equity.</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: C.t1, marginBottom: 8 }}>No trades</div>
+          <div style={{ fontSize: 11, color: C.t3, lineHeight: 1.7 }}>Add trades via <strong style={{ color: C.cyan }}>All Trades</strong> to display your Equity analysis.</div>
         </GlassCard>
       </div>
     );
@@ -872,12 +872,12 @@ export default function Equity() {
   const KPI_ROW = [
     { label: 'Total P&L',    value: `${last >= 0 ? '+' : ''}${last.toFixed(2)}`,  sub: `${s.n} trades · ${s.yrs}y`, color: last >= 0 ? C.green : C.danger, icon: '💹', custom: 0 },
     { label: 'Win Rate',     value: `${s.wr}%`,                                    sub: `${s.wins}W · ${s.losses}L · ${s.bes}BE`, color: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, icon: '🎯', custom: 1 },
-    { label: 'Profit Factor',value: s.pf,                                           sub: `${s.grossW.toFixed(2)} gagné / ${s.grossL.toFixed(2)} perdu`, color: s.pf >= 2 ? C.green : s.pf >= 1.3 ? C.cyan : s.pf >= 1 ? C.warn : C.danger, icon: '⚖️', custom: 2 },
-    { label: 'Sharpe',       value: s.sharpe,                                       sub: '≥1 correct · ≥2 excellent',  color: s.sharpe  >= 2 ? C.green : s.sharpe  >= 1 ? C.cyan : C.warn, icon: '📏', custom: 3 },
-    { label: 'Sortino',      value: s.sortino,                                      sub: 'Vol négative uniquement',    color: s.sortino >= 2 ? C.green : s.sortino >= 1 ? C.cyan : C.warn, icon: '📐', custom: 4 },
+    { label: 'Profit Factor',value: s.pf,                                           sub: `${s.grossW.toFixed(2)} won / ${s.grossL.toFixed(2)} lost`, color: s.pf >= 2 ? C.green : s.pf >= 1.3 ? C.cyan : s.pf >= 1 ? C.warn : C.danger, icon: '⚖️', custom: 2 },
+    { label: 'Sharpe',       value: s.sharpe,                                       sub: '≥1 good · ≥2 excellent',  color: s.sharpe  >= 2 ? C.green : s.sharpe  >= 1 ? C.cyan : C.warn, icon: '📏', custom: 3 },
+    { label: 'Sortino',      value: s.sortino,                                      sub: 'Negative vol only',    color: s.sortino >= 2 ? C.green : s.sortino >= 1 ? C.cyan : C.warn, icon: '📐', custom: 4 },
     { label: 'Calmar',       value: s.calmar,                                       sub: 'P&L / Max Drawdown',         color: s.calmar  >= 2 ? C.green : s.calmar  >= 1 ? C.cyan : C.warn, icon: '🔢', custom: 5 },
-    { label: 'Max Drawdown', value: `-${s.maxDD.toFixed(2)}`,                       sub: `Durée max : ${s.maxDDDur} trades`,     color: C.danger, icon: '📉', custom: 6 },
-    { label: 'Kelly %',      value: `${s.kelly}%`,                                  sub: 'Taille optimale de position', color: s.kelly >= 25 ? C.danger : s.kelly >= 10 ? C.green : C.warn, icon: '🎯', custom: 7 },
+    { label: 'Max Drawdown', value: `-${s.maxDD.toFixed(2)}`,                       sub: `Max duration: ${s.maxDDDur} trades`,     color: C.danger, icon: '📉', custom: 6 },
+    { label: 'Kelly %',      value: `${s.kelly}%`,                                  sub: 'Optimal position size', color: s.kelly >= 25 ? C.danger : s.kelly >= 10 ? C.green : C.warn, icon: '🎯', custom: 7 },
   ];
 
   return (
@@ -913,7 +913,7 @@ export default function Equity() {
                 </span>
               </div>
               <div style={{ fontSize: 11, color: C.t3 }}>
-                Analyse complète de votre performance · Données temps réel depuis All Trades
+                Complete performance analysis · Real-time data from All Trades
               </div>
             </div>
           </div>
