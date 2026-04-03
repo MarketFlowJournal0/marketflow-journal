@@ -16,12 +16,13 @@ import PlanSelection from './pages/PlanSelection';
 import SupportPage from './pages/SupportPage';
 import OnboardingFlow from './pages/OnboardingFlow';
 import OnboardingStats from './pages/OnboardingStats';
-import SupportWidget from './components/supportwidget';
+import SupportWidget from './components/SupportWidget';
 import { TradingProvider } from './context/TradingContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
 import { Toaster, toast } from 'react-hot-toast';
 import AuthCallback from './pages/AuthCallback';
+import BrokerConnect from './pages/BrokerConnect';
 import './App.css';
 import './theme.css';
 
@@ -99,6 +100,7 @@ function AppLayout({ user, onLogout }) {
             <Route path="/equity"           element={<Equity />} />
             <Route path="/psychology"       element={<Psychology />} />
             <Route path="/ai-chat"          element={<AIChat />} />
+            <Route path="/broker-connect"    element={<BrokerConnect />} />
             <Route path="/account-settings" element={<AccountSettings user={user} onBack={() => navigate('/dashboard')} />} />
             <Route path="/subscription"     element={<PlanSelection user={user} onSkip={() => navigate('/dashboard')} />} />
             <Route path="/support"          element={<SupportPage user={user} onBack={() => navigate('/dashboard')} />} />
