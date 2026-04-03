@@ -23,6 +23,7 @@ import AuthModal from './components/AuthModal';
 import { Toaster, toast } from 'react-hot-toast';
 import AuthCallback from './pages/AuthCallback';
 import BrokerConnect from './pages/BrokerConnect';
+import AIChatBot from './components/AIChatBot';
 import './App.css';
 import './theme.css';
 
@@ -109,6 +110,7 @@ function AppLayout({ user, onLogout }) {
           </Routes>
         </div>
         <SupportWidget onOpenPage={(page) => navigate('/' + page)} />
+        <AIChatBot />
       </div>
     </TradingProvider>
   );
@@ -245,7 +247,7 @@ function AppInner() {
           } />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
-        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
+        <AIChatBot />
       </>
     );
   }
@@ -269,6 +271,7 @@ function AppInner() {
           <Route path="*" element={<Navigate to="/plan" replace />} />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
+        <AIChatBot />
       </>
     );
   }

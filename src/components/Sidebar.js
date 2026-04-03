@@ -143,22 +143,14 @@ const NAV = (isAdmin) => [
       { id: 'analytics-pro', label: 'Analytics',  Icon: Ic.Analytics  },
       { id: 'equity',        label: 'Equity',     Icon: Ic.Equity     },
       { id: 'backtest',      label: 'Backtest',   Icon: Ic.Backtest   },
-      { id: 'calendar',      label: 'Calendar',   Icon: Ic.Calendar   },
     ],
   },
   {
-    id: 'ai',
-    label: 'AI',
+    id: 'tools',
+    label: 'Tools',
     items: [
-      { id: 'psychology', label: 'Psychology', Icon: Ic.Psychology },
-      { id: 'ai-chat',    label: 'AI Coach',   Icon: Ic.AI         },
-    ],
-  },
-  {
-    id: 'connections',
-    label: 'Connections',
-    items: [
-      { id: 'broker-connect', label: 'Brokers', Icon: Ic.Broker },
+      { id: 'psychology',     label: 'Psychology',     Icon: Ic.Psychology },
+      { id: 'broker-connect', label: 'Brokers',        Icon: Ic.Broker     },
     ],
   },
   ...(isAdmin ? [{
