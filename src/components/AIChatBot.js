@@ -173,7 +173,7 @@ export default function AIChatBot() {
 
   return (
     <>
-      {/* Toggle button - bottom left */}
+      {/* Toggle button - bottom right */}
       <motion.button
         onClick={() => setOpen(o => !o)}
         whileHover={{ scale: 1.08 }}
@@ -182,31 +182,30 @@ export default function AIChatBot() {
           position: 'fixed',
           bottom: 20,
           right: 20,
-          width: 48,
-          height: 48,
-          borderRadius: 14,
-          background: 'linear-gradient(135deg, #06E6FF, #00FF88)',
-          border: 'none',
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          background: 'linear-gradient(135deg, rgba(6,230,255,0.15), rgba(0,255,136,0.1))',
+          border: '1px solid rgba(6,230,255,0.2)',
           cursor: 'pointer',
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 24px rgba(6,230,255,0.3)',
+          boxShadow: '0 4px 24px rgba(6,230,255,0.15), 0 0 0 1px rgba(6,230,255,0.05)',
+          backdropFilter: 'blur(12px)',
+          overflow: 'hidden',
         }}
       >
         {open ? (
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#030508" strokeWidth="2" strokeLinecap="round">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="rgba(6,230,255,0.8)" strokeWidth="2" strokeLinecap="round">
             <line x1="4" y1="4" x2="14" y2="14"/>
             <line x1="14" y1="4" x2="4" y2="14"/>
           </svg>
         ) : (
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#030508" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 4A1.5 1.5 0 014.5 2.5h11A1.5 1.5 0 0117 4v8a1.5 1.5 0 01-1.5 1.5H9L3.5 17V4z"/>
-            <circle cx="7" cy="8" r="0.8" fill="#030508" stroke="none"/>
-            <circle cx="10" cy="8" r="0.8" fill="#030508" stroke="none"/>
-            <circle cx="13" cy="8" r="0.8" fill="#030508" stroke="none"/>
-          </svg>
+          <div style={{ width: 28, height: 28, borderRadius: 7, overflow: 'hidden', opacity: 0.85 }}>
+            <img src={LOGO_ICON} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }}/>
+          </div>
         )}
       </motion.button>
 

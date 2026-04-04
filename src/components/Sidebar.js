@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MARKETFLOW_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA2QAAAMPCAYAAAC62xZRAAEAAElEQVR4nOz9aZgsy3nfif0iIjNr6eWcPvs9d993XOBeXKxcAJKACBDcwUWUKEoaUdLIoj0ay48oS3pk2R8sj6SR5/GMv3nsx56Rx+aIskRJXEQRErGIIAiQIECAWAnc/dyz9VpLZka8/hCZVdV1auuuqq7q7vjdp2/3qSWXyMjIeON93/+raiuXhVOMyHSnr5Sa0ZEcH3rbbN7nH67P8nGQazKu/cdtK1y/k81xv7/L4+8/j8Mc1zzORUSGbnfUe0fFvO//afvXoln09TmNDOsz5bU4yvlP4OiZ5fzmoEQz3VogEAgEAgEgLDgEAoFAYDKCQcbwh+IyrCAehPLhP+9jPsj2Z7GaNOvrc1JXuJb9+s9yuwfZ/0m5v5eRae+lRXtApt1/+f3e7RykTRZ5rx5F33fOjXx/Wg/6LDyTi2SQ1yVwdBxmweQo+9hhxteTOr85KmbZZgftX8EgCwQChyZMJALzJPSv402YEAYCgcBkBIMsEAgEAktJCPkLTEroC4FA4Dhz4g2ysMIaCAQCx5MwyQ6MY1gfUUqF538gEDg2nHiDLBAIzI9pc0ACgVGE/hUYxaJzfAKBQGBWBIMsEAgcmjBhDgQCwzjq8eG0GWMhpDcQODkEgywQCByaYHAF5knoX4FJCcZHIBA4zpx4gyysIAUCgUAgcHIJz/FAIHDcmbtBNq1BdBR1Zkbt4zgZdIOO5ShrUgyqgzWrOj8Hfe+w2zzOLON5LfqYpu0/4+qYHXR7/d9bdPschmFj4qDXp60TOG+CB+54cxzvn0EMq2M3y/nTSWmrg5zTrO7vYduZdv/zqFM4rzpaJ6X/zJuD9k+lVEeASM/74AKBQCAQCAQCgUAgMJgTH7IYCAQCgUBg9hynCJLAySN4uAMnieAhCwQCgUAgEAgEAoEFEQyyQCAQCAQCgUAgEFgQwSALBAKBQCAQCAQCgQURcsgCgUAgEAgcmJAjFlgkR114PBCYJ8FDFggEAoFAIBAIBAILIoJp60T538Nq8kyyQnHYGg/LwLKrTM1//6Nrjo2//vOtU7fo9l9GTlttkWnGl9NeB2/+K8yDnhPHp30mGb+O8/NtWubdf5a9bQ8yD+r/ziz3f5I4yDlNWgdq2HvTctznJwc5vkF1aI/7+R/m+A/TP8v9TB2yWG4ouIYDgUAgEAgEAoHlNzgC8+WgdtFYg2y8hTj4M6NWHgLLw3FfwVj245uWZb8+iz6+Re8/EAgEAoFAoJ+ZG2STMCgsI0yEAoFAIBA4uYTImEAgEBjMQVNuxhpk4zZYesiGxVKGAXu5CYZzYBoW3X8Wvf9AIBAIBAKBfg46PwkeskAgEAgETiFhwTQQmB9hHjya055y0H9+MxP16P07eMYCR8VJv6GP+/EHAoFAIBAInDYOOj+di6jHIPnLwHJy0g2awHxZdP9Z9P4DgdNMuP8CgUDgcNwRWVitX57SlTXd16cd0Kcd8E9bTaZ+pvdkTttmo/c/7vi0Hl3bPEwYRjPvOizTMmxxp3x93PWf1f4nYdqaLceRQePnwfrN4Os67XFM2q7T9vFpL99Juv7HkVkdf3+fm+V2TwvTjInz6ofznj/Me/572ue341i28WsmOWTTEDpJYBShfwQCJ5f+SexB7/dpc5enH1+W64EeOBgHVUELnC7mPf8I85tALws3yAKBQGAUQcH1dHAYD0P/qnq/ly5MeAKBQCBwHJjaIJt2hSmsUAVGMe2EKkzIjjejrt9RXNswPh0th23PXoNsltckXP9AILAowvzldBE8ZIFA4FhwuBylwDIz6Foe9Pr2e8fKv0M/CUxLMMgDgcBRsXCDLAxogVEEUY4AhMn2aeGwxtig704yNoQJ9+kmXP/AKObdP8L8JdDLfCXKAoFAYEqG5ZAFjj/917FUq5v0+g777...";
+const MARKETFLOW_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA2QAAAMPCAYAAAC62xZRAAEAAElEQVR4nOz9aZgsy3nfif0iIjNr6eWcPvs9d993XOBeXKxcAJKACBDcwUWUKEoaUdLIoj0ay48oS3pk2R8sj6SR5/GMv3nsx56Rx+aIskRJXEQRErGIIAiQIECAWAnc/dyz9VpLZke8/hCZVdV1auuuqq7q7vjdp2/3qSWXyMjIeON93/+raiuXhVOMyHSnr5Sa0ZEcH3rbbN7nH67P8nGQazKu/cdtK1y/k81xv7/L4+8/j8Mc1zzORUSGbnfUe0fFvO//afvXoln09TmNDOsz5bU4yvlP4OiZ5fzmoEQz3VogEAgEAgEgLDgEAoFAYDKCQcbwh+IyrCAehPLhP+9jPsj2Z7GaNOvrc1JXuJb9+s9yuwfZ/0m5v5eRae+lRXtApt1/+f3e7RykTRZ5rx5F33fOjXx/Wg/6LDyTi2SQ1yVwdBxmweQo+9hhxteTOr85KmbZZgftX8EgCwQChyZMJALzJPSv402YEAYCgcBkBIMsEAgEAktJCPkLTEroC4FA4Dhz4g2ysMIaCAQCx5MwyQ6MY1gfUUqF538gEDg2nHiDLBAIzI9pc0ACgVGE/hUYxaJzfAKBQGBWBIMsEAgcmjBhDgQCwzjq8eG0GWMhpDcQODkEgywQCByaYHAF5knoX4FJCcZHIBA4zpx4gyysIAUCgUAgcHIJz/FAIHDcmbtBNq1BdBR1Zkbt4zgZdIOO5ShrUgyqgzWrOj8Hfe+w2zzOLON5LfqYpu0/4+qYHXR7/d9bdPschmFj4qDXp60TOG+CB+54cxzvn0EMq2M3y/nTSWmrg5zTrO7vYduZdv/zqFM4rzpaJ6X/zJuD9k+lVEeASM/74AKBQCAQCAQCgUAgMJgTH7IYCAQCgUBg9hynCJLAySN4uAMnieAhCwQCgUAgEAgEAoEFEQyyQCAQCAQCgUAgEFgQwSALBAKBQCAQCAQCgQURcsgCgUAgEAgcmJAjFlgkR114PBCYJ8FDFggEAoFAIBAIBAILIoJp60T538Nq8kyyQnHYGg/LwLKrTM1//6Nrjo2//vOtU7fo9l9GTlttkWnGl9NeB2/+K8yDnhPHp30mGb+O8/NtWubdf5a9bQ8yD+r/ziz3f5I4yDlNWgdq2HvTctznJwc5vkF1aI/7+R/m+A/TP8v9TB2yWG4ouIYDgUAgEAgEAoHlNzgC8+WgdtFYg2y8hTj4M6NWHgLLw3FfwVj245uWZb8+iz6+Re8/EAgEAoFAoJ+ZG2STMCgsI0yEAoFAIBA4uYTImEAgEBjMQVNuxhpk4zZYesiGxVKGAXu5CYZzYBoW3X8Wvf9AIBAIBAKBfg46PwkeskAgEAgETiFhwTQQmB9hHjya055y0H9+MxP16P07eMYCR8VJv6GP+/EHAoFAIBAInDYOOj+di6jHIPnLwHJy0g2awHxZdP9Z9P4DgdNMuP8CgUDgcNwRWVitX57SlTXd16cd0Kcd8E9bTaZ+pvdkTttmo/c/7vi0Hl3bPEwYRjPvOizTMmxxp3x93PWf1f4nYdqaLceRQePnwfrN4Os67XFM2q7T9vFpL99Juv7HkVkdf3+fm+V2TwvTjInz6ofznj/Me/572ue341i28WsmOWTTEDpJYBShfwQCJ5f+SexB7/dpc5enH1+W64EeOBgHVUELnC7mPf8I85tALws3yAKBQGAUQcH1dHAYD0P/qnq/ly5MeAKBQCBwHJjaIJt2hSmsUAVGMe2EKkzIjjejrt9RXNswPh0th23PXoNsltckXP9AILAowvzldBE8ZIFA4FhwuBylwDIz6Foe9Pr2e8fKv0M/CUxLMMgDgcBRsXCDLAxogVEEUY4AhMn2aeGwxtig704yNoQJ9+kmXP/AKObdP8L8JdDLfCXKAoFAYEqG5ZAFjj/917FUq5v0+g777...";
 
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 /* ═══════════════════════════════════════════════════════════════
-   MARKETFLOW SIDEBAR v2 — Premium Terminal Design
+   MARKETFLOW SIDEBAR v3 — Living Gradient
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── SVG Icons ── */
@@ -48,25 +48,10 @@ const Ic = {
       <polyline points="3.5,1 4.5,2 3.5,3.5"/>
     </svg>
   ),
-  Calendar: () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1.5" y="3" width="13" height="11.5" rx="1.5"/>
-      <path d="M11.5 1.5V3.5M4.5 1.5V3.5"/>
-      <path d="M1.5 7h13"/>
-      <rect x="5" y="9.5" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/>
-      <rect x="9" y="9.5" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/>
-    </svg>
-  ),
   Psychology: () => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 1.5a4.5 4.5 0 014.5 4.5c0 1.8-1 3.4-2.7 4.3L10 12l.5 1.5H5.5L6 12l.3-1.2A4.5 4.5 0 018 1.5z"/>
       <path d="M6.5 10h3"/>
-    </svg>
-  ),
-  AI: () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2.5 4A1.5 1.5 0 014 2.5h8A1.5 1.5 0 0113.5 4v5.5A1.5 1.5 0 0112 11H7L2.5 14V4z"/>
-      <path d="M5.5 6.5h5M5.5 8.5h3"/>
     </svg>
   ),
   Broker: () => (
@@ -205,6 +190,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
   const [theme, setTheme] = useState(() => localStorage.getItem('mf_theme') || 'dark');
   const [accent, setAccent] = useState(() => localStorage.getItem('mf_accent') || '#06E6FF');
   const panelRef = useRef(null);
+  const [tick, setTick] = useState(0);
 
   const firstName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
   const initials  = firstName.slice(0, 2).toUpperCase();
@@ -222,6 +208,19 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
   const pi = PLAN[plan] || PLAN.trial;
 
   const W = collapsed ? 72 : 260;
+
+  /* Animated gradient tick */
+  useEffect(() => {
+    let frame;
+    const loop = () => { setTick(t => t + 1); frame = requestAnimationFrame(loop); };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  /* Dynamic gradient computation */
+  const gradAngle = (tick * 0.3) % 360;
+  const gradHue1 = (tick * 0.15) % 180;
+  const gradHue2 = (gradHue1 + 120) % 360;
 
   /* Close panel outside click */
   useEffect(() => {
@@ -298,24 +297,85 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
       style={{
         position: 'fixed', left: 0, top: 0, height: '100vh',
         display: 'flex', flexDirection: 'column',
-        background: 'linear-gradient(180deg, #050A14 0%, #030610 40%, #020408 100%)',
         zIndex: 100, overflow: 'hidden', flexShrink: 0,
         fontFamily: "'Inter', 'DM Sans', -apple-system, sans-serif",
         isolation: 'isolate',
       }}
     >
-      {/* Signature left light blade */}
+      {/* ═══ LIVING GRADIENT BACKGROUND ═══ */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: `
+          linear-gradient(${gradAngle}deg,
+            rgba(6,230,255,0.08) 0%,
+            rgba(0,255,136,0.05) 25%,
+            rgba(6,230,255,0.03) 50%,
+            rgba(0,255,136,0.06) 75%,
+            rgba(6,230,255,0.08) 100%
+          )
+        `,
+        transition: 'background 0.5s linear',
+        zIndex: 0,
+      }}/>
+
+      {/* Deep base layer */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(180deg, #050A14 0%, #030610 50%, #020408 100%)',
+        zIndex: -1,
+      }}/>
+
+      {/* Animated mesh orbs */}
+      <div style={{
+        position: 'absolute',
+        top: `${20 + Math.sin(tick * 0.008) * 15}%`,
+        left: `${10 + Math.cos(tick * 0.006) * 10}%`,
+        width: 180, height: 180,
+        background: 'radial-gradient(circle, rgba(6,230,255,0.06) 0%, transparent 70%)',
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        zIndex: 0,
+        transition: 'top 2s ease, left 2s ease',
+      }}/>
+      <div style={{
+        position: 'absolute',
+        bottom: `${15 + Math.cos(tick * 0.007) * 12}%`,
+        right: `${5 + Math.sin(tick * 0.005) * 8}%`,
+        width: 150, height: 150,
+        background: 'radial-gradient(circle, rgba(0,255,136,0.05) 0%, transparent 70%)',
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        zIndex: 0,
+        transition: 'bottom 2s ease, right 2s ease',
+      }}/>
+
+      {/* Scan line effect */}
+      <div style={{
+        position: 'absolute',
+        top: `${(tick * 0.05) % 200 - 10}%`,
+        left: 0, right: 0,
+        height: 2,
+        background: 'linear-gradient(90deg, transparent, rgba(6,230,255,0.04), transparent)',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }}/>
+
+      {/* Left edge — signature blade */}
       <div style={{
         position: 'absolute', top: 0, left: 0, width: 1, height: '100%',
-        background: 'linear-gradient(180deg, rgba(6,230,255,0.5) 0%, rgba(6,230,255,0.12) 30%, rgba(0,255,136,0.06) 60%, transparent 100%)',
+        background: `linear-gradient(180deg, 
+          rgba(6,230,255,${0.3 + Math.sin(tick * 0.02) * 0.15}) 0%, 
+          rgba(0,255,136,${0.15 + Math.cos(tick * 0.015) * 0.08}) 40%, 
+          transparent 100%)`,
         zIndex: 10, pointerEvents: 'none',
       }}/>
 
-      {/* Ambient top glow */}
+      {/* Right edge subtle */}
       <div style={{
-        position: 'absolute', top: -40, left: '50%', transform: 'translateX(-50%)',
-        width: 160, height: 100,
-        background: 'radial-gradient(ellipse, rgba(6,230,255,0.04) 0%, transparent 70%)',
+        position: 'absolute', top: 0, right: 0, bottom: 0, width: 1,
+        background: `linear-gradient(180deg, 
+          rgba(255,255,255,${0.03 + Math.sin(tick * 0.01) * 0.01}) 0%, 
+          transparent 100%)`,
         pointerEvents: 'none',
       }}/>
 
@@ -324,8 +384,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         height: 64, display: 'flex', alignItems: 'center',
         padding: collapsed ? '0' : '0 16px',
         justifyContent: collapsed ? 'center' : 'space-between',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(6,230,255,0.08)',
         position: 'relative', flexShrink: 0,
+        zIndex: 2,
       }}>
         <div
           style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10, overflow: 'hidden', cursor: 'pointer' }}
@@ -333,8 +394,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         >
           <div style={{
             width: 34, height: 34, borderRadius: 9, overflow: 'hidden', flexShrink: 0,
-            border: '1px solid rgba(6,230,255,0.15)',
-            boxShadow: '0 0 16px rgba(6,230,255,0.08)',
+            border: '1px solid rgba(6,230,255,0.2)',
+            boxShadow: `0 0 ${16 + Math.sin(tick * 0.03) * 8}px rgba(6,230,255,0.1)`,
+            transition: 'box-shadow 1s ease',
           }}>
             <img src={MARKETFLOW_LOGO} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }}/>
           </div>
@@ -350,7 +412,8 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                 <div style={{
                   fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em',
-                  background: 'linear-gradient(135deg, #06E6FF 0%, #00FF88 100%)',
+                  background: `linear-gradient(${gradAngle}deg, #06E6FF 0%, #00FF88 50%, #06E6FF 100%)`,
+                  backgroundSize: '200% 100%',
                   WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                   lineHeight: 1.1,
                 }}>MarketFlow</div>
@@ -406,6 +469,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         padding: collapsed ? '8px 8px' : '8px 10px',
         display: 'flex', flexDirection: 'column', gap: 14,
         scrollbarWidth: 'none',
+        position: 'relative', zIndex: 2,
       }}>
         {sections.map((sec, si) => (
           <div key={sec.id}>
@@ -419,7 +483,8 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                   transition={{ duration: 0.15 }}
                   style={{
                     fontSize: 8.5, fontWeight: 700, letterSpacing: '0.18em',
-                    textTransform: 'uppercase', color: 'rgba(255,255,255,0.13)',
+                    textTransform: 'uppercase',
+                    color: `rgba(6,230,255,${0.2 + Math.sin(tick * 0.01 + si) * 0.08})`,
                     padding: '0 10px 5px', overflow: 'hidden', whiteSpace: 'nowrap',
                   }}
                 >
@@ -428,7 +493,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
               )}
             </AnimatePresence>
             {collapsed && si > 0 && (
-              <div style={{ height: 1, margin: '5px 4px 7px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)' }}/>
+              <div style={{ height: 1, margin: '5px 4px 7px', background: 'linear-gradient(90deg, transparent, rgba(6,230,255,0.06), transparent)' }}/>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -453,19 +518,23 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                       padding: collapsed ? '8px 0' : '7px 10px',
                       borderRadius: 7, border: 'none', cursor: 'pointer',
                       position: 'relative', overflow: 'hidden',
-                      background: act ? 'rgba(6,230,255,0.06)' : h ? 'rgba(255,255,255,0.025)' : 'transparent',
+                      background: act
+                        ? 'linear-gradient(90deg, rgba(6,230,255,0.1), rgba(0,255,136,0.04))'
+                        : h
+                          ? 'rgba(255,255,255,0.025)'
+                          : 'transparent',
                       transition: 'background 0.15s ease, padding 0.32s ease',
                     }}
                   >
-                    {/* Active indicator */}
+                    {/* Active indicator with glow */}
                     {act && (
                       <motion.div
                         layoutId="active"
                         style={{
-                          position: 'absolute', left: 0, top: '22%', bottom: '22%',
+                          position: 'absolute', left: 0, top: '15%', bottom: '15%',
                           width: 2, borderRadius: 1,
                           background: 'linear-gradient(180deg, #06E6FF, #00FF88)',
-                          boxShadow: '0 0 8px rgba(6,230,255,0.3)',
+                          boxShadow: '0 0 12px rgba(6,230,255,0.4)',
                         }}
                       />
                     )}
@@ -480,7 +549,11 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                         width: 32, height: 32, borderRadius: 7, flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: ic,
-                        background: act ? 'rgba(6,230,255,0.08)' : h ? 'rgba(255,255,255,0.03)' : 'transparent',
+                        background: act
+                          ? 'rgba(6,230,255,0.1)'
+                          : h
+                            ? 'rgba(6,230,255,0.04)'
+                            : 'transparent',
                         border: act ? '1px solid rgba(6,230,255,0.15)' : '1px solid transparent',
                         transition: 'all 0.15s ease',
                       }}>
@@ -495,7 +568,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                             transition={{ duration: 0.15, delay: 0.03 }}
                             style={{
                               fontSize: 12.5, fontWeight: act ? 600 : 400,
-                              color: act ? 'rgba(255,255,255,0.88)' : h ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.38)',
+                              color: act ? 'rgba(255,255,255,0.9)' : h ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.38)',
                               letterSpacing: '0.005em',
                               whiteSpace: 'nowrap', overflow: 'hidden',
                               transition: 'color 0.15s ease',
@@ -521,8 +594,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
       {/* ── Footer ── */}
       <div style={{
         padding: collapsed ? '8px' : '8px 10px 12px',
-        borderTop: '1px solid rgba(255,255,255,0.03)',
+        borderTop: '1px solid rgba(6,230,255,0.06)',
         position: 'relative', flexShrink: 0,
+        zIndex: 2,
       }}>
         {/* Settings panel */}
         <AnimatePresence>
@@ -551,7 +625,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
               {/* User header */}
               <div style={{
                 padding: '16px 16px 14px',
-                background: 'linear-gradient(135deg, rgba(6,230,255,0.06) 0%, rgba(0,255,136,0.03) 100%)',
+                background: 'linear-gradient(135deg, rgba(6,230,255,0.08) 0%, rgba(0,255,136,0.04) 100%)',
                 borderBottom: '1px solid rgba(255,255,255,0.04)',
                 position: 'relative',
               }}>
@@ -712,14 +786,14 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         <motion.button
           className="mf-user-btn"
           onClick={() => setPanel(p => !p)}
-          whileHover={{ background: 'rgba(255,255,255,0.025)' }}
+          whileHover={{ background: 'rgba(6,230,255,0.04)' }}
           style={{
             width: '100%', display: 'flex', alignItems: 'center',
             gap: collapsed ? 0 : 9,
             justifyContent: collapsed ? 'center' : 'flex-start',
             padding: collapsed ? '6px 0' : '7px 9px',
-            borderRadius: 9, border: '1px solid rgba(255,255,255,0.04)',
-            background: 'rgba(255,255,255,0.015)',
+            borderRadius: 9, border: '1px solid rgba(6,230,255,0.08)',
+            background: 'rgba(6,230,255,0.02)',
             cursor: 'pointer', transition: 'all 0.15s ease',
           }}
         >
