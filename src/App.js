@@ -109,7 +109,6 @@ function AppLayout({ user, onLogout }) {
             <Route path="*"                 element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
-        <SupportWidget onOpenPage={(page) => navigate('/' + page)} />
         <AIChatBot />
       </div>
     </TradingProvider>
