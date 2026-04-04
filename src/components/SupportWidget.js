@@ -127,7 +127,7 @@ export default function SupportWidget({ onOpenPage }) {
     <>
       <style>{`
         .mfw-btn {
-          position:fixed; bottom:28px; right:28px; z-index:9000;
+          position:fixed; bottom:28px; left:28px; z-index:9000;
           width:56px; height:56px; border-radius:50%;
           background:linear-gradient(135deg,#06E6FF,#00FF88);
           border:none; cursor:pointer;
@@ -143,7 +143,7 @@ export default function SupportWidget({ onOpenPage }) {
           50% { box-shadow:0 4px 24px rgba(6,230,255,0.5),0 0 0 10px rgba(6,230,255,0); }
         }
         .mfw-panel {
-          position:fixed; bottom:96px; right:28px; z-index:9001;
+          position:fixed; bottom:96px; left:28px; z-index:9001;
           width:360px; max-height:560px;
           display:flex; flex-direction:column;
           border-radius:20px; overflow:hidden;
@@ -281,8 +281,8 @@ export default function SupportWidget({ onOpenPage }) {
         }
         .mfw-x:hover{color:#7ACCDD;}
         @media(max-width:480px){
-          .mfw-panel{width:calc(100vw - 32px);right:16px;bottom:78px;}
-          .mfw-btn{right:16px;bottom:16px;}
+          .mfw-panel{width:calc(100vw - 32px);left:16px;bottom:78px;}
+          .mfw-btn{left:16px;bottom:16px;}
         }
       `}</style>
 

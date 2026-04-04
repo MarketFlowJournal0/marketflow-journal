@@ -247,7 +247,6 @@ function AppInner() {
           } />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
-        <AIChatBot />
       </>
     );
   }
@@ -271,7 +270,6 @@ function AppInner() {
           <Route path="*" element={<Navigate to="/plan" replace />} />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
-        <AIChatBot />
       </>
     );
   }

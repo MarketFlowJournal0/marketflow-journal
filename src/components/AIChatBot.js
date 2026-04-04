@@ -181,7 +181,7 @@ export default function AIChatBot() {
         style={{
           position: 'fixed',
           bottom: 20,
-          left: 20,
+          right: 20,
           width: 48,
           height: 48,
           borderRadius: 14,
@@ -221,7 +221,7 @@ export default function AIChatBot() {
             style={{
               position: 'fixed',
               bottom: 80,
-              left: 20,
+              right: 20,
               width: 380,
               height: 520,
               background: '#060C18',
