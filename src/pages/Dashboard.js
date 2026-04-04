@@ -121,6 +121,7 @@ const KpiStrip = () => {
 // ─── EQUITY CHART ─────────────────────────────────────────────────────────────
 const EquityPanel = () => {
   const { stats } = useDashData();
+  const data = stats.equityData || [];
   const [range, setRange] = useState('All');
   const pnl = stats.pnl || 0;
   const pnlPct = stats.pnlPct || 0;
