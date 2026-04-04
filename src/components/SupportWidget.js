@@ -127,7 +127,7 @@ export default function SupportWidget({ onOpenPage }) {
     <>
       <style>{`
         .mfw-btn {
-          position:fixed; bottom:28px; left:28px; z-index:9000;
+          position:fixed; bottom:28px; right:28px; z-index:9000;
           width:56px; height:56px; border-radius:50%;
           background:linear-gradient(135deg,#06E6FF,#00FF88);
           border:none; cursor:pointer;

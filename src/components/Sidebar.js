@@ -533,120 +533,172 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
               initial={{ opacity: 0, y: 8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.98 }}
-              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 position: 'absolute',
-                bottom: 'calc(100% + 8px)',
+                bottom: 'calc(100% + 10px)',
                 left: collapsed ? 80 : 10,
-                width: collapsed ? 220 : 240,
-                background: '#060C18',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 12,
-                padding: 14,
+                width: collapsed ? 240 : 260,
+                background: 'linear-gradient(160deg, #0C1830 0%, #080F1E 50%, #060C18 100%)',
+                border: '1px solid rgba(6,230,255,0.1)',
+                borderRadius: 14,
+                padding: 0,
                 zIndex: 300,
-                boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
+                overflow: 'hidden',
+                boxShadow: '0 -12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(6,230,255,0.04), inset 0 1px 0 rgba(6,230,255,0.06)',
               }}
             >
+              {/* User header */}
               <div style={{
-                fontSize: 8.5, fontWeight: 700, letterSpacing: '0.16em',
-                textTransform: 'uppercase', color: 'rgba(255,255,255,0.15)',
-                marginBottom: 12, paddingBottom: 8,
+                padding: '16px 16px 14px',
+                background: 'linear-gradient(135deg, rgba(6,230,255,0.06) 0%, rgba(0,255,136,0.03) 100%)',
                 borderBottom: '1px solid rgba(255,255,255,0.04)',
-              }}>Preferences</div>
-
-              {/* Theme */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)' }}>Theme</span>
-                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: 5, padding: 2, gap: 2 }}>
-                  {['dark', 'light'].map(t => (
-                    <button
-                      key={t}
-                      onClick={() => applyTheme(t)}
-                      style={{
-                        width: 26, height: 22, borderRadius: 4,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: theme === t ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        border: 'none', cursor: 'pointer',
-                        color: theme === t ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.2)',
-                        transition: 'all 0.14s ease',
-                      }}
-                    >
-                      {t === 'dark' ? <Ic.Moon /> : <Ic.Sun />}
-                    </button>
-                  ))}
+                position: 'relative',
+              }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+                  background: 'linear-gradient(90deg, transparent, rgba(6,230,255,0.3), rgba(0,255,136,0.2), transparent)',
+                }}/>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+                    background: `linear-gradient(135deg, ${accent}, #00FF88)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 700, color: '#030508',
+                    boxShadow: `0 2px 12px ${accent}44`,
+                  }}>{initials}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      marginBottom: 3,
+                    }}>{firstName}</div>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '2px 8px', borderRadius: 5,
+                      background: pi.c + '15', border: `1px solid ${pi.c}30`,
+                      fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+                      color: pi.c, textTransform: 'uppercase',
+                    }}>{pi.l} Plan</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Accent — Elite only */}
-              {isElite && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)' }}>Accent</span>
-                  <div style={{ display: 'flex', gap: 5 }}>
-                    {['#06E6FF', '#00FF88', '#A78BFA', '#FB923C', '#F472B6', '#FACC15'].map(c => (
+              {/* Body */}
+              <div style={{ padding: '12px 12px 8px' }}>
+                {/* Theme */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 10px', marginBottom: 6,
+                  background: 'rgba(255,255,255,0.02)', borderRadius: 8,
+                  border: '1px solid rgba(255,255,255,0.03)',
+                }}>
+                  <span style={{ fontSize: 11.5, fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>Theme</span>
+                  <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', borderRadius: 6, padding: 2.5, gap: 2 }}>
+                    {['dark', 'light'].map(t => (
                       <button
-                        key={c}
-                        onClick={() => applyAccent(c)}
+                        key={t}
+                        onClick={() => applyTheme(t)}
                         style={{
-                          width: 15, height: 15, borderRadius: '50%',
-                          background: c, border: accent === c ? '1.5px solid rgba(255,255,255,0.4)' : '1.5px solid transparent',
-                          cursor: 'pointer', transition: 'all 0.14s ease',
+                          width: 28, height: 24, borderRadius: 5,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: theme === t ? 'rgba(6,230,255,0.12)' : 'transparent',
+                          border: theme === t ? '1px solid rgba(6,230,255,0.2)' : '1px solid transparent',
+                          cursor: 'pointer',
+                          color: theme === t ? '#06E6FF' : 'rgba(255,255,255,0.25)',
+                          transition: 'all 0.14s ease',
                         }}
-                      />
+                      >
+                        {t === 'dark' ? <Ic.Moon /> : <Ic.Sun />}
+                      </button>
                     ))}
                   </div>
                 </div>
-              )}
 
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '10px 0' }}/>
+                {/* Accent — Elite only */}
+                {isElite && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 10px', marginBottom: 6,
+                    background: 'rgba(255,255,255,0.02)', borderRadius: 8,
+                    border: '1px solid rgba(255,255,255,0.03)',
+                  }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>Accent</span>
+                    <div style={{ display: 'flex', gap: 5 }}>
+                      {['#06E6FF', '#00FF88', '#A78BFA', '#FB923C', '#F472B6', '#FACC15'].map(c => (
+                        <button
+                          key={c}
+                          onClick={() => applyAccent(c)}
+                          style={{
+                            width: 16, height: 16, borderRadius: '50%',
+                            background: c, border: accent === c ? '2px solid rgba(255,255,255,0.5)' : '2px solid transparent',
+                            cursor: 'pointer', transition: 'all 0.14s ease',
+                            boxShadow: accent === c ? `0 0 8px ${c}66` : 'none',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div style={{
+                height: 1, margin: '0 12px',
+                background: 'linear-gradient(90deg, transparent, rgba(6,230,255,0.1), transparent)',
+              }}/>
 
               {/* Actions */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <div style={{ padding: '6px 8px 8px' }}>
                 <button
                   onClick={() => go('account-settings')}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 7px', borderRadius: 6, border: 'none',
-                    background: 'none', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.35)', fontSize: 11.5,
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '9px 10px', borderRadius: 8, border: 'none',
+                    background: 'rgba(255,255,255,0.02)', cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 500,
                     fontFamily: 'inherit', transition: 'all 0.13s ease',
+                    marginBottom: 2,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(6,230,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
                 >
                   <Ic.Settings /> Account Settings
                 </button>
                 <button
                   onClick={() => go('subscription')}
                   style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '6px 7px', borderRadius: 6, border: 'none',
-                    background: 'none', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.35)', fontSize: 11.5,
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '9px 10px', borderRadius: 8, border: 'none',
+                    background: 'rgba(255,255,255,0.02)', cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 500,
                     fontFamily: 'inherit', transition: 'all 0.13s ease',
+                    marginBottom: 2,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(6,230,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <Ic.CreditCard /> Manage Plan
                   </div>
                   <span style={{
-                    fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
-                    padding: '2px 5px', borderRadius: 3,
-                    background: pi.c + '18', color: pi.c,
+                    fontSize: 8.5, fontWeight: 700, letterSpacing: '0.06em',
+                    padding: '3px 7px', borderRadius: 5,
+                    background: pi.c + '15', border: `1px solid ${pi.c}25`,
+                    color: pi.c, textTransform: 'uppercase',
                   }}>{pi.l}</span>
                 </button>
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '2px 0' }}/>
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.03)', margin: '4px 0' }}/>
                 <button
                   onClick={() => { setPanel(false); onLogout?.(); }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 7px', borderRadius: 6, border: 'none',
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '9px 10px', borderRadius: 8, border: 'none',
                     background: 'none', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.35)', fontSize: 11.5,
+                    color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: 500,
                     fontFamily: 'inherit', transition: 'all 0.13s ease',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,70,70,0.05)'; e.currentTarget.style.color = '#FF6B6B'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,70,70,0.06)'; e.currentTarget.style.color = '#FF6B6B'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
                 >
                   <Ic.Logout /> Sign Out
