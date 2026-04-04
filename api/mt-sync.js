@@ -54,6 +54,13 @@ if (trades.length === 0) {
 }
 
     // 4. Filtrer les nouveaux trades uniquement
+    // Fetch existing tickets for this account
+    const { data: existingTrades } = await supabase
+      .from('trades')
+      .select('ticket')
+      .eq('account_id', account.id)
+    const existingTickets = new Set((existingTrades || []).map(t => t.ticket?.toString()))
+
     const newTrades = trades
       .filter(t => t.ticket && !existingTickets.has(t.ticket.toString()))
       .map(t => ({
