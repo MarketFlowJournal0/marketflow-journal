@@ -13,8 +13,8 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { priceId, email, userId } = req.body;
-  if (!priceId) return res.status(400).json({ error: 'priceId requis' });
+  const { priceId, email, userId, planId } = req.body;
+  if (!priceId) return res.status(400).json({ error: 'priceId required' });
 
   const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://marketflowjournal.com';
 
@@ -34,7 +34,6 @@ module.exports = async (req, res) => {
       try {
         await stripe.customers.retrieve(customerId);
       } catch (err) {
-        console.log(`Customer ${customerId} introuvable, création d'un nouveau`);
         customerId = null;
         if (userId) {
           await supabase.from('profiles').update({ stripe_customer_id: null }).eq('id', userId);
@@ -53,26 +52,46 @@ module.exports = async (req, res) => {
       }
     }
 
+    // Check if user already had a trial before
+    let trialDays = 14;
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('trial_end')
+        .eq('id', userId)
+        .single();
+      if (profile?.trial_end) {
+        const trialEndDate = new Date(profile.trial_end);
+        if (trialEndDate < new Date()) {
+          // Trial already used and expired — no more trial
+          trialDays = 0;
+        }
+      }
+    }
+
+    const subscriptionData = {
+      trial_period_days: trialDays,
+      trial_settings: {
+        end_behavior: { missing_payment_method: 'cancel' },
+      },
+      metadata: {
+        supabase_user_id: userId || '',
+        plan_id: planId || '',
+      },
+    };
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       ...(customerId ? { customer: customerId } : email ? { customer_email: email } : {}),
-      subscription_data: {
-        trial_period_days: 14,
-        trial_settings: {
-          end_behavior: { missing_payment_method: 'cancel' },
-        },
-        metadata: { supabase_user_id: userId || '' },
-      },
+      subscription_data: subscriptionData,
       payment_method_collection: 'always',
-      // ✅ Succès → page d'accueil avec paramètre payment=success
       success_url: `${BASE_URL}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      // ✅ Annulation → retour sur la page abonnement, PAS /plan
       cancel_url: `${BASE_URL}/plan`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
-      locale: 'fr',
+      locale: 'en',
     });
 
     return res.status(200).json({ url: session.url });

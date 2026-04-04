@@ -256,8 +256,9 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement → /plan ── (sauf si on vient de logout)
-  if (profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut) {
+  // ── Pas d'abonnement ou trial expiré → /plan ──
+  const trialExpired = user.isTrialing && user.trialDaysLeft <= 0;
+  if (profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut || trialExpired) {
     return (
       <>
         <Routes>

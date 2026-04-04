@@ -1,193 +1,217 @@
 // api/stripe-webhook.js
-// Vercel Serverless Function — gère tous les événements Stripe
+// Handles Stripe events: trial expiry, payment failures, subscription changes
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
+const { Resend } = require('resend');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Map Price ID → plan name
-const PRICE_TO_PLAN = {
-  'price_1T9t9L2Ouddv7uendIMAR6IP': 'starter',
-  'price_1T9t9K2Ouddv7uengELbKBaO': 'starter',
-  'price_1T9t9U2Ouddv7uenfg38PRZ2': 'pro',
-  'price_1T9t9U2Ouddv7uenK6oT1O13': 'pro',
-  'price_1T9t9L2Ouddv7uen4DXuOatj': 'elite',
-  'price_1T9t9K2Ouddv7uennnWOJ44p': 'elite',
-};
-
-// Désactiver le body parser Vercel (Stripe a besoin du raw body)
-module.exports.config = { api: { bodyParser: false } };
-
-async function getRawBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
-}
-
-// Mettre à jour le profil Supabase via stripe_customer_id
-async function updateByCustomer(customerId, updates) {
-  const { data: users } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('stripe_customer_id', customerId)
-    .limit(1);
-
-  if (!users?.length) {
-    console.warn('No user found for customer:', customerId);
-    return;
-  }
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', users[0].id);
-
-  if (error) console.error('Supabase update error:', error);
-  else console.log(`✓ Updated user ${users[0].id}:`, updates);
-}
-
-// Mettre à jour via email (fallback)
-async function updateByEmail(email, updates) {
-  const { data: authUsers } = await supabase.auth.admin.listUsers();
-  const authUser = authUsers?.users?.find(u => u.email === email);
-  if (!authUser) { console.warn('No auth user for email:', email); return; }
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', authUser.id);
-
-  if (error) console.error('Supabase update by email error:', error);
-  else console.log(`✓ Updated user by email ${email}:`, updates);
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, stripe-signature');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const sig     = req.headers['stripe-signature'];
-  const rawBody = await getRawBody(req);
+  // For raw body parsing in Vercel, we use the raw body
+  const sig = req.headers['stripe-signature'];
+  const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
   let event;
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('Webhook signature error:', err.message);
+    console.error('Webhook signature verification failed:', err.message);
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
-  console.log(`→ Webhook: ${event.type}`);
-
   try {
     switch (event.type) {
-
-      // ── Checkout complété ─────────────────────────────────────────────────
       case 'checkout.session.completed': {
         const session = event.data.object;
-        if (session.mode !== 'subscription') break;
-
-        const customerId     = session.customer;
+        const userId = session.metadata?.supabase_user_id;
         const subscriptionId = session.subscription;
-        const customerEmail  = session.customer_details?.email || session.customer_email;
+        const customerId = session.customer;
+        const planId = session.metadata?.plan_id;
 
-        // Récupérer le plan depuis le subscriptionId
-        const sub     = await stripe.subscriptions.retrieve(subscriptionId);
-        const priceId = sub.items.data[0]?.price?.id;
-        const plan    = PRICE_TO_PLAN[priceId] || 'starter';
-        const trialEnd = sub.trial_end
-          ? new Date(sub.trial_end * 1000).toISOString()
-          : null;
-
-        const updates = {
-          stripe_customer_id:     customerId,
-          stripe_subscription_id: subscriptionId,
-          plan,
-          subscription_status: sub.status, // 'trialing' ou 'active'
-          trial_end: trialEnd,
-        };
-
-        // Essayer d'abord via metadata userId (le plus fiable)
-        const userId = session.metadata?.supabase_user_id || sub.metadata?.supabase_user_id;
-        if (userId) {
-          await supabase.from('profiles')
-            .update({ ...updates, updated_at: new Date().toISOString() })
+        if (userId && subscriptionId) {
+          await supabase
+            .from('profiles')
+            .update({
+              stripe_customer_id: customerId,
+              stripe_subscription_id: subscriptionId,
+              subscription_status: 'trialing',
+              trial_end: new Date(Date.now() + 14 * 86400000).toISOString(),
+              plan: planId || null,
+            })
             .eq('id', userId);
-          console.log(`✓ Linked checkout to user ${userId}`);
-        } else if (customerEmail) {
-          await updateByEmail(customerEmail, updates);
         }
         break;
       }
 
-      // ── Abonnement mis à jour (trial → active, changement de plan...) ─────
       case 'customer.subscription.updated': {
-        const sub     = event.data.object;
-        const priceId = sub.items.data[0]?.price?.id;
-        const plan    = PRICE_TO_PLAN[priceId] || 'starter';
-        const trialEnd = sub.trial_end
-          ? new Date(sub.trial_end * 1000).toISOString()
-          : null;
+        const sub = event.data.object;
+        const userId = sub.metadata?.supabase_user_id;
+        const customerId = sub.customer;
+        const planId = sub.items?.data?.[0]?.price?.metadata?.plan_id;
 
-        await updateByCustomer(sub.customer, {
-          plan,
-          subscription_status:    sub.status,
-          stripe_subscription_id: sub.id,
-          trial_end: trialEnd,
-        });
+        let targetUserId = userId;
+        if (!targetUserId) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+          if (profile) targetUserId = profile.id;
+        }
+
+        if (targetUserId) {
+          await supabase
+            .from('profiles')
+            .update({
+              subscription_status: sub.status,
+              stripe_subscription_id: sub.id,
+              stripe_customer_id: customerId,
+              plan: planId || sub.metadata?.plan_id || null,
+            })
+            .eq('id', targetUserId);
+        }
         break;
       }
 
-      // ── Abonnement supprimé / annulé ──────────────────────────────────────
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
-        await updateByCustomer(sub.customer, {
-          subscription_status: 'canceled',
-          plan: 'free',
-        });
-        break;
-      }
+        const userId = sub.metadata?.supabase_user_id;
+        const customerId = sub.customer;
 
-      // ── Paiement réussi (renouvellement) ──────────────────────────────────
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object;
-        if (invoice.billing_reason === 'subscription_cycle') {
-          await updateByCustomer(invoice.customer, {
-            subscription_status: 'active',
-          });
+        let targetUserId = userId;
+        if (!targetUserId) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+          if (profile) targetUserId = profile.id;
+        }
+
+        if (targetUserId) {
+          await supabase
+            .from('profiles')
+            .update({
+              subscription_status: 'canceled',
+              stripe_subscription_id: null,
+            })
+            .eq('id', targetUserId);
         }
         break;
       }
 
-      // ── Paiement échoué ───────────────────────────────────────────────────
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        await updateByCustomer(invoice.customer, {
-          subscription_status: 'past_due',
-        });
+        const customerId = invoice.customer;
+        const amount = (invoice.amount_due / 100).toFixed(2);
+        const currency = (invoice.currency || 'usd').toUpperCase();
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, email, plan')
+          .eq('stripe_customer_id', customerId)
+          .single();
+
+        if (profile) {
+          await supabase
+            .from('profiles')
+            .update({ subscription_status: 'past_due' })
+            .eq('id', profile.id);
+
+          try {
+            await resend.emails.send({
+              from: 'MarketFlow Journal <noreply@marketflowjournal.com>',
+              to: profile.email,
+              subject: 'Payment Failed — Your MarketFlow Journal Subscription',
+              html: `
+                <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0C1422;border-radius:16px;border:1px solid #162034;color:#E8EEFF;">
+                  <div style="text-align:center;margin-bottom:24px;">
+                    <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
+                    <h2 style="color:#FFFFFF;margin:0 0 8px;font-size:20px;">Payment Failed</h2>
+                    <p style="color:#7A90B8;margin:0;font-size:14px;">We couldn't process your subscription payment</p>
+                  </div>
+                  <div style="background:rgba(255,61,87,0.08);border:1px solid rgba(255,61,87,0.2);border-radius:12px;padding:16px;margin-bottom:24px;">
+                    <p style="color:#FF5570;margin:0;font-size:13px;font-weight:600;">What happened:</p>
+                    <p style="color:#E8EEFF;margin:8px 0 0;font-size:13px;line-height:1.6;">
+                      We attempted to charge <strong style="color:#FFFFFF;">$${amount} ${currency}</strong> for your <strong style="color:#FFFFFF;">${profile.plan || 'subscription'}</strong> plan, but the payment was declined by your bank.
+                    </p>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.03);border:1px solid #162034;border-radius:12px;padding:16px;margin-bottom:24px;">
+                    <p style="color:#7A90B8;margin:0 0 8px;font-size:13px;font-weight:600;">Your free trial has ended. Access to your trading journal is now restricted until payment is processed.</p>
+                    <p style="color:#7A90B8;margin:0;font-size:13px;line-height:1.6;">To restore full access, please update your payment method below:</p>
+                  </div>
+                  <div style="text-align:center;margin-bottom:24px;">
+                    <a href="https://app.marketflowjournal.com/plan" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Update Payment Method</a>
+                  </div>
+                  <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
+                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal — Trade smarter.</p>
+                  </div>
+                </div>
+              `,
+            });
+          } catch (emailErr) {
+            console.error('Failed to send payment failure email:', emailErr);
+          }
+        }
         break;
       }
 
-      // ── Trial se termine bientôt (J-3) ───────────────────────────────────
-      case 'customer.subscription.trial_will_end': {
-        const sub = event.data.object;
-        console.log(`Trial ending soon for customer: ${sub.customer}`);
-        // Ici tu peux envoyer un email de rappel via Supabase Edge Functions
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        const subscriptionId = invoice.subscription;
+
+        if (subscriptionId) {
+          try {
+            const sub = await stripe.subscriptions.retrieve(subscriptionId);
+            const userId = sub?.metadata?.supabase_user_id;
+
+            let targetUserId = userId;
+            if (!targetUserId) {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('stripe_customer_id', customerId)
+                .single();
+              if (profile) targetUserId = profile.id;
+            }
+
+            if (targetUserId) {
+              await supabase
+                .from('profiles')
+                .update({
+                  subscription_status: 'active',
+                  trial_end: null,
+                })
+                .eq('id', targetUserId);
+            }
+          } catch (stripeErr) {
+            console.error('Failed to retrieve subscription:', stripeErr);
+          }
+        }
         break;
       }
 
       default:
-        console.log(`Unhandled event: ${event.type}`);
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    return res.status(200).json({ received: true });
+    res.status(200).json({ received: true });
   } catch (err) {
     console.error('Webhook handler error:', err);
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Webhook handler failed' });
   }
 };

@@ -502,7 +502,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
               Start your <span>free trial</span><br />of 14 days
             </h1>
             <p className="ps-subtitle">
-              Enter your card now, nothing is charged for 14 days.
+              Enter your card now, nothing is charged for 14 days. Your card will be automatically billed when the trial ends. One free trial per account.
             </p>
           </>
         ) : (
@@ -610,7 +610,8 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       <div className="ps-trial-note">
         🔒 <span>100% secure payment by Stripe</span>
         {' · '}Cancel in 1 click
-        {' · '}14 days free 
+        {' · '}14-day free trial — one per account
+        {' · '}Auto-billing after trial
       </div>
     </div>
   );
