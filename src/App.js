@@ -246,6 +246,7 @@ function AppInner() {
           } />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
+        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
     );
   }
