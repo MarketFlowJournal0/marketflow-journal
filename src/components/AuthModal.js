@@ -153,6 +153,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
 
   return (
     <>
+      <style>{`.auth-link { color: rgba(6,230,255,0.45); text-decoration: none; transition: color 0.15s; } .auth-link:hover { color: #06E6FF; }`}</style>
       <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
         {/* Backdrop */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ position: 'absolute', inset: 0, background: 'rgba(2,4,10,0.92)', backdropFilter: 'blur(24px) saturate(150%)' }} onClick={onClose} />
@@ -271,7 +272,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                       </button>
 
                       <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 14, lineHeight: 1.55 }}>
-                        By continuing, you agree to our <a href="#terms" style={{ color: "rgba(6,230,255,0.45)", textDecoration: "none" }} onMouseEnter={e => e.target.style.color = "#06E6FF"} onMouseLeave={e => e.target.style.color = "rgba(6,230,255,0.45)"}}>Terms</a> and <a href="#privacy" style={{ color: "rgba(6,230,255,0.45)", textDecoration: "none" }} onMouseEnter={e => e.target.style.color = "#06E6FF"} onMouseLeave={e => e.target.style.color = "rgba(6,230,255,0.45)"}}>Privacy Policy</a>.
+                        By continuing, you agree to our <a href="#terms" className="auth-link">Terms</a> and <a href="#privacy" className="auth-link">Privacy Policy</a>.
                       </p>
                     </form>
                   ) : (
@@ -323,7 +324,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                       </button>
 
                       <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 14, lineHeight: 1.55 }}>
-                        By creating an account, you agree to our <a href="#terms" style={{ color: "rgba(6,230,255,0.45)", textDecoration: "none" }} onMouseEnter={e => e.target.style.color = "#06E6FF"} onMouseLeave={e => e.target.style.color = "rgba(6,230,255,0.45)"}}>Terms</a> and <a href="#privacy" style={{ color: "rgba(6,230,255,0.45)", textDecoration: "none" }} onMouseEnter={e => e.target.style.color = "#06E6FF"} onMouseLeave={e => e.target.style.color = "rgba(6,230,255,0.45)"}}>Privacy Policy</a>. No credit card required.
+                        By creating an account, you agree to our <a href="#terms" className="auth-link">Terms</a> and <a href="#privacy" className="auth-link">Privacy Policy</a>. No credit card required.
                       </p>
                     </form>
                   )}
