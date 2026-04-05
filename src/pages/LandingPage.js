@@ -1,9 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════
-   MARKETFLOW JOURNAL — Landing Page v4
-   Premium Lifestyle — Unleashed
+   MARKETFLOW JOURNAL — Landing Page v5
+   Premium — SVG Icons, Animated Logos, Updated Features
    ═══════════════════════════════════════════════════════════════ */
+
+// ─── SVG Icons ─────────────────────────────────────────────────────────────
+const Ic = {
+  Journal: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2" width="14" height="16" rx="2"/><path d="M7 6h6M7 9h6M7 12h3"/></svg>,
+  AI: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5A2 2 0 015 3h10a2 2 0 012 2v7a2 2 0 01-2 2H8l-5 3.5V5z"/><circle cx="7" cy="8" r="0.8" fill="currentColor" stroke="none"/><circle cx="10" cy="8" r="0.8" fill="currentColor" stroke="none"/><circle cx="13" cy="8" r="0.8" fill="currentColor" stroke="none"/></svg>,
+  Analytics: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,15 6,9 10,12 15,4 18,6"/><path d="M15 2h3v3"/></svg>,
+  Psychology: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2a6 6 0 016 6c0 2.5-1.5 4.6-3.6 5.7L12.5 16l.5 2H7l.5-2 .1-.3A6 6 0 0110 2z"/><path d="M8 11h4"/></svg>,
+  Backtest: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10.5" r="7"/><polyline points="10,6 10,10.5 13,12.5"/><path d="M5.5 3C3.5 4.5 2 7 2 10.5"/><polyline points="4.5,2 5.5,3 4.5,4.5"/></svg>,
+  Prop: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2l2.5 6H18l-4.5 3.5 1.5 5.5L10 13.5 4.5 17l1.5-5.5L1.5 8h5.5z"/></svg>,
+};
 
 // ─── Animated Canvas Background ────────────────────────────────────────────
 function AnimatedBg() {
@@ -13,8 +23,7 @@ function AnimatedBg() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let animId, w, h;
-    const particles = [];
-    const lines = [];
+    const particles = [], lines = [];
     const PC = 50, LC = 10;
 
     function resize() {
@@ -22,7 +31,6 @@ function AnimatedBg() {
       h = canvas.height = canvas.offsetHeight * devicePixelRatio;
       ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     }
-
     function init() {
       resize();
       particles.length = 0; lines.length = 0;
@@ -33,7 +41,6 @@ function AnimatedBg() {
         lines.push({ pts, o: Math.random() * 0.05 + 0.02, speed: Math.random() * 0.12 + 0.04 });
       }
     }
-
     function draw() {
       const rw = w / devicePixelRatio, rh = h / devicePixelRatio;
       ctx.clearRect(0, 0, rw, rh);
@@ -52,7 +59,6 @@ function AnimatedBg() {
 
 // ─── Scroll Reveal ─────────────────────────────────────────────────────────
 function useReveal() { const ref = useRef(null); const [v, setV] = useState(false); useEffect(() => { const el = ref.current; if (!el) return; const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setV(true); o.disconnect(); } }, { threshold: 0.08 }); o.observe(el); return () => o.disconnect(); }, []); return [ref, v]; }
-
 function Reveal({ children, delay = 0, style = {} }) {
   const [ref, v] = useReveal();
   return <div ref={ref} style={{ opacity: v ? 1 : 0, transform: v ? 'translateY(0)' : 'translateY(28px)', transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`, ...style }}>{children}</div>;
@@ -75,11 +81,12 @@ const STYLES = `
   body { background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;overflow-x:hidden; }
   @keyframes flowgrad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
   .flow-text { background:linear-gradient(90deg,#06E6FF,#00FF88,#06E6FF);background-size:200% 200%;animation:flowgrad 4s ease infinite;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+  @keyframes ticker-scroll { from{transform:translateX(0)}to{transform:translateX(-50%)} }
 
   /* NAV */
   .lp-nav { position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 48px;height:68px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,5,8,0.7);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,0.03);transition:all 0.3s; }
   .lp-nav.scrolled { background:rgba(3,5,8,0.95);border-bottom-color:var(--brd); }
-  .lp-nav-logo { display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none; }
+  .lp-nav-logo { display:flex;align-items:center;gap:10px;cursor:pointer; }
   .lp-nav-logo-icon { width:36px;height:36px;border-radius:10px;overflow:hidden;border:1px solid rgba(6,230,255,0.15);box-shadow:0 0 16px rgba(6,230,255,0.1); }
   .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--t0);letter-spacing:-0.5px; }
   .lp-nav-links { display:flex;align-items:center;gap:4px; }
@@ -93,8 +100,14 @@ const STYLES = `
 
   /* TICKER */
   .lp-ticker-wrap { overflow:hidden;background:rgba(3,5,8,0.95);border-top:1px solid rgba(6,230,255,0.05);border-bottom:1px solid rgba(255,255,255,0.03);padding:11px 0;white-space:nowrap;margin-top:68px;position:relative; }
-  .lp-ticker { display:inline-flex;gap:0;animation:lp-ticker 50s linear infinite; }
-  @keyframes lp-ticker { from{transform:translateX(0)}to{transform:translateX(-50%)} }
+  .lp-ticker { display:inline-flex;gap:0;animation:ticker-scroll 50s linear infinite; }
+
+  /* LOGOS TICKER */
+  .lp-logos { padding:40px 0;border-top:1px solid rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.03);overflow:hidden; }
+  .lp-logos-label { text-align:center;font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:20px; }
+  .lp-logos-track { display:inline-flex;gap:0;animation:ticker-scroll 35s linear infinite; }
+  .lp-logo-item { display:inline-flex;align-items:center;justify-content:center;padding:0 40px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--t0);opacity:0.35;transition:opacity 0.3s;white-space:nowrap; }
+  .lp-logo-item:hover { opacity:0.7; }
 
   /* HERO */
   .lp-hero { min-height:100vh;padding:140px 48px 80px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden; }
@@ -117,12 +130,6 @@ const STYLES = `
   .lp-stat-val { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:30px;color:var(--cyan);line-height:1;margin-bottom:5px; }
   .lp-stat-label { font-size:11px;color:var(--t3);font-weight:600;letter-spacing:0.8px;text-transform:uppercase; }
 
-  /* LOGOS */
-  .lp-logos { padding:48px;text-align:center;border-top:1px solid rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.03); }
-  .lp-logos p { font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:24px; }
-  .lp-logos-row { display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;opacity:0.3; }
-  .lp-logo-item { font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--t0); }
-
   /* SECTIONS */
   .lp-section { padding:100px 48px; }
   .lp-section-inner { max-width:1200px;margin:0 auto; }
@@ -134,7 +141,7 @@ const STYLES = `
   .lp-features-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:60px; }
   .lp-feature-card { padding:28px;border-radius:16px;border:1px solid var(--brd);background:rgba(12,20,34,0.5);position:relative;overflow:hidden;transition:all 0.25s; }
   .lp-feature-card:hover { border-color:rgba(6,230,255,0.2);transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,0.4); }
-  .lp-feature-icon { width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px;background:rgba(6,230,255,0.06);border:1px solid rgba(6,230,255,0.1); }
+  .lp-feature-icon { width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--cyan);margin-bottom:14px;background:rgba(6,230,255,0.06);border:1px solid rgba(6,230,255,0.1); }
   .lp-feature-title { font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:var(--t0);margin-bottom:6px; }
   .lp-feature-desc { font-size:13.5px;color:var(--t2);line-height:1.65; }
 
@@ -257,7 +264,6 @@ const FALLBACK = { 'S&P 500':{p:5680,pct:0.34},'NASDAQ':{p:19800,pct:0.56},'DOW'
 const TICKER_ORDER = ['S&P 500','NASDAQ','DOW','BTC/USD','ETH/USD','SOL/USD','EUR/USD','GBP/USD','USD/JPY'];
 
 function LiveTickerBar() {
-  const [data] = useState(FALLBACK);
   const doubled = [...TICKER_ORDER,...TICKER_ORDER];
   const fmt = (n,v) => v>=10000?v.toLocaleString('en-US',{maximumFractionDigits:0}):v>=100?v.toFixed(2):v.toFixed(4);
   return (
@@ -266,7 +272,7 @@ function LiveTickerBar() {
       <div style={{position:'absolute',right:0,top:0,bottom:0,width:60,background:'linear-gradient(270deg,rgba(3,5,8,0.95),transparent)',zIndex:2,pointerEvents:'none'}}/>
       <div className="lp-ticker">
         {doubled.map((name,i)=>{
-          const d=data[name];if(!d)return null;const pos=d.pct>=0;
+          const d=FALLBACK[name];if(!d)return null;const pos=d.pct>=0;
           return (<span key={`${name}-${i}`} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'0 18px',borderRight:'1px solid rgba(255,255,255,0.03)'}}><span style={{color:'#3A5070',fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:600,letterSpacing:'1px'}}>{name}</span><span style={{color:'#D8E8FF',fontFamily:"'JetBrains Mono',monospace",fontSize:11.5,fontWeight:500}}>{fmt(name,d.p)}</span><span style={{display:'inline-flex',alignItems:'center',gap:3,padding:'2px 6px',borderRadius:4,background:pos?'rgba(0,192,112,0.08)':'rgba(255,68,85,0.08)',border:`1px solid ${pos?'rgba(0,192,112,0.15)':'rgba(255,68,85,0.15)'}`,fontFamily:"'JetBrains Mono',monospace",fontSize:9,fontWeight:700,color:pos?'#00C070':'#FF4455'}}>{pos?'▲':'▼'}{Math.abs(d.pct).toFixed(2)}%</span></span>);
         })}
       </div>
@@ -275,6 +281,8 @@ function LiveTickerBar() {
 }
 
 // ─── Data ──────────────────────────────────────────────────────────────────
+const LOGOS = ['FTMO','The5%ers','E8 Funding','TopStep','MyFundedFX','True Forex Funds','FTMO','The5%ers','E8 Funding','TopStep','MyFundedFX','True Forex Funds'];
+
 const FAQS = [
   {q:"How do I import my MetaTrader trades?",a:"Go to File → Export CSV in MT4/MT5, then drag and drop the file into MarketFlow. Import takes less than 30 seconds with automatic format detection."},
   {q:"Is the AI Coach useful for beginners?",a:"Yes — it guides on risk management and identifies costly mistakes. For advanced traders, it detects subtle patterns and psychological biases."},
@@ -293,10 +301,10 @@ const TESTIS = [
 ];
 
 const PAGE_CONTENT = {
-  changelog:{title:'📋 Changelog',subtitle:'Update History',color:'#06E6FF',items:[{v:'v2.5.0',date:'April 2026',badge:'LATEST',badgeColor:'#00FF88',items:['✅ Premium landing page redesign','✅ Broker Connect — MT4/MT5 auto-sync','✅ AI ChatBot floating assistant','✅ Rank system with country/world rankings']},{v:'v2.4.0',date:'March 2026',items:['✅ Trading calendar with MarketFlow Rank','✅ Light/dark theme','✅ Pro Analytics with advanced indicators','✅ Psychology module','✅ Strategy backtesting']},{v:'v2.3.0',date:'February 2026',items:['✅ Stripe subscriptions','✅ Secure Supabase auth','✅ Redesigned dashboard','✅ Live market ticker']}]},
+  changelog:{title:'📋 Changelog',subtitle:'Update History',color:'#06E6FF',items:[{v:'v2.5.0',date:'April 2026',badge:'LATEST',badgeColor:'#00FF88',items:['✅ Premium landing page redesign','✅ Broker Connect — MT4/MT5 auto-sync','✅ AI ChatBot floating assistant','✅ Rank system with country/world rankings','✅ Premium sidebar with living gradient']},{v:'v2.4.0',date:'March 2026',items:['✅ Trading calendar with MarketFlow Rank','✅ Light/dark theme','✅ Pro Analytics with advanced indicators','✅ Psychology module','✅ Strategy backtesting']},{v:'v2.3.0',date:'February 2026',items:['✅ Stripe subscriptions with 14-day trial','✅ Secure Supabase auth','✅ Redesigned dashboard','✅ Live market ticker']}]},
   roadmap:{title:'🗺️ Roadmap',subtitle:'What\'s coming next',color:'#B06EFF',sections:[{label:'Q2 2026',color:'#00FF88',items:[{icon:'🤖',title:'AI Chat Trader',desc:'AI assistant trained on trading patterns'},{icon:'📱',title:'Mobile App',desc:'Full journal access from your phone'},{icon:'🔗',title:'Direct broker sync',desc:'Auto import from MT4/MT5, cTrader, IBKR'}]},{label:'Q3 2026',color:'#06E6FF',items:[{icon:'📊',title:'Market Screener',desc:'Real-time opportunity identification'},{icon:'👥',title:'Community',desc:'Share strategies, leaderboards'}]},{label:'Q4 2026',color:'#FFD700',items:[{icon:'🧬',title:'Psychological profiling',desc:'Automatic bias detection'},{icon:'🌐',title:'Multi-account',desc:'Up to 10 accounts from one interface'}]}]},
-  cgu:{title:'📄 Terms of Service',subtitle:'Effective January 1, 2026',color:'#8BA3CC',articles:[{title:'Article 1 — Purpose',text:'These Terms define the conditions under which MarketFlow Journal makes the platform available at marketflowjournal.com.'},{title:'Article 2 — Acceptance',text:'Use of the platform implies full acceptance of these Terms. MarketFlow reserves the right to modify them at any time.'},{title:'Article 3 — Service',text:'MarketFlow Journal is a SaaS trading journal for tracking, analyzing and improving trading performance.'},{title:'Article 4 — Billing',text:'Access requires a monthly or annual subscription. Payments are processed by Stripe. Annual plans get 30% discount.'},{title:'Article 5 — Data',text:'Users own all their trading data. MarketFlow never sells or shares personal data. Export available anytime.'}]},
-  rgpd:{title:'🔒 Privacy Policy',subtitle:'Last updated January 1, 2026',color:'#00F5D4',articles:[{title:'Data controller',text:'MarketFlow Journal SAS. DPO: privacy@marketflowjournal.com'},{title:'Collected data',text:'Email, name, trading data (pairs, prices, results), technical data (IP, cookies). Payment data is processed exclusively by Stripe.'},{title:'Purposes',text:'Provide and improve the service, manage accounts and billing, send service communications.'},{title:'Your rights',text:'Access, rectify, delete, export your data at any time. Contact privacy@marketflowjournal.com.'}]},
+  cgu:{title:'📄 Terms of Service',subtitle:'Effective January 1, 2026',color:'#8BA3CC',articles:[{title:'Article 1 — Purpose',text:'These Terms define the conditions under which MarketFlow Journal makes the platform available at marketflowjournal.com.'},{title:'Article 2 — Acceptance',text:'Use of the platform implies full acceptance of these Terms.'},{title:'Article 3 — Service',text:'MarketFlow Journal is a SaaS trading journal for tracking, analyzing and improving trading performance.'},{title:'Article 4 — Billing',text:'Access requires a monthly or annual subscription. Payments are processed by Stripe. Annual plans get 30% discount.'},{title:'Article 5 — Data',text:'Users own all their trading data. MarketFlow never sells or shares personal data.'}]},
+  rgpd:{title:'🔒 Privacy Policy',subtitle:'Last updated January 1, 2026',color:'#00F5D4',articles:[{title:'Data controller',text:'MarketFlow Journal SAS. DPO: privacy@marketflowjournal.com'},{title:'Collected data',text:'Email, name, trading data (pairs, prices, results), technical data (IP, cookies). Payment data is processed exclusively by Stripe.'},{title:'Your rights',text:'Access, rectify, delete, export your data at any time.'}]},
   contact:{title:'📬 Contact',subtitle:'Get in touch',color:'#4D7CFF',content:'Email: marketflowjournal0@gmail.com\n\nFor support, use the chat widget or visit the Support page.\n\nWe respond within 24 hours.'},
 };
 
@@ -372,8 +380,17 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         </Reveal>
       </section>
 
-      {/* LOGOS */}
-      <div className="lp-logos"><p>Used by traders from</p><div className="lp-logos-row">{['FTMO','The5%ers','E8 Funding','TopStep','MyFundedFX','True Forex Funds'].map(n=><span key={n} className="lp-logo-item">{n}</span>)}</div></div>
+      {/* LOGOS TICKER */}
+      <div className="lp-logos">
+        <div className="lp-logos-label">Used by traders from</div>
+        <div style={{overflow:'hidden',position:'relative'}}>
+          <div style={{position:'absolute',left:0,top:0,bottom:0,width:120,background:'linear-gradient(90deg,#030508,transparent)',zIndex:2,pointerEvents:'none'}}/>
+          <div style={{position:'absolute',right:0,top:0,bottom:0,width:120,background:'linear-gradient(270deg,#030508,transparent)',zIndex:2,pointerEvents:'none'}}/>
+          <div className="lp-logos-track">
+            {[...LOGOS,...LOGOS].map((n,i)=>(<span key={i} className="lp-logo-item">{n}</span>))}
+          </div>
+        </div>
+      </div>
 
       {/* FEATURES */}
       <section className="lp-section" id="features">
@@ -382,7 +399,14 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <Reveal><h2>Everything you need to<br/><em>become profitable</em></h2></Reveal>
           <Reveal><p className="lp-section-sub">From trade journaling to AI-powered insights, MarketFlow gives you the complete toolkit to analyze, improve and scale your trading.</p></Reveal>
           <div className="lp-features-grid">
-            {[{icon:'📊',title:'Smart Trade Journal',desc:'Log trades in seconds. Auto-import from MT4, MT5, cTrader or any CSV. Every detail captured automatically.'},{icon:'🤖',title:'AI Trade Coach',desc:'Your personal trading AI analyzes patterns, detects biases, and gives actionable recommendations to improve.'},{icon:'📈',title:'Advanced Analytics',desc:'Sharpe ratio, profit factor, expectancy, drawdown analysis — all the metrics pros use in one dashboard.'},{icon:'🧠',title:'Psychology Tracker',desc:'Track your emotional state, identify tilt patterns, and understand how your mindset affects your P&L.'},{icon:'🔄',title:'Strategy Backtesting',desc:'Test your strategies on historical data with visual charts. Monte Carlo simulation for risk analysis.'},{icon:'🏆',title:'Prop Firm Ready',desc:'Formatted reports for FTMO, The5%ers, E8. Track challenge progress and rule compliance automatically.'}].map((f,i)=>(<Reveal key={i} delay={i*0.08}><div className="lp-feature-card"><div className="lp-feature-icon">{f.icon}</div><div className="lp-feature-title">{f.title}</div><div className="lp-feature-desc">{f.desc}</div></div></Reveal>))}
+            {[
+              {Icon:Ic.Journal,title:'Smart Trade Journal',desc:'Log trades in seconds. Auto-import from MT4, MT5, cTrader or any CSV. Universal format detection maps your columns automatically.'},
+              {Icon:Ic.AI,title:'AI Trade Coach',desc:'Your personal trading AI analyzes patterns, detects biases, and gives actionable recommendations to improve your edge.'},
+              {Icon:Ic.Analytics,title:'Advanced Analytics',desc:'Sharpe ratio, profit factor, expectancy, drawdown analysis — all the metrics pros use in one powerful dashboard.'},
+              {Icon:Ic.Psychology,title:'Psychology Tracker',desc:'Track your emotional state, identify tilt patterns, and understand how your mindset directly affects your P&L.'},
+              {Icon:Ic.Backtest,title:'Strategy Backtesting',desc:'Test your strategies on historical data with visual charts. Monte Carlo simulation for realistic risk analysis.'},
+              {Icon:Ic.Prop,title:'Prop Firm Ready',desc:'Formatted reports for FTMO, The5%ers, E8, TopStep. Track challenge progress and rule compliance automatically.'},
+            ].map((f,i)=>(<Reveal key={i} delay={i*0.08}><div className="lp-feature-card"><div className="lp-feature-icon"><f.Icon /></div><div className="lp-feature-title">{f.title}</div><div className="lp-feature-desc">{f.desc}</div></div></Reveal>))}
           </div>
         </div>
       </section>
@@ -462,13 +486,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <Reveal><div className="lp-section-tag">✦ Pricing</div></Reveal>
           <Reveal><h2>Start free. Scale<br/><em>when you're ready</em></h2></Reveal>
           <Reveal><p className="lp-section-sub">14-day free trial on every plan. No credit card required. Cancel anytime.</p></Reveal>
-
           <div className="lp-pricing-toggle">
             <button className={`lp-toggle-btn ${billing==='monthly'?'active':''}`} onClick={()=>setBilling('monthly')}>Monthly</button>
             <button className={`lp-toggle-btn ${billing==='annual'?'active':''}`} onClick={()=>setBilling('annual')}>Annual</button>
-            <span className="lp-toggle-badge">-30% on Pro & Elite 🎉</span>
+            <span className="lp-toggle-badge">-30% on Pro & Elite</span>
           </div>
-
           <div className="lp-pricing-grid">
             {PLANS.map((plan,i) => {
               const price = billing === 'monthly' ? plan.monthly : plan.annual;
@@ -476,7 +498,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               return (
                 <Reveal key={plan.id} delay={i*0.1}>
                   <div className={`lp-pricing-card ${plan.popular?'popular':''}`}>
-                    {plan.popular && <div className="lp-popular-badge">✦ Most popular</div>}
+                    {plan.popular && <div className="lp-popular-badge">Most popular</div>}
                     <div className="lp-plan">{plan.name}</div>
                     <div className="lp-price"><sup>$</sup>{price}</div>
                     <div className="lp-period">per month{billing==='annual'?', billed annually':''}</div>
