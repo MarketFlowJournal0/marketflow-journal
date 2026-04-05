@@ -281,7 +281,7 @@ function LiveTickerBar() {
 }
 
 // ─── Data ──────────────────────────────────────────────────────────────────
-const LOGOS = ['FTMO','The5%ers','E8 Funding','TopStep','MyFundedFX','True Forex Funds','FTMO','The5%ers','E8 Funding','TopStep','MyFundedFX','True Forex Funds'];
+const LOGOS = ['FTMO','FundedNext','The5%ers','TopStep','Alpha Capital','E8 Funding','MyFundedFX','Lucid Funding','True Forex Funds','The Funded Trader','MyForexFunds','Surge Trading','FTMO','FundedNext','The5%ers','TopStep','Alpha Capital','E8 Funding','MyFundedFX','Lucid Funding','True Forex Funds','The Funded Trader','MyForexFunds','Surge Trading'];
 
 const FAQS = [
   {q:"How do I import my MetaTrader trades?",a:"Go to File → Export CSV in MT4/MT5, then drag and drop the file into MarketFlow. Import takes less than 30 seconds with automatic format detection."},
