@@ -266,7 +266,7 @@ function AppInner() {
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = '/'; }, 300); }}
+              onLogout={() => { window.location.href = 'https://marketflowjournal.com/'; }}
             />
           } />
           <Route path="/welcome" element={<WelcomePage />} />
