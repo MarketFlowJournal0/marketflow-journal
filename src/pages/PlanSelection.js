@@ -278,9 +278,9 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                     {isTrialing ? `Trial · ${daysLeft}d left` : 'Current plan'}
                   </div>
                 )}
-                {plan.popular && !isCurrent && (
+                {plan.id === 'starter' && !isCurrent && (
                   <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 50, background: 'linear-gradient(135deg, #06E6FF, #00FF88)', fontSize: 9, fontWeight: 800, color: '#030508', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                    Most popular
+                    14 days free
                   </div>
                 )}
 
@@ -334,7 +334,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                   </button>
                 ) : (
                   <button onClick={() => handleSelect(plan)} disabled={!!loading} style={{ width: '100%', padding: 12, borderRadius: 10, border: plan.popular ? 'none' : '1px solid rgba(255,255,255,0.06)', background: plan.popular ? 'linear-gradient(135deg, #06E6FF, #00FF88)' : 'rgba(255,255,255,0.03)', color: plan.popular ? '#030508' : '#E8EEFF', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', boxShadow: plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (!loading) { if (plan.popular) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } else { e.currentTarget.style.borderColor = plan.accent; e.currentTarget.style.color = plan.accent; } } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none'; e.currentTarget.style.borderColor = plan.popular ? 'none' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = plan.popular ? '#030508' : '#E8EEFF'; }}>
-                    {loading === plan.id ? 'Loading...' : plan.popular ? 'Start free trial' : `Upgrade to ${plan.name}`}
+                    {loading === plan.id ? 'Loading...' : plan.id === 'starter' ? 'Start free trial' : `Upgrade to ${plan.name}`}
                   </button>
                 )}
               </motion.div>
