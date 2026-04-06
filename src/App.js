@@ -256,9 +256,10 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement → /plan ──
+  // ── Pas d'abonnement → /plan (sauf si on vient de Stripe) ──
   const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
-  const needsPlan = !hasValidSub && !forceLoggedOut && location.pathname !== '/';
+  const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
+  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
   if (needsPlan) {
     return (
       <>
