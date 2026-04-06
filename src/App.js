@@ -219,7 +219,6 @@ function AppInner() {
   const handleOnboardingComplete = async (answers) => {
     if (user?.id) {
       localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
-      // Sauvegarder les réponses dans Supabase
       try {
         const { supabase } = await import('./lib/supabase');
         await supabase
@@ -229,7 +228,6 @@ function AppInner() {
       } catch (_) {}
     }
     setShowOnboarding(false);
-    navigate('/plan');
   };
 
   // ── Auth callback ──
@@ -260,7 +258,8 @@ function AppInner() {
 
   // ── Pas d'abonnement ou trial expiré → /plan ──
   const trialExpired = user.isTrialing && user.trialDaysLeft <= 0;
-  if (profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut || trialExpired) {
+  const needsPlan = profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut;
+  if (needsPlan || trialExpired) {
     return (
       <>
         <Routes>
