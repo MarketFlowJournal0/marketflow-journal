@@ -258,7 +258,8 @@ function AppInner() {
 
   // ── Pas d'abonnement ou trial expiré → /plan ──
   const trialExpired = user.isTrialing && user.trialDaysLeft <= 0;
-  const needsPlan = profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut;
+  const hasValidSub = ['active', 'trialing'].includes(user.subStatus);
+  const needsPlan = profileLoaded && !hasValidSub && !forceLoggedOut;
   if (needsPlan || trialExpired) {
     return (
       <>
