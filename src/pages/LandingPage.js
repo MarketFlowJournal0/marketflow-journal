@@ -353,7 +353,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
         <div className="lp-nav-links"><a href="#features">Features</a><a href="#analytics">Analytics</a><a href="#pricing">Pricing</a><a href="#reviews">Reviews</a><a href="#faq">FAQ</a></div>
-        <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>Log in</button><button className="btn-primary-nav" onClick={onSignup}>Start free trial →</button></div>
+        <div className="lp-nav-cta"><button type="button" className="btn-ghost" onClick={onLogin}>Log in</button><button type="button" className="btn-primary-nav" onClick={onSignup}>Start free trial →</button></div>
       </nav>
 
       <LiveTickerBar />
@@ -365,8 +365,8 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <Reveal delay={0.1}><p className="lp-hero-sub">The most powerful trading journal with AI-powered analytics, automatic broker sync, and psychological insights. Built for traders who want to level up.</p></Reveal>
         <Reveal delay={0.2}>
           <div className="lp-hero-actions">
-            <button className="btn-hero-primary" onClick={onSignup}>Start your free trial <span>→</span></button>
-            <button className="btn-hero-secondary" onClick={()=>document.getElementById('features')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
+            <button type="button" className="btn-hero-primary" onClick={onSignup}>Start your free trial <span>→</span></button>
+            <button type="button" className="btn-hero-secondary" onClick={()=>document.getElementById('features')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
           </div>
         </Reveal>
         <Reveal delay={0.3}><p className="lp-hero-note">14 days free · No credit card required · Cancel anytime</p></Reveal>
@@ -543,8 +543,8 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <Reveal delay={0.1}><p>Join 2,400+ traders who track, analyze and improve with MarketFlow.</p></Reveal>
         <Reveal delay={0.2}>
           <div className="lp-cta-actions">
-            <button className="btn-hero-primary" onClick={onSignup}>Start your free trial →</button>
-            <button className="btn-hero-secondary" onClick={onLogin}>Log in</button>
+            <button type="button" className="btn-hero-primary" onClick={onSignup}>Start your free trial →</button>
+            <button type="button" className="btn-hero-secondary" onClick={onLogin}>Log in</button>
           </div>
         </Reveal>
         <Reveal delay={0.3}><p className="lp-cta-note">14 days free · No credit card · Cancel anytime</p></Reveal>
