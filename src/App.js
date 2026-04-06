@@ -171,7 +171,7 @@ function AppInner() {
   const openSignup         = () => setAuthModal('signup');
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
-    sessionStorage.setItem('pending_price_id', priceId);
+    if (priceId) sessionStorage.setItem('pending_price_id', priceId);
     setAuthModal('signup');
   };
 
