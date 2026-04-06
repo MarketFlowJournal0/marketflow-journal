@@ -71,26 +71,16 @@ const EyeClosed = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="no
 
 function Input({ label, type = 'text', value, onChange, error, placeholder, autoComplete, autoFocus, icon, ...rest }) {
   const [focused, setFocused] = useState(false);
-  const active = focused || value;
   return (
     <div style={{ position: 'relative', marginBottom: error ? 4 : 14 }}>
-      <label style={{
-        position: 'absolute', left: 14, top: active ? 6 : '50%',
-        transform: active ? 'none' : 'translateY(-50%)',
-        fontSize: active ? 9 : 13, fontWeight: active ? 700 : 500,
-        color: error ? '#FF6B6B' : focused ? '#06E6FF' : 'rgba(255,255,255,0.3)',
-        letterSpacing: active ? '0.08em' : '0',
-        textTransform: active ? 'uppercase' : 'none',
-        transition: 'all 0.2s ease',
-        pointerEvents: 'none', zIndex: 2,
-      }}>{label}</label>
+      <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: error ? '#FF6B6B' : focused ? '#06E6FF' : 'rgba(255,255,255,0.35)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6, transition: 'color 0.2s' }}>{label}</label>
       <input
         type={type} value={value} onChange={onChange}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        placeholder={!active ? placeholder : undefined}
+        placeholder={placeholder}
         autoComplete={autoComplete} autoFocus={autoFocus}
         style={{
-          width: '100%', padding: active ? '16px 14px 6px' : '14px',
+          width: '100%', padding: '12px 14px',
           background: error ? 'rgba(255,61,87,0.04)' : focused ? 'rgba(6,230,255,0.04)' : 'rgba(255,255,255,0.03)',
           border: `1px solid ${error ? 'rgba(255,61,87,0.3)' : focused ? 'rgba(6,230,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
           borderRadius: 10, fontSize: 13.5, color: '#fff',
@@ -182,10 +172,10 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
 
                   <div style={{ marginBottom: 16 }}>
                     <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 800, fontSize: 20, color: '#fff', marginBottom: 4, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
-                      {forgotMode ? 'Reset your password' : tab === 'login' ? 'Welcome back, <em style="font-style:normal;color:#06E6FF">trader</em>' : 'Start <em style="font-style:normal;color:#06E6FF">performing</em>'}
+                      {forgotMode ? 'Reset your password' : tab === 'login' ? 'Welcome back' : 'Create your account'}
                     </h2>
                     <p style={{ fontSize: 12.5, color: 'rgba(139,163,204,0.85)' }}>
-                      {forgotMode ? "We'll send you a reset link by email." : tab === 'login' ? 'Sign in to access your trading journal.' : '14 days free. No credit card required.'}
+                      {forgotMode ? "We'll send you a reset link by email." : tab === 'login' ? 'Sign in to access your trading journal.' : 'Start your 14-day free trial. No credit card required.'}
                     </p>
                   </div>
 
