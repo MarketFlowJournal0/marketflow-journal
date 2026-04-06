@@ -240,9 +240,13 @@ function AppInner() {
   if (!user) {
     return (
       <>
-        <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
+        <Routes>
+          <Route path="*" element={
+            <LandingPage onLogin={() => setAuthModal('login')} onSignup={() => setAuthModal('signup')} onSignupWithPlan={(priceId) => { if (priceId) sessionStorage.setItem('pending_price_id', priceId); setAuthModal('signup'); }} />
+          } />
+        </Routes>
         <SupportWidget onOpenPage={() => {}} />
-        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
+        {authModal && <AuthModal defaultTab={authModal} onClose={() => setAuthModal(null)} onSuccess={handleAuthSuccess} />}
       </>
     );
   }
