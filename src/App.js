@@ -258,15 +258,18 @@ function AppInner() {
 
   // ── Pas d'abonnement → /plan ──
   const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
-  const needsPlan = !hasValidSub && !forceLoggedOut;
+  const needsPlan = !hasValidSub && !forceLoggedOut && location.pathname !== '/';
   if (needsPlan) {
     return (
       <>
         <Routes>
+          <Route path="/" element={
+            <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
+          } />
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { window.location.href = 'https://marketflowjournal.com/'; }}
+              onLogout={() => { window.location.replace('https://marketflowjournal.com/'); }}
             />
           } />
           <Route path="/welcome" element={<WelcomePage />} />
