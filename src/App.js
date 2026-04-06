@@ -167,8 +167,8 @@ function AppInner() {
     }
   }, [user, profileLoaded]);
 
-  const openLogin          = () => setAuthModal('login');
-  const openSignup         = () => setAuthModal('signup');
+  const openLogin          = (e) => { if (e) e.preventDefault(); setAuthModal('login'); };
+  const openSignup         = (e) => { if (e) e.preventDefault(); setAuthModal('signup'); };
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
     if (priceId) sessionStorage.setItem('pending_price_id', priceId);
