@@ -228,7 +228,6 @@ function AppInner() {
       } catch (_) {}
     }
     setShowOnboarding(false);
-    navigate('/plan', { replace: true });
   };
 
   // ── Auth callback ──
@@ -257,11 +256,10 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement ou trial expiré → /plan ──
-  const trialExpired = user.isTrialing && user.trialDaysLeft <= 0;
-  const hasValidSub = ['active', 'trialing'].includes(user.subStatus);
-  const needsPlan = profileLoaded && !hasValidSub && !forceLoggedOut;
-  if (needsPlan || trialExpired) {
+  // ── Pas d'abonnement → /plan ──
+  const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
+  const needsPlan = !hasValidSub && !forceLoggedOut;
+  if (needsPlan) {
     return (
       <>
         <Routes>
