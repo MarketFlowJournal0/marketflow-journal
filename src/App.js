@@ -240,11 +240,7 @@ function AppInner() {
   if (!user) {
     return (
       <>
-        <Routes>
-          <Route path="*" element={
-            <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
-          } />
-        </Routes>
+        <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
         <SupportWidget onOpenPage={() => {}} />
         {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
