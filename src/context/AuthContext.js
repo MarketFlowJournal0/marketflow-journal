@@ -176,7 +176,7 @@ export function AuthProvider({ children }) {
   const clearError = useCallback(() => setError(null), []);
 
   const effectivePlan = profile?.plan || user?.user_metadata?.plan || 'trial';
-  const subStatus     = profile?.subscription_status || 'trialing';
+  const subStatus     = profile?.subscription_status || null;
   const trialEnd      = profile?.trial_end || null;
   const trialDaysLeft = trialEnd
     ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
