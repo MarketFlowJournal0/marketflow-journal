@@ -256,6 +256,16 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
+  // ── Landing page accessible même connecté ──
+  if (location.pathname === '/landing') {
+    return (
+      <>
+        <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
+        <SupportWidget onOpenPage={() => {}} />
+      </>
+    );
+  }
+
   // ── Pas d'abonnement → /plan ──
   const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
   const needsPlan = !hasValidSub && !forceLoggedOut && location.pathname !== '/';
@@ -266,10 +276,13 @@ function AppInner() {
           <Route path="/" element={
             <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
           } />
+          <Route path="/landing" element={
+            <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
+          } />
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { window.location.replace('https://marketflowjournal.com/'); }}
+              onLogout={() => navigate('/landing')}
             />
           } />
           <Route path="/welcome" element={<WelcomePage />} />
