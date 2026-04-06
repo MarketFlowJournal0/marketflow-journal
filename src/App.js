@@ -24,6 +24,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import AuthCallback from './pages/AuthCallback';
 import BrokerConnect from './pages/BrokerConnect';
 import AIChatBot from './components/AIChatBot';
+import WelcomePage from './pages/WelcomePage';
 import './App.css';
 import './theme.css';
 
@@ -106,6 +107,7 @@ function AppLayout({ user, onLogout }) {
             <Route path="/subscription"     element={<PlanSelection user={user} onSkip={() => navigate('/dashboard')} />} />
             <Route path="/support"          element={<SupportPage user={user} onBack={() => navigate('/dashboard')} />} />
             <Route path="/onboarding-stats"  element={<OnboardingStats onBack={() => navigate('/dashboard')} />} />
+            <Route path="/welcome"            element={<WelcomePage />} />
             <Route path="*"                 element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
@@ -268,6 +270,7 @@ function AppInner() {
               onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = '/'; }, 300); }}
             />
           } />
+          <Route path="/welcome" element={<WelcomePage />} />
           <Route path="*" element={<Navigate to="/plan" replace />} />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />

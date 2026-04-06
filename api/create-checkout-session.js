@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
   const { priceId, email, userId, planId } = req.body;
   if (!priceId) return res.status(400).json({ error: 'priceId required' });
 
-  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://marketflowjournal.com';
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.marketflowjournal.com';
 
   try {
     let customerId = null;
@@ -87,7 +87,7 @@ module.exports = async (req, res) => {
       ...(customerId ? { customer: customerId } : email ? { customer_email: email } : {}),
       subscription_data: subscriptionData,
       payment_method_collection: 'always',
-      success_url: `${BASE_URL}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${BASE_URL}/plan`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',

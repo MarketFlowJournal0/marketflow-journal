@@ -40,6 +40,8 @@ module.exports = async (req, res) => {
         const subscriptionId = session.subscription;
         const customerId = session.customer;
         const planId = session.metadata?.plan_id;
+        const customerEmail = session.customer_details?.email || session.customer_email;
+        const customerName = session.customer_details?.name || customerEmail?.split('@')[0] || 'Trader';
 
         if (userId && subscriptionId) {
           await supabase
@@ -52,6 +54,96 @@ module.exports = async (req, res) => {
               plan: planId || null,
             })
             .eq('id', userId);
+
+          // Send welcome email
+          try {
+            await resend.emails.send({
+              from: 'MarketFlow Journal <welcome@marketflowjournal.com>',
+              to: customerEmail,
+              subject: `Welcome to MarketFlow Journal, ${customerName}! 🎉`,
+              html: `
+                <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0C1422;border-radius:16px;border:1px solid #162034;color:#E8EEFF;">
+                  <div style="text-align:center;margin-bottom:28px;">
+                    <div style="font-size:40px;margin-bottom:12px;">🚀</div>
+                    <h1 style="color:#FFFFFF;margin:0 0 8px;font-size:24px;font-weight:800;">Welcome to MarketFlow, ${customerName}!</h1>
+                    <p style="color:#7A90B8;margin:0;font-size:14px;">Your 14-day free trial has started. Let's make it count.</p>
+                  </div>
+                  <div style="background:rgba(6,230,255,0.06);border:1px solid rgba(6,230,255,0.15);border-radius:12px;padding:16px;margin-bottom:24px;">
+                    <p style="color:#06E6FF;margin:0;font-size:13px;font-weight:600;">✅ Your trial is active</p>
+                    <p style="color:#E8EEFF;margin:8px 0 0;font-size:13px;">You have full access to all features for the next 14 days. No charge until your trial ends.</p>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.03);border:1px solid #162034;border-radius:12px;padding:18px;margin-bottom:24px;">
+                    <p style="color:#FFFFFF;margin:0 0 12px;font-size:14px;font-weight:700;">Quick start guide:</p>
+                    <ol style="color:#7A90B8;margin:0;padding-left:20px;font-size:13px;line-height:2;">
+                      <li>Import your trades via CSV or connect your broker</li>
+                      <li>Check your Dashboard for key performance metrics</li>
+                      <li>Use Analytics Pro to find your edge</li>
+                      <li>Try the AI Coach for personalized insights</li>
+                    </ol>
+                  </div>
+                  <div style="text-align:center;margin-bottom:24px;">
+                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Go to Dashboard →</a>
+                  </div>
+                  <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
+                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal — Trade smarter, not harder.</p>
+                    <p style="color:#334566;margin:8px 0 0;font-size:11px;">Questions? Reply to this email or visit our <a href="https://marketflowjournal.com/support" style="color:#06E6FF;text-decoration:none;">Support Center</a>.</p>
+                  </div>
+                </div>
+              `,
+            });
+          } catch (emailErr) {
+            console.error('Failed to send welcome email:', emailErr);
+          }
+
+          // Send marketing email (delayed)
+          try {
+            await resend.emails.send({
+              from: 'MarketFlow Journal <hello@marketflowjournal.com>',
+              to: customerEmail,
+              subject: '3 tips to get the most out of MarketFlow Journal 💡',
+              html: `
+                <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0C1422;border-radius:16px;border:1px solid #162034;color:#E8EEFF;">
+                  <div style="text-align:center;margin-bottom:28px;">
+                    <div style="font-size:36px;margin-bottom:12px;">💡</div>
+                    <h2 style="color:#FFFFFF;margin:0 0 8px;font-size:20px;font-weight:800;">3 Tips to Master Your Trading Journal</h2>
+                    <p style="color:#7A90B8;margin:0;font-size:14px;">Here's how top traders use MarketFlow to level up.</p>
+                  </div>
+                  <div style="margin-bottom:24px;">
+                    <div style="display:flex;gap:12px;margin-bottom:16px;">
+                      <div style="width:32px;height:32px;border-radius:8px;background:rgba(6,230,255,0.1);border:1px solid rgba(6,230,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">1</div>
+                      <div>
+                        <p style="color:#FFFFFF;margin:0 0 4px;font-size:14px;font-weight:700;">Log every trade, every time</p>
+                        <p style="color:#7A90B8;margin:0;font-size:13px;line-height:1.6;">The more data you collect, the better insights you get. Import your MT4/MT5 trades automatically or use our universal CSV importer.</p>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-bottom:16px;">
+                      <div style="width:32px;height:32px;border-radius:8px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">2</div>
+                      <div>
+                        <p style="color:#FFFFFF;margin:0 0 4px;font-size:14px;font-weight:700;">Track your psychology</p>
+                        <p style="color:#7A90B8;margin:0;font-size:13px;line-height:1.6;">80% of trading is mental. Use the Psychology Tracker to identify tilt, FOMO, and revenge trading patterns before they cost you money.</p>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:12px;">
+                      <div style="width:32px;height:32px;border-radius:8px;background:rgba(176,110,255,0.1);border:1px solid rgba(176,110,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">3</div>
+                      <div>
+                        <p style="color:#FFFFFF;margin:0 0 4px;font-size:14px;font-weight:700;">Ask the AI Coach</p>
+                        <p style="color:#7A90B8;margin:0;font-size:13px;line-height:1.6;">Our AI analyzes your patterns and gives personalized recommendations. It's like having a trading mentor available 24/7.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="text-align:center;margin-bottom:24px;">
+                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Start Trading Smarter →</a>
+                  </div>
+                  <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
+                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal — Trade smarter, not harder.</p>
+                    <p style="color:#334566;margin:8px 0 0;font-size:11px;">You're receiving this because you signed up for MarketFlow Journal. <a href="https://marketflowjournal.com" style="color:#06E6FF;text-decoration:none;">Unsubscribe</a> anytime.</p>
+                  </div>
+                </div>
+              `,
+            });
+          } catch (emailErr) {
+            console.error('Failed to send marketing email:', emailErr);
+          }
         }
         break;
       }
