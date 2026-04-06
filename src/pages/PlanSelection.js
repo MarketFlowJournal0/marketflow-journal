@@ -1,408 +1,123 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
-const C = {
-  bg:     '#030508',
-  card:   '#0C1422',
-  cardHi: '#111B2E',
-  brd:    '#162034',
-  brdHi:  '#1E2E48',
-  cyan:   '#06E6FF',
-  teal:   '#00F5D4',
-  green:  '#00FF88',
-  purple: '#B06EFF',
-  pink:   '#FF4DC4',
-  gold:   '#FFD700',
-  t0:     '#FFFFFF',
-  t1:     '#E8EEFF',
-  t2:     '#7A90B8',
-  t3:     '#334566',
+/* ═══════════════════════════════════════════════════════════════
+   MARKETFLOW PLAN SELECTION — Premium v2
+   ═══════════════════════════════════════════════════════════════ */
+
+// ─── Animated BG ────────────────────────────────────────────────────────────
+function PlanBg() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animId;
+    const particles = [];
+    function resize() {
+      canvas.width = canvas.offsetWidth * devicePixelRatio;
+      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    function init() {
+      resize();
+      particles.length = 0;
+      const w = canvas.offsetWidth, h = canvas.offsetHeight;
+      for (let i = 0; i < 40; i++) particles.push({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.15, vy: (Math.random() - 0.5) * 0.15, r: Math.random() * 1.2 + 0.4, o: Math.random() * 0.12 + 0.03 });
+    }
+    function draw() {
+      const w = canvas.offsetWidth, h = canvas.offsetHeight;
+      ctx.clearRect(0, 0, w, h);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(6,230,255,${p.o})`; ctx.fill();
+      });
+      for (let i = 0; i < particles.length; i++) for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y, d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 100) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(6,230,255,${0.025 * (1 - d / 100)})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+      }
+      animId = requestAnimationFrame(draw);
+    }
+    init(); draw();
+    const onR = () => { ctx.setTransform(1, 0, 0, 1, 0, 0); init(); };
+    window.addEventListener('resize', onR);
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', onR); };
+  }, []);
+  return <canvas ref={ref} style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
+}
+
+// ─── SVG Icons ─────────────────────────────────────────────────────────────
+const Ic = {
+  Starter: () => <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h8l-2 6L19 8h-8l2-6z"/></svg>,
+  Pro: () => <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="3,16 8,10 12,13 19,5"/><path d="M15 2h4v4"/></svg>,
+  Elite: () => <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M11 2l2.5 5.5H19l-4.5 3.5 1.5 5.5L11 13l-5 3.5 1.5-5.5L3 7.5h5.5z"/></svg>,
+  Check: () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,6 5,9 10,3"/></svg>,
 };
 
+// ─── Plans Data ─────────────────────────────────────────────────────────────
 const PLANS = [
   {
-    id:       'starter',
-    name:     'Starter',
-    accent:   C.teal,
-    glow:     'rgba(0,245,212,0.15)',
-    icon:     '⚡',
-    desc:     'Perfect to start tracking your trades',
-    monthly:  15,
-    annual:   11,
+    id: 'starter', name: 'Starter',
+    monthly: 15, annual: 11,
     noAnnualDiscount: true,
     priceMonthly: 'price_1T9t9L2Ouddv7uendIMAR6IP',
-    priceAnnual:  'price_1TDQ7w2Ouddv7ueno5CuaNTH',
-    features: [
-      'Unlimited trading journal',
-      'Dashboard & basic statistics',
-      'CSV import',
-      'Performance calendar',
-      '1 trading account',
-    ],
+    priceAnnual: 'price_1TDQ7w2Ouddv7ueno5CuaNTH',
+    accent: '#00F5D4',
+    desc: 'Perfect to start tracking your trades',
+    features: ['Unlimited trading journal', 'Dashboard & basic statistics', 'CSV import', 'Performance calendar', '1 trading account'],
+    Icon: Ic.Starter,
   },
   {
-    id:       'pro',
-    name:     'Pro',
-    accent:   C.cyan,
-    glow:     'rgba(6,230,255,0.15)',
-    icon:     '🚀',
-    desc:     'For serious traders who want to improve',
-    monthly:  22,
-    annual:   15,
+    id: 'pro', name: 'Pro', popular: true,
+    monthly: 22, annual: 15,
     priceMonthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
-    priceAnnual:  'price_1T9t9U2Ouddv7uenK6oT1O13',
-    popular:  true,
-    features: [
-      'Everything in Starter plan',
-      'Advanced Pro analytics',
-      'Psychology & mental tracking',
-      'Equity curve & drawdown',
-      'Strategy backtesting',
-      '3 trading accounts',
-      'PDF report export',
-    ],
+    priceAnnual: 'price_1T9t9U2Ouddv7uenK6oT1O13',
+    accent: '#06E6FF',
+    desc: 'For serious traders who want to improve',
+    features: ['Everything in Starter plan', 'Advanced Pro analytics', 'Psychology & mental tracking', 'Equity curve & drawdown', 'Strategy backtesting', '3 trading accounts', 'PDF report export'],
+    Icon: Ic.Pro,
   },
   {
-    id:       'elite',
-    name:     'Elite',
-    accent:   C.gold,
-    glow:     'rgba(255,215,0,0.12)',
-    icon:     '👑',
-    desc:     'For pros who want the best tool',
-    monthly:  38,
-    annual:   27,
+    id: 'elite', name: 'Elite',
+    monthly: 38, annual: 27,
     priceMonthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
-    priceAnnual:  'price_1T9t9K2Ouddv7uennnWOJ44p',
-    features: [
-      'Everything in Pro plan',
-      'AI Trading Coach (GPT-4)',
-      'Unlimited accounts',
-      'Alerts & notifications',
-      'API access',
-      '24/7 priority support',
-      'Beta features access',
-    ],
+    priceAnnual: 'price_1T9t9K2Ouddv7uennnWOJ44p',
+    accent: '#FFD700',
+    desc: 'For pros who want the best tool',
+    features: ['Everything in Pro plan', 'AI Trading Coach (GPT-4)', 'Unlimited accounts', 'Alerts & notifications', 'API access', '24/7 priority support', 'Beta features access'],
+    Icon: Ic.Elite,
   },
 ];
 
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-  .ps-root {
-    min-height: 100vh;
-    background: ${C.bg};
-    font-family: 'Inter', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 48px 24px 80px;
-    position: relative;
-    overflow: visible;
-  }
-  .ps-glow-top {
-    position: absolute;
-    top: -200px; left: 50%;
-    transform: translateX(-50%);
-    width: 700px; height: 400px;
-    background: radial-gradient(ellipse, rgba(6,230,255,0.08) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  /* Back button (sidebar) */
-  .ps-back {
-    position: fixed;
-    top: 28px; left: 28px;
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid ${C.brd};
-    border-radius: 10px;
-    padding: 10px 16px;
-    font-size: 13px; font-weight: 600;
-    color: ${C.t2};
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Inter', sans-serif;
-    z-index: 9999;
-  }
-  .ps-back:hover {
-    background: rgba(255,255,255,0.12);
-    border-color: ${C.cyan};
-    color: ${C.t0};
-    transform: translateX(-2px);
-  }
-  .ps-back svg { transition: transform 0.2s; flex-shrink: 0; }
-  .ps-back:hover svg { transform: translateX(-3px); }
-
-  /* Logout button (user without subscription) */
-  .ps-logout {
-    position: fixed;
-    top: 28px; right: 28px;
-    display: flex; align-items: center; gap: 7px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
-    padding: 9px 14px;
-    font-size: 12px; font-weight: 600;
-    color: #334566;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Inter', sans-serif;
-    z-index: 9999;
-  }
-  .ps-logout:hover {
-    background: rgba(255,61,87,0.08);
-    border-color: rgba(255,61,87,0.25);
-    color: #FF5570;
-  }
-
-  .ps-logo {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 48px;
-    font-size: 20px; font-weight: 700;
-    color: ${C.t0};
-    position: relative; z-index: 1;
-  }
-  .ps-logo-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: ${C.cyan};
-    box-shadow: 0 0 12px ${C.cyan};
-  }
-  .ps-header {
-    text-align: center; margin-bottom: 48px;
-    position: relative; z-index: 1;
-  }
-  .ps-step {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0,255,136,0.08);
-    border: 1px solid rgba(0,255,136,0.2);
-    border-radius: 100px;
-    padding: 6px 16px;
-    font-size: 12px; font-weight: 600;
-    color: ${C.green};
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-  .ps-step-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: ${C.green};
-    animation: ps-pulse 2s ease-in-out infinite;
-  }
-  @keyframes ps-pulse {
-    0%,100% { opacity:1; transform:scale(1); }
-    50% { opacity:0.5; transform:scale(0.8); }
-  }
-  .ps-title {
-    font-size: clamp(28px, 5vw, 42px);
-    font-weight: 800; color: ${C.t0};
-    margin: 0 0 12px; line-height: 1.15;
-  }
-  .ps-title span {
-    background: linear-gradient(135deg, ${C.cyan}, ${C.teal});
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .ps-subtitle { font-size: 16px; color: ${C.t2}; margin: 0; line-height: 1.6; }
-
-  .ps-toggle {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 40px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid ${C.brd};
-    border-radius: 100px;
-    padding: 6px;
-    position: relative; z-index: 1;
-  }
-  .ps-toggle-btn {
-    padding: 8px 20px; border-radius: 100px;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; border: none;
-    transition: all 0.2s; color: ${C.t2};
-    background: transparent; font-family: 'Inter', sans-serif;
-  }
-  .ps-toggle-btn.active { background: ${C.cyan}; color: #000; }
-  .ps-toggle-badge {
-    background: rgba(0,255,136,0.1);
-    border: 1px solid rgba(0,255,136,0.25);
-    color: ${C.green};
-    font-size: 11px; font-weight: 700;
-    padding: 4px 10px; border-radius: 100px;
-    letter-spacing: 0.04em;
-  }
-
-  .ps-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-    gap: 20px;
-    width: 100%; max-width: 980px;
-    position: relative; z-index: 1;
-  }
-
-  .ps-card {
-    background: ${C.card};
-    border-radius: 20px; padding: 32px;
-    border: 1px solid ${C.brd};
-    position: relative;
-    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-    cursor: pointer; overflow: hidden;
-  }
-  .ps-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--accent);
-    box-shadow: 0 20px 60px var(--glow);
-  }
-  .ps-card-popular {
-    border-color: ${C.cyan};
-    background: linear-gradient(135deg, #0C1422 0%, #0D1830 100%);
-  }
-  .ps-popular-badge {
-    position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
-    background: linear-gradient(90deg, ${C.cyan}, ${C.teal});
-    color: #000; font-size: 11px; font-weight: 700;
-    padding: 5px 16px; border-radius: 0 0 10px 10px;
-    letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
-  }
-  .ps-card-glow {
-    position: absolute; top: -60px; right: -60px;
-    width: 180px; height: 180px; border-radius: 50%;
-    background: var(--glow); filter: blur(40px);
-    pointer-events: none; opacity: 0.6;
-  }
-  .ps-card-icon { font-size: 32px; margin-bottom: 16px; display: block; }
-  .ps-card-name { font-size: 22px; font-weight: 800; color: ${C.t0}; margin: 0 0 6px; }
-  .ps-card-desc { font-size: 13px; color: ${C.t2}; margin: 0 0 24px; line-height: 1.5; }
-  .ps-price-block { margin-bottom: 28px; }
-  .ps-price-main { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
-  .ps-price-currency { font-size: 20px; font-weight: 700; color: var(--accent); }
-  .ps-price-amount { font-size: 48px; font-weight: 900; color: ${C.t0}; line-height: 1; }
-  .ps-price-period { font-size: 14px; color: ${C.t2}; }
-  .ps-price-annual { font-size: 12px; color: ${C.t3}; }
-  .ps-price-annual span { color: ${C.green}; font-weight: 600; }
-  .ps-features {
-    list-style: none; margin: 0 0 28px; padding: 0;
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .ps-feature { display: flex; align-items: center; gap: 10px; font-size: 13px; color: ${C.t1}; }
-  .ps-feature-check {
-    width: 18px; height: 18px; border-radius: 50%;
-    background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; font-size: 9px; color: ${C.green};
-  }
-  .ps-cta {
-    width: 100%; padding: 14px; border-radius: 12px;
-    font-size: 14px; font-weight: 700; cursor: pointer; border: none;
-    transition: all 0.2s; letter-spacing: 0.03em;
-    font-family: 'Inter', sans-serif; box-sizing: border-box;
-  }
-  .ps-cta-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent-end, var(--accent)));
-    color: #000; box-shadow: 0 4px 20px var(--glow);
-  }
-  .ps-cta-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 30px var(--glow); filter: brightness(1.1); }
-  .ps-cta-secondary { background: rgba(255,255,255,0.05); color: ${C.t1}; border: 1px solid ${C.brd}; }
-  .ps-cta-secondary:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); color: var(--accent); }
-  .ps-cta:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
-
-  .ps-card-current {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 1px var(--accent), 0 24px 64px var(--glow) !important;
-  }
-  .ps-current-badge {
-    position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
-    background: var(--accent); color: #030508;
-    font-size: 11px; font-weight: 800;
-    padding: 4px 16px; border-radius: 0 0 10px 10px;
-    letter-spacing: 0.05em; white-space: nowrap;
-    text-transform: uppercase;
-  }
-  .ps-cta-current {
-    background: rgba(255,255,255,0.04) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    color: rgba(255,255,255,0.4) !important;
-    cursor: default !important;
-  }
-  .ps-cta-current:hover { transform: none !important; filter: none !important; }
-  .ps-cta-manage {
-    background: rgba(255,255,255,0.06) !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    color: rgba(255,255,255,0.7) !important;
-  }
-  .ps-cta-manage:hover:not(:disabled) {
-    background: rgba(255,255,255,0.1) !important;
-    color: #fff !important; transform: none !important;
-  }
-
-  .ps-trial-note {
-    text-align: center; margin-top: 32px; font-size: 13px;
-    color: ${C.t3}; position: relative; z-index: 1;
-  }
-  .ps-trial-note span { color: ${C.t2}; }
-  .ps-success-banner {
-    background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(6,230,255,0.08));
-    border: 1px solid rgba(0,255,136,0.3); border-radius: 12px;
-    padding: 14px 20px; color: #00FF88; font-size: 14px; font-weight: 600;
-    margin-bottom: 24px; text-align: center; width: 100%; max-width: 900px;
-    position: relative; z-index: 1;
-  }
-  .ps-trial-banner {
-    display: flex; align-items: center; gap: 12px;
-    background: rgba(255,215,0,0.07); border: 1px solid rgba(255,215,0,0.2);
-    border-radius: 12px; padding: 12px 18px; margin-bottom: 24px;
-    width: 100%; max-width: 900px; font-size: 13.5px;
-    color: rgba(255,255,255,0.75); position: relative; z-index: 1;
-  }
-  .ps-trial-icon { font-size: 18px; flex-shrink: 0; }
-  .ps-trial-banner strong { color: #FFD700; }
-  .ps-alert-banner {
-    display: flex; align-items: center; gap: 12px;
-    background: rgba(255,61,87,0.08); border: 1px solid rgba(255,61,87,0.25);
-    border-radius: 12px; padding: 12px 18px; margin-bottom: 24px;
-    width: 100%; max-width: 900px; font-size: 13.5px;
-    color: rgba(255,255,255,0.75); position: relative; z-index: 1;
-  }
-  .ps-alert-banner strong { color: #FF5570; }
-  .ps-manage-btn {
-    margin-left: auto; flex-shrink: 0; padding: 7px 14px;
-    background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3);
-    border-radius: 8px; color: #FFD700; font-size: 12px; font-weight: 600;
-    cursor: pointer; transition: all 0.18s; font-family: 'Inter', sans-serif;
-  }
-  .ps-manage-btn:hover { background: rgba(255,215,0,0.2); }
-
-  @media (max-width: 640px) {
-    .ps-back { top: 16px; left: 16px; padding: 8px 12px; font-size: 12px; }
-    .ps-logout { top: 16px; right: 16px; padding: 7px 12px; font-size: 11px; }
-    .ps-grid { grid-template-columns: 1fr; }
-  }
-`;
-
+// ─── Main Component ────────────────────────────────────────────────────────
 export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const { user: authUser, refreshProfile } = useAuth();
   const user = authUser || userProp;
 
-  const [billing,       setBilling]       = useState('monthly');
-  const [loading,       setLoading]       = useState(null);
+  const [billing, setBilling] = useState('monthly');
+  const [loading, setLoading] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [successMsg,    setSuccessMsg]    = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
-      setSuccessMsg('🎉 Subscription activated! Redirecting...');
-      const doRefresh = async () => {
-        try { await refreshProfile?.(); } catch (_) {}
-        setTimeout(() => { window.location.href = window.location.origin; }, 1500);
-      };
+      setSuccessMsg('Subscription activated! Redirecting...');
+      const doRefresh = async () => { try { await refreshProfile?.(); } catch (_) {} };
       doRefresh();
+      setTimeout(() => { window.location.href = window.location.origin; }, 1500);
     }
   }, []); // eslint-disable-line
 
-  const currentPlan  = user?.user_metadata?.plan || user?.plan || 'trial';
-  const subStatus    = user?.user_metadata?.subStatus  || user?.subStatus  || 'trialing';
-  const isTrialing   = user?.user_metadata?.isTrialing ?? user?.isTrialing ?? (currentPlan === 'trial');
-  const daysLeft     = user?.user_metadata?.trialDaysLeft ?? user?.trialDaysLeft ?? 14;
+  const currentPlan = user?.user_metadata?.plan || user?.plan || 'trial';
+  const subStatus = user?.user_metadata?.subStatus || user?.subStatus || 'trialing';
+  const isTrialing = user?.user_metadata?.isTrialing ?? user?.isTrialing ?? (currentPlan === 'trial');
+  const daysLeft = user?.user_metadata?.trialDaysLeft ?? user?.trialDaysLeft ?? 14;
   const needsPayment = user?.user_metadata?.needsPayment || user?.needsPayment || false;
 
   const handleSelect = async (plan) => {
@@ -412,16 +127,13 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, email: user?.email, userId: user?.id }),
+        body: JSON.stringify({ priceId, email: user?.email, userId: user?.id, planId: plan.id }),
       });
       const { url, error } = await res.json();
       if (url) window.location.href = url;
       else console.error('Checkout error:', error);
-    } catch (err) {
-      console.error('Checkout error:', err);
-    } finally {
-      setLoading(null);
-    }
+    } catch (err) { console.error('Checkout error:', err); }
+    finally { setLoading(null); }
   };
 
   const handleManage = async () => {
@@ -435,183 +147,208 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       const { url, error } = await res.json();
       if (url) window.location.href = url;
       else console.error('Portal error:', error);
-    } catch (err) {
-      console.error('Portal error:', err);
-    } finally {
-      setPortalLoading(false);
-    }
+    } catch (err) { console.error('Portal error:', err); }
+    finally { setPortalLoading(false); }
   };
 
   const isCurrentPlan = (planId) => currentPlan === planId;
+  const planLabel = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
 
   return (
-    <div className="ps-root">
-      <style>{STYLES}</style>
-      <div className="ps-glow-top" />
+    <div style={{ minHeight: '100vh', background: '#030508', fontFamily: "'Inter',sans-serif", position: 'relative', overflow: 'hidden' }}>
+      <PlanBg />
 
-      {/* Back button — always returns to landing */}
+      {/* Top glow */}
+      <div style={{ position: 'absolute', top: -100, left: '50%', transform: 'translateX(-50%)', width: 600, height: 300, background: 'radial-gradient(ellipse, rgba(6,230,255,0.06), transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0 }} />
+
+      {/* Back button */}
       {onLogout && (
-        <button type="button" className="ps-back" onClick={onLogout}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+        <motion.button initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} onClick={onLogout} style={{ position: 'fixed', top: 24, left: 24, zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: '#7A90B8', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(6,230,255,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#7A90B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3L5 8L10 13"/></svg>
           Back
-        </button>
+        </motion.button>
       )}
 
-      <div className="ps-logo">
-        <div className="ps-logo-dot" />
-        MarketFlow Journal
-      </div>
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000, margin: '0 auto', padding: '48px 24px 80px' }}>
 
-      {successMsg && <div className="ps-success-banner">{successMsg}</div>}
-
-      {user && isTrialing && daysLeft > 0 && (
-        <div className="ps-trial-banner">
-          <span className="ps-trial-icon">⏱</span>
-          <div>
-            <strong>Free trial — {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
-            <span> · Your card will be charged at the end of the trial</span>
+        {/* Logo */}
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 40 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, overflow: 'hidden', border: '1px solid rgba(6,230,255,0.15)' }}>
+            <img src="/logo192.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
           </div>
-          {user.stripeCustomerId && (
-            <button className="ps-manage-btn" onClick={handleManage} disabled={portalLoading}>
-              {portalLoading ? '…' : 'Manage my card'}
-            </button>
-          )}
-        </div>
-      )}
+          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, color: '#fff' }}>Market<span style={{ color: '#06E6FF' }}>Flow</span></span>
+        </motion.div>
 
-      {needsPayment && (
-        <div className="ps-alert-banner">
-          <span>⚠️</span>
-          <div>
-            <strong>Payment required</strong>
-            <span> — Your trial has ended. Choose a plan to continue.</span>
-          </div>
-        </div>
-      )}
-
-      <div className="ps-header">
-        {!user ? (
-          <>
-            <div className="ps-step">
-              <div className="ps-step-dot" />
-              Step 2 of 2 — Choose your plan
-            </div>
-            <h1 className="ps-title">
-              Start your <span>free trial</span><br />of 14 days
-            </h1>
-            <p className="ps-subtitle">
-              Enter your card now, nothing is charged for 14 days. Your card will be automatically billed when the trial ends. One free trial per account.
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="ps-title">
-              {needsPayment ? 'Choose your plan' : <>Your <span>subscription</span></>}
-            </h1>
-            <p className="ps-subtitle">
-              {subStatus === 'active'
-                ? `Active plan · ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`
-                : isTrialing
-                ? `Free trial in progress · ${daysLeft}d remaining`
-                : subStatus === 'canceled'
-                ? 'Subscription canceled — Reactivate a plan'
-                : 'Manage or change your subscription below'}
-            </p>
-          </>
+        {/* Success */}
+        {successMsg && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(6,230,255,0.06))', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: '12px 20px', color: '#00FF88', fontSize: 13.5, fontWeight: 600, textAlign: 'center', marginBottom: 20 }}>{successMsg}</motion.div>
         )}
-      </div>
 
-      <div className="ps-toggle">
-        <button className={`ps-toggle-btn ${billing === 'monthly' ? 'active' : ''}`} onClick={() => setBilling('monthly')}>
-          Monthly
-        </button>
-        <button className={`ps-toggle-btn ${billing === 'annual' ? 'active' : ''}`} onClick={() => setBilling('annual')}>
-          Annual
-        </button>
-        {billing === 'annual' && <span className="ps-toggle-badge">-30% on Pro & Elite 🎉</span>}
-      </div>
-
-      <div className="ps-grid">
-        {PLANS.map(plan => {
-          const isCurrent = isCurrentPlan(plan.id);
-          return (
-            <div
-              key={plan.id}
-              className={`ps-card ${plan.popular && !isCurrent ? 'ps-card-popular' : ''} ${isCurrent ? 'ps-card-current' : ''}`}
-              style={{ '--accent': plan.accent, '--glow': plan.glow }}
-            >
-              {isCurrent && (
-                <div className="ps-current-badge">
-                  {isTrialing ? `⏱ Trial · ${daysLeft}d remaining` : '✦ Current plan'}
-                </div>
-              )}
-              {plan.popular && !isCurrent && (
-                <div className="ps-popular-badge">✦ Most popular</div>
-              )}
-              <div className="ps-card-glow" />
-              <span className="ps-card-icon">{plan.icon}</span>
-              <div className="ps-card-name">{plan.name}</div>
-              <div className="ps-card-desc">{plan.desc}</div>
-
-              <div className="ps-price-block">
-                <div className="ps-price-main">
-                  <span className="ps-price-currency">$</span>
-                  <span className="ps-price-amount">
-                    {billing === 'monthly' ? plan.monthly : plan.annual}
-                  </span>
-                  <span className="ps-price-period">/mo</span>
-                </div>
-                {billing === 'annual' && !plan.noAnnualDiscount && (
-                  <div className="ps-price-annual">
-                    Billed ${plan.annual * 12}/yr —{' '}
-                    <span>save ${(plan.monthly - plan.annual) * 12}/yr</span>
-                  </div>
-                )}
-                {billing === 'annual' && plan.noAnnualDiscount && (
-                  <div className="ps-price-annual">
-                    Billed ${plan.annual * 12}/yr
-                  </div>
-                )}
-              </div>
-
-              <ul className="ps-features">
-                {plan.features.map((f, i) => (
-                  <li key={i} className="ps-feature">
-                    <span className="ps-feature-check">✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              {isCurrent && user?.stripeCustomerId ? (
-                <button className="ps-cta ps-cta-manage" onClick={handleManage} disabled={portalLoading}>
-                  {portalLoading ? '⏳ Loading...' : '⚙️ Manage my subscription'}
-                </button>
-              ) : isCurrent ? (
-                <button className="ps-cta ps-cta-current" disabled>
-                  ✦ Current plan
-                </button>
-              ) : (
-                <button
-                  className={`ps-cta ${plan.popular ? 'ps-cta-primary' : 'ps-cta-secondary'}`}
-                  disabled={!!loading}
-                  onClick={() => handleSelect(plan)}
-                >
-                  {loading === plan.id ? '⏳ Loading...' : `Upgrade to ${plan.name}`}
-                </button>
-              )}
+        {/* Trial banner */}
+        {user && isTrialing && daysLeft > 0 && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
+            <span style={{ fontSize: 16 }}>⏱</span>
+            <div style={{ flex: 1 }}>
+              <strong style={{ color: '#FFD700' }}>Free trial — {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}> · Your card will be charged at the end of the trial</span>
             </div>
-          );
-        })}
-      </div>
+            {user.stripeCustomerId && (
+              <button onClick={handleManage} disabled={portalLoading} style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 7, color: '#FFD700', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{portalLoading ? '…' : 'Manage card'}</button>
+            )}
+          </motion.div>
+        )}
 
-      <div className="ps-trial-note">
-        🔒 <span>100% secure payment by Stripe</span>
-        {' · '}Cancel in 1 click
-        {' · '}14-day free trial — one per account
-        {' · '}Auto-billing after trial
+        {/* Payment required */}
+        {needsPayment && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,61,87,0.06)', border: '1px solid rgba(255,61,87,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
+            <span style={{ fontSize: 16 }}>⚠️</span>
+            <div><strong style={{ color: '#FF5570' }}>Payment required</strong><span style={{ color: 'rgba(255,255,255,0.5)' }}> — Your trial has ended. Choose a plan to continue.</span></div>
+          </motion.div>
+        )}
+
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={{ textAlign: 'center', marginBottom: 40 }}>
+          {!user ? (
+            <>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 50, padding: '5px 14px', marginBottom: 16, fontSize: 11, fontWeight: 600, color: '#00FF88', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 6px #00FF88', animation: 'pulse 2s ease-in-out infinite' }} />
+                Step 2 of 2 — Choose your plan
+              </div>
+              <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-1px' }}>
+                Start your <span style={{ background: 'linear-gradient(135deg, #06E6FF, #00FF88)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>free trial</span><br />of 14 days
+              </h1>
+              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Enter your card now, nothing is charged for 14 days. Your card will be automatically billed when the trial ends. One free trial per account.</p>
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-1px' }}>
+                {needsPayment ? 'Choose your plan' : <>Your <span style={{ background: 'linear-gradient(135deg, #06E6FF, #00FF88)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>subscription</span></>}
+              </h1>
+              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>
+                {subStatus === 'active' ? `Active plan · ${planLabel}` : isTrialing ? `Free trial in progress · ${daysLeft}d remaining` : subStatus === 'canceled' ? 'Subscription canceled — Reactivate a plan' : 'Manage or change your subscription below'}
+              </p>
+            </>
+          )}
+        </motion.div>
+
+        {/* Billing Toggle */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 50, padding: 3 }}>
+            {['monthly', 'annual'].map(t => (
+              <button key={t} onClick={() => setBilling(t)} style={{ padding: '7px 18px', borderRadius: 50, border: 'none', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: 12.5, fontWeight: 600, transition: 'all 0.2s', background: billing === t ? '#06E6FF' : 'transparent', color: billing === t ? '#030508' : '#7A90B8' }}>
+                {t === 'monthly' ? 'Monthly' : 'Annual'}
+              </button>
+            ))}
+          </div>
+          {billing === 'annual' && <span style={{ background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.2)', color: '#00FF88', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 50, letterSpacing: '0.04em' }}>-30% on Pro & Elite</span>}
+        </motion.div>
+
+        {/* Plans Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, maxWidth: 960, margin: '0 auto' }}>
+          {PLANS.map((plan, i) => {
+            const isCurrent = isCurrentPlan(plan.id);
+            const price = billing === 'monthly' ? plan.monthly : plan.annual;
+            const annualSave = (plan.monthly - plan.annual) * 12;
+            return (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 + i * 0.08 }}
+                whileHover={{ y: -3 }}
+                style={{
+                  background: plan.popular && !isCurrent ? 'linear-gradient(160deg, rgba(6,230,255,0.04), rgba(0,255,136,0.02), rgba(12,20,34,0.98))' : 'rgba(12,20,34,0.5)',
+                  border: `1px solid ${isCurrent ? plan.accent + '40' : plan.popular && !isCurrent ? 'rgba(6,230,255,0.25)' : 'rgba(255,255,255,0.05)'}`,
+                  borderRadius: 18,
+                  padding: '28px 24px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'all 0.3s',
+                  boxShadow: isCurrent ? `0 0 0 1px ${plan.accent}20, 0 20px 48px rgba(0,0,0,0.4)` : plan.popular && !isCurrent ? '0 0 0 1px rgba(6,230,255,0.08), 0 20px 48px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Top glow line */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${plan.accent}50, transparent)` }} />
+
+                {/* Badges */}
+                {isCurrent && (
+                  <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 50, background: `${plan.accent}15`, border: `1px solid ${plan.accent}30`, fontSize: 9, fontWeight: 700, color: plan.accent, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    {isTrialing ? `Trial · ${daysLeft}d left` : 'Current plan'}
+                  </div>
+                )}
+                {plan.popular && !isCurrent && (
+                  <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 50, background: 'linear-gradient(135deg, #06E6FF, #00FF88)', fontSize: 9, fontWeight: 800, color: '#030508', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Most popular
+                  </div>
+                )}
+
+                {/* Icon + Name */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 11, background: `${plan.accent}08`, border: `1px solid ${plan.accent}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: plan.accent }}>
+                    <plan.Icon />
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>{plan.name}</div>
+                    <div style={{ fontSize: 12, color: '#7A90B8', marginTop: 2 }}>{plan.desc}</div>
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div style={{ marginBottom: 18, marginTop: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 3 }}>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: plan.accent }}>$</span>
+                    <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-2px' }}>{price}</span>
+                    <span style={{ fontSize: 13, color: '#7A90B8' }}>/mo</span>
+                  </div>
+                  {billing === 'annual' && !plan.noAnnualDiscount && (
+                    <div style={{ fontSize: 11, color: '#334566' }}>Billed ${plan.annual * 12}/yr — <span style={{ color: '#00FF88', fontWeight: 600 }}>save ${annualSave}/yr</span></div>
+                  )}
+                  {billing === 'annual' && plan.noAnnualDiscount && (
+                    <div style={{ fontSize: 11, color: '#334566' }}>Billed ${plan.annual * 12}/yr</div>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', marginBottom: 16 }} />
+
+                {/* Features */}
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                  {plan.features.map((f, j) => (
+                    <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: '#E8EEFF' }}>
+                      <span style={{ color: '#00FF88', marginTop: 1, flexShrink: 0 }}><Ic.Check /></span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                {isCurrent && user?.stripeCustomerId ? (
+                  <button onClick={handleManage} disabled={portalLoading} style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, cursor: portalLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }}>
+                    {portalLoading ? 'Loading...' : 'Manage subscription'}
+                  </button>
+                ) : isCurrent ? (
+                  <button disabled style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 600, cursor: 'default', fontFamily: 'inherit' }}>
+                    Current plan
+                  </button>
+                ) : (
+                  <button onClick={() => handleSelect(plan)} disabled={!!loading} style={{ width: '100%', padding: 12, borderRadius: 10, border: plan.popular ? 'none' : '1px solid rgba(255,255,255,0.06)', background: plan.popular ? 'linear-gradient(135deg, #06E6FF, #00FF88)' : 'rgba(255,255,255,0.03)', color: plan.popular ? '#030508' : '#E8EEFF', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', boxShadow: plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (!loading) { if (plan.popular) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } else { e.currentTarget.style.borderColor = plan.accent; e.currentTarget.style.color = plan.accent; } } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none'; e.currentTarget.style.borderColor = plan.popular ? 'none' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = plan.popular ? '#030508' : '#E8EEFF'; }}>
+                    {loading === plan.id ? 'Loading...' : plan.popular ? 'Start free trial' : `Upgrade to ${plan.name}`}
+                  </button>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Footer note */}
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: '#334566' }}>
+          <span style={{ color: '#7A90B8' }}>100% secure payment by Stripe</span>
+          {' · '}Cancel in 1 click
+          {' · '}14-day free trial — one per account
+          {' · '}Auto-billing after trial
+        </motion.p>
       </div>
     </div>
   );
