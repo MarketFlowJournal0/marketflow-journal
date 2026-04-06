@@ -227,8 +227,8 @@ function AppInner() {
           .eq('id', user.id);
       } catch (_) {}
     }
-    await refreshProfile?.();
     setShowOnboarding(false);
+    navigate('/plan', { replace: true });
   };
 
   // ── Auth callback ──
