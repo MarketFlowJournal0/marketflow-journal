@@ -171,14 +171,6 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
 
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000, margin: '0 auto', padding: '48px 24px 80px' }}>
 
-        {/* Logo */}
-        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 40 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, overflow: 'hidden', border: '1px solid rgba(6,230,255,0.15)' }}>
-            <img src="/logo192.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
-          </div>
-          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, color: '#fff' }}>Market<span style={{ color: '#06E6FF' }}>Flow</span></span>
-        </motion.div>
-
         {/* Success */}
         {successMsg && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(6,230,255,0.06))', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: '12px 20px', color: '#00FF88', fontSize: 13.5, fontWeight: 600, textAlign: 'center', marginBottom: 20 }}>{successMsg}</motion.div>
