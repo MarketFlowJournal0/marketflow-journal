@@ -24,7 +24,6 @@ import { Toaster, toast } from 'react-hot-toast';
 import AuthCallback from './pages/AuthCallback';
 import BrokerConnect from './pages/BrokerConnect';
 import AIChatBot from './components/AIChatBot';
-import WelcomePage from './pages/WelcomePage';
 import './App.css';
 import './theme.css';
 
@@ -107,7 +106,6 @@ function AppLayout({ user, onLogout }) {
             <Route path="/subscription"     element={<PlanSelection user={user} onSkip={() => navigate('/dashboard')} />} />
             <Route path="/support"          element={<SupportPage user={user} onBack={() => navigate('/dashboard')} />} />
             <Route path="/onboarding-stats"  element={<OnboardingStats onBack={() => navigate('/dashboard')} />} />
-            <Route path="/welcome"            element={<WelcomePage />} />
             <Route path="*"                 element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
@@ -167,11 +165,11 @@ function AppInner() {
     }
   }, [user, profileLoaded]);
 
-  const openLogin          = (e) => { if (e) e.preventDefault(); setAuthModal('login'); };
-  const openSignup         = (e) => { if (e) e.preventDefault(); setAuthModal('signup'); };
+  const openLogin          = () => setAuthModal('login');
+  const openSignup         = () => setAuthModal('signup');
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
-    if (priceId) sessionStorage.setItem('pending_price_id', priceId);
+    sessionStorage.setItem('pending_price_id', priceId);
     setAuthModal('signup');
   };
 
@@ -219,6 +217,7 @@ function AppInner() {
   const handleOnboardingComplete = async (answers) => {
     if (user?.id) {
       localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
+      // Sauvegarder les réponses dans Supabase
       try {
         const { supabase } = await import('./lib/supabase');
         await supabase
@@ -228,6 +227,7 @@ function AppInner() {
       } catch (_) {}
     }
     setShowOnboarding(false);
+    navigate('/plan');
   };
 
   // ── Auth callback ──
@@ -240,9 +240,13 @@ function AppInner() {
   if (!user) {
     return (
       <>
-        <LandingPage onLogin={() => setAuthModal('login')} onSignup={() => setAuthModal('signup')} onSignupWithPlan={(priceId) => { if (priceId) sessionStorage.setItem('pending_price_id', priceId); setAuthModal('signup'); }} />
+        <Routes>
+          <Route path="*" element={
+            <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
+          } />
+        </Routes>
         <SupportWidget onOpenPage={() => {}} />
-        {authModal && <AuthModal defaultTab={authModal} onClose={() => setAuthModal(null)} onSuccess={handleAuthSuccess} />}
+        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
     );
   }
@@ -252,24 +256,18 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement → /plan (sauf si on vient de Stripe) ──
-  const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
-  const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
-  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
-  if (needsPlan) {
+  // ── Pas d'abonnement ou trial expiré → /plan ──
+  const trialExpired = user.isTrialing && user.trialDaysLeft <= 0;
+  if (profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut || trialExpired) {
     return (
       <>
         <Routes>
-          <Route path="/" element={
-            <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
-          } />
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { window.location.href = 'https://marketflowjournal.com/'; }}
+              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = '/'; }, 300); }}
             />
           } />
-          <Route path="/welcome" element={<WelcomePage />} />
           <Route path="*" element={<Navigate to="/plan" replace />} />
         </Routes>
         <SupportWidget onOpenPage={() => {}} />
