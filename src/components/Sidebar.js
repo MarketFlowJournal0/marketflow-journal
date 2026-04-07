@@ -138,6 +138,15 @@ const NAV = (isAdmin) => [
       { id: 'broker-connect', label: 'Brokers',        Icon: Ic.Broker     },
     ],
   },
+  {
+    id: 'reports',
+    label: 'Reports',
+    items: [
+      { id: 'reports',        label: 'Reports',        Icon: Ic.Analytics  },
+      { id: 'alerts',         label: 'Alerts',         Icon: Ic.Admin      },
+      { id: 'api-access',     label: 'API Access',     Icon: Ic.Broker     },
+    ],
+  },
   ...(isAdmin ? [{
     id: 'admin',
     label: 'Admin',
