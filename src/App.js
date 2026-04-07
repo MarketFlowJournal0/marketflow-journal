@@ -256,9 +256,11 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  // ── Pas d'abonnement ou trial expiré → /plan ──
-  const trialExpired = user.isTrialing && user.trialDaysLeft <= 0;
-  if (profileLoaded && !user.isActive && !user.stripeCustomerId && !forceLoggedOut || trialExpired) {
+  // ── Pas d'abonnement → /plan ──
+  const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
+  const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
+  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
+  if (needsPlan) {
     return (
       <>
         <Routes>
