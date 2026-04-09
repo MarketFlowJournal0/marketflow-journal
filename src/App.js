@@ -28,10 +28,12 @@ import ReportsPage from './pages/Reports';
 import AlertsPage from './pages/Alerts';
 import ApiAccessPage from './pages/ApiAccess';
 import WelcomePage from './pages/WelcomePage';
+import { getEntryRoute, hasRouteAccess } from './lib/subscription';
 import './App.css';
 import './theme.css';
 
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
+const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 function LoadingScreen() {
   return (
@@ -71,13 +73,22 @@ function AppLayout({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const plan = user?.plan || 'trial';
+  const entryRoute = getEntryRoute(plan);
+  const fallbackRoute = '/' + entryRoute;
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
-  const currentPage = location.pathname.replace('/', '') || 'dashboard';
+  const currentPage = location.pathname.replace('/', '') || entryRoute;
   const setCurrentPage = (page) => navigate('/' + page);
 
   const fullscreenPages = ['subscription', 'account-settings', 'support'];
   const isFullscreen = fullscreenPages.includes(currentPage);
   const sidebarWidth = isFullscreen ? 0 : (collapsed ? 72 : 260);
+  const renderProtectedRoute = (routeId, element) => {
+    if (routeId === 'onboarding-stats' && isAdmin) return element;
+    if (hasRouteAccess(plan, routeId)) return element;
+    return <Navigate to="/subscription" replace state={{ upgradeFrom: routeId }} />;
+  };
 
   return (
     <TradingProvider>
@@ -96,27 +107,39 @@ function AppLayout({ user, onLogout }) {
         )}
         <div className="mf-main" style={{ marginLeft: sidebarWidth, flex: 1, minHeight: '100vh', transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)', backgroundColor: 'var(--bg)', overflow: 'auto' }}>
           <Routes>
-            <Route path="/dashboard"        element={<Dashboard />} />
-            <Route path="/all-trades"       element={<AllTrades />} />
-            <Route path="/analytics"        element={<Analytics />} />
-            <Route path="/analytics-pro"    element={<AnalyticsPro />} />
-            <Route path="/backtest"         element={<Backtest />} />
-            <Route path="/calendar"         element={<Calendar />} />
-            <Route path="/equity"           element={<Equity />} />
-            <Route path="/psychology"       element={<Psychology />} />
-            <Route path="/ai-chat"          element={<AIChat />} />
-            <Route path="/broker-connect"    element={<BrokerConnect />} />
-            <Route path="/account-settings" element={<AccountSettings user={user} onBack={() => navigate('/dashboard')} />} />
-            <Route path="/subscription"     element={<PlanSelection user={user} onSkip={() => navigate('/dashboard')} />} />
-            <Route path="/support"          element={<SupportPage user={user} onBack={() => navigate('/dashboard')} />} />
-            <Route path="/onboarding-stats"  element={<OnboardingStats onBack={() => navigate('/dashboard')} />} />
-            <Route path="/reports"            element={<ReportsPage />} />
-            <Route path="/alerts"             element={<AlertsPage />} />
-            <Route path="/api-access"         element={<ApiAccessPage />} />
-            <Route path="*"                 element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={renderProtectedRoute('dashboard', <Dashboard />)} />
+            <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />
+            <Route path="/analytics" element={renderProtectedRoute('analytics', <Analytics />)} />
+            <Route path="/analytics-pro" element={renderProtectedRoute('analytics-pro', <AnalyticsPro />)} />
+            <Route path="/backtest" element={renderProtectedRoute('backtest', <Backtest />)} />
+            <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />
+            <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
+            <Route path="/psychology" element={renderProtectedRoute('psychology', <Psychology />)} />
+            <Route path="/ai-chat" element={renderProtectedRoute('ai-chat', <AIChat />)} />
+            <Route path="/broker-connect" element={renderProtectedRoute('broker-connect', <BrokerConnect />)} />
+            <Route
+              path="/account-settings"
+              element={renderProtectedRoute('account-settings', <AccountSettings user={user} onBack={() => navigate(fallbackRoute)} />)}
+            />
+            <Route
+              path="/subscription"
+              element={renderProtectedRoute('subscription', <PlanSelection user={user} onSkip={() => navigate(fallbackRoute)} />)}
+            />
+            <Route
+              path="/support"
+              element={renderProtectedRoute('support', <SupportPage user={user} onBack={() => navigate(fallbackRoute)} />)}
+            />
+            <Route
+              path="/onboarding-stats"
+              element={renderProtectedRoute('onboarding-stats', <OnboardingStats onBack={() => navigate(fallbackRoute)} />)}
+            />
+            <Route path="/reports" element={renderProtectedRoute('reports', <ReportsPage />)} />
+            <Route path="/alerts" element={renderProtectedRoute('alerts', <AlertsPage />)} />
+            <Route path="/api-access" element={renderProtectedRoute('api-access', <ApiAccessPage />)} />
+            <Route path="*" element={<Navigate to={fallbackRoute} replace />} />
           </Routes>
         </div>
-        <AIChatBot />
+        {hasRouteAccess(plan, 'ai-chat') && <AIChatBot />}
       </div>
     </TradingProvider>
   );

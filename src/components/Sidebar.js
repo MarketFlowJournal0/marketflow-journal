@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { hasRouteAccess, normalizePlan } from '../lib/subscription';
 
 const MARKETFLOW_LOGO = "/logo192.png";
 
@@ -33,6 +34,14 @@ const Ic = {
       <path d="M13 1.5h1.5v1.5"/>
     </svg>
   ),
+  Calendar: () => (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="12" height="11" rx="2"/>
+      <path d="M2 6.5h12"/>
+      <path d="M5 1.75v2.5"/>
+      <path d="M11 1.75v2.5"/>
+    </svg>
+  ),
   Equity: () => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M1.5 14.5V1.5"/>
@@ -52,6 +61,11 @@ const Ic = {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 1.5a4.5 4.5 0 014.5 4.5c0 1.8-1 3.4-2.7 4.3L10 12l.5 1.5H5.5L6 12l.3-1.2A4.5 4.5 0 018 1.5z"/>
       <path d="M6.5 10h3"/>
+    </svg>
+  ),
+  Chat: () => (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 4.5A2.5 2.5 0 015.5 2h5A2.5 2.5 0 0113 4.5v4A2.5 2.5 0 0110.5 11H7l-3 2v-2A2.5 2.5 0 013 8.5z"/>
     </svg>
   ),
   Broker: () => (
@@ -118,41 +132,43 @@ const Ic = {
 };
 
 /* ── Nav structure ── */
-const NAV = (isAdmin) => [
+const NAV = (isAdmin, plan) => [
   {
     id: 'trading',
     label: 'Trading',
     items: [
-      { id: 'dashboard',     label: 'Dashboard',  Icon: Ic.Dashboard  },
-      { id: 'all-trades',    label: 'All Trades', Icon: Ic.Trades     },
-      { id: 'analytics-pro', label: 'Analytics',  Icon: Ic.Analytics  },
-      { id: 'equity',        label: 'Equity',     Icon: Ic.Equity     },
-      { id: 'backtest',      label: 'Backtest',   Icon: Ic.Backtest   },
-    ],
+      { id: 'dashboard', label: 'Dashboard', Icon: Ic.Dashboard },
+      { id: 'all-trades', label: 'All Trades', Icon: Ic.Trades },
+      { id: 'calendar', label: 'Calendar', Icon: Ic.Calendar },
+      { id: 'analytics-pro', label: 'Analytics', Icon: Ic.Analytics },
+      { id: 'equity', label: 'Equity', Icon: Ic.Equity },
+      { id: 'backtest', label: 'Backtest', Icon: Ic.Backtest },
+    ].filter(item => hasRouteAccess(plan, item.id)),
   },
   {
     id: 'tools',
     label: 'Tools',
     items: [
-      { id: 'psychology',     label: 'Psychology',     Icon: Ic.Psychology },
-      { id: 'broker-connect', label: 'Brokers',        Icon: Ic.Broker     },
-    ],
+      { id: 'psychology', label: 'Psychology', Icon: Ic.Psychology },
+      { id: 'broker-connect', label: 'Brokers', Icon: Ic.Broker },
+      { id: 'ai-chat', label: 'AI Coach', Icon: Ic.Chat },
+    ].filter(item => hasRouteAccess(plan, item.id)),
   },
   {
     id: 'reports',
     label: 'Reports',
     items: [
-      { id: 'reports',        label: 'Reports',        Icon: Ic.Analytics  },
-      { id: 'alerts',         label: 'Alerts',         Icon: Ic.Admin      },
-      { id: 'api-access',     label: 'API Access',     Icon: Ic.Broker     },
-    ],
+      { id: 'reports', label: 'Reports', Icon: Ic.Analytics },
+      { id: 'alerts', label: 'Alerts', Icon: Ic.Admin },
+      { id: 'api-access', label: 'API Access', Icon: Ic.Broker },
+    ].filter(item => hasRouteAccess(plan, item.id)),
   },
   ...(isAdmin ? [{
     id: 'admin',
     label: 'Admin',
     items: [{ id: 'onboarding-stats', label: 'Onboarding', Icon: Ic.Admin }],
   }] : []),
-];
+].filter(section => section.items.length > 0);
 
 /* ── Tooltip ── */
 function Tooltip({ text, children }) {
@@ -201,17 +217,17 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
   const panelRef = useRef(null);
   const [tick, setTick] = useState(0);
 
-  const firstName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
+  const firstName = user?.firstName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
   const initials  = firstName.slice(0, 2).toUpperCase();
   const email     = user?.email || '';
-  const plan      = user?.user_metadata?.plan || 'trial';
+  const plan      = normalizePlan(user?.plan || user?.user_metadata?.plan);
   const isElite   = plan === 'elite';
   const isAdmin   = email === ADMIN_EMAIL;
 
   const PLAN = {
-    starter: { l: 'Starter', c: '#7A90B8' },
+    starter: { l: 'Starter', c: '#00F5D4' },
     pro:     { l: 'Pro',     c: '#06E6FF' },
-    elite:   { l: 'Elite',   c: '#00FF88' },
+    elite:   { l: 'Elite',   c: '#FFD700' },
     trial:   { l: 'Trial',   c: '#FB923C' },
   };
   const pi = PLAN[plan] || PLAN.trial;
@@ -296,7 +312,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
     setPanel(false);
   }, [setCurrentPage]);
 
-  const sections = NAV(isAdmin);
+  const sections = NAV(isAdmin, plan);
 
   return (
     <motion.div
