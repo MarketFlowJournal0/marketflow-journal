@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getEntryRoute, getPlanDetails, normalizePlan } from '../lib/subscription';
 
+const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
+
 function WelcomeBg() {
   const ref = useRef(null);
 
@@ -217,6 +219,7 @@ export default function WelcomePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
+  const [hasSessionId, setHasSessionId] = useState(false);
 
   const planId = normalizePlan(user?.plan || user?.user_metadata?.plan);
   const plan = getPlanDetails(planId);
@@ -235,6 +238,7 @@ export default function WelcomePage() {
       navigate(isActivated ? journalRoute : '/plan', { replace: true });
       return undefined;
     }
+    setHasSessionId(true);
 
     let cancelled = false;
     let attempts = 0;
@@ -270,7 +274,13 @@ export default function WelcomePage() {
     }
   }, [isActivated]);
 
-  const primaryLabel = timedOut ? 'Open Subscription' : 'Access Journal';
+  useEffect(() => {
+    if (!loading && hasSessionId) {
+      sessionStorage.setItem(POST_WELCOME_ACCESS_KEY, '1');
+    }
+  }, [loading, hasSessionId]);
+
+  const primaryLabel = 'Access Journal';
   const secondaryLabel = timedOut ? 'Contact Support' : 'Manage Subscription';
   const statusLabel = timedOut ? 'Activation Syncing' : 'Subscription Active';
   const accessLabel = timedOut ? 'Pending unlock' : `${plan.label} workspace`;
@@ -613,7 +623,10 @@ export default function WelcomePage() {
               }}
             >
               <button
-                onClick={() => navigate(timedOut ? '/plan' : journalRoute)}
+                onClick={() => {
+                  sessionStorage.setItem(POST_WELCOME_ACCESS_KEY, '1');
+                  navigate(journalRoute);
+                }}
                 style={{
                   padding: '15px 26px',
                   borderRadius: 14,

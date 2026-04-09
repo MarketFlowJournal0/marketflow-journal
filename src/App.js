@@ -33,6 +33,7 @@ import './App.css';
 import './theme.css';
 
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
+const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 function LoadingScreen() {
@@ -293,8 +294,9 @@ function AppInner() {
 
   // ── Pas d'abonnement → /plan ──
   const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
+  const postWelcomeAccess = sessionStorage.getItem(POST_WELCOME_ACCESS_KEY) === '1';
   const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
-  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
+  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid && !postWelcomeAccess;
   if (needsPlan) {
     return (
       <>
