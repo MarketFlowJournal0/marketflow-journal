@@ -263,6 +263,11 @@ function AppInner() {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
+  // ── Retour Stripe / activation ──
+  if (location.pathname === '/welcome') {
+    return <WelcomePage />;
+  }
+
   // ── Pas d'abonnement → /plan ──
   const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
   const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');

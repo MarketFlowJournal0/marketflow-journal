@@ -12,6 +12,25 @@ const supabase = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+async function getRawBody(req) {
+  if (req.rawBody) {
+    return Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.from(req.rawBody);
+  }
+  if (typeof req.text === 'function') {
+    return Buffer.from(await req.text());
+  }
+
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  if (chunks.length) return Buffer.concat(chunks);
+  if (Buffer.isBuffer(req.body)) return req.body;
+  if (typeof req.body === 'string') return Buffer.from(req.body);
+  return Buffer.from(JSON.stringify(req.body || {}));
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -20,9 +39,8 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // For raw body parsing in Vercel, we use the raw body
   const sig = req.headers['stripe-signature'];
-  const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+  const rawBody = await getRawBody(req);
 
   let event;
   try {
@@ -36,24 +54,35 @@ module.exports = async (req, res) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const userId = session.metadata?.supabase_user_id;
         const subscriptionId = session.subscription;
         const customerId = session.customer;
-        const planId = session.metadata?.plan_id;
         const customerEmail = session.customer_details?.email || session.customer_email;
         const customerName = session.customer_details?.name || customerEmail?.split('@')[0] || 'Trader';
+        let userId = session.metadata?.supabase_user_id || null;
+        let planId = session.metadata?.plan_id || null;
+
+        if ((!userId || !planId) && subscriptionId) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            userId = userId || subscription.metadata?.supabase_user_id || null;
+            planId = planId || subscription.metadata?.plan_id || subscription.items?.data?.[0]?.price?.metadata?.plan_id || null;
+          } catch (subErr) {
+            console.error('Failed to retrieve subscription metadata:', subErr);
+          }
+        }
 
         if (userId && subscriptionId) {
           await supabase
             .from('profiles')
-            .update({
+            .upsert({
+              id: userId,
+              email: customerEmail || null,
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
               subscription_status: 'trialing',
               trial_end: new Date(Date.now() + 14 * 86400000).toISOString(),
               plan: planId || null,
-            })
-            .eq('id', userId);
+            }, { onConflict: 'id' });
 
           // Send welcome email
           try {
@@ -167,13 +196,13 @@ module.exports = async (req, res) => {
         if (targetUserId) {
           await supabase
             .from('profiles')
-            .update({
+            .upsert({
+              id: targetUserId,
               subscription_status: sub.status,
               stripe_subscription_id: sub.id,
               stripe_customer_id: customerId,
               plan: planId || sub.metadata?.plan_id || null,
-            })
-            .eq('id', targetUserId);
+            }, { onConflict: 'id' });
         }
         break;
       }
@@ -196,11 +225,11 @@ module.exports = async (req, res) => {
         if (targetUserId) {
           await supabase
             .from('profiles')
-            .update({
+            .upsert({
+              id: targetUserId,
               subscription_status: 'canceled',
               stripe_subscription_id: null,
-            })
-            .eq('id', targetUserId);
+            }, { onConflict: 'id' });
         }
         break;
       }
@@ -284,11 +313,11 @@ module.exports = async (req, res) => {
             if (targetUserId) {
               await supabase
                 .from('profiles')
-                .update({
+                .upsert({
+                  id: targetUserId,
                   subscription_status: 'active',
                   trial_end: null,
-                })
-                .eq('id', targetUserId);
+                }, { onConflict: 'id' });
             }
           } catch (stripeErr) {
             console.error('Failed to retrieve subscription:', stripeErr);

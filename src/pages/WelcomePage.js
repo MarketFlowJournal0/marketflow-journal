@@ -54,24 +54,44 @@ export default function WelcomePage() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+  const isActivated = Boolean(user?.stripeSubscriptionId && ['active', 'trialing'].includes(user?.subStatus));
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session_id');
     if (!sessionId) { navigate('/plan'); return; }
 
-    const activate = async () => {
+    let cancelled = false;
+    let attempts = 0;
+
+    const pollActivation = async () => {
+      attempts += 1;
       try {
         await refreshProfile?.();
       } catch (_) {}
-      setLoading(false);
-    };
-    activate();
 
-    const timer = setInterval(() => setStep(s => (s < 4 ? s + 1 : s)), 600);
-    return () => clearInterval(timer);
-  }, []); // eslint-disable-line
+      if (cancelled) return;
+      if (attempts >= 20 && !isActivated) {
+        setTimedOut(true);
+        setLoading(false);
+      }
+    };
+
+    pollActivation();
+    const timer = setInterval(pollActivation, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [navigate, refreshProfile, isActivated]);
+
+  useEffect(() => {
+    if (isActivated) {
+      setTimedOut(false);
+      setLoading(false);
+    }
+  }, [isActivated]);
 
   const firstName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
   const email = user?.email || '';
@@ -86,12 +106,12 @@ export default function WelcomePage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#030508', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center' }}>
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ width: 40, height: 40, border: '3px solid rgba(6,230,255,0.1)', borderTopColor: '#06E6FF', borderRadius: '50%', margin: '0 auto 16px' }} />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center' }}>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ width: 40, height: 40, border: '3px solid rgba(6,230,255,0.1)', borderTopColor: '#06E6FF', borderRadius: '50%', margin: '0 auto 16px' }} />
           <p style={{ color: '#7A90B8', fontSize: 14 }}>Activating your account...</p>
-        </motion.div>
-      </div>
-    );
+          </motion.div>
+        </div>
+      );
   }
 
   return (
@@ -144,7 +164,9 @@ export default function WelcomePage() {
           transition={{ delay: 0.4 }}
           style={{ fontSize: 16, color: '#7A90B8', margin: '0 0 40px', lineHeight: 1.7, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}
         >
-          Your account is activated. A confirmation email has been sent to <strong style={{ color: '#E8EEFF' }}>{email}</strong>. Start your trading journey now.
+          {timedOut
+            ? <>Your payment went through, but the account activation is still syncing for <strong style={{ color: '#E8EEFF' }}>{email}</strong>. Please wait a moment, then refresh this page. If it still blocks you, contact support and we can unlock it manually.</>
+            : <>Your account is activated. A confirmation email has been sent to <strong style={{ color: '#E8EEFF' }}>{email}</strong>. Start your trading journey now.</>}
         </motion.p>
 
         {/* Features grid */}
@@ -178,7 +200,7 @@ export default function WelcomePage() {
           style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}
         >
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(timedOut ? '/plan' : '/dashboard')}
             style={{
               padding: '14px 32px',
               background: 'linear-gradient(135deg, #06E6FF, #00FF88)',
@@ -195,7 +217,7 @@ export default function WelcomePage() {
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(6,230,255,0.4)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 0 30px rgba(6,230,255,0.25)'; }}
           >
-            Go to Dashboard →
+            {timedOut ? 'Back to Plan →' : 'Go to Dashboard →'}
           </button>
         </motion.div>
 
@@ -205,7 +227,7 @@ export default function WelcomePage() {
           transition={{ delay: 1.1 }}
           style={{ fontSize: 11.5, color: '#334566', marginTop: 20 }}
         >
-          Check your inbox for a welcome email with tips to get started
+          {timedOut ? 'If the activation still does not complete after a refresh, contact support with your payment email.' : 'Check your inbox for a welcome email with tips to get started'}
         </motion.p>
       </div>
     </div>

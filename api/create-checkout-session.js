@@ -17,6 +17,10 @@ module.exports = async (req, res) => {
   if (!priceId) return res.status(400).json({ error: 'priceId required' });
 
   const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.marketflowjournal.com';
+  const sessionMetadata = {
+    supabase_user_id: userId || '',
+    plan_id: planId || '',
+  };
 
   try {
     let customerId = null;
@@ -75,8 +79,7 @@ module.exports = async (req, res) => {
         end_behavior: { missing_payment_method: 'cancel' },
       },
       metadata: {
-        supabase_user_id: userId || '',
-        plan_id: planId || '',
+        ...sessionMetadata,
       },
     };
 
@@ -85,6 +88,7 @@ module.exports = async (req, res) => {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       ...(customerId ? { customer: customerId } : email ? { customer_email: email } : {}),
+      metadata: sessionMetadata,
       subscription_data: subscriptionData,
       payment_method_collection: 'always',
       success_url: `${BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
