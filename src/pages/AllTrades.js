@@ -70,7 +70,7 @@ const exportToCSV = (data,filename='trades.csv') => {
   if(!data?.length){toast.error('No data to export');return;}
   try{
     const headers=Object.keys(data[0]);
-    const rows=data.map(row=>headers.map(h=>{const v=row[h];if(v==null)return'';const s=String(v);return s.includes(',')||s.includes('"')?`"${s.replace(/"/g,'""')}"`:'s';}).join(','));
+    const rows=data.map(row=>headers.map(h=>{const v=row[h];if(v==null)return'';const s=String(v);return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`:s;}).join(','));
     const blob=new Blob(['\uFEFF'+[headers.join(','),...rows].join('\n')],{type:'text/csv;charset=utf-8;'});
     const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
     toast.success(`CSV export successful! (${data.length} trades)`);
@@ -136,6 +136,58 @@ const calcStats=(trades)=>{
   return{total:trades.length,wins:wins.length,losses:trades.length-wins.length,winRate:trades.length?(wins.length/trades.length)*100:0,totalPnL,avgRR,pf,maxDD:dd};
 };
 
+const calcJournalIntelligence=(trades,stats)=>{
+  const total=trades?.length||0;
+  const asPnl=t=>parseFloat(t.profit_loss??t.pnl??0)||0;
+  const notesCoverage=total?Math.round((trades.filter(t=>(t.notes||'').trim().length>12).length/total)*100):0;
+  const psychCoverage=total?Math.round((trades.filter(t=>(t.psychologyScore??t.psychology_score)!=null).length/total)*100):0;
+  const profitFactor=parseFloat(stats.pf)||0;
+  const winRate=Math.round(stats.winRate||0);
+  const consistency=Math.min(100,Math.round((winRate*0.45)+(Math.min(profitFactor,3)/3*35)+(notesCoverage*0.1)+(psychCoverage*0.1)));
+  const grade=consistency>=82?'Elite':consistency>=68?'Strong':consistency>=52?'Building':'Needs data';
+
+  const groupBy=(keyFn)=>trades.reduce((acc,t)=>{const key=keyFn(t)||'Untracked';if(!acc[key])acc[key]={name:key,count:0,pnl:0,wins:0};acc[key].count+=1;acc[key].pnl+=asPnl(t);if(asPnl(t)>0)acc[key].wins+=1;return acc;},{});
+  const symbols=Object.values(groupBy(t=>t.symbol)).sort((a,b)=>b.pnl-a.pnl);
+  const sessions=Object.values(groupBy(t=>t.session)).sort((a,b)=>b.pnl-a.pnl);
+  const setups=Object.values(groupBy(t=>t.setup)).filter(x=>x.name!=='Untracked').sort((a,b)=>b.pnl-a.pnl);
+
+  let nextAction='Log at least 10 trades to unlock reliable pattern detection.';
+  if(total>=10&&notesCoverage<60) nextAction='Add post-trade notes to your next 5 trades so the AI coach can find behavior patterns.';
+  else if(total>=10&&stats.maxDD>10) nextAction='Reduce risk for the next session and review the trades that created the drawdown.';
+  else if(total>=10&&profitFactor<1) nextAction='Pause scaling. Filter losing setups and cut the weakest one from the playbook.';
+  else if(total>=10&&setups[0]) nextAction=`Double down on ${setups[0].name}: it is currently your strongest tagged setup.`;
+  else if(total>=10&&symbols[0]) nextAction=`Review ${symbols[0].name}: it is carrying the best net contribution in this sample.`;
+
+  return{
+    total,
+    score:consistency,
+    grade,
+    notesCoverage,
+    psychCoverage,
+    bestSymbol:symbols[0]||null,
+    weakestSymbol:symbols[symbols.length-1]||null,
+    bestSession:sessions[0]||null,
+    bestSetup:setups[0]||null,
+    nextAction,
+  };
+};
+
+const toTradeFormData=(trade={})=>({
+  ...trade,
+  date:trade.date||trade.open_date?.split('T')[0]||new Date().toISOString().split('T')[0],
+  time:trade.time||'',
+  symbol:trade.symbol||'',
+  type:trade.type||trade.direction||'Long',
+  entry:trade.entry??trade.entry_price??'',
+  exit:trade.exit??trade.exit_price??'',
+  sl:trade.sl??trade.stop_loss??'',
+  tp:trade.tp??trade.take_profit??'',
+  pnl:trade.pnl??trade.profit_loss??'',
+  marketType:trade.marketType??trade.market_type??'',
+  newsImpact:trade.newsImpact??trade.news_impact??'Low',
+  psychologyScore:trade.psychologyScore??trade.psychology_score??80,
+});
+
 // ══════════════════════════════════════════════════════════════════════════════
 // 🧩 UI ATOMS
 // ══════════════════════════════════════════════════════════════════════════════
@@ -155,13 +207,75 @@ const StatCard=({label,value,color,icon,sub,index})=>{
   return(<motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={index} whileHover={{scale:1.03,y:-5}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{backgroundColor:C.bgCard,border:`1px solid ${hov?C.brdBright:C.brd}`,borderRadius:11,padding:'14px 16px',position:'relative',overflow:'hidden',cursor:'default',boxShadow:hov?`0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px ${color}30`:'0 2px 8px rgba(0,0,0,0.2)',transition:'all 0.25s cubic-bezier(0.4,0,0.2,1)'}}><motion.div animate={{opacity:hov?1:0}} style={{position:'absolute',inset:0,background:`linear-gradient(135deg,${color}18,transparent)`,pointerEvents:'none'}}/><div style={{position:'relative',zIndex:1}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}><span style={{color:C.t3,fontSize:9,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>{label}</span>{icon&&<span style={{fontSize:17}}>{icon}</span>}</div><div style={{fontSize:22,fontWeight:900,color,fontFamily:'monospace',lineHeight:1,textShadow:hov?`0 0 20px ${color}60`:'none',transition:'text-shadow 0.3s'}}>{value}</div>{sub&&<div style={{fontSize:10,color:C.t3,marginTop:5}}>{sub}</div>}</div>{hov&&(<motion.div initial={{opacity:0,scale:0.8}} animate={{opacity:1,scale:1}} style={{position:'absolute',bottom:-8,left:'50%',transform:'translateX(-50%)',width:'80%',height:5,background:color,borderRadius:'0 0 8px 8px',filter:'blur(8px)',pointerEvents:'none'}}/>)}</motion.div>);
 };
 
+const JournalCommandCenter=({intel,filteredCount,totalCount,onAdd,onImport,onExport})=>{
+  const scoreColor=intel.score>=75?C.green:intel.score>=55?C.cyan:C.warn;
+  const insightCards=[
+    {label:'Best Symbol',value:intel.bestSymbol?intel.bestSymbol.name:'Waiting',sub:intel.bestSymbol?fmtPnl(intel.bestSymbol.pnl):'Needs trade data',color:C.green},
+    {label:'Weakest Symbol',value:intel.weakestSymbol?intel.weakestSymbol.name:'Waiting',sub:intel.weakestSymbol?fmtPnl(intel.weakestSymbol.pnl):'Needs trade data',color:C.danger},
+    {label:'Best Session',value:intel.bestSession?intel.bestSession.name:'Waiting',sub:intel.bestSession?`${intel.bestSession.count} trades`:'Needs session tags',color:C.cyan},
+    {label:'Journal Depth',value:`${intel.notesCoverage}%`,sub:`Psy ${intel.psychCoverage}%`,color:C.purple},
+  ];
+
+  return(
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={0.5} style={{position:'relative',overflow:'hidden',borderRadius:18,border:`1px solid ${scoreColor}26`,background:'linear-gradient(145deg,rgba(10,20,38,0.96),rgba(7,12,24,0.98))',boxShadow:'0 24px 70px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04)',padding:20,marginBottom:18}}>
+      <div style={{position:'absolute',inset:0,background:`radial-gradient(circle at 12% 0%,${scoreColor}18,transparent 34%),radial-gradient(circle at 88% 10%,${C.cyan}12,transparent 30%)`,pointerEvents:'none'}}/>
+      <div className="mf-journal-command-grid" style={{position:'relative',zIndex:1,display:'grid',gridTemplateColumns:'minmax(260px,1.25fr) minmax(280px,1fr)',gap:18,alignItems:'stretch'}}>
+        <div style={{display:'flex',flexDirection:'column',justifyContent:'space-between',gap:18}}>
+          <div>
+            <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'6px 10px',borderRadius:999,border:`1px solid ${scoreColor}30`,background:`${scoreColor}10`,color:scoreColor,fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:12}}>
+              Journal Command Center
+            </div>
+            <h2 style={{margin:0,fontSize:30,lineHeight:1.02,fontWeight:900,letterSpacing:'-0.06em',color:C.t1}}>
+              Turn every trade into a cleaner decision loop.
+            </h2>
+            <p style={{margin:'10px 0 0',fontSize:13,color:C.t2,lineHeight:1.7,maxWidth:660}}>
+              MarketFlow is now reading the filtered journal, scoring data quality, and surfacing the next practical action instead of leaving you with a raw table.
+            </p>
+          </div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+            <GlassBtn variant="primary" icon="+" onClick={onAdd}>Add Trade</GlassBtn>
+            <GlassBtn variant="cyan" icon="CSV" onClick={onImport}>Import CSV</GlassBtn>
+            <GlassBtn icon="Export" onClick={onExport}>Export View</GlassBtn>
+          </div>
+        </div>
+
+        <div className="mf-journal-intel-grid" style={{display:'grid',gridTemplateColumns:'110px 1fr',gap:14,alignItems:'stretch'}}>
+          <div style={{borderRadius:16,border:`1px solid ${scoreColor}35`,background:`linear-gradient(180deg,${scoreColor}14,rgba(255,255,255,0.02))`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:14}}>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Score</div>
+            <div style={{fontSize:42,fontWeight:900,color:scoreColor,lineHeight:1,fontFamily:'monospace',textShadow:`0 0 28px ${scoreColor}45`}}>{intel.score}</div>
+            <div style={{marginTop:8,padding:'4px 8px',borderRadius:999,background:`${scoreColor}18`,color:scoreColor,fontSize:10,fontWeight:800}}>{intel.grade}</div>
+            <div style={{fontSize:9,color:C.t3,marginTop:8,textAlign:'center'}}>{filteredCount}/{totalCount} trades in view</div>
+          </div>
+
+          <div style={{display:'grid',gap:10}}>
+            <div style={{padding:'12px 14px',borderRadius:13,background:'rgba(255,255,255,0.035)',border:`1px solid ${C.brd}`}}>
+              <div style={{fontSize:9,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Next Best Action</div>
+              <div style={{fontSize:13,color:C.t1,lineHeight:1.55,fontWeight:650}}>{intel.nextAction}</div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10}}>
+              {insightCards.map(card=>(
+                <div key={card.label} style={{padding:'11px 12px',borderRadius:12,border:`1px solid ${card.color}20`,background:`${card.color}08`}}>
+                  <div style={{fontSize:8.5,color:C.t3,fontWeight:800,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:4}}>{card.label}</div>
+                  <div style={{fontSize:15,color:card.color,fontWeight:900,letterSpacing:'-0.02em'}}>{card.value}</div>
+                  <div style={{fontSize:10,color:C.t2,marginTop:2}}>{card.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{position:'relative',zIndex:1,marginTop:14,height:1,background:`linear-gradient(90deg,transparent,${scoreColor}50,transparent)`}}/>
+    </motion.div>
+  );
+};
+
 const FilterBar=({filters,setFilters,trades,onReset})=>{
   const[expanded,setExpanded]=useState(false);
   // Adapt Supabase fields to extract unique symbols
   const symbols=useMemo(()=>[...new Set(trades.map(t=>t.symbol).filter(Boolean))].sort(),[trades]);
   const activeCount=[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length;
   const iStyle={padding:'7px 11px',borderRadius:7,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit',cursor:'pointer'};
-  return(<motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{backgroundColor:C.bgCard,border:`1px solid ${C.brd}`,borderRadius:10,padding:'10px 13px',marginBottom:10}}><div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}><input type="text" placeholder="🔍  Symbol, setup, notes..." value={filters.search||''} onChange={e=>setFilters({...filters,search:e.target.value})} style={{...iStyle,flex:'1 1 180px'}}/><select value={filters.result||'all'} onChange={e=>setFilters({...filters,result:e.target.value})} style={iStyle}>          <option value="all">All</option><option value="wins">✅ Winners</option><option value="losses">❌ Losers</option><option value="long">↗ Long</option><option value="short">↘ Short</option></select>{symbols.length>0&&(<select value={filters.symbol||'all'} onChange={e=>setFilters({...filters,symbol:e.target.value})} style={iStyle}><option value="all">All symbols</option>{symbols.map(s=><option key={s} value={s}>{s}</option>)}</select>)}<GlassBtn size="sm" variant="ghost" icon={expanded?'▲':'▼'} onClick={()=>setExpanded(p=>!p)}>Advanced {activeCount>0&&<span style={{background:C.cyan,color:C.bgDeep,borderRadius:'50%',width:16,height:16,fontSize:9,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center'}}>{activeCount}</span>}</GlassBtn>{activeCount>0&&(<GlassBtn size="sm" variant="danger" icon="✕" onClick={onReset}>Reset</GlassBtn>)}</div><AnimatePresence>{expanded&&(<motion.div initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:0.3}} style={{overflow:'hidden'}}><div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10,paddingTop:10,borderTop:`1px solid ${C.brd}`}}><select value={filters.session||'all'} onChange={e=>setFilters({...filters,session:e.target.value})} style={iStyle}><option value="all">🌍 All sessions</option>{['NY','London','Asia'].map(s=><option key={s} value={s}>{s}</option>)}</select><select value={filters.bias||'all'} onChange={e=>setFilters({...filters,bias:e.target.value})} style={iStyle}><option value="all">⚖️ Tous biais</option>{['Bullish','Bearish','Neutral'].map(b=><option key={b} value={b}>{b}</option>)}</select><div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:11,color:C.t3,fontWeight:600}}>Du</span><input type="date" value={filters.dateFrom||''} onChange={e=>setFilters({...filters,dateFrom:e.target.value})} style={{...iStyle,cursor:'text'}}/></div><div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:11,color:C.t3,fontWeight:600}}>Au</span><input type="date" value={filters.dateTo||''} onChange={e=>setFilters({...filters,dateTo:e.target.value})} style={{...iStyle,cursor:'text'}}/></div></div></motion.div>)}</AnimatePresence></motion.div>);
+  return(<motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{backgroundColor:C.bgCard,border:`1px solid ${C.brd}`,borderRadius:10,padding:'10px 13px',marginBottom:10}}><div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}><input type="text" placeholder="🔍  Symbol, setup, notes..." value={filters.search||''} onChange={e=>setFilters({...filters,search:e.target.value})} style={{...iStyle,flex:'1 1 180px'}}/><select value={filters.result||'all'} onChange={e=>setFilters({...filters,result:e.target.value})} style={iStyle}>          <option value="all">All</option><option value="wins">✅ Winners</option><option value="losses">❌ Losers</option><option value="long">↗ Long</option><option value="short">↘ Short</option></select>{symbols.length>0&&(<select value={filters.symbol||'all'} onChange={e=>setFilters({...filters,symbol:e.target.value})} style={iStyle}><option value="all">All symbols</option>{symbols.map(s=><option key={s} value={s}>{s}</option>)}</select>)}<GlassBtn size="sm" variant="ghost" icon={expanded?'▲':'▼'} onClick={()=>setExpanded(p=>!p)}>Advanced {activeCount>0&&<span style={{background:C.cyan,color:C.bgDeep,borderRadius:'50%',width:16,height:16,fontSize:9,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center'}}>{activeCount}</span>}</GlassBtn>{activeCount>0&&(<GlassBtn size="sm" variant="danger" icon="✕" onClick={onReset}>Reset</GlassBtn>)}</div><AnimatePresence>{expanded&&(<motion.div initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:0.3}} style={{overflow:'hidden'}}><div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10,paddingTop:10,borderTop:`1px solid ${C.brd}`}}><select value={filters.session||'all'} onChange={e=>setFilters({...filters,session:e.target.value})} style={iStyle}><option value="all">🌍 All sessions</option>{['NY','London','Asia'].map(s=><option key={s} value={s}>{s}</option>)}</select><select value={filters.bias||'all'} onChange={e=>setFilters({...filters,bias:e.target.value})} style={iStyle}><option value="all">⚖️ All biases</option>{['Bullish','Bearish','Neutral'].map(b=><option key={b} value={b}>{b}</option>)}</select><div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:11,color:C.t3,fontWeight:600}}>From</span><input type="date" value={filters.dateFrom||''} onChange={e=>setFilters({...filters,dateFrom:e.target.value})} style={{...iStyle,cursor:'text'}}/></div><div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:11,color:C.t3,fontWeight:600}}>To</span><input type="date" value={filters.dateTo||''} onChange={e=>setFilters({...filters,dateTo:e.target.value})} style={{...iStyle,cursor:'text'}}/></div></div></motion.div>)}</AnimatePresence></motion.div>);
 };
 
 const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClickEdit,cols,cumulativePnl})=>{
@@ -837,7 +951,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null})=>{
   const iStyle={width:'100%',padding:'8px 11px',borderRadius:7,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit'};
   const lStyle={display:'block',fontSize:10,fontWeight:600,color:C.t3,marginBottom:5};
   const eStyle={fontSize:10,color:C.danger,marginTop:3};
-  return(<AnimatePresence><motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,overflowY:'auto'}}><motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} onClick={e=>e.stopPropagation()} style={{backgroundColor:C.bgCard,borderRadius:16,border:`1px solid ${C.brd}`,maxWidth:680,width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}}><div style={{padding:'18px 22px',borderBottom:`1px solid ${C.brd}`,background:C.grad}}><h3 style={{margin:0,fontSize:17,fontWeight:700,color:'#fff'}}>{isEdit?'✏️ Edit Trade':'✏️ Add Trade'}</h3></div><div style={{flex:1,overflowY:'auto',padding:'22px'}}><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>{[{k:'date',l:'Date *',t:'date'},{k:'time',l:'Time',t:'time'},{k:'symbol',l:'Symbol *',t:'text',ph:'EURUSD'},{k:'type',l:'Type',t:'select',opts:['Long','Short']},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'entry',l:'Entry *',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit *',t:'number',ph:'1.09000',step:'0.00001'},{k:'sl',l:'Stop Loss',t:'number',step:'0.00001'},{k:'tp',l:'Take Profit',t:'number',step:'0.00001'},{k:'pnl',l:'P&L ($) *',t:'number',ph:'150.00',step:'0.01'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, Pullback...'},{k:'newsImpact',l:'News Impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(<div key={k}><label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>{t==='select'?<select value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`,cursor:'pointer'}}>{opts.map(o=><option key={o} value={o}>{o}</option>)}</select>:<input type={t} placeholder={ph} step={step} value={form[k]||''} onChange={e=>setForm({...form,[k]:k==='symbol'?e.target.value.toUpperCase():e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`}}/>}{errors[k]&&<div style={eStyle}>{errors[k]}</div>}</div>))}<div><label style={lStyle}>Score Psycho: <span style={{color:form.psychologyScore>=80?C.green:form.psychologyScore>=60?C.warn:C.danger,fontWeight:800}}>{form.psychologyScore}</span></label><input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/></div></div><div style={{marginTop:14}}><label style={lStyle}>Notes</label><textarea placeholder="Context, emotions, observations..." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:70}}/></div>{form.entry&&form.exit&&form.sl&&(<div style={{marginTop:16,padding:14,borderRadius:9,backgroundColor:'rgba(0,212,255,0.05)',border:`1px solid rgba(0,212,255,0.18)`}}><div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8}}>📊 Calculs automatiques</div><div style={{display:'flex',gap:28}}><div><div style={{fontSize:9,color:C.t3}}>Risk/Reward</div><div style={{fontSize:16,fontWeight:800,color:C.teal}}>1:{calcRR(form)}</div></div><div><div style={{fontSize:9,color:C.t3}}>TP atteint</div><div style={{fontSize:16,fontWeight:800,color:C.cyan}}>{calcTPP(form)}%</div></div></div></div>)}</div><div style={{padding:'14px 22px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}><GlassBtn onClick={onClose}>Cancel</GlassBtn><GlassBtn variant="primary" onClick={handleSubmit} loading={saving} icon="✓">{isEdit?'Sauvegarder':'Ajouter'}</GlassBtn></div></motion.div></motion.div></AnimatePresence>);
+  return(<AnimatePresence><motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,overflowY:'auto'}}><motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} onClick={e=>e.stopPropagation()} style={{backgroundColor:C.bgCard,borderRadius:16,border:`1px solid ${C.brd}`,maxWidth:680,width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}}><div style={{padding:'18px 22px',borderBottom:`1px solid ${C.brd}`,background:C.grad}}><h3 style={{margin:0,fontSize:17,fontWeight:700,color:'#fff'}}>{isEdit?'✏️ Edit Trade':'✏️ Add Trade'}</h3></div><div style={{flex:1,overflowY:'auto',padding:'22px'}}><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>{[{k:'date',l:'Date *',t:'date'},{k:'time',l:'Time',t:'time'},{k:'symbol',l:'Symbol *',t:'text',ph:'EURUSD'},{k:'type',l:'Type',t:'select',opts:['Long','Short']},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'entry',l:'Entry *',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit *',t:'number',ph:'1.09000',step:'0.00001'},{k:'sl',l:'Stop Loss',t:'number',step:'0.00001'},{k:'tp',l:'Take Profit',t:'number',step:'0.00001'},{k:'pnl',l:'P&L ($) *',t:'number',ph:'150.00',step:'0.01'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, Pullback...'},{k:'newsImpact',l:'News Impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(<div key={k}><label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>{t==='select'?<select value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`,cursor:'pointer'}}>{opts.map(o=><option key={o} value={o}>{o}</option>)}</select>:<input type={t} placeholder={ph} step={step} value={form[k]||''} onChange={e=>setForm({...form,[k]:k==='symbol'?e.target.value.toUpperCase():e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`}}/>}{errors[k]&&<div style={eStyle}>{errors[k]}</div>}</div>))}<div><label style={lStyle}>Psychology Score: <span style={{color:form.psychologyScore>=80?C.green:form.psychologyScore>=60?C.warn:C.danger,fontWeight:800}}>{form.psychologyScore}</span></label><input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/></div></div><div style={{marginTop:14}}><label style={lStyle}>Notes</label><textarea placeholder="Context, emotions, observations..." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:70}}/></div>{form.entry&&form.exit&&form.sl&&(<div style={{marginTop:16,padding:14,borderRadius:9,backgroundColor:'rgba(0,212,255,0.05)',border:`1px solid rgba(0,212,255,0.18)`}}><div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8}}>📊 Automatic Calculations</div><div style={{display:'flex',gap:28}}><div><div style={{fontSize:9,color:C.t3}}>Risk/Reward</div><div style={{fontSize:16,fontWeight:800,color:C.teal}}>1:{calcRR(form)}</div></div><div><div style={{fontSize:9,color:C.t3}}>TP reached</div><div style={{fontSize:16,fontWeight:800,color:C.cyan}}>{calcTPP(form)}%</div></div></div></div>)}</div><div style={{padding:'14px 22px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}><GlassBtn onClick={onClose}>Cancel</GlassBtn><GlassBtn variant="primary" onClick={handleSubmit} loading={saving} icon="✓">{isEdit?'Save Trade':'Add Trade'}</GlassBtn></div></motion.div></motion.div></AnimatePresence>);
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -865,6 +979,7 @@ export default function AllTrades(){
   const paginated=useMemo(()=>sorted.slice((page-1)*perPage,page*perPage),[sorted,page,perPage]);
   const cumulMap=useMemo(()=>{let r=0;const m={};[...sorted].reverse().forEach(t=>{r+=parseFloat(t.profit_loss??t.pnl??0);m[t.id]=r;});return m;},[sorted]);
   const stats=useMemo(()=>calcStats(filtered),[filtered]);
+  const journalIntel=useMemo(()=>calcJournalIntelligence(filtered,stats),[filtered,stats]);
 
   const handleSort=useCallback(k=>{setSort(p=>({key:k,dir:p.key===k&&p.dir==='asc'?'desc':'asc'}));},[]);
   const handleSelectAll=useCallback(()=>{setSelected(prev=>{const ids=new Set(paginated.map(t=>t.id));const allSel=paginated.every(t=>prev.has(t.id));if(allSel){const n=new Set(prev);ids.forEach(id=>n.delete(id));return n;}return new Set([...prev,...ids]);});},[paginated]);
@@ -875,15 +990,32 @@ export default function AllTrades(){
   const handleImport=useCallback((trade)=>addTrade(trade),[addTrade]);
 
   const handleSave=useCallback(t=>{if(t.id&&trades.find(x=>x.id===t.id))updateTrade(t.id,t);else addTrade(t);setEditTrade(null);},[trades,updateTrade,addTrade]);
-  const handleEdit=useCallback(t=>{setEditTrade(t);setModalForm(true);},[]);
+  const handleEdit=useCallback(t=>{setEditTrade(toTradeFormData(t));setModalForm(true);},[]);
   const handleReset=useCallback(()=>{setFilters({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});toast.success('Filters reset');},[]);
 
   return(
     <div style={{backgroundColor:C.bgPage,minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'24px'}}>
+      <style>{`
+        @media (max-width: 980px) {
+          .mf-journal-command-grid,
+          .mf-journal-intel-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:22,flexWrap:'wrap',gap:10}}>
         <div><h1 style={{margin:0,fontSize:26,fontWeight:900,background:C.grad,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-0.5px'}}>All Trades</h1><p style={{margin:'5px 0 0',color:C.t2,fontSize:12,fontWeight:500}}>Trading journal · {trades.length} trades total</p></div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><GlassBtn icon="↓" onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn><GlassBtn variant="primary" icon="+" onClick={()=>setModalAdd(true)}>Ajouter</GlassBtn></div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><GlassBtn icon="Export" onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn><GlassBtn variant="primary" icon="+" onClick={()=>setModalAdd(true)}>Add Trade</GlassBtn></div>
       </motion.div>
+
+      <JournalCommandCenter
+        intel={journalIntel}
+        filteredCount={filtered.length}
+        totalCount={trades.length}
+        onAdd={()=>setModalAdd(true)}
+        onImport={()=>setModalImport(true)}
+        onExport={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}
+      />
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:11,marginBottom:18}}>
         <StatCard index={0} label="Total Trades"  value={stats.total}  color={C.cyan}  icon="📊" sub={`${stats.wins}W / ${stats.losses}L`}/>

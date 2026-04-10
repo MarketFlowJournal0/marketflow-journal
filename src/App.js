@@ -223,8 +223,10 @@ function AppInner() {
   const openSignup         = () => setAuthModal('signup');
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
-    sessionStorage.setItem('pending_price_id', priceId);
-    rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
+    if (priceId) {
+      sessionStorage.setItem('pending_price_id', priceId);
+      rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
+    }
     setAuthModal('signup');
   };
 

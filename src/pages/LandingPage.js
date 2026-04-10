@@ -556,7 +556,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <button className="btn-hero-secondary" onClick={()=>document.getElementById('features')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
           </div>
         </Reveal>
-        <Reveal delay={0.3}><p className="lp-hero-note">14 days free · No credit card required · Cancel anytime</p></Reveal>
+        <Reveal delay={0.3}><p className="lp-hero-note">14 days free · Card required to activate access · Cancel anytime</p></Reveal>
 
         <Reveal delay={0.4}>
           <div className="lp-hero-stats">
@@ -677,7 +677,14 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               <thead><tr><th>Feature</th><th className="hl">MarketFlow</th><th>TradeZella</th><th>TraderSync</th></tr></thead>
               <tbody>
                 {[['AI Trade Coach',true,false,false],['Psychology Tracker',true,false,false],['Visual Backtesting',true,false,true],['Auto MT4/MT5 Sync',true,true,true],['Prop Firm Reports',true,false,false],['Live Market Ticker',true,false,false],['Price (Pro)','From $15/mo','$29/mo','$25/mo']].map((r,i)=>(
-                  <tr key={i}><td className="hl">{r[0]}</td><td className="hl">{typeof r[1]==='boolean'?(r[1]?'<span class="cy">✓</span>':'<span class="cn">✗</span>'):r[1]}</td><td>{typeof r[2]==='boolean'?(r[2]?'<span class="cy">✓</span>':'<span class="cn">✗</span>'):r[2]}</td><td>{typeof r[3]==='boolean'?(r[3]?'<span class="cy">✓</span>':'<span class="cn">✗</span>'):r[3]}</td></tr>
+                  <tr key={i}>
+                    <td className="hl">{r[0]}</td>
+                    {[r[1],r[2],r[3]].map((value,colIndex)=>(
+                      <td key={colIndex} className={colIndex===0?'hl':undefined}>
+                        {typeof value==='boolean'?<span className={value?'cy':'cn'}>{value?'Included':'Not included'}</span>:value}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -690,13 +697,13 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">✦ Pricing</div></Reveal>
           <Reveal><h2>Start free. Scale<br/><em>when you're ready</em></h2></Reveal>
-          <Reveal><p className="lp-section-sub">14-day free trial on every plan. No credit card required. Cancel anytime.</p></Reveal>
+          <Reveal><p className="lp-section-sub">14-day free trial on every plan. Add your card to activate access, with no charge today. Cancel anytime.</p></Reveal>
 
           <div className="lp-pricing-grid">
             {[
-              {id:'starter',name:'Starter',price:15,desc:'Perfect to start tracking your trades',features:['Unlimited trading journal','Dashboard & basic statistics','CSV import','Performance calendar','1 trading account'],popular:false},
-              {id:'pro',name:'Pro',price:22,desc:'For serious traders who want to improve',features:['Everything in Starter','Advanced Pro analytics','Psychology & mental tracking','Equity curve & drawdown','Strategy backtesting','3 trading accounts','PDF report export'],popular:true},
-              {id:'elite',name:'Elite',price:38,desc:'For pros who want the best tool',features:['Everything in Pro','AI Trading Coach (GPT-4)','Unlimited accounts','Alerts & notifications','API access','24/7 priority support','Beta features access'],popular:false},
+              {id:'starter',name:'Starter',price:15,priceMonthly:'price_1T9t9L2Ouddv7uendIMAR6IP',desc:'Perfect to start tracking your trades',features:['Unlimited trading journal','Dashboard & basic statistics','CSV import','Performance calendar','1 trading account'],popular:false},
+              {id:'pro',name:'Pro',price:22,priceMonthly:'price_1T9t9U2Ouddv7uenfg38PRZ2',desc:'For serious traders who want to improve',features:['Everything in Starter','Advanced Pro analytics','Psychology & mental tracking','Equity curve & drawdown','Strategy backtesting','3 trading accounts','PDF report export'],popular:true},
+              {id:'elite',name:'Elite',price:38,priceMonthly:'price_1T9t9L2Ouddv7uen4DXuOatj',desc:'For pros who want the best tool',features:['Everything in Pro','AI Trading Coach (GPT-4)','Unlimited accounts','Alerts & notifications','API access','24/7 priority support','Beta features access'],popular:false},
             ].map((plan,i) => (
               <Reveal key={plan.id} delay={i*0.1}>
                 <div className={`lp-pricing-card ${plan.popular?'popular':''}`}>
@@ -709,7 +716,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                   <ul className="lp-price-feats">
                     {plan.features.map((f,j)=><li key={j}><span style={{color:'#00FF88',fontWeight:800,fontSize:11}}>✓</span>{f}</li>)}
                   </ul>
-                  <button className={`btn-plan ${plan.popular?'filled':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan():onSignup?.()}>
+                  <button className={`btn-plan ${plan.popular?'filled':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan(plan.priceMonthly):onSignup?.()}>
                     {plan.popular?'Start free trial':'Upgrade to '+plan.name}
                   </button>
                 </div>
@@ -769,7 +776,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <button className="btn-hero-secondary" onClick={onLogin}>Log in</button>
           </div>
         </Reveal>
-        <Reveal delay={0.3}><p className="lp-cta-note">14 days free · No credit card · Cancel anytime</p></Reveal>
+        <Reveal delay={0.3}><p className="lp-cta-note">14 days free · Card required for activation · Cancel anytime</p></Reveal>
       </section>
 
       {/* ── FOOTER ── */}
