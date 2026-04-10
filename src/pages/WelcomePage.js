@@ -1,148 +1,108 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getEntryRoute, getPlanDetails, normalizePlan } from '../lib/subscription';
 
 const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
+const FORCE_JOURNAL_ACCESS_PREFIX = 'mfj_force_journal_access_';
+const FORCE_JOURNAL_PLAN_PREFIX = 'mfj_force_journal_plan_';
+const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
 
-function WelcomeBg() {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return undefined;
-
-    const ctx = canvas.getContext('2d');
-    let animationFrame;
-    const particles = [];
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-    };
-
-    const init = () => {
-      resize();
-      particles.length = 0;
-
-      const width = canvas.offsetWidth;
-      const height = canvas.offsetHeight;
-
-      for (let index = 0; index < 52; index += 1) {
-        particles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.16,
-          vy: (Math.random() - 0.5) * 0.16,
-          radius: Math.random() * 1.6 + 0.35,
-          opacity: Math.random() * 0.14 + 0.03,
-        });
-      }
-    };
-
-    const draw = () => {
-      const width = canvas.offsetWidth;
-      const height = canvas.offsetHeight;
-
-      ctx.clearRect(0, 0, width, height);
-
-      particles.forEach((particle) => {
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-
-        if (particle.x < 0 || particle.x > width) particle.vx *= -1;
-        if (particle.y < 0 || particle.y > height) particle.vy *= -1;
-
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(6,230,255,${particle.opacity})`;
-        ctx.fill();
-      });
-
-      for (let left = 0; left < particles.length; left += 1) {
-        for (let right = left + 1; right < particles.length; right += 1) {
-          const dx = particles[left].x - particles[right].x;
-          const dy = particles[left].y - particles[right].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < 110) {
-            ctx.beginPath();
-            ctx.moveTo(particles[left].x, particles[left].y);
-            ctx.lineTo(particles[right].x, particles[right].y);
-            ctx.strokeStyle = `rgba(6,230,255,${0.028 * (1 - distance / 110)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
-
-      animationFrame = window.requestAnimationFrame(draw);
-    };
-
-    init();
-    draw();
-
-    const handleResize = () => {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      init();
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.cancelAnimationFrame(animationFrame);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
+function FeatureTile({ text, accent, index }) {
   return (
-    <canvas
-      ref={ref}
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.28 + index * 0.05, duration: 0.4 }}
       style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: 0,
+        background: 'linear-gradient(180deg, rgba(12,20,34,0.9), rgba(6,10,18,0.88))',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 16,
+        padding: '16px 15px',
+        minHeight: 98,
+        position: 'relative',
+        overflow: 'hidden',
       }}
-    />
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `radial-gradient(circle at 85% 0%, ${accent}17, transparent 46%)`,
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 10,
+          border: `1px solid ${accent}45`,
+          background: `${accent}18`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 10,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: accent,
+            boxShadow: `0 0 12px ${accent}`,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          color: '#E6EEFF',
+          fontSize: 14,
+          lineHeight: 1.55,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        {text}
+      </div>
+    </motion.div>
   );
 }
 
-function StatCard({ label, value, accent }) {
+function SnapshotCard({ title, value, accent }) {
   return (
     <div
       style={{
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
         border: '1px solid rgba(255,255,255,0.06)',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',
         borderRadius: 16,
-        padding: '16px 18px',
-        minHeight: 92,
+        padding: '14px 16px',
       }}
     >
       <div
         style={{
           fontSize: 11,
-          fontWeight: 700,
-          color: '#5D739A',
-          letterSpacing: '0.14em',
+          color: '#6E86AF',
           textTransform: 'uppercase',
-          marginBottom: 10,
+          letterSpacing: '0.12em',
+          fontWeight: 700,
+          marginBottom: 8,
         }}
       >
-        {label}
+        {title}
       </div>
       <div
         style={{
-          fontFamily: "'Space Grotesk',sans-serif",
-          fontSize: 22,
+          fontSize: 34,
+          lineHeight: 1.04,
+          letterSpacing: '-0.05em',
           fontWeight: 700,
           color: accent || '#E8EEFF',
-          letterSpacing: '-0.04em',
-          lineHeight: 1.15,
+          fontFamily: "'Space Grotesk',sans-serif",
         }}
       >
         {value}
@@ -151,281 +111,192 @@ function StatCard({ label, value, accent }) {
   );
 }
 
-function FeatureTile({ feature, accent, index }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.44 + index * 0.06, duration: 0.45 }}
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        background: 'linear-gradient(180deg, rgba(12,20,34,0.88), rgba(9,14,24,0.86))',
-        border: '1px solid rgba(255,255,255,0.05)',
-        borderRadius: 18,
-        padding: '18px 18px 20px',
-        minHeight: 132,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `radial-gradient(circle at top right, ${accent}18, transparent 45%)`,
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'relative',
-          width: 38,
-          height: 38,
-          borderRadius: 12,
-          background: `linear-gradient(135deg, ${accent}26, rgba(255,255,255,0.05))`,
-          border: `1px solid ${accent}30`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 16,
-          boxShadow: `0 0 24px ${accent}15`,
-        }}
-      >
-        <div
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            background: accent,
-            boxShadow: `0 0 16px ${accent}`,
-          }}
-        />
-      </div>
-      <div
-        style={{
-          position: 'relative',
-          fontSize: 14,
-          lineHeight: 1.55,
-          color: '#D9E4F8',
-        }}
-      >
-        {feature}
-      </div>
-    </motion.div>
-  );
-}
-
 export default function WelcomePage() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [timedOut, setTimedOut] = useState(false);
   const [hasSessionId, setHasSessionId] = useState(false);
+  const [syncHint, setSyncHint] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [checkoutPlanId, setCheckoutPlanId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('plan_id') || sessionStorage.getItem(CHECKOUT_PLAN_KEY) || localStorage.getItem(CHECKOUT_PLAN_KEY) || null;
+  });
 
-  const planId = normalizePlan(user?.plan || user?.user_metadata?.plan);
+  const forceAccessKey = user?.id ? FORCE_JOURNAL_ACCESS_PREFIX + user.id : null;
+  const forcePlanKey = user?.id ? FORCE_JOURNAL_PLAN_PREFIX + user.id : null;
+  const forcedPlanId = forcePlanKey ? localStorage.getItem(forcePlanKey) : null;
+  const profilePlanId = normalizePlan(user?.plan || user?.user_metadata?.plan);
+  const planId = profilePlanId !== 'trial' ? profilePlanId : normalizePlan(checkoutPlanId || forcedPlanId || profilePlanId);
   const plan = getPlanDetails(planId);
   const journalRoute = '/' + getEntryRoute(planId);
-  const isActivated = Boolean(user?.stripeSubscriptionId && ['active', 'trialing'].includes(user?.subStatus));
   const firstName = user?.firstName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
   const email = user?.email || '';
+  const isActivated = Boolean(user?.stripeSubscriptionId && ['active', 'trialing'].includes(user?.subStatus));
+  const featureList = useMemo(() => plan.features.slice(0, 6), [plan.features]);
 
-  const highlightedFeatures = useMemo(() => plan.features.slice(0, 6), [plan.features]);
+  const unlockJournalNow = useCallback(() => {
+    sessionStorage.setItem(POST_WELCOME_ACCESS_KEY, '1');
+    if (forceAccessKey) localStorage.setItem(forceAccessKey, '1');
+    if (forcePlanKey) localStorage.setItem(forcePlanKey, planId);
+  }, [forceAccessKey, forcePlanKey, planId]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session_id');
+    const urlPlanId = params.get('plan_id');
+    const alreadyUnlocked = Boolean(
+      sessionStorage.getItem(POST_WELCOME_ACCESS_KEY) === '1' ||
+      (forceAccessKey && localStorage.getItem(forceAccessKey) === '1')
+    );
 
-    if (!sessionId) {
-      navigate(isActivated ? journalRoute : '/plan', { replace: true });
-      return undefined;
+    if (sessionId) {
+      setHasSessionId(true);
+      if (urlPlanId) {
+        setCheckoutPlanId(urlPlanId);
+        sessionStorage.setItem(CHECKOUT_PLAN_KEY, urlPlanId);
+        localStorage.setItem(CHECKOUT_PLAN_KEY, urlPlanId);
+      }
+      unlockJournalNow();
+      return;
     }
-    setHasSessionId(true);
+
+    if (alreadyUnlocked) {
+      navigate(journalRoute, { replace: true });
+      return;
+    }
+
+    navigate('/plan', { replace: true });
+  }, [forceAccessKey, journalRoute, navigate, unlockJournalNow]);
+
+  useEffect(() => {
+    if (!hasSessionId) return undefined;
+
+    const timer = window.setTimeout(() => {
+      unlockJournalNow();
+      setReady(true);
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [hasSessionId, unlockJournalNow]);
+
+  useEffect(() => {
+    if (!hasSessionId) return undefined;
 
     let cancelled = false;
     let attempts = 0;
 
-    const pollActivation = async () => {
+    const runSync = async () => {
       attempts += 1;
-
       try {
         await refreshProfile?.();
       } catch (_) {}
-
-      if (cancelled) return;
-
-      if (attempts >= 20 && !isActivated) {
-        setTimedOut(true);
-        setLoading(false);
+      if (!cancelled && attempts >= 4 && !isActivated) {
+        setSyncHint(true);
       }
     };
 
-    pollActivation();
-    const timer = window.setInterval(pollActivation, 2500);
+    runSync();
+    const timer = window.setInterval(runSync, 2500);
 
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [isActivated, journalRoute, navigate, refreshProfile]);
-
-  useEffect(() => {
-    if (isActivated) {
-      setTimedOut(false);
-      setLoading(false);
-    }
-  }, [isActivated]);
-
-  useEffect(() => {
-    if (!loading && hasSessionId) {
-      sessionStorage.setItem(POST_WELCOME_ACCESS_KEY, '1');
-    }
-  }, [loading, hasSessionId]);
-
-  const primaryLabel = 'Access Journal';
-  const secondaryLabel = timedOut ? 'Contact Support' : 'Manage Subscription';
-  const statusLabel = timedOut ? 'Activation Syncing' : 'Subscription Active';
-  const accessLabel = timedOut ? 'Pending unlock' : `${plan.label} workspace`;
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: '#030508',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '24px',
-        }}
-      >
-        <WelcomeBg />
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            width: '100%',
-            maxWidth: 520,
-            background: 'linear-gradient(180deg, rgba(12,20,34,0.94), rgba(8,12,20,0.96))',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 26,
-            padding: '42px 34px',
-            textAlign: 'center',
-            boxShadow: '0 28px 90px rgba(0,0,0,0.5)',
-          }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              margin: '0 auto 20px',
-              border: '3px solid rgba(6,230,255,0.08)',
-              borderTopColor: '#06E6FF',
-              boxShadow: '0 0 32px rgba(6,230,255,0.16)',
-            }}
-          />
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '7px 14px',
-              borderRadius: 999,
-              background: 'rgba(6,230,255,0.08)',
-              border: '1px solid rgba(6,230,255,0.14)',
-              color: '#9EDCFF',
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              marginBottom: 18,
-            }}
-          >
-            Finalizing access
-          </div>
-          <h1
-            style={{
-              fontFamily: "'Space Grotesk',sans-serif",
-              fontSize: 'clamp(28px, 5vw, 40px)',
-              fontWeight: 700,
-              color: '#FFFFFF',
-              letterSpacing: '-0.06em',
-              lineHeight: 1.05,
-              margin: '0 0 14px',
-            }}
-          >
-            Activating your
-            <br />
-            MarketFlow workspace
-          </h1>
-          <p
-            style={{
-              color: '#7A90B8',
-              fontSize: 15,
-              lineHeight: 1.7,
-              margin: 0,
-            }}
-          >
-            We are validating your payment and unlocking your {plan.label.toLowerCase()} features for {email}.
-          </p>
-        </motion.div>
-      </div>
-    );
-  }
+  }, [hasSessionId, isActivated, refreshProfile]);
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        background: '#030508',
         position: 'relative',
         overflow: 'hidden',
+        background: 'radial-gradient(1200px 600px at 50% -10%, #0A1A3A 0%, #050C1F 35%, #020510 70%, #010207 100%)',
       }}
     >
       <style>{`
-        @media (max-width: 960px) {
-          .mf-welcome-grid {
+        @keyframes mf-aurora-drift-a {
+          0% { transform: translate3d(-6%, -8%, 0) scale(1); opacity: 0.55; }
+          50% { transform: translate3d(8%, 2%, 0) scale(1.12); opacity: 0.85; }
+          100% { transform: translate3d(-6%, -8%, 0) scale(1); opacity: 0.55; }
+        }
+        @keyframes mf-aurora-drift-b {
+          0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.4; }
+          50% { transform: translate3d(-8%, 4%, 0) scale(1.08); opacity: 0.72; }
+          100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.4; }
+        }
+        @keyframes mf-grid-slide {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(56px); }
+        }
+        @keyframes mf-scan {
+          0% { transform: translateY(-20vh); opacity: 0; }
+          20% { opacity: 0.4; }
+          70% { opacity: 0.18; }
+          100% { transform: translateY(120vh); opacity: 0; }
+        }
+        @media (max-width: 980px) {
+          .mf-welcome-layout {
             grid-template-columns: 1fr !important;
           }
         }
-
         @media (max-width: 640px) {
-          .mf-welcome-hero {
-            padding: 28px 22px 26px !important;
+          .mf-welcome-main {
+            padding: 28px 22px 24px !important;
           }
         }
       `}</style>
-      <WelcomeBg />
 
       <div
         style={{
           position: 'absolute',
-          top: -120,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 680,
-          height: 320,
-          background: 'radial-gradient(ellipse, rgba(6,230,255,0.10), transparent 72%)',
-          filter: 'blur(70px)',
+          inset: -120,
+          background: `radial-gradient(500px 280px at 20% 20%, ${plan.accent}28, transparent 60%)`,
+          filter: 'blur(48px)',
+          animation: 'mf-aurora-drift-a 14s ease-in-out infinite',
           pointerEvents: 'none',
-          zIndex: 0,
         }}
       />
       <div
         style={{
           position: 'absolute',
-          top: 120,
-          right: -100,
-          width: 320,
-          height: 320,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${plan.accent}12, transparent 68%)`,
-          filter: 'blur(40px)',
+          inset: -120,
+          background: 'radial-gradient(460px 260px at 80% 22%, rgba(6,230,255,0.28), transparent 62%)',
+          filter: 'blur(52px)',
+          animation: 'mf-aurora-drift-b 18s ease-in-out infinite',
           pointerEvents: 'none',
-          zIndex: 0,
+        }}
+      />
+
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage:
+            'linear-gradient(to right, rgba(44,74,124,0.13) 1px, transparent 1px), linear-gradient(to bottom, rgba(44,74,124,0.13) 1px, transparent 1px)',
+          backgroundSize: '56px 56px',
+          opacity: 0.2,
+          animation: 'mf-grid-slide 12s linear infinite',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, transparent 0%, rgba(3,8,20,0.38) 50%, rgba(1,3,8,0.72) 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          height: 2,
+          background: 'linear-gradient(90deg, transparent, rgba(6,230,255,0.45), transparent)',
+          filter: 'blur(1.2px)',
+          animation: 'mf-scan 7.5s linear infinite',
+          pointerEvents: 'none',
         }}
       />
 
@@ -435,70 +306,71 @@ export default function WelcomePage() {
           zIndex: 1,
           maxWidth: 1160,
           margin: '0 auto',
-          padding: '56px 24px 88px',
+          padding: '54px 24px 88px',
         }}
       >
         <motion.div
-          initial={{ opacity: 0, y: -14 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
+          transition={{ duration: 0.35 }}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 10,
-            padding: '8px 16px',
+            gap: 8,
             borderRadius: 999,
-            border: '1px solid rgba(255,255,255,0.06)',
-            background: 'rgba(255,255,255,0.03)',
-            color: '#9BB2D5',
-            fontSize: 11.5,
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(7,16,34,0.5)',
+            color: '#91B2E2',
+            padding: '7px 14px',
             fontWeight: 700,
-            letterSpacing: '0.12em',
+            fontSize: 11.5,
+            letterSpacing: '0.11em',
             textTransform: 'uppercase',
-            marginBottom: 24,
+            marginBottom: 22,
+            backdropFilter: 'blur(8px)',
           }}
         >
           <span
             style={{
-              width: 8,
-              height: 8,
+              width: 7,
+              height: 7,
               borderRadius: '50%',
-              background: timedOut ? '#FB923C' : '#00FF88',
-              boxShadow: timedOut ? '0 0 14px rgba(251,146,60,0.75)' : '0 0 14px rgba(0,255,136,0.75)',
+              background: '#00FF88',
+              boxShadow: '0 0 12px rgba(0,255,136,0.7)',
             }}
           />
-          {statusLabel}
+          {ready ? 'Payment Confirmed' : 'Final Check'}
         </motion.div>
 
         <div
-          className="mf-welcome-grid"
+          className="mf-welcome-layout"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)',
-            gap: 22,
-            alignItems: 'stretch',
+            gridTemplateColumns: 'minmax(0, 1.2fr) minmax(310px, 0.8fr)',
+            gap: 20,
+            alignItems: 'start',
           }}
         >
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08, duration: 0.45 }}
-            className="mf-welcome-hero"
+            transition={{ delay: 0.06, duration: 0.4 }}
+            className="mf-welcome-main"
             style={{
+              background: 'linear-gradient(168deg, rgba(8,18,40,0.92) 0%, rgba(4,10,22,0.95) 50%, rgba(4,8,18,0.96) 100%)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 28,
+              padding: '34px 30px 30px',
+              boxShadow: '0 34px 100px rgba(0,0,0,0.48)',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(180deg, rgba(12,20,34,0.96), rgba(7,11,18,0.96))',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 28,
-              padding: '34px 30px 32px',
-              boxShadow: '0 34px 100px rgba(0,0,0,0.52)',
             }}
           >
             <div
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: `radial-gradient(circle at top right, ${plan.accent}15, transparent 32%)`,
+                background: `radial-gradient(circle at 86% -6%, ${plan.accent}26, transparent 45%)`,
                 pointerEvents: 'none',
               }}
             />
@@ -508,48 +380,35 @@ export default function WelcomePage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                marginBottom: 24,
+                marginBottom: 18,
               }}
             >
               <div
                 style={{
-                  width: 42,
-                  height: 42,
+                  width: 43,
+                  height: 43,
                   borderRadius: 14,
-                  overflow: 'hidden',
-                  border: '1px solid rgba(6,230,255,0.14)',
+                  border: '1px solid rgba(6,230,255,0.18)',
                   background: 'rgba(255,255,255,0.03)',
                   padding: 4,
                 }}
               >
-                <img
-                  src="/logo192.png"
-                  alt="MarketFlow"
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                />
+                <img src="/logo192.png" alt="MarketFlow" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div>
                 <div
                   style={{
                     fontFamily: "'Space Grotesk',sans-serif",
-                    fontSize: 22,
-                    fontWeight: 700,
-                    color: '#FFFFFF',
-                    letterSpacing: '-0.05em',
+                    fontSize: 30,
                     lineHeight: 1,
+                    letterSpacing: '-0.06em',
+                    fontWeight: 700,
+                    color: '#F0F5FF',
                   }}
                 >
                   Market<span style={{ color: '#06E6FF' }}>Flow</span>
                 </div>
-                <div
-                  style={{
-                    marginTop: 5,
-                    fontSize: 11,
-                    color: '#6882A9',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                  }}
-                >
+                <div style={{ marginTop: 3, fontSize: 11, color: '#6B86B0', letterSpacing: '0.11em', textTransform: 'uppercase' }}>
                   Trading Journal
                 </div>
               </div>
@@ -560,34 +419,33 @@ export default function WelcomePage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '7px 12px',
                 borderRadius: 999,
-                background: `${plan.accent}12`,
-                border: `1px solid ${plan.accent}24`,
+                border: `1px solid ${plan.accent}45`,
+                background: `${plan.accent}16`,
                 color: plan.accent,
-                fontSize: 11,
+                fontSize: 11.5,
                 fontWeight: 700,
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                marginBottom: 18,
+                padding: '6px 12px',
+                marginBottom: 16,
               }}
             >
-              {plan.label} unlocked
+              {ready ? `${plan.label} Access Unlocked` : 'Access Secured'}
             </div>
 
             <h1
               style={{
                 fontFamily: "'Space Grotesk',sans-serif",
-                fontSize: 'clamp(38px, 6vw, 66px)',
+                color: '#F5F9FF',
+                margin: '0 0 14px',
                 fontWeight: 700,
-                lineHeight: 0.96,
+                fontSize: 'clamp(42px, 7vw, 76px)',
+                lineHeight: 0.93,
                 letterSpacing: '-0.08em',
-                color: '#FFFFFF',
-                margin: '0 0 16px',
-                maxWidth: 700,
               }}
             >
-              Welcome aboard,
+              Welcome back,
               <br />
               <span
                 style={{
@@ -602,226 +460,186 @@ export default function WelcomePage() {
 
             <p
               style={{
-                maxWidth: 640,
-                margin: '0 0 26px',
-                color: '#7A90B8',
+                color: '#8AA3CB',
+                margin: '0 0 24px',
+                maxWidth: 660,
                 fontSize: 16,
                 lineHeight: 1.8,
               }}
             >
-              {timedOut
-                ? `Your payment was received for ${email}, but the subscription sync is taking longer than expected. You can reopen your subscription flow now and we will finish the unlock automatically.`
-                : `Your ${plan.label.toLowerCase()} workspace is live for ${email}. Open the journal below and you will land inside the version of MarketFlow that matches your subscription.`}
+              Your payment for {email} is confirmed. In a few seconds this page turns green and opens your journal button with your {plan.label} access.
             </p>
 
-            <div
-              style={{
-                display: 'flex',
-                gap: 12,
-                flexWrap: 'wrap',
-                marginBottom: 16,
-              }}
-            >
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+              {ready && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.22 }}
+                  onClick={() => {
+                    unlockJournalNow();
+                    navigate(journalRoute);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #00FF88, #06E6FF)',
+                    border: 'none',
+                    color: '#02111B',
+                    borderRadius: 14,
+                    padding: '15px 26px',
+                    fontSize: 15,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 18px 42px rgba(0,255,136,0.34)',
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={(event) => {
+                    event.currentTarget.style.transform = 'translateY(-2px)';
+                    event.currentTarget.style.boxShadow = '0 24px 52px rgba(0,255,136,0.46)';
+                  }}
+                  onMouseLeave={(event) => {
+                    event.currentTarget.style.transform = 'translateY(0)';
+                    event.currentTarget.style.boxShadow = '0 18px 42px rgba(0,255,136,0.34)';
+                  }}
+                >
+                  Access Your Journal ->
+                </motion.button>
+              )}
               <button
-                onClick={() => {
-                  sessionStorage.setItem(POST_WELCOME_ACCESS_KEY, '1');
-                  navigate(journalRoute);
-                }}
+                onClick={() => navigate('/subscription')}
                 style={{
-                  padding: '15px 26px',
-                  borderRadius: 14,
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #06E6FF, #00FF88)',
-                  color: '#041019',
-                  fontSize: 15,
-                  fontWeight: 800,
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
-                  boxShadow: '0 16px 38px rgba(6,230,255,0.26)',
-                  transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.transform = 'translateY(-2px)';
-                  event.currentTarget.style.boxShadow = '0 24px 52px rgba(6,230,255,0.34)';
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.transform = 'translateY(0)';
-                  event.currentTarget.style.boxShadow = '0 16px 38px rgba(6,230,255,0.26)';
-                }}
-              >
-                {primaryLabel} ->
-              </button>
-
-              <button
-                onClick={() => {
-                  if (timedOut) {
-                    window.location.href = 'mailto:marketflowjournal0@gmail.com?subject=MarketFlow%20activation%20help';
-                    return;
-                  }
-                  navigate('/subscription');
-                }}
-                style={{
-                  padding: '15px 22px',
-                  borderRadius: 14,
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.04)',
                   color: '#E8EEFF',
+                  borderRadius: 14,
+                  padding: '15px 20px',
                   fontSize: 15,
                   fontWeight: 700,
-                  fontFamily: 'inherit',
                   cursor: 'pointer',
-                  transition: 'background 0.18s ease, border-color 0.18s ease, transform 0.18s ease',
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.transform = 'translateY(-2px)';
-                  event.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                  event.currentTarget.style.borderColor = 'rgba(6,230,255,0.18)';
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.transform = 'translateY(0)';
-                  event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                  event.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                  fontFamily: 'inherit',
                 }}
               >
-                {secondaryLabel}
+                Manage Plan
               </button>
             </div>
 
-            <div
-              style={{
-                color: timedOut ? '#F7B267' : '#7C97C0',
-                fontSize: 12.5,
-                lineHeight: 1.7,
-              }}
-            >
-              {timedOut
-                ? 'If the unlock still does not complete after reopening the subscription page, contact support and we will activate it manually.'
-                : 'Your sidebar and accessible modules now follow the plan you purchased, including any Pro or Elite-only pages.'}
+            <div style={{ color: syncHint && !isActivated ? '#FDBA74' : '#7E98C2', fontSize: 12.5, lineHeight: 1.7 }}>
+              {ready
+                ? 'Your access is saved. You can return to the journal anytime with this account.'
+                : 'Your journal access is being unlocked now.'}
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.14, duration: 0.45 }}
-            style={{
-              display: 'grid',
-              gap: 16,
-              alignContent: 'start',
-            }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            style={{ display: 'grid', gap: 16 }}
           >
             <div
               style={{
-                background: 'linear-gradient(180deg, rgba(12,20,34,0.92), rgba(8,12,20,0.96))',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 24,
-                padding: '22px 20px',
-                boxShadow: '0 20px 54px rgba(0,0,0,0.35)',
+                background: 'linear-gradient(180deg, rgba(8,18,40,0.88), rgba(4,10,22,0.92))',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 22,
+                padding: 18,
               }}
             >
               <div
                 style={{
+                  color: '#7B96C1',
                   fontSize: 11,
                   fontWeight: 700,
-                  color: '#6882A9',
-                  letterSpacing: '0.12em',
                   textTransform: 'uppercase',
-                  marginBottom: 16,
+                  letterSpacing: '0.12em',
+                  marginBottom: 12,
                 }}
               >
                 Workspace Snapshot
               </div>
-              <div style={{ display: 'grid', gap: 12 }}>
-                <StatCard label="Plan" value={plan.label} accent={plan.accent} />
-                <StatCard label="Status" value={accessLabel} accent={timedOut ? '#FB923C' : '#00FF88'} />
-                <StatCard label="Home" value={journalRoute.replace('/', '')} accent="#E8EEFF" />
+              <div style={{ display: 'grid', gap: 10 }}>
+                <SnapshotCard title="Plan" value={plan.label} accent={plan.accent} />
+                <SnapshotCard title="Status" value={ready ? 'Journal unlocked' : 'Unlocking'} accent={ready ? '#00FF88' : '#FDBA74'} />
+                <SnapshotCard title="Home" value={journalRoute.replace('/', '')} accent="#E8EEFF" />
               </div>
             </div>
 
             <div
               style={{
-                background: 'linear-gradient(180deg, rgba(12,20,34,0.92), rgba(8,12,20,0.96))',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 24,
-                padding: '22px 20px',
+                background: 'linear-gradient(180deg, rgba(8,18,40,0.88), rgba(4,10,22,0.92))',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 22,
+                padding: 18,
               }}
             >
               <div
                 style={{
+                  color: '#7B96C1',
                   fontSize: 11,
                   fontWeight: 700,
-                  color: '#6882A9',
-                  letterSpacing: '0.12em',
                   textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
                   marginBottom: 10,
                 }}
               >
-                Included right now
+                Included Now
               </div>
               <div
                 style={{
                   fontFamily: "'Space Grotesk',sans-serif",
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: '#FFFFFF',
+                  fontSize: 30,
+                  lineHeight: 1.06,
                   letterSpacing: '-0.05em',
-                  lineHeight: 1.15,
+                  color: '#F0F6FF',
+                  fontWeight: 700,
                   marginBottom: 8,
                 }}
               >
                 {plan.description}
               </div>
-              <div
-                style={{
-                  color: '#7A90B8',
-                  fontSize: 13.5,
-                  lineHeight: 1.75,
-                }}
-              >
-                {timedOut
-                  ? 'The design and plan mapping are ready. As soon as activation completes, the journal opens with the correct modules for your subscription.'
-                  : 'Starter, Pro, and Elite each unlock a different MarketFlow workspace. The journal now adapts the sidebar and route access to the plan attached to your payment.'}
+              <div style={{ color: '#8AA3CB', fontSize: 14, lineHeight: 1.7 }}>
+                {ready ? 'Access is open right now. Your plan modules are already applied to sidebar and route permissions.' : 'The journal button appears automatically in under 3 seconds.'}
               </div>
             </div>
           </motion.div>
         </div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.22, duration: 0.45 }}
+          transition={{ delay: 0.16, duration: 0.4 }}
           style={{ marginTop: 24 }}
         >
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
               justifyContent: 'space-between',
+              alignItems: 'center',
               gap: 16,
-              marginBottom: 16,
               flexWrap: 'wrap',
+              marginBottom: 14,
             }}
           >
             <div>
               <div
                 style={{
+                  color: '#7B96C1',
                   fontSize: 11,
                   fontWeight: 700,
-                  color: '#6882A9',
-                  letterSpacing: '0.12em',
                   textTransform: 'uppercase',
-                  marginBottom: 8,
+                  letterSpacing: '0.12em',
+                  marginBottom: 6,
                 }}
               >
-                Your unlocked modules
+                Your Unlocked Modules
               </div>
               <div
                 style={{
+                  color: '#F2F7FF',
                   fontFamily: "'Space Grotesk',sans-serif",
-                  fontSize: 30,
-                  fontWeight: 700,
-                  color: '#FFFFFF',
+                  fontSize: 34,
+                  lineHeight: 1.03,
                   letterSpacing: '-0.06em',
+                  fontWeight: 700,
                 }}
               >
                 {plan.label} experience
@@ -829,36 +647,28 @@ export default function WelcomePage() {
             </div>
             <div
               style={{
-                padding: '10px 14px',
+                background: 'rgba(8,18,40,0.58)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 14,
-                border: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(255,255,255,0.03)',
-                color: '#93A9CB',
-                fontSize: 12.5,
-                lineHeight: 1.6,
-                maxWidth: 420,
+                color: '#A0B8DD',
+                fontSize: 13,
+                padding: '10px 14px',
+                maxWidth: 440,
               }}
             >
-              {timedOut
-                ? 'Payment succeeded. Unlock is still syncing.'
-                : 'Open the journal and you will only see the tools included in your current subscription.'}
+              {ready ? 'One click opens your journal now. Your access stays saved for this account.' : 'The journal opens as soon as the green access state appears.'}
             </div>
           </div>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-              gap: 14,
+              gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+              gap: 12,
             }}
           >
-            {highlightedFeatures.map((feature, index) => (
-              <FeatureTile
-                key={feature}
-                feature={feature}
-                accent={plan.accent}
-                index={index}
-              />
+            {featureList.map((feature, index) => (
+              <FeatureTile key={feature} text={feature} accent={plan.accent} index={index} />
             ))}
           </div>
         </motion.div>

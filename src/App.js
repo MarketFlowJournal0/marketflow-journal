@@ -28,13 +28,32 @@ import ReportsPage from './pages/Reports';
 import AlertsPage from './pages/Alerts';
 import ApiAccessPage from './pages/ApiAccess';
 import WelcomePage from './pages/WelcomePage';
-import { getEntryRoute, hasRouteAccess } from './lib/subscription';
+import { getEntryRoute, hasRouteAccess, normalizePlan } from './lib/subscription';
 import './App.css';
 import './theme.css';
 
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
 const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
+const FORCE_JOURNAL_ACCESS_PREFIX = 'mfj_force_journal_access_';
+const FORCE_JOURNAL_PLAN_PREFIX = 'mfj_force_journal_plan_';
+const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
+
+const PRICE_PLAN_MAP = {
+  price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
+  price_1TDQ7w2Ouddv7ueno5CuaNTH: 'starter',
+  price_1T9t9U2Ouddv7uenfg38PRZ2: 'pro',
+  price_1T9t9U2Ouddv7uenK6oT1O13: 'pro',
+  price_1T9t9L2Ouddv7uen4DXuOatj: 'elite',
+  price_1T9t9K2Ouddv7uennnWOJ44p: 'elite',
+};
+
+function rememberCheckoutPlan(planId) {
+  const normalizedPlan = normalizePlan(planId);
+  if (normalizedPlan === 'trial') return;
+  sessionStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
+  localStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
+}
 
 function LoadingScreen() {
   return (
@@ -74,7 +93,11 @@ function AppLayout({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const plan = user?.plan || 'trial';
+  const profilePlan = normalizePlan(user?.plan || 'trial');
+  const forcedPlan = user?.id ? localStorage.getItem(FORCE_JOURNAL_PLAN_PREFIX + user.id) : null;
+  const checkoutPlan = sessionStorage.getItem(CHECKOUT_PLAN_KEY) || localStorage.getItem(CHECKOUT_PLAN_KEY);
+  const plan = profilePlan !== 'trial' ? profilePlan : normalizePlan(forcedPlan || checkoutPlan || profilePlan);
+  const effectiveUser = user ? { ...user, plan } : user;
   const entryRoute = getEntryRoute(plan);
   const fallbackRoute = '/' + entryRoute;
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -101,7 +124,7 @@ function AppLayout({ user, onLogout }) {
               setCurrentPage={setCurrentPage}
               collapsed={collapsed}
               setCollapsed={setCollapsed}
-              user={user}
+              user={effectiveUser}
               onLogout={onLogout}
             />
           </div>
@@ -120,15 +143,15 @@ function AppLayout({ user, onLogout }) {
             <Route path="/broker-connect" element={renderProtectedRoute('broker-connect', <BrokerConnect />)} />
             <Route
               path="/account-settings"
-              element={renderProtectedRoute('account-settings', <AccountSettings user={user} onBack={() => navigate(fallbackRoute)} />)}
+              element={renderProtectedRoute('account-settings', <AccountSettings user={effectiveUser} onBack={() => navigate(fallbackRoute)} />)}
             />
             <Route
               path="/subscription"
-              element={renderProtectedRoute('subscription', <PlanSelection user={user} onSkip={() => navigate(fallbackRoute)} />)}
+              element={renderProtectedRoute('subscription', <PlanSelection user={effectiveUser} onSkip={() => navigate(fallbackRoute)} />)}
             />
             <Route
               path="/support"
-              element={renderProtectedRoute('support', <SupportPage user={user} onBack={() => navigate(fallbackRoute)} />)}
+              element={renderProtectedRoute('support', <SupportPage user={effectiveUser} onBack={() => navigate(fallbackRoute)} />)}
             />
             <Route
               path="/onboarding-stats"
@@ -201,15 +224,20 @@ function AppInner() {
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
     sessionStorage.setItem('pending_price_id', priceId);
+    rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
     setAuthModal('signup');
   };
 
   const launchCheckout = async (priceId, userEmail) => {
+    const rawPlanId = PRICE_PLAN_MAP[priceId] || sessionStorage.getItem(CHECKOUT_PLAN_KEY) || localStorage.getItem(CHECKOUT_PLAN_KEY);
+    const planId = rawPlanId ? normalizePlan(rawPlanId) : '';
+    if (planId && planId !== 'trial') rememberCheckoutPlan(planId);
+
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, email: userEmail, userId: user?.id }),
+        body: JSON.stringify({ priceId, email: userEmail, userId: user?.id, planId }),
       });
       const { url } = await res.json();
       if (url) window.location.href = url;
@@ -295,8 +323,11 @@ function AppInner() {
   // ── Pas d'abonnement → /plan ──
   const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
   const postWelcomeAccess = sessionStorage.getItem(POST_WELCOME_ACCESS_KEY) === '1';
+  const forceJournalAccess = Boolean(
+    user?.id && localStorage.getItem(FORCE_JOURNAL_ACCESS_PREFIX + user.id) === '1'
+  );
   const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
-  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid && !postWelcomeAccess;
+  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid && !postWelcomeAccess && !forceJournalAccess;
   if (needsPlan) {
     return (
       <>

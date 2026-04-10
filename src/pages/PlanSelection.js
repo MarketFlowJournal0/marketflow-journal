@@ -93,6 +93,8 @@ const PLANS = [
   },
 ];
 
+const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
+
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const { user: authUser, refreshProfile } = useAuth();
@@ -122,6 +124,8 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
 
   const handleSelect = async (plan) => {
     const priceId = billing === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
+    sessionStorage.setItem(CHECKOUT_PLAN_KEY, plan.id);
+    localStorage.setItem(CHECKOUT_PLAN_KEY, plan.id);
     setLoading(plan.id);
     try {
       const res = await fetch('/api/create-checkout-session', {

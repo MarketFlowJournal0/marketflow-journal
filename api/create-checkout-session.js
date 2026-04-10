@@ -6,6 +6,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const PRICE_PLAN_MAP = {
+  price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
+  price_1TDQ7w2Ouddv7ueno5CuaNTH: 'starter',
+  price_1T9t9U2Ouddv7uenfg38PRZ2: 'pro',
+  price_1T9t9U2Ouddv7uenK6oT1O13: 'pro',
+  price_1T9t9L2Ouddv7uen4DXuOatj: 'elite',
+  price_1T9t9K2Ouddv7uennnWOJ44p: 'elite',
+};
+
+const VALID_PLAN_IDS = new Set(['starter', 'pro', 'elite']);
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -17,9 +28,12 @@ module.exports = async (req, res) => {
   if (!priceId) return res.status(400).json({ error: 'priceId required' });
 
   const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.marketflowjournal.com';
+  const requestedPlanId = VALID_PLAN_IDS.has(planId) ? planId : '';
+  const finalPlanId = requestedPlanId || PRICE_PLAN_MAP[priceId] || '';
+  const planParam = finalPlanId ? `&plan_id=${encodeURIComponent(finalPlanId)}` : '';
   const sessionMetadata = {
     supabase_user_id: userId || '',
-    plan_id: planId || '',
+    plan_id: finalPlanId,
   };
 
   try {
@@ -91,7 +105,7 @@ module.exports = async (req, res) => {
       metadata: sessionMetadata,
       subscription_data: subscriptionData,
       payment_method_collection: 'always',
-      success_url: `${BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}${planParam}`,
       cancel_url: `${BASE_URL}/plan`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
