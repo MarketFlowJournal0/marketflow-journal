@@ -41,9 +41,8 @@ const Card = ({ children, style={}, glow=null, hover=false, custom=0, onClick })
   </motion.div>
 );
 
-const SectionTitle = ({ children, color=C.cyan, icon }) => (
+const SectionTitle = ({ children, color=C.cyan }) => (
   <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
-    {icon && <span style={{fontSize:13,filter:`drop-shadow(0 0 6px ${color})`}}>{icon}</span>}
     <div style={{width:2,height:13,background:color,borderRadius:2,flexShrink:0}}/>
     <span style={{fontSize:11.5,fontWeight:800,color:C.t1,letterSpacing:'-0.2px'}}>{children}</span>
   </div>
@@ -57,7 +56,7 @@ const Delta = ({ value, suffix='%', invert=false }) => {
   const pos = invert ? value <= 0 : value >= 0;
   return (
     <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',borderRadius:4,color:pos?C.green:C.danger,background:pos?`${C.green}15`:`${C.danger}15`,border:`1px solid ${pos?C.green:C.danger}25`}}>
-      {pos?'▲':'▼'} {Math.abs(value)}{suffix}
+      {pos?'+':'-'} {Math.abs(value)}{suffix}
     </span>
   );
 };
@@ -77,7 +76,6 @@ const ChartTip = ({ active, payload, label, prefix='$' }) => {
 
 const Empty = ({ label }) => (
   <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'28px 0',gap:8}}>
-    <span style={{fontSize:24,opacity:0.3}}>📭</span>
     <span style={{fontSize:10,color:C.t3}}>{label||'No trades recorded'}</span>
   </div>
 );
@@ -87,21 +85,19 @@ const KpiStrip = () => {
   const { stats } = useDashData();
   const items = [
     { label:'P&L Total',     value: stats.pnl >= 0 ? `+$${stats.pnl.toLocaleString()}` : `-$${Math.abs(stats.pnl).toLocaleString()}`, delta: stats.pnlPct, sub:`$${stats.expectancy}/trade`,   color:C.green,  icon:'💰' },
-    { label:'Win Rate',      value:`${stats.winRate}%`,  delta: null, sub:`${stats.wins}W · ${stats.losses}L · ${stats.breakevens}BE`, color:C.cyan,   icon:'🎯' },
+    { label:'Win Rate',      value:`${stats.winRate}%`,  delta: null, sub:`${stats.wins}W / ${stats.losses}L / ${stats.breakevens}BE`, color:C.cyan,   icon:'🎯' },
     { label:'Profit Factor', value: stats.profitFactor || '—', delta: null, sub:`Avg W $${stats.avgWin}`, color:C.teal, icon:'⚖️' },
-    { label:'Avg R:R',       value: stats.avgRR,         delta: null, sub:'Average ratio',                  color:C.blue,   icon:'📐' },
-    { label:'Sharpe',        value: stats.sharpe || '—', delta: null, sub:'Annualized',                    color:C.purple, icon:'📏' },
     { label:'Max Drawdown',  value:`${Math.abs(stats.maxDrawdown)}%`, delta: stats.maxDrawdown !== 0 ? stats.maxDrawdown : null, sub:'Since the beginning', color:C.danger, icon:'⚠️', invert:true },
     { label:'Expectancy',    value:`$${stats.expectancy}`, delta: null, sub:'Per trade',                  color:C.gold,   icon:'🧮' },
   ];
   return (
-    <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:10,marginBottom:18}}>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginBottom:18}}>
       {items.map((k,i) => (
         <Card key={k.label} custom={i} glow={k.color} hover style={{padding:'16px 16px',minHeight:92}}>
           <div style={{position:'absolute',top:-20,right:-12,width:60,height:60,borderRadius:'50%',background:`radial-gradient(circle,${k.color}20,transparent 70%)`,filter:'blur(10px)',pointerEvents:'none'}}/>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
             <span style={{fontSize:7.5,fontWeight:800,color:C.t3,letterSpacing:'1.2px',textTransform:'uppercase',lineHeight:1.4}}>{k.label}</span>
-            <span style={{fontSize:14,filter:`drop-shadow(0 0 5px ${k.color})`}}>{k.icon}</span>
+            <span style={{width:28,height:2,borderRadius:999,background:k.color,boxShadow:`0 0 12px ${k.color}55`}}/>
           </div>
           <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:k.color,lineHeight:1,marginBottom:5,textShadow:`0 0 18px ${k.color}30`}}>
             {k.value}
@@ -454,7 +450,7 @@ const RecentTrades = () => {
                 </div>
                 <div>
                   <div style={{fontSize:10.5,fontWeight:800,color:C.t1}}>{t.pair}</div>
-                  <div style={{fontSize:8,color:t.dir==='Long'?C.green:C.danger,fontWeight:700}}>{t.dir==='Long'?'▲':'▼'} {t.dir}</div>
+                  <div style={{fontSize:8,color:t.dir==='Long'?C.green:C.danger,fontWeight:700}}>{t.dir}</div>
                 </div>
                 <div style={{textAlign:'center'}}>
                   <div style={{display:'inline-block',padding:'2px 7px',borderRadius:5,background:`${rc}18`,border:`1px solid ${rc}30`,fontSize:8.5,fontWeight:800,color:rc}}>{t.res}</div>
@@ -613,7 +609,7 @@ const LiveTicker = () => {
           style={{width:8,height:8,borderRadius:'50%',background:C.green,boxShadow:`0 0 8px ${C.green}`,flexShrink:0}}/>
         <span style={{fontSize:10,fontWeight:700,color:C.green}}>Live</span>
         <div style={{width:1,height:16,background:C.brd}}/>
-        <span style={{fontSize:10,color:C.t2}}>EURUSD · Long · 1.08320</span>
+        <span style={{fontSize:10,color:C.t2}}>EURUSD / Long / 1.08320</span>
         <span style={{fontSize:11,fontWeight:900,color:C.green,fontFamily:'monospace'}}>+$142</span>
         <Badge color={C.cyan}>+0.8R</Badge>
       </div>
@@ -651,7 +647,7 @@ const GoalProgress = () => {
                 <div style={{display:'flex',gap:8,alignItems:'center'}}>
                   <span style={{fontSize:9.5,fontFamily:'monospace',color:c,fontWeight:800}}>{display}</span>
                   <span style={{fontSize:8,color:C.t3}}>/ {target}</span>
-                  {ok && <span style={{fontSize:10}}>✅</span>}
+                  {ok && <span style={{fontSize:9,color:C.green,fontWeight:800}}>OK</span>}
                 </div>
               </div>
               <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
@@ -675,9 +671,14 @@ const JournalNote = () => (
       <br/><span style={{color:C.danger,fontWeight:700}}>To improve :</span> Wait for confirmation after CISD before entering.
     </div>
     <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-      {['Discipline ✓','Patience ✓','FOMO ✗','Overtrading ✗'].map((t,i)=>(
-        <span key={i} style={{padding:'4px 9px',borderRadius:6,fontSize:8.5,fontWeight:700,background:t.includes('✓')?`${C.green}12`:`${C.danger}12`,border:`1px solid ${t.includes('✓')?C.green:C.danger}25`,color:t.includes('✓')?C.green:C.danger}}>
-          {t}
+      {[
+        {label:'Discipline',ok:true},
+        {label:'Patience',ok:true},
+        {label:'FOMO',ok:false},
+        {label:'Overtrading',ok:false},
+      ].map((t,i)=>(
+        <span key={i} style={{padding:'4px 9px',borderRadius:6,fontSize:8.5,fontWeight:700,background:t.ok?`${C.green}12`:`${C.danger}12`,border:`1px solid ${t.ok?C.green:C.danger}25`,color:t.ok?C.green:C.danger}}>
+          {t.label}
         </span>
       ))}
     </div>
@@ -739,7 +740,7 @@ function RankModal({ score, rank, onClose }) {
         }}/>
         <div style={{padding:'28px 28px 24px'}}>
           <div style={{textAlign:'center',marginBottom:24}}>
-            <div style={{fontSize:48,marginBottom:8,filter:`drop-shadow(0 0 12px ${rank.color})`}}>{rank.icon}</div>
+            <div style={{width:56,height:4,borderRadius:999,background:rank.color,boxShadow:`0 0 18px ${rank.color}80`,margin:'0 auto 18px'}}/>
             <div style={{fontSize:22,fontWeight:900,color:rank.color,letterSpacing:'0.04em',textTransform:'uppercase'}}>{rank.rank}</div>
             <div style={{fontSize:11,color:C.t2,marginTop:4}}>{rank.desc}</div>
           </div>
@@ -859,7 +860,7 @@ const TradingCalendar = () => {
             onClick={()=>setRankModal(true)}
           >
             <div style={{textAlign:'center'}}>
-              <motion.div animate={{rotate:[0,5,-5,0]}} transition={{duration:3,repeat:Infinity,repeatDelay:6}} style={{fontSize:24}}>{rank.icon}</motion.div>
+              <motion.div animate={{opacity:[0.7,1,0.7]}} transition={{duration:3,repeat:Infinity,repeatDelay:6}} style={{width:34,height:3,borderRadius:999,background:rank.color,boxShadow:`0 0 12px ${rank.color}80`,margin:'0 auto 10px'}}/>
               <div style={{fontSize:9.5,color:rank.color,fontWeight:800,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:3}}>{rank.rank}</div>
             </div>
             <div>
@@ -871,7 +872,7 @@ const TradingCalendar = () => {
               {nextRank && (
                 <div style={{marginTop:8}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                    <span style={{fontSize:9.5,color:C.t3}}>→ {nextRank.rank}</span>
+                    <span style={{fontSize:9.5,color:C.t3}}>Next {nextRank.rank}</span>
                     <span style={{fontSize:9.5,color:C.t3}}>{Math.max(0,nextRank.min-score)} pts</span>
                   </div>
                   <div style={{width:140,height:5,background:'rgba(255,255,255,0.06)',borderRadius:3,overflow:'hidden'}}>
@@ -991,7 +992,7 @@ export default function Dashboard() {
             style={{marginBottom:20,display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:14}}>
             <div>
               <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:6}}>
-                <motion.div animate={{rotate:[0,5,-5,0]}} transition={{duration:4,repeat:Infinity,repeatDelay:8}} style={{fontSize:24}}>👋</motion.div>
+                <motion.div animate={{opacity:[0.6,1,0.6]}} transition={{duration:4,repeat:Infinity,repeatDelay:8}} style={{width:34,height:3,borderRadius:999,background:C.cyan,boxShadow:`0 0 14px ${C.cyan}80`}}/>
                 <h1 style={{margin:0,fontSize:22,fontWeight:900,color:C.t0,letterSpacing:'-0.5px'}}>
                   {greeting}, <span style={{background:C.gradCyan,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Trader</span>
                 </h1>
@@ -1003,17 +1004,17 @@ export default function Dashboard() {
                   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
                   const startOfYear=new Date(now.getFullYear(),0,1);
                   const week=Math.ceil(((now-startOfYear)/86400000+startOfYear.getDay()+1)/7);
-                  return `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} · Week ${week}`;
+                  return `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} / Week ${week}`;
                 })()}</span>
                 <div style={{width:4,height:4,borderRadius:'50%',background:C.t4}}/>
                 <motion.div animate={{opacity:[1,0.4,1]}} transition={{duration:1.5,repeat:Infinity}} style={{display:'flex',alignItems:'center',gap:5}}>
                   <div style={{width:7,height:7,borderRadius:'50%',background:C.green,boxShadow:`0 0 6px ${C.green}`}}/>
                   <span style={{fontSize:10,color:C.green,fontWeight:700}}>{(()=>{
                     const h=new Date().getUTCHours();
-                    if(h>=0&&h<7)  return 'Sydney · Session Active';
-                    if(h>=2&&h<9)  return 'Tokyo · Session Active';
-                    if(h>=7&&h<16) return 'London · Session Active';
-                    if(h>=13&&h<22)return 'New York · Session Active';
+                    if(h>=0&&h<7)  return 'Sydney / Session Active';
+                    if(h>=2&&h<9)  return 'Tokyo / Session Active';
+                    if(h>=7&&h<16) return 'London / Session Active';
+                    if(h>=13&&h<22)return 'New York / Session Active';
                     return 'Market Closed';
                   })()}</span>
                 </motion.div>

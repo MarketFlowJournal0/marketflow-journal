@@ -68,14 +68,13 @@ const GlassCard=({children,style={},glow=null,hover=true,custom=0,onClick,...p})
   </motion.div>
 );
 
-const ST=({children,sub,color=C.cyan,icon,mb=14})=>(
+const ST=({children,sub,color=C.cyan,mb=14})=>(
   <div style={{marginBottom:mb}}>
     <div style={{display:'flex',alignItems:'center',gap:9}}>
-      {icon&&<span style={{fontSize:15,filter:`drop-shadow(0 0 8px ${color})`}}>{icon}</span>}
       <div style={{width:3,height:16,background:`linear-gradient(180deg,${color},${color}50)`,borderRadius:2,flexShrink:0}}/>
       <span style={{fontSize:14,fontWeight:800,color:C.t1,letterSpacing:'-0.3px'}}>{children}</span>
     </div>
-    {sub&&<p style={{margin:'4px 0 0',fontSize:9,color:C.t3,paddingLeft:icon?33:12}}>{sub}</p>}
+    {sub&&<p style={{margin:'4px 0 0',fontSize:9,color:C.t3,paddingLeft:12}}>{sub}</p>}
   </div>
 );
 
@@ -83,11 +82,11 @@ const ST=({children,sub,color=C.cyan,icon,mb=14})=>(
 // 📊 RICH DATA — 30 sessions
 // ═══════════════════════════════════════════════════════════════════
 const MOODS=[
-  {id:'excellent',label:'Excellent',emoji:'🔥',color:C.green},
-  {id:'bien',     label:'Good',       emoji:'😊',color:C.cyan},
-  {id:'neutre',   label:'Neutral',    emoji:'😐',color:C.warn},
-  {id:'difficile',label:'Difficult',  emoji:'😔',color:C.orange},
-  {id:'terrible', label:'Terrible', emoji:'😤',color:C.danger},
+  {id:'excellent',label:'Excellent',emoji:'',color:C.green},
+  {id:'bien',     label:'Good',       emoji:'',color:C.cyan},
+  {id:'neutre',   label:'Neutral',    emoji:'',color:C.warn},
+  {id:'difficile',label:'Difficult',  emoji:'',color:C.orange},
+  {id:'terrible', label:'Terrible', emoji:'',color:C.danger},
 ];
 const DAYS_FR=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const AXES7=[
@@ -117,7 +116,7 @@ const calcPsych=s=>{
 
 const sColor=s=>s>=75?C.green:s>=60?C.cyan:s>=45?C.warn:s>=30?C.orange:C.danger;
 const sLabel=s=>s>=80?'Elite':s>=70?'Excellent':s>=60?'Solid':s>=50?'Fair':s>=40?'Fragile':s>=30?'Difficult':'Critical';
-const sEmoji=s=>s>=80?'🏆':s>=70?'🔥':s>=60?'😊':s>=50?'😐':s>=40?'😔':'😤';
+const sEmoji=s=>'';
 
 // 30 rich sessions
 const DEMO=[
@@ -209,9 +208,9 @@ const ScoreCard=({sessions})=>{
     <GlassCard custom={0} glow={sc} style={{padding:'24px 22px',display:'flex',flexDirection:'column',gap:0}}>
       {/* Header */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18}}>
-        <ST icon="🧠" color={sc} mb={0}>Psychological Score</ST>
+        <ST color={sc} mb={0}>Psychological Score</ST>
         <div style={{display:'flex',gap:7}}>
-          <div style={{padding:'3px 10px',borderRadius:20,background:`${C.purple}18`,border:`1px solid ${C.purple}30`,fontSize:9,fontWeight:700,color:C.purple}}>Moy. {avgScore}</div>
+          <div style={{padding:'3px 10px',borderRadius:20,background:`${C.purple}18`,border:`1px solid ${C.purple}30`,fontSize:9,fontWeight:700,color:C.purple}}>Avg {avgScore}</div>
           <div style={{padding:'3px 10px',borderRadius:20,background:`${C.gold}18`,border:`1px solid ${C.gold}30`,fontSize:9,fontWeight:700,color:C.gold}}>Best {bestScore}</div>
         </div>
       </div>
@@ -238,10 +237,9 @@ const ScoreCard=({sessions})=>{
             </div>
           </div>
           <div style={{textAlign:'right'}}>
-            <div style={{fontSize:22,marginBottom:4}}>{sEmoji(score)}</div>
             <div style={{fontSize:13,fontWeight:900,color:sc,letterSpacing:'-0.3px'}}>{sLabel(score)}</div>
             <div style={{fontSize:10,color:C.t2,marginTop:2,display:'flex',alignItems:'center',gap:4,justifyContent:'flex-end'}}>
-              <span style={{color:trend>=0?C.green:C.danger,fontWeight:800}}>{trend>=0?'↗':'↘'} {trend>=0?'+':''}{trend} pts</span>
+              <span style={{color:trend>=0?C.green:C.danger,fontWeight:800}}>{trend>=0?'Up':'Down'} {trend>=0?'+':''}{trend} pts</span>
               <span style={{color:C.t3}}>vs yesterday</span>
             </div>
           </div>
@@ -290,8 +288,8 @@ const ScoreCard=({sessions})=>{
       {/* ── Session info: mood + routine + physical ── */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
         {[
-          {l:'Mood',       v:`${em?.emoji} ${em?.label}`,       c:em?.color||C.t3},
-          {l:'Routine',    v:latest.routine?'✓ Completed':'✗ Not done', c:latest.routine?C.green:C.danger},
+          {l:'Mood',       v:em?.label||'-',       c:em?.color||C.t3},
+          {l:'Routine',    v:latest.routine?'Completed':'Not done', c:latest.routine?C.green:C.danger},
           {l:'Sleep',      v:`${latest.sleep||'—'}/10`,         c:C.purple},
         ].map(({l,v,c})=>(
           <div key={l} style={{padding:'9px 10px',borderRadius:11,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,textAlign:'center'}}>
@@ -380,14 +378,14 @@ const PsychByDay=({sessions})=>{
   return(
     <GlassCard custom={6} glow={C.purple} style={{padding:'26px 24px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
-        <ST icon="🗓️" color={C.purple} mb={0}>Psychology by Day of Week</ST>
+        <ST color={C.purple} mb={0}>Psychology by Day of Week</ST>
         {/* Summary best/worst */}
         <div style={{display:'flex',gap:10}}>
           {bestDay&&<div style={{padding:'4px 12px',borderRadius:20,background:`${C.green}15`,border:`1px solid ${C.green}28`,fontSize:9,fontWeight:700,color:C.green}}>
-            🏆 {bestDay.day} · {bestDay.score}
+            Best {bestDay.day} / {bestDay.score}
           </div>}
           {worstDay&&worstDay.day!==bestDay?.day&&<div style={{padding:'4px 12px',borderRadius:20,background:`${C.danger}15`,border:`1px solid ${C.danger}28`,fontSize:9,fontWeight:700,color:C.danger}}>
-            ⚠️ {worstDay.day} · {worstDay.score}
+            Risk {worstDay.day} / {worstDay.score}
           </div>}
         </div>
       </div>
@@ -476,7 +474,7 @@ const PsychByDay=({sessions})=>{
                   {/* Best badge */}
                   {isBest&&(
                     <div style={{position:'absolute',top:4,left:'50%',transform:'translateX(-50%)',
-                      fontSize:9}}>🏆</div>
+                      width:14,height:2,borderRadius:999,background:C.gold,boxShadow:`0 0 8px ${C.gold}`}}/>
                   )}
                 </motion.div>
 
@@ -560,7 +558,7 @@ const ProfileRadar=({sessions})=>{
   return(
     <GlassCard custom={4} glow={C.purple} style={{padding:'24px 22px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-        <ST icon="🕸️" color={C.purple} mb={0}>Psychological Profile</ST>
+        <ST color={C.purple} mb={0}>Psychological Profile</ST>
         <select value={compareIdx} onChange={e=>setCompareIdx(e.target.value)}
           style={{background:C.bgHigh,border:`1px solid ${C.brd}`,borderRadius:8,padding:'4px 8px',color:C.t2,fontSize:9,fontFamily:'inherit',outline:'none',cursor:'pointer'}}>
           <option value="avg">vs Average</option>
@@ -639,18 +637,18 @@ const ScoreEvolution=({sessions})=>{
     return(
       <div style={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:11,padding:'10px 14px',fontSize:11,boxShadow:'0 12px 40px rgba(0,0,0,0.75)'}}>
         <div style={{color:C.t2,fontWeight:700,marginBottom:6,fontSize:10}}>{label}</div>
-        <div style={{color:sc,fontFamily:'monospace',fontWeight:800}}>Score: {d?.score}/100 — {sLabel(d?.score||0)}</div>
+        <div style={{color:sc,fontFamily:'monospace',fontWeight:800}}>Score: {d?.score}/100 / {sLabel(d?.score||0)}</div>
         <div style={{color:d?.pnl>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:800,marginTop:2}}>Cumulative P&L: {d?.pnl>=0?'+':''}${d?.pnl?.toLocaleString()}</div>
-        <div style={{color:C.t3,fontSize:9,marginTop:3}}>{MOODS.find(m=>m.id===d?.mood)?.emoji} {MOODS.find(m=>m.id===d?.mood)?.label}</div>
+        <div style={{color:C.t3,fontSize:9,marginTop:3}}>{MOODS.find(m=>m.id===d?.mood)?.label}</div>
       </div>
     );
   };
   return(
     <GlassCard custom={5} glow={C.blue} style={{padding:'24px 22px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
-        <ST icon="📈" color={C.blue} mb={0}>Mental Score vs Cumulative P&L</ST>
+        <ST color={C.blue} mb={0}>Mental Score vs Cumulative P&L</ST>
         <div style={{display:'flex',gap:14}}>
-          {[{c:C.purple,l:'Score'},{c:C.green,l:'P&L cumulatif'}].map(({c,l})=>(
+          {[{c:C.purple,l:'Score'},{c:C.green,l:'Cumulative P&L'}].map(({c,l})=>(
             <div key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:9,color:C.t3}}>
               <div style={{width:9,height:9,borderRadius:'50%',background:c}}/>{l}
             </div>
@@ -717,7 +715,7 @@ const EmotionDist=({sessions})=>{
   const RINNER=40,ROUTER=68;
   return(
     <GlassCard custom={7} glow={C.warn} style={{padding:'24px 22px'}}>
-      <ST icon="😊" color={C.warn}>Emotional State Distribution</ST>
+      <ST color={C.warn}>Emotional State Distribution</ST>
       <div style={{display:'flex',gap:20,alignItems:'center',marginBottom:20}}>
         <div style={{flexShrink:0,position:'relative',width:160,height:160}}>
           <svg width={160} height={160} viewBox="0 0 160 160">
@@ -753,7 +751,6 @@ const EmotionDist=({sessions})=>{
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:9}}>
           {data.map((m,i)=>(
             <div key={m.id} style={{display:'flex',alignItems:'center',gap:9}}>
-              <span style={{fontSize:18,flexShrink:0}}>{m.emoji}</span>
               <div style={{flex:1}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
                   <span style={{fontSize:11,fontWeight:700,color:m.color}}>{m.label}</span>
@@ -763,7 +760,7 @@ const EmotionDist=({sessions})=>{
                   <motion.div initial={{width:0}} animate={{width:`${m.pct}%`}} transition={{duration:0.8,delay:i*0.06}}
                     style={{height:'100%',background:`linear-gradient(90deg,${m.color}55,${m.color})`,borderRadius:3,boxShadow:`0 0 5px ${m.color}40`}}/>
                 </div>
-                <div style={{fontSize:8,color:C.t3,marginTop:2}}>{m.count}× · WR {m.winRate}% · Avg Score {m.avgScore}</div>
+                <div style={{fontSize:8,color:C.t3,marginTop:2}}>{m.count}x / WR {m.winRate}% / Avg Score {m.avgScore}</div>
               </div>
             </div>
           ))}
@@ -803,7 +800,7 @@ const EmotionHeatmap=({sessions})=>{
   const heat=v=>{if(v>=80)return{bg:`${C.green}28`,border:`${C.green}50`,c:C.green};if(v>=65)return{bg:`${C.cyan}22`,border:`${C.cyan}40`,c:C.cyan};if(v>=50)return{bg:`${C.warn}18`,border:`${C.warn}35`,c:C.warn};if(v>=35)return{bg:`${C.orange}18`,border:`${C.orange}30`,c:C.orange};return{bg:`${C.danger}18`,border:`${C.danger}30`,c:C.danger};};
   return(
     <GlassCard custom={8} glow={C.pink} style={{padding:'24px 22px'}}>
-      <ST icon="🌡️" color={C.pink}>Heatmap Mood × Psychological Axes</ST>
+      <ST color={C.pink}>Heatmap Mood x Psychological Axes</ST>
       <div style={{overflowX:'auto'}}>
         <table style={{width:'100%',borderCollapse:'separate',borderSpacing:3}}>
           <thead><tr>
@@ -861,12 +858,12 @@ const EmotionImpact=({sessions})=>{
   }).filter(d=>d.count>0),[sessions]);
   return(
     <GlassCard custom={9} glow={C.cyan} style={{padding:'24px 22px'}}>
-      <ST icon="💰" color={C.cyan}>Mood Impact → Avg P&L & Win Rate</ST>
+      <ST color={C.cyan}>Mood Impact / Avg P&L & Win Rate</ST>
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={data} margin={{top:16,right:20,bottom:0,left:0}}>
           <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
           <XAxis dataKey="mood" tick={{fill:C.t2,fontSize:9,fontWeight:700}} axisLine={false} tickLine={false}
-            tickFormatter={(v,i)=>`${data[i]?.emoji} ${v}`}/>
+            tickFormatter={(v)=>v}/>
           <YAxis yAxisId="pnl" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} width={42}/>
           <YAxis yAxisId="wr" orientation="right" domain={[0,100]} tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={32}/>
           <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
@@ -894,9 +891,9 @@ const Patterns=({sessions})=>{
       const goodAvg=Math.round(goodS.reduce((s,v)=>s+(v.pnl||0),0)/goodS.length);
       const emoWR=Math.round(emoS.filter(s=>(s.pnl||0)>0).length/emoS.length*100);
       const goodWR=Math.round(goodS.filter(s=>(s.pnl||0)>0).length/goodS.length*100);
-      res.push({icon:'⚠️',color:C.danger,title:'Cost of emotional trading',
-        desc:`Score < 50: Avg P&L ${emoAvg>=0?'+':''}$${emoAvg} · WR ${emoWR}%`,
-        sub:`Score ≥ 70: Avg P&L +$${goodAvg} · WR ${goodWR}% — gap of $${goodAvg-emoAvg}/session`,
+      res.push({color:C.danger,title:'Cost of emotional trading',
+        desc:`Score < 50: Avg P&L ${emoAvg>=0?'+':''}$${emoAvg} / WR ${emoWR}%`,
+        sub:`Score >= 70: Avg P&L +$${goodAvg} / WR ${goodWR}% / gap of $${goodAvg-emoAvg}/session`,
         badge:`Δ $${goodAvg-emoAvg}`});
     }
     const byMood={};
@@ -906,24 +903,24 @@ const Patterns=({sessions})=>{
       const m=MOODS.find(m=>m.id===best[0]);
       const avg=Math.round(best[1].pnl/best[1].n);
       const wr=Math.round(best[1].wins/best[1].n*100);
-      res.push({icon:'🎯',color:C.green,title:`Best mood: ${m?.emoji} ${m?.label||best[0]}`,
-        desc:`Avg ${avg>=0?'+':''}$${avg}/session · WR ${wr}% · ${best[1].n} sessions`,
-        sub:'Prioritize trading in this state — direct and measurable impact',badge:`+$${avg}`});
+      res.push({color:C.green,title:`Best mood: ${m?.label||best[0]}`,
+        desc:`Avg ${avg>=0?'+':''}$${avg}/session / WR ${wr}% / ${best[1].n} sessions`,
+        sub:'Prioritize trading in this state for direct, measurable impact',badge:`+$${avg}`});
     }
     const withR=sessions.filter(s=>s.routine),noR=sessions.filter(s=>!s.routine);
     if(withR.length>0&&noR.length>0){
       const rA=Math.round(withR.reduce((s,v)=>s+(v.pnl||0),0)/withR.length);
       const nA=Math.round(noR.reduce((s,v)=>s+(v.pnl||0),0)/noR.length);
       const rWR=Math.round(withR.filter(s=>(s.pnl||0)>0).length/withR.length*100);
-      res.push({icon:'📋',color:C.cyan,title:`Morning routine: +$${rA-nA} avg impact`,
-        desc:`With routine (${withR.length}×): avg ${rA>=0?'+':''}$${rA} · WR ${rWR}%`,
-        sub:`Without routine (${noR.length}×): avg ${nA>=0?'+':''}$${nA} — discipline pays off`,badge:rA>nA?'✓ Crucial':'Neutral'});
+      res.push({color:C.cyan,title:`Morning routine: +$${rA-nA} avg impact`,
+        desc:`With routine (${withR.length}x): avg ${rA>=0?'+':''}$${rA} / WR ${rWR}%`,
+        sub:`Without routine (${noR.length}x): avg ${nA>=0?'+':''}$${nA} / discipline pays off`,badge:rA>nA?'Crucial':'Neutral'});
     }
     const overS=sessions.filter(s=>s.trades>(s.maxTrades||99));
     if(overS.length){
       const oPnl=Math.round(overS.reduce((s,v)=>s+(v.pnl||0),0)/overS.length);
       const nPnl=Math.round(sessions.filter(s=>s.trades<=(s.maxTrades||99)).reduce((s,v)=>s+(v.pnl||0),0)/Math.max(1,sessions.filter(s=>s.trades<=(s.maxTrades||99)).length));
-      res.push({icon:'📉',color:C.warn,title:`Overtrading: ${overS.length}/${sessions.length} sessions`,
+      res.push({color:C.warn,title:`Overtrading: ${overS.length}/${sessions.length} sessions`,
         desc:`P&L while overtrading: ${oPnl>=0?'+':''}$${oPnl} vs normal: ${nPnl>=0?'+':''}$${nPnl}`,
         sub:`Respecting max trades would avoid ~$${nPnl-oPnl} loss/session`,badge:`${Math.round(overS.length/sessions.length*100)}% of sess.`});
     }
@@ -936,9 +933,9 @@ const Patterns=({sessions})=>{
       const serie=sorted.slice(maxSS,maxSS+maxS);
       const avSc=Math.round(serie.reduce((s,v)=>s+calcPsych(v),0)/maxS);
       const serP=serie.reduce((s,v)=>s+(v.pnl||0),0);
-      res.push({icon:'🔥',color:C.orange,title:`Best streak: ${maxS} consecutive winning sessions`,
-        desc:`Avg score: ${avSc}/100 · Total P&L: +$${serP.toLocaleString()}`,
-        sub:`Started on ${serie[0]?.date?.substring(5)||'—'} — high score and streaks are strongly correlated`,badge:`+${maxS} wins`});
+      res.push({color:C.orange,title:`Best streak: ${maxS} consecutive winning sessions`,
+        desc:`Avg score: ${avSc}/100 / Total P&L: +$${serP.toLocaleString()}`,
+        sub:`Started on ${serie[0]?.date?.substring(5)||'-'} / high score and streaks are strongly correlated`,badge:`+${maxS} wins`});
     }
     const axeMeans=AXES7.map(ax=>{
       const mean=Math.round(sessions.reduce((s,v)=>s+(v[ax.key]||0),0)/sessions.length);
@@ -947,14 +944,14 @@ const Patterns=({sessions})=>{
     });
     const weakest=[...axeMeans].sort((a,b)=>a.mean-b.mean)[0];
     const highImpact=[...axeMeans].sort((a,b)=>b.impact-a.impact)[0];
-    res.push({icon:'💡',color:C.purple,title:`Priority axis to strengthen: ${weakest?.label}`,
-      desc:`Average score of ${weakest?.mean}/100 — ${weakest?.desc}`,
+    res.push({color:C.purple,title:`Priority axis to strengthen: ${weakest?.label}`,
+      desc:`Average score of ${weakest?.mean}/100 / ${weakest?.desc}`,
       sub:`Strongest P&L lever: ${highImpact?.label} (+$${highImpact?.impact} avg gap when high)`,badge:`${weakest?.mean}/100`});
     return res;
   },[sessions]);
   return(
     <GlassCard custom={8} glow={C.teal} style={{padding:'24px 22px'}}>
-      <ST icon="🔍" color={C.teal}>Behavioral Patterns & Insights</ST>
+      <ST color={C.teal}>Behavioral Patterns & Insights</ST>
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
         {insights.map((ins,i)=>(
           <motion.div key={i} initial={{opacity:0,x:14}} animate={{opacity:1,x:0}} transition={{delay:i*0.07}}
@@ -962,8 +959,10 @@ const Patterns=({sessions})=>{
               background:`linear-gradient(135deg,${ins.color}0A,${ins.color}05)`,border:`1px solid ${ins.color}28`,alignItems:'flex-start',
               boxShadow:`0 2px 16px ${ins.color}08`}}>
             <div style={{width:40,height:40,borderRadius:12,background:`${ins.color}18`,border:`1px solid ${ins.color}30`,
-              display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0,
-              boxShadow:`0 0 14px ${ins.color}25`}}>{ins.icon}</div>
+              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
+              boxShadow:`0 0 14px ${ins.color}25`}}>
+              <span style={{width:18,height:2,borderRadius:999,background:ins.color,boxShadow:`0 0 10px ${ins.color}`}}/>
+            </div>
             <div style={{flex:1}}>
               <div style={{fontSize:12,fontWeight:800,color:ins.color,marginBottom:4}}>{ins.title}</div>
               <div style={{fontSize:10.5,color:C.t2,lineHeight:1.65}}>{ins.desc}</div>
@@ -999,7 +998,7 @@ const PerfByScore=({sessions})=>{
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:16}}>
         <GlassCard custom={4} glow={C.cyan} style={{padding:'24px 22px'}}>
-          <ST icon="📊" color={C.cyan}>Avg P&L by Score Range</ST>
+          <ST color={C.cyan}>Avg P&L by Score Range</ST>
           <ResponsiveContainer width="100%" height={195}>
             <BarChart data={buckets} margin={{top:22,right:4,bottom:0,left:0}}>
               <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
@@ -1016,14 +1015,14 @@ const PerfByScore=({sessions})=>{
         </GlassCard>
 
         <GlassCard custom={5} glow={C.blue} style={{padding:'24px 22px'}}>
-          <ST icon="📈" color={C.blue}>Score vs P&L — Session by Session View</ST>
+          <ST color={C.blue}>Score vs P&L / Session by Session View</ST>
           <ResponsiveContainer width="100%" height={195}>
             <ComposedChart data={[...sessions].sort((a,b)=>a.date.localeCompare(b.date)).map(s=>({score:calcPsych(s),pnl:s.pnl||0,mood:s.mood}))} margin={{top:8,right:8,bottom:0,left:0}}>
               <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
               <XAxis dataKey="score" type="number" domain={[20,100]} tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false}/>
               <YAxis tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`}/>
               <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
-                formatter={(v,n,{payload:p})=>[<span style={{fontFamily:'monospace',fontWeight:900,color:v>=0?C.green:C.danger}}>{v>=0?'+':''}${v}</span>,`P&L · score ${p.score}`]}/>
+                formatter={(v,n,{payload:p})=>[<span style={{fontFamily:'monospace',fontWeight:900,color:v>=0?C.green:C.danger}}>{v>=0?'+':''}${v}</span>,`P&L / score ${p.score}`]}/>
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)"/>
               <ReferenceLine x={70} stroke={`${C.green}30`} strokeDasharray="4 3" label={{value:'70',fill:C.green,fontSize:8,position:'top'}}/>
               <ReferenceLine x={50} stroke={`${C.warn}25`} strokeDasharray="4 3" label={{value:'50',fill:C.warn,fontSize:8,position:'top'}}/>
@@ -1037,7 +1036,7 @@ const PerfByScore=({sessions})=>{
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:16}}>
         <GlassCard custom={6} glow={C.green} style={{padding:'24px 22px'}}>
-          <ST icon="🎯" color={C.green}>Win Rate by Score Range</ST>
+          <ST color={C.green}>Win Rate by Score Range</ST>
           <div style={{display:'flex',flexDirection:'column',gap:11,marginTop:4}}>
             {buckets.filter(b=>b.count>0).map((b,i)=>(
               <div key={b.range}>
@@ -1062,7 +1061,7 @@ const PerfByScore=({sessions})=>{
         </GlassCard>
 
         <GlassCard custom={7} glow={C.teal} style={{padding:'24px 22px'}}>
-          <ST icon="📋" color={C.teal}>Complete Summary Table</ST>
+          <ST color={C.teal}>Complete Summary Table</ST>
           <div style={{borderRadius:12,overflow:'hidden',border:`1px solid ${C.brd}`}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 0.7fr 0.9fr 1fr 1fr 0.8fr',padding:'7px 10px',
               background:'rgba(255,255,255,0.05)',borderBottom:`1px solid ${C.brd}`}}>
@@ -1085,7 +1084,7 @@ const PerfByScore=({sessions})=>{
             ))}
           </div>
           <div style={{marginTop:12,padding:'10px 14px',borderRadius:11,background:`${C.teal}08`,border:`1px solid ${C.teal}22`}}>
-            <div style={{fontSize:10,fontWeight:800,color:C.teal,marginBottom:4}}>💡 Recommendation</div>
+            <div style={{fontSize:10,fontWeight:800,color:C.teal,marginBottom:4}}>Recommendation</div>
             <div style={{fontSize:9.5,color:C.t2,lineHeight:1.7}}>
               {(()=>{
                 const best=buckets.filter(b=>b.count>0).sort((a,b)=>b.avgPnl-a.avgPnl)[0];
@@ -1139,7 +1138,6 @@ const Journal=({sessions})=>{
           letterSpacing:'-0.5px',
           display:'flex',alignItems:'center',gap:isLg?6:4,
         }}>
-          <span style={{fontSize:isLg?14:9}}>{sEmoji(score)}</span>
           {score}
         </div>
         {/* Mini segmented bar */}
@@ -1174,7 +1172,7 @@ const Journal=({sessions})=>{
   return(
     <GlassCard custom={9} style={{padding:'26px 26px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
-        <ST icon="📓" color={C.teal} mb={0}>Session Journal</ST>
+        <ST color={C.teal} mb={0}>Session Journal</ST>
         <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
           {[{k:'all',l:'All'},{k:'high',l:'Score ≥70'},{k:'low',l:'Score <50'},{k:'win',l:'Wins'},{k:'loss',l:'Losses'}].map(({k,l})=>(
             <motion.button key={k} onClick={()=>setFilter(k)} whileHover={{scale:1.04}} whileTap={{scale:0.96}}
@@ -1201,17 +1199,19 @@ const Journal=({sessions})=>{
                   background:isOpen?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.025)',
                   border:`1px solid ${isOpen?sc+'45':C.brd}`}}>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
-                  <div style={{width:38,height:38,borderRadius:10,flexShrink:0,background:`${em?.color||C.t3}14`,border:`1px solid ${em?.color||C.t3}28`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:19}}>{em?.emoji}</div>
+                  <div style={{width:38,height:38,borderRadius:10,flexShrink:0,background:`${em?.color||C.t3}14`,border:`1px solid ${em?.color||C.t3}28`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    <span style={{width:18,height:2,borderRadius:999,background:em?.color||C.t3,boxShadow:`0 0 10px ${em?.color||C.t3}`}}/>
+                  </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
                       <div style={{display:'flex',alignItems:'center',gap:8}}>
                         <span style={{fontSize:12,fontWeight:700,color:C.t1}}>
                           {new Date(s.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}
                         </span>
-                        {s.routine&&<span style={{fontSize:8,padding:'1px 6px',borderRadius:4,background:`${C.green}15`,color:C.green,border:`1px solid ${C.green}25`}}>✓ Routine</span>}
+                        {s.routine&&<span style={{fontSize:8,padding:'1px 6px',borderRadius:4,background:`${C.green}15`,color:C.green,border:`1px solid ${C.green}25`}}>Routine</span>}
                       </div>
                       <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                        <span style={{fontSize:9,color:C.t3}}>{s.trades||0}T · {wr}%WR</span>
+                        <span style={{fontSize:9,color:C.t3}}>{s.trades||0}T / {wr}%WR</span>
                         <span style={{fontSize:11,fontWeight:900,fontFamily:'monospace',color:(s.pnl||0)>=0?C.green:C.danger}}>{(s.pnl||0)>=0?'+':''}${s.pnl?.toLocaleString()}</span>
                         <ScoreBadge score={score}/>
                       </div>
@@ -1280,7 +1280,6 @@ const Journal=({sessions})=>{
                         </div>
                         {/* Level label */}
                         <div style={{marginTop:8,display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:`${sc}18`,border:`1px solid ${sc}35`}}>
-                          <span style={{fontSize:12}}>{sEmoji(score)}</span>
                           <span style={{fontSize:10,fontWeight:800,color:sc}}>{sLabel(score)}</span>
                         </div>
                       </div>
@@ -1312,12 +1311,12 @@ const Journal=({sessions})=>{
                       </div>
                       {/* Objectifs + Notes */}
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                        {[{cond:s.objectives,icon:'🎯',label:'Objectives',val:s.objectives,c:C.cyan},
-                          {cond:s.notes,icon:'📝',label:'Notes',val:s.notes,c:C.purple},
-                          {cond:s.stressors,icon:'⚠️',label:'Stressors',val:s.stressors,c:C.warn},
-                        ].filter(x=>x.cond).map(({icon,label,val,c})=>(
+                        {[{cond:s.objectives,label:'Objectives',val:s.objectives,c:C.cyan},
+                          {cond:s.notes,label:'Notes',val:s.notes,c:C.purple},
+                          {cond:s.stressors,label:'Stressors',val:s.stressors,c:C.warn},
+                        ].filter(x=>x.cond).map(({label,val,c})=>(
                           <div key={label} style={{padding:'9px 12px',borderRadius:9,background:`${c}08`,border:`1px solid ${c}18`}}>
-                            <div style={{fontSize:8,color:c,marginBottom:3,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.5px'}}>{icon} {label}</div>
+                            <div style={{fontSize:8,color:c,marginBottom:3,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.5px'}}>{label}</div>
                             <div style={{fontSize:10.5,color:C.t2,lineHeight:1.6}}>{val}</div>
                           </div>
                         ))}
@@ -1337,20 +1336,20 @@ const Journal=({sessions})=>{
 // ═══════════════════════════════════════════════════════════════════
 // 📊 KPI CARD
 // ═══════════════════════════════════════════════════════════════════
-const KpiCard=({label,value,sub,color,icon,custom,trend})=>(
+const KpiCard=({label,value,sub,color,custom,trend})=>(
   <GlassCard custom={custom} glow={color} style={{padding:'20px 18px',position:'relative'}}>
     <div style={{position:'absolute',top:-20,right:-20,width:90,height:90,borderRadius:'50%',background:`radial-gradient(circle,${color}22,transparent 70%)`,filter:'blur(14px)',pointerEvents:'none'}}/>
     <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${color}45,transparent)`}}/>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
       <span style={{fontSize:7.5,fontWeight:800,color:C.t3,letterSpacing:'1.8px',textTransform:'uppercase'}}>{label}</span>
-      <motion.span animate={{scale:[1,1.12,1]}} transition={{duration:3,repeat:Infinity,delay:(custom||0)*0.4}}
-        style={{fontSize:18,filter:`drop-shadow(0 0 8px ${color})`}}>{icon}</motion.span>
+      <motion.span animate={{opacity:[0.5,1,0.5]}} transition={{duration:3,repeat:Infinity,delay:(custom||0)*0.4}}
+        style={{width:28,height:2,borderRadius:999,background:color,boxShadow:`0 0 12px ${color}70`}}/>
     </div>
     <div style={{fontSize:26,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,marginBottom:5,textShadow:`0 0 24px ${color}50`}}>{value}</div>
     <div style={{fontSize:9.5,color:C.t2,lineHeight:1.4}}>{sub}</div>
     {trend!==undefined&&(
       <div style={{marginTop:6,fontSize:9,fontWeight:700,color:trend>=0?C.green:C.danger,display:'flex',alignItems:'center',gap:4}}>
-        <span>{trend>=0?'↗':'↘'}</span><span>{Math.abs(trend).toFixed(1)}% vs prev. period</span>
+        <span>{trend>=0?'Up':'Down'}</span><span>{Math.abs(trend).toFixed(1)}% vs prev. period</span>
       </div>
     )}
     <motion.div animate={{opacity:[0.4,0.8,0.4]}} transition={{duration:2.5,repeat:Infinity,delay:(custom||0)*0.3}}
@@ -1359,11 +1358,11 @@ const KpiCard=({label,value,sub,color,icon,custom,trend})=>(
 );
 
 const TABS=[
-  {id:'overview',  label:'Overview',    icon:'📊'},
-  {id:'emotions',  label:'Emotions',    icon:'😊'},
-  {id:'patterns',  label:'Patterns',    icon:'🔍'},
-  {id:'perf',      label:'Performance', icon:'📈'},
-  {id:'journal',   label:'Journal',     icon:'📓'},
+  {id:'overview',  label:'Overview'},
+  {id:'emotions',  label:'Emotions'},
+  {id:'patterns',  label:'Patterns'},
+  {id:'perf',      label:'Performance'},
+  {id:'journal',   label:'Journal'},
 ];
 
 export default function Psychology(){
@@ -1466,7 +1465,7 @@ export default function Psychology(){
     return(
       <div style={{background:'radial-gradient(ellipse 130% 60% at 50% -10%,rgba(176,110,255,0.10) 0%,#030508 65%)',minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:40}}>
         <motion.div initial={{scale:0.8,opacity:0}} animate={{scale:1,opacity:1}} transition={{type:'spring',stiffness:120}}>
-          <div style={{fontSize:72,marginBottom:20}}>🧠</div>
+          <div style={{width:70,height:4,borderRadius:999,background:C.gradPurple,boxShadow:`0 0 22px ${C.purple}70`,margin:'0 auto 26px'}}/>
           <h2 style={{fontSize:28,fontWeight:900,background:C.gradPurple,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:12}}>Psychology Tracker</h2>
           <p style={{fontSize:15,color:C.t2,maxWidth:440,lineHeight:1.7,marginBottom:8}}>
             No trades recorded yet.
@@ -1475,7 +1474,7 @@ export default function Psychology(){
             Import or add your trades in <strong style={{color:C.cyan}}>All Trades</strong> — psychology data will appear automatically here.
           </p>
           <motion.div animate={{opacity:[0.4,0.9,0.4]}} transition={{duration:2.5,repeat:Infinity}} style={{marginTop:28,display:'inline-flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:12,background:`${C.purple}14`,border:`1px solid ${C.purple}30`,fontSize:12,color:C.purple,fontWeight:700}}>
-            📊 Your statistics will appear here
+            Your statistics will appear here
           </motion.div>
         </motion.div>
       </div>
@@ -1503,9 +1502,9 @@ export default function Psychology(){
           style={{marginBottom:22,paddingBottom:20,borderBottom:`1px solid ${C.brd}`}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:14}}>
             <div style={{display:'flex',alignItems:'center',gap:14}}>
-              <motion.div animate={{rotate:[0,8,-8,0]}} transition={{duration:5,repeat:Infinity,ease:'easeInOut'}}
-                style={{width:46,height:46,borderRadius:14,background:C.gradPurple,display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,flexShrink:0,boxShadow:`0 4px 24px ${C.purpleGlow}`}}>
-                🧠
+              <motion.div animate={{opacity:[0.72,1,0.72]}} transition={{duration:5,repeat:Infinity,ease:'easeInOut'}}
+                style={{width:46,height:46,borderRadius:14,background:C.gradPurple,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:`0 4px 24px ${C.purpleGlow}`}}>
+                <span style={{width:22,height:2,borderRadius:999,background:'#fff',boxShadow:'0 0 16px rgba(255,255,255,0.75)'}}/>
               </motion.div>
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
@@ -1514,7 +1513,7 @@ export default function Psychology(){
                   </h1>
                   <span style={{padding:'2px 9px',borderRadius:6,background:`${C.blue}20`,border:`1px solid ${C.blue}40`,fontSize:9,fontWeight:800,color:C.blue,letterSpacing:'0.5px'}}>v3.0</span>
                 </div>
-                <div style={{fontSize:11,color:C.t3}}>Composite score · 8 dimensions · {sessions.length} sessions analyzed</div>
+                <div style={{fontSize:11,color:C.t3}}>Composite score / 8 dimensions / {sessions.length} sessions analyzed</div>
               </div>
             </div>
             {/* Tabs */}
@@ -1526,7 +1525,7 @@ export default function Psychology(){
                     background:tab===t.id?`linear-gradient(135deg,${C.purple}24,${C.blue}16)`:'transparent',
                     color:tab===t.id?C.purple:C.t3,
                     boxShadow:tab===t.id?`0 0 0 1px ${C.purple}45,0 2px 14px ${C.purple}18`:'none'}}>
-                  <span style={{fontSize:13}}>{t.icon}</span>{t.label}
+                  {t.label}
                 </motion.button>
               ))}
             </div>
@@ -1535,18 +1534,18 @@ export default function Psychology(){
 
         {/* ── KPI ROW ── */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20}}>
-          <KpiCard custom={0} label="Current Score"         icon="🧠"
+          <KpiCard custom={0} label="Current Score"
             value={stats.latestScore}
-            sub={`${sEmoji(stats.latestScore)} ${sLabel(stats.latestScore)} · Moy. ${stats.avgScore}`}
+            sub={`${sLabel(stats.latestScore)} / Avg ${stats.avgScore}`}
             color={sColor(stats.latestScore)} trend={stats.scoreTrend}/>
-          <KpiCard custom={1} label="Discipline Rate"      icon="📐"
+          <KpiCard custom={1} label="Discipline Rate"
             value={`${stats.disciplineRate}%`}
             sub="Avg discipline score" color={C.blue}/>
-          <KpiCard custom={2} label="Emotional Sessions" icon="😤"
+          <KpiCard custom={2} label="Emotional Sessions"
             value={`${stats.emotionalPct}%`}
             sub={`${Math.round(sessions.length*stats.emotionalPct/100)} sessions with score < 50`}
             color={C.danger}/>
-          <KpiCard custom={3} label="Optimal Session P&L" icon="💹"
+          <KpiCard custom={3} label="Optimal Session P&L"
             value={stats.highPnl>=0?`+$${stats.highPnl.toLocaleString()}`:`-$${Math.abs(stats.highPnl).toLocaleString()}`}
             sub="Sessions with score ≥ 70" color={C.green}/>
         </div>

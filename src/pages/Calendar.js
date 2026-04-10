@@ -100,7 +100,7 @@ function Calendar() {
         className="mb-10"
       >
         <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-4">
-          📅 Trading Calendar
+          Trading Calendar
         </h1>
         <p className="text-[#A0AEC0] text-xl">Track your daily performance and identify patterns</p>
       </motion.div>
@@ -169,7 +169,7 @@ function Calendar() {
               transition={{ repeat: Infinity, duration: 5 }}
               className="absolute top-0 right-0 text-6xl opacity-10"
             >
-              {stat.icon}
+              <span className="block w-16 h-1 rounded-full bg-white opacity-70" />
             </motion.div>
             <div className="relative z-10">
               <div className="text-[#A0AEC0] text-xs font-bold mb-2 uppercase tracking-wider">{stat.label}</div>
@@ -197,7 +197,7 @@ function Calendar() {
               onClick={prevMonth}
               className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-xl hover:shadow-2xl transition-all"
             >
-              ←
+              Prev
             </motion.button>
             
             <div className="text-center">
@@ -212,7 +212,7 @@ function Calendar() {
               onClick={nextMonth}
               className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-xl hover:shadow-2xl transition-all"
             >
-              →
+              Next
             </motion.button>
           </div>
 
@@ -273,7 +273,7 @@ function Calendar() {
                           transition={{ repeat: Infinity, duration: 2 }}
                           className="text-lg mb-1"
                         >
-                          {parseFloat(stats.totalPnL) >= 0 ? '' : '💸'}
+                          {parseFloat(stats.totalPnL) >= 0 ? '' : 'Loss'}
                         </motion.div>
                         <div className={`text-xs font-black ${parseFloat(stats.totalPnL) >= 0 ? 'text-[#34D399]' : 'text-[#F87171]'}`}>
                           ${Math.abs(parseFloat(stats.totalPnL))}
@@ -306,7 +306,7 @@ function Calendar() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                📋 Day Details
+                Day Details
               </h3>
               <p className="text-[#718096] text-sm">
                 {selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
@@ -392,7 +392,7 @@ function Calendar() {
                               : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
                           }`}
                         >
-                          {trade.type === 'Long' ? '🔼' : '🔽'} {trade.type}
+                          {trade.type}
                         </motion.span>
                       </div>
 
@@ -419,7 +419,7 @@ function Calendar() {
                               : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
                           }`}
                         >
-                          {trade.pnl >= 0 ? '💰 +' : '💸 '}${Math.abs(parseFloat(trade.pnl || 0)).toFixed(2)}
+                          {trade.pnl >= 0 ? '+' : '-'}${Math.abs(parseFloat(trade.pnl || 0)).toFixed(2)}
                         </motion.div>
                       </div>
                     </motion.div>
@@ -435,7 +435,7 @@ function Calendar() {
                   transition={{ repeat: Infinity, duration: 3 }}
                   className="text-8xl mb-4"
                 >
-                  🌙
+                  No data
                 </motion.div>
                 <p className="text-[#718096] text-lg">No trades on this day</p>
               </div>
@@ -448,7 +448,7 @@ function Calendar() {
                   transition={{ repeat: Infinity, duration: 2 }}
                   className="text-8xl mb-4"
                 >
-                  📅
+                  Calendar
                 </motion.div>
                 <p className="text-[#718096] text-lg">Select a date to view trades</p>
               </div>
