@@ -726,6 +726,7 @@ const LiveTicker = () => {
   const { stats, trades } = useDashData();
   const [visible, setVisible] = useState(true);
   const snapshot = getLiveSnapshot(stats, trades);
+  const hasRr = typeof snapshot?.rr === 'number' && Number.isFinite(snapshot.rr);
   if (!visible) return null;
   return (
     <motion.div initial={{opacity:0,y:-20}} animate={{opacity:1,y:0}} transition={{duration:0.4}}
@@ -741,7 +742,7 @@ const LiveTicker = () => {
         <span style={{fontSize:11,fontWeight:900,color:snapshot ? (snapshot.pnl >= 0 ? C.green : C.danger) : C.cyan,fontFamily:'monospace'}}>
           {snapshot ? money(snapshot.pnl, true) : 'Ready'}
         </span>
-        {snapshot?.rr !== null && <Badge color={C.cyan}>{snapshot.rr >= 0 ? '+' : '-'}{Math.abs(snapshot.rr)}R</Badge>}
+        {hasRr && <Badge color={C.cyan}>{snapshot.rr >= 0 ? '+' : '-'}{Math.abs(snapshot.rr)}R</Badge>}
       </div>
       <div style={{display:'flex',gap:8,alignItems:'center'}}>
         <span style={{fontSize:8.5,color:C.t3}}>{snapshot ? snapshot.session : 'Your modules are active and waiting for real journal data.'}</span>
