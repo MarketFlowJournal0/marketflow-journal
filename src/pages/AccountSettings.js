@@ -129,6 +129,114 @@ const ToneCard = ({ option, active, onClick }) => {
   );
 };
 
+const ThemePreviewPanel = ({ label }) => (
+  <div
+    style={{
+      position: 'relative',
+      padding: '18px',
+      borderRadius: 18,
+      background: 'linear-gradient(150deg,rgba(10,16,28,0.98),rgba(7,11,20,0.98))',
+      border: `1px solid ${shade(C.cyan, '34')}`,
+      boxShadow: `0 24px 48px ${shade(C.cyan, '14')}`,
+      overflow: 'hidden',
+      minHeight: 100,
+    }}
+  >
+    <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 16% 0%, ${shade(C.cyan, '16')}, transparent 34%), radial-gradient(circle at 100% 100%, ${shade(C.secondary, '12')}, transparent 38%)`, pointerEvents: 'none' }} />
+    <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: C.cyan, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Live Preview</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: C.t0, marginTop: 6 }}>Journal Accent Study</div>
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 999, background: shade(C.cyan, '12'), border: `1px solid ${shade(C.cyan, '30')}`, color: C.cyan, fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.cyan, boxShadow: `0 0 10px ${shade(C.cyan, '88')}` }} />
+          {label}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ padding: '12px 14px', borderRadius: 14, background: `linear-gradient(90deg, ${shade(C.cyan, '10')}, ${shade(C.secondary, '08')}, rgba(255,255,255,0.02))`, border: `1px solid ${shade(C.cyan, '28')}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.cyan, boxShadow: `0 0 8px ${shade(C.cyan, '90')}` }} />
+            <span style={{ fontSize: 10.5, fontWeight: 800, color: C.cyan, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Command Center</span>
+          </div>
+          <span style={{ fontSize: 10.5, color: C.t2 }}>Borders, focus and highlights react here.</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+          {[
+            { label: 'Focus', value: '+$142', tone: C.cyan },
+            { label: 'Secondary', value: '68%', tone: C.secondary },
+            { label: 'Risk', value: '-2.1%', tone: C.danger },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                padding: '14px 12px',
+                borderRadius: 14,
+                background: 'rgba(255,255,255,0.025)',
+                border: `1px solid ${shade(item.tone, '28')}`,
+                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 24px ${shade(item.tone, '10')}`,
+              }}
+            >
+              <div style={{ width: 24, height: 2, borderRadius: 999, background: item.tone, boxShadow: `0 0 12px ${shade(item.tone, '66')}`, marginBottom: 12 }} />
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.t3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>{item.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: item.tone, fontFamily: 'monospace' }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.022)', border: `1px solid ${shade(C.cyan, '24')}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>Equity preview</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['1M', '3M', 'All'].map((period, index) => (
+                <div
+                  key={period}
+                  style={{
+                    padding: '5px 9px',
+                    borderRadius: 8,
+                    border: `1px solid ${index === 2 ? shade(C.cyan, '30') : C.brd}`,
+                    background: index === 2 ? shade(C.cyan, '14') : 'transparent',
+                    color: index === 2 ? C.cyan : C.t3,
+                    fontSize: 9,
+                    fontWeight: 700,
+                  }}
+                >
+                  {period}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ position: 'relative', height: 112, borderRadius: 14, background: 'linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))', border: `1px solid ${C.brd}` }}>
+            <svg viewBox="0 0 320 112" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+              <defs>
+                <linearGradient id="theme-preview-line" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="var(--mf-accent,#06E6FF)" />
+                  <stop offset="55%" stopColor="var(--mf-accent-secondary,#66F0FF)" />
+                  <stop offset="100%" stopColor="var(--mf-blue,#4D7CFF)" />
+                </linearGradient>
+                <linearGradient id="theme-preview-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(6,230,255,0.22)" />
+                  <stop offset="100%" stopColor="rgba(6,230,255,0)" />
+                </linearGradient>
+              </defs>
+              <path d="M0 88 C24 84, 42 72, 58 66 S96 58, 118 62 S158 40, 182 42 S220 50, 244 34 S282 18, 320 24" fill="none" stroke="url(#theme-preview-line)" strokeWidth="3.2" strokeLinecap="round" />
+              <path d="M0 112 L0 88 C24 84, 42 72, 58 66 S96 58, 118 62 S158 40, 182 42 S220 50, 244 34 S282 18, 320 24 L320 112 Z" fill="url(#theme-preview-fill)" />
+            </svg>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <div style={{ padding: '6px 10px', borderRadius: 10, background: shade(C.cyan, '12'), border: `1px solid ${shade(C.cyan, '26')}`, color: C.cyan, fontSize: 10, fontWeight: 700 }}>Accent border</div>
+            <div style={{ padding: '6px 10px', borderRadius: 10, background: shade(C.secondary, '12'), border: `1px solid ${shade(C.secondary, '26')}`, color: C.secondary, fontSize: 10, fontWeight: 700 }}>Secondary glow</div>
+            <div style={{ padding: '6px 10px', borderRadius: 10, background: shade(C.green, '12'), border: `1px solid ${shade(C.green, '26')}`, color: C.green, fontSize: 10, fontWeight: 700 }}>Positive state</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 function CardShell({ children, delay = 0 }) {
   return (
     <motion.div
@@ -286,7 +394,7 @@ export default function AccountSettings({ user, onBack }) {
         <div style={{ position: 'absolute', bottom: 0, right: '10%', width: 420, height: 280, background: 'radial-gradient(ellipse,rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.06) 0%,transparent 70%)', filter: 'blur(42px)' }} />
       </div>
 
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 920, margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1180, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
           <button
             onClick={onBack}
@@ -398,99 +506,103 @@ export default function AccountSettings({ user, onBack }) {
               <span style={{ fontSize: 12, fontWeight: 800, color: C.t1 }}>Journal Appearance</span>
             </div>
 
-            <div style={{ marginBottom: 18, padding: '16px 18px', borderRadius: 14, background: 'rgba(255,255,255,0.025)', border: `1px solid ${C.brd}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t0 }}>Interface Tone</div>
-                  <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>
-                    Accent variations apply across the journal while the dark base stays clean and premium.
-                  </div>
-                </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.025)', border: `1px solid ${shade(C.cyan, '32')}` }}>
-                  <div style={{ width: 18, height: 18, borderRadius: 6, background: `linear-gradient(135deg, ${C.cyan}, ${C.secondary})` }} />
-                  <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t1 }}>{activeToneLabel}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))', gap: 10 }}>
-                {JOURNAL_THEME_CHOICES.map((option) => (
-                  <ToneCard
-                    key={option.value}
-                    option={option}
-                    active={toneChoice === option.value}
-                    onClick={() => setPresetTone(option.value)}
-                  />
-                ))}
-              </div>
-
-              {isElite && (
-                <div style={{ marginTop: 18, paddingTop: 18, borderTop: `1px solid ${C.brd}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t0 }}>Custom Accent</div>
-                      <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>
-                        Elite unlocks the native color picker with live preview while you drag.
-                      </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 18, alignItems: 'stretch' }}>
+              <div style={{ marginBottom: 18, padding: '16px 18px', borderRadius: 14, background: 'rgba(255,255,255,0.025)', border: `1px solid ${C.brd}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t0 }}>Interface Tone</div>
+                    <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>
+                      Accent variations apply across the journal while the dark base stays clean and premium.
                     </div>
-                    <div style={{ fontSize: 10.5, color: C.cyan, fontWeight: 700 }}>{customAccent}</div>
                   </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0, 1fr) 64px', gap: 12, alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => setToneChoice(JOURNAL_THEME_CUSTOM_VALUE)}
-                      style={{
-                        width: 56,
-                        height: 48,
-                        borderRadius: 14,
-                        border: toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? `1px solid ${shade(customAccent, '88')}` : `1px solid ${C.brd}`,
-                        background: `linear-gradient(135deg, ${customAccent}, ${getJournalTheme('elite', JOURNAL_THEME_CUSTOM_VALUE, customAccent).secondary})`,
-                        boxShadow: toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? `0 14px 26px ${shade(customAccent, '32')}` : 'none',
-                        cursor: 'pointer',
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={customDraft}
-                      onChange={handleCustomDraftChange}
-                      onBlur={handleCustomDraftBlur}
-                      spellCheck={false}
-                      style={{
-                        height: 48,
-                        borderRadius: 14,
-                        border: `1px solid ${toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? shade(customAccent, '70') : C.brd}`,
-                        background: 'rgba(255,255,255,0.025)',
-                        color: C.t1,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        padding: '0 14px',
-                        outline: 'none',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    <input
-                      type="color"
-                      value={customAccent}
-                      onInput={(event) => setCustomTone(event.target.value)}
-                      onChange={(event) => setCustomTone(event.target.value)}
-                      aria-label="Custom accent color"
-                      style={{
-                        width: 64,
-                        height: 48,
-                        padding: 4,
-                        borderRadius: 14,
-                        border: `1px solid ${shade(customAccent, '58')}`,
-                        background: 'rgba(255,255,255,0.03)',
-                        cursor: 'pointer',
-                        boxSizing: 'border-box',
-                      }}
-                    />
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.025)', border: `1px solid ${shade(C.cyan, '32')}` }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 6, background: `linear-gradient(135deg, ${C.cyan}, ${C.secondary})` }} />
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t1 }}>{activeToneLabel}</span>
                   </div>
                 </div>
-              )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))', gap: 10 }}>
+                  {JOURNAL_THEME_CHOICES.map((option) => (
+                    <ToneCard
+                      key={option.value}
+                      option={option}
+                      active={toneChoice === option.value}
+                      onClick={() => setPresetTone(option.value)}
+                    />
+                  ))}
+                </div>
+
+                {isElite && (
+                  <div style={{ marginTop: 18, paddingTop: 18, borderTop: `1px solid ${C.brd}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t0 }}>Custom Accent</div>
+                        <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>
+                          Elite unlocks the native color picker with live preview while you drag.
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 10.5, color: C.cyan, fontWeight: 700 }}>{customAccent}</div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0, 1fr) 64px', gap: 12, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => setToneChoice(JOURNAL_THEME_CUSTOM_VALUE)}
+                        style={{
+                          width: 56,
+                          height: 48,
+                          borderRadius: 14,
+                          border: toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? `1px solid ${shade(customAccent, '88')}` : `1px solid ${C.brd}`,
+                          background: `linear-gradient(135deg, ${customAccent}, ${getJournalTheme('elite', JOURNAL_THEME_CUSTOM_VALUE, customAccent).secondary})`,
+                          boxShadow: toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? `0 14px 26px ${shade(customAccent, '32')}` : 'none',
+                          cursor: 'pointer',
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={customDraft}
+                        onChange={handleCustomDraftChange}
+                        onBlur={handleCustomDraftBlur}
+                        spellCheck={false}
+                        style={{
+                          height: 48,
+                          borderRadius: 14,
+                          border: `1px solid ${toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? shade(customAccent, '70') : C.brd}`,
+                          background: 'rgba(255,255,255,0.025)',
+                          color: C.t1,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          padding: '0 14px',
+                          outline: 'none',
+                          fontFamily: 'inherit',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                      <input
+                        type="color"
+                        value={customAccent}
+                        onInput={(event) => setCustomTone(event.target.value)}
+                        onChange={(event) => setCustomTone(event.target.value)}
+                        aria-label="Custom accent color"
+                        style={{
+                          width: 64,
+                          height: 48,
+                          padding: 4,
+                          borderRadius: 14,
+                          border: `1px solid ${shade(customAccent, '58')}`,
+                          background: 'rgba(255,255,255,0.03)',
+                          cursor: 'pointer',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <ThemePreviewPanel label={activeToneLabel} />
             </div>
           </CardShell>
         )}

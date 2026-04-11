@@ -149,9 +149,9 @@ function AppLayout({ user, onLogout }) {
 
   return (
     <TradingProvider>
-      <div className="mfj-shell" style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)', fontFamily: "'Inter',sans-serif" }}>
+      <div className="mfj-shell" style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)', fontFamily: "'Inter',sans-serif", overflowX: 'visible', position: 'relative' }}>
         {!isFullscreen && (
-          <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: sidebarWidth, zIndex: 100, transition: 'width 0.30s cubic-bezier(0.4,0,0.2,1)' }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: sidebarWidth, zIndex: 100, transition: 'width 0.30s cubic-bezier(0.4,0,0.2,1)', overflow: 'visible' }}>
             <Sidebar
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
@@ -162,7 +162,7 @@ function AppLayout({ user, onLogout }) {
             />
           </div>
         )}
-        <div className="mf-main" style={{ marginLeft: sidebarWidth, flex: 1, minHeight: '100vh', transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)', backgroundColor: 'var(--bg)', overflow: 'auto' }}>
+        <div className="mf-main" style={{ marginLeft: sidebarWidth, flex: 1, minHeight: '100vh', transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)', backgroundColor: 'var(--bg)', overflow: 'auto', position: 'relative', zIndex: 1 }}>
           <Routes>
             <Route path="/dashboard" element={renderProtectedRoute('dashboard', <Dashboard />)} />
             <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />

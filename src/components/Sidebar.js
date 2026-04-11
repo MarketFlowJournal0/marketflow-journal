@@ -522,7 +522,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         display: 'flex',
         flexDirection: 'column',
         zIndex: 100,
-        overflow: 'hidden',
+        overflow: 'visible',
         flexShrink: 0,
         fontFamily: "'Inter', 'DM Sans', -apple-system, sans-serif",
         isolation: 'isolate',
@@ -694,7 +694,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         ))}
       </nav>
 
-      <div style={{ padding: collapsed ? '10px 8px 12px' : '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 2 }}>
+      <div style={{ padding: collapsed ? '10px 8px 12px' : '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 4 }}>
         <AnimatePresence>
           {panelOpen && (
             <motion.div
@@ -703,8 +703,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.98 }}
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              style={{ position: 'absolute', bottom: 'calc(100% + 12px)', left: collapsed ? 82 : 12, width: 268, background: 'linear-gradient(160deg, rgba(8,12,20,0.98), rgba(5,8,14,0.98))', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, padding: 12, zIndex: 300, overflow: 'hidden', boxShadow: '0 30px 70px rgba(0,0,0,0.42)' }}
+              style={{ position: 'absolute', bottom: 'calc(100% + 12px)', left: collapsed ? 84 : (sidebarWidth - 28), width: 320, background: 'linear-gradient(160deg, rgba(8,12,20,0.98), rgba(5,8,14,0.98))', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 12, zIndex: 320, overflow: 'hidden', backdropFilter: 'blur(18px)', boxShadow: '0 34px 90px rgba(0,0,0,0.48)' }}
             >
+              <div style={{ position: 'absolute', left: collapsed ? -14 : 14, bottom: 26, width: 24, height: 24, borderRadius: 8, background: 'linear-gradient(145deg, rgba(8,12,20,0.98), rgba(5,8,14,0.98))', borderLeft: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', transform: 'rotate(45deg)', pointerEvents: 'none' }} />
               <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 18% 0%, ${withAlpha(planInfo.accent, 0.14)}, transparent 34%), radial-gradient(circle at 88% 18%, ${withAlpha(planInfo.secondary, 0.08)}, transparent 26%)`, pointerEvents: 'none' }} />
 
               <div style={{ position: 'relative', padding: '12px 12px 14px', borderRadius: 14, background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))', border: '1px solid rgba(255,255,255,0.05)', marginBottom: 10 }}>
