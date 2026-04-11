@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { hasRouteAccess, normalizePlan } from '../lib/subscription';
 import {
   JOURNAL_THEME_KEY,
-  JOURNAL_THEME_CHOICES,
   JOURNAL_THEME_CUSTOM_KEY,
   JOURNAL_THEME_CUSTOM_VALUE,
   DEFAULT_JOURNAL_THEME_VALUE,
@@ -15,7 +14,6 @@ import {
 
 const MARKETFLOW_LOGO = '/logo192.png';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
-const THEME_ENABLED_PLANS = ['pro', 'elite'];
 
 const Ic = {
   Dashboard: () => (
@@ -230,13 +228,6 @@ function getPlanInfo(plan) {
     label: 'Trial',
     description: 'Core journal access while activation finishes syncing.',
   };
-}
-
-function normalizeHexDraft(value) {
-  const cleaned = String(value || '').toUpperCase().replace(/[^#0-9A-F]/g, '');
-  if (!cleaned) return '#';
-  if (cleaned.startsWith('#')) return cleaned.slice(0, 7);
-  return `#${cleaned.slice(0, 6)}`;
 }
 
 function SidebarAmbientCanvas({ accent, secondary }) {
@@ -456,53 +447,32 @@ function Tooltip({ text, children }) {
 function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, onLogout }) {
   const [hovered, setHovered] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [toneChoice, setToneChoice] = useState(() => localStorage.getItem(JOURNAL_THEME_KEY) || DEFAULT_JOURNAL_THEME_VALUE);
-  const [customAccent, setCustomAccent] = useState(() => normalizeHexColor(localStorage.getItem(JOURNAL_THEME_CUSTOM_KEY)) || DEFAULT_JOURNAL_CUSTOM_ACCENT);
-  const [customDraft, setCustomDraft] = useState(() => normalizeHexColor(localStorage.getItem(JOURNAL_THEME_CUSTOM_KEY)) || DEFAULT_JOURNAL_CUSTOM_ACCENT);
+  const [toneChoice] = useState(() => localStorage.getItem(JOURNAL_THEME_KEY) || DEFAULT_JOURNAL_THEME_VALUE);
+  const [customAccent] = useState(() => normalizeHexColor(localStorage.getItem(JOURNAL_THEME_CUSTOM_KEY)) || DEFAULT_JOURNAL_CUSTOM_ACCENT);
 
   const firstName = user?.firstName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
   const initials = firstName.slice(0, 2).toUpperCase();
   const email = user?.email || '';
   const plan = normalizePlan(user?.plan || user?.user_metadata?.plan);
   const isAdmin = email === ADMIN_EMAIL;
-  const isElite = plan === 'elite';
-  const canEditTheme = THEME_ENABLED_PLANS.includes(plan);
   const activeTheme = getJournalTheme(plan, toneChoice, customAccent);
   const planInfo = {
     ...getPlanInfo(plan),
     accent: activeTheme.accent,
     secondary: activeTheme.secondary,
   };
-  const currentPreset = JOURNAL_THEME_CHOICES.find((item) => item.value === (normalizeHexColor(toneChoice) || DEFAULT_JOURNAL_THEME_VALUE));
-  const currentToneLabel = toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? 'Custom' : (currentPreset?.label || 'Aqua');
   const sidebarWidth = collapsed ? 72 : 260;
   const sections = NAV(isAdmin, plan);
 
   useEffect(() => {
-    const normalizedCustom = normalizeHexColor(customAccent) || DEFAULT_JOURNAL_CUSTOM_ACCENT;
-    const nextChoice = toneChoice === JOURNAL_THEME_CUSTOM_VALUE
-      ? (isElite ? JOURNAL_THEME_CUSTOM_VALUE : DEFAULT_JOURNAL_THEME_VALUE)
+    const normalizedChoice = toneChoice === JOURNAL_THEME_CUSTOM_VALUE
+      ? JOURNAL_THEME_CUSTOM_VALUE
       : (normalizeHexColor(toneChoice) || DEFAULT_JOURNAL_THEME_VALUE);
-    const hasPreset = JOURNAL_THEME_CHOICES.some((item) => item.value === nextChoice);
-    const resolvedChoice = nextChoice === JOURNAL_THEME_CUSTOM_VALUE || hasPreset
-      ? nextChoice
-      : DEFAULT_JOURNAL_THEME_VALUE;
-
-    if (resolvedChoice !== toneChoice) {
-      setToneChoice(resolvedChoice);
-      return;
-    }
-
-    if (normalizedCustom !== customAccent) {
-      setCustomAccent(normalizedCustom);
-      setCustomDraft(normalizedCustom);
-      return;
-    }
-
-    localStorage.setItem(JOURNAL_THEME_KEY, resolvedChoice);
+    const normalizedCustom = normalizeHexColor(customAccent) || DEFAULT_JOURNAL_CUSTOM_ACCENT;
+    localStorage.setItem(JOURNAL_THEME_KEY, normalizedChoice);
     localStorage.setItem(JOURNAL_THEME_CUSTOM_KEY, normalizedCustom);
-    applyJournalTheme(getJournalTheme(plan, resolvedChoice, normalizedCustom));
-  }, [plan, toneChoice, customAccent, isElite]);
+    applyJournalTheme(getJournalTheme(plan, normalizedChoice, normalizedCustom));
+  }, [plan, toneChoice, customAccent]);
 
   useEffect(() => {
     if (!panelOpen) return;
@@ -521,38 +491,6 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
     setCurrentPage(id);
     setPanelOpen(false);
   }, [setCurrentPage]);
-
-  const setPresetTone = (value) => {
-    const normalizedValue = normalizeHexColor(value) || DEFAULT_JOURNAL_THEME_VALUE;
-    setToneChoice(normalizedValue);
-    setCustomDraft(normalizeHexColor(customAccent) || DEFAULT_JOURNAL_CUSTOM_ACCENT);
-  };
-
-  const setCustomTone = (value) => {
-    const normalizedValue = normalizeHexColor(value);
-    if (!normalizedValue) return;
-    setCustomAccent(normalizedValue);
-    setCustomDraft(normalizedValue);
-    setToneChoice(JOURNAL_THEME_CUSTOM_VALUE);
-  };
-
-  const handleCustomToneInput = (event) => {
-    setCustomTone(event.target.value);
-  };
-
-  const handleCustomDraftChange = (event) => {
-    const nextValue = normalizeHexDraft(event.target.value);
-    setCustomDraft(nextValue);
-
-    const normalizedValue = normalizeHexColor(nextValue);
-    if (normalizedValue) {
-      setCustomTone(normalizedValue);
-    }
-  };
-
-  const handleCustomDraftBlur = () => {
-    setCustomDraft(normalizeHexColor(customDraft) || customAccent);
-  };
 
   const actionButtonStyle = {
     width: '100%',
@@ -632,7 +570,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                 <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: 0.16 }} style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 800, letterSpacing: '-0.05em', lineHeight: 1, color: '#FFFFFF' }}>
                     Market
-                    <span style={{ background: `linear-gradient(90deg, ${planInfo.accent}, ${planInfo.secondary}, ${planInfo.accent})`, backgroundSize: '200% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    <span style={{ display: 'inline-block', background: `linear-gradient(90deg, ${planInfo.accent}, ${planInfo.secondary}, ${planInfo.accent})`, backgroundSize: '200% 100%', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>
                       Flow
                     </span>
                   </div>
@@ -781,122 +719,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                 <div style={{ fontSize: 11.5, color: 'rgba(232,238,255,0.58)', lineHeight: 1.6, marginTop: 10 }}>{planInfo.description}</div>
               </div>
 
-              {canEditTheme && (
-                <div style={{ position: 'relative', marginBottom: 10, padding: '11px 12px', borderRadius: 13, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)' }}>Interface tone</div>
-                    <div style={{ fontSize: 10.5, color: 'rgba(232,238,255,0.42)' }}>{isElite ? 'Elite live' : 'Pro presets'}</div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E8EEFF' }}>{currentToneLabel}</div>
-                    <div style={{ fontSize: 10.5, color: planInfo.accent }}>{isElite && toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? customAccent : 'Live preview'}</div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 8 }}>
-                    {JOURNAL_THEME_CHOICES.map((option) => {
-                      const previewTheme = getJournalTheme('pro', option.value);
-                      const active = toneChoice === option.value;
-
-                      return (
-                        <button
-                          key={option.value}
-                          onClick={() => setPresetTone(option.value)}
-                          title={option.label}
-                          style={{
-                            display: 'grid',
-                            gap: 6,
-                            padding: '8px 6px',
-                            borderRadius: 12,
-                            border: active ? `1px solid ${withAlpha(previewTheme.accent, 0.55)}` : '1px solid rgba(255,255,255,0.06)',
-                            background: active ? `linear-gradient(180deg, ${withAlpha(previewTheme.accent, 0.12)}, rgba(255,255,255,0.03))` : 'rgba(255,255,255,0.02)',
-                            cursor: 'pointer',
-                            transition: 'all 0.16s ease',
-                          }}
-                        >
-                          <div style={{ width: '100%', height: 22, borderRadius: 8, background: `linear-gradient(135deg, ${previewTheme.accent}, ${previewTheme.secondary})`, boxShadow: active ? `0 10px 18px ${withAlpha(previewTheme.accent, 0.18)}` : 'none' }} />
-                          <div style={{ fontSize: 9.5, fontWeight: 700, color: active ? '#E8EEFF' : 'rgba(232,238,255,0.62)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{option.label}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div style={{ fontSize: 10.5, color: 'rgba(232,238,255,0.44)', lineHeight: 1.6, marginTop: 10 }}>
-                    Presets update the accent language of the whole journal instantly while keeping the dark base clean.
-                  </div>
-
-                  {isElite && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)' }}>Custom live accent</div>
-                        <div style={{ fontSize: 10.5, color: 'rgba(232,238,255,0.42)' }}>Drag to preview</div>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 48px', gap: 10, alignItems: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => setToneChoice(JOURNAL_THEME_CUSTOM_VALUE)}
-                          title="Use custom accent"
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 12,
-                            border: toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? `1px solid ${withAlpha(customAccent, 0.55)}` : '1px solid rgba(255,255,255,0.08)',
-                            background: `linear-gradient(135deg, ${customAccent}, ${getJournalTheme('elite', JOURNAL_THEME_CUSTOM_VALUE, customAccent).secondary})`,
-                            boxShadow: toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? `0 10px 22px ${withAlpha(customAccent, 0.18)}` : 'none',
-                            cursor: 'pointer',
-                          }}
-                        />
-                        <input
-                          type="text"
-                          value={customDraft}
-                          onChange={handleCustomDraftChange}
-                          onBlur={handleCustomDraftBlur}
-                          spellCheck={false}
-                          style={{
-                            height: 40,
-                            borderRadius: 12,
-                            border: `1px solid ${toneChoice === JOURNAL_THEME_CUSTOM_VALUE ? withAlpha(customAccent, 0.35) : 'rgba(255,255,255,0.08)'}`,
-                            background: 'rgba(255,255,255,0.025)',
-                            color: '#E8EEFF',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            letterSpacing: '0.08em',
-                            textTransform: 'uppercase',
-                            padding: '0 12px',
-                            outline: 'none',
-                            fontFamily: 'inherit',
-                          }}
-                        />
-                        <input
-                          type="color"
-                          value={customAccent}
-                          onInput={handleCustomToneInput}
-                          onChange={handleCustomToneInput}
-                          aria-label="Custom accent color"
-                          style={{
-                            width: 48,
-                            height: 40,
-                            padding: 4,
-                            borderRadius: 12,
-                            border: `1px solid ${withAlpha(customAccent, 0.28)}`,
-                            background: 'rgba(255,255,255,0.03)',
-                            cursor: 'pointer',
-                          }}
-                        />
-                      </div>
-
-                      <div style={{ fontSize: 10.5, color: 'rgba(232,238,255,0.44)', lineHeight: 1.6, marginTop: 9 }}>
-                        Elite can open the native color picker and the journal updates live while you move through shades.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div style={{ display: 'grid', gap: 8, position: 'relative' }}>
                 <button onClick={() => go('account-settings')} style={actionButtonStyle}>
-                  <Ic.Settings /> Account Settings
+                  <Ic.Settings /> Account & Theme
                 </button>
                 <button onClick={() => go('subscription')} style={{ ...actionButtonStyle, justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

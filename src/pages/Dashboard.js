@@ -14,7 +14,7 @@ const useDashData = () => React.useContext(DashboardDataCtx) || {};
 // --- DESIGN SYSTEM -----------------------------------------------------------
 const C = {
   bg:'var(--mf-bg,#030508)', bgCard:'var(--mf-card,#0C1422)', bgHigh:'var(--mf-high,#111B2E)',
-  cyan:'var(--mf-accent,#06E6FF)', teal:'var(--mf-teal,#00F5D4)', green:'var(--mf-green,#00FF88)', blue:'var(--mf-blue,#4D7CFF)',
+  cyan:'var(--mf-accent,#06E6FF)', secondary:'var(--mf-accent-secondary,#66F0FF)', teal:'var(--mf-teal,#00F5D4)', green:'var(--mf-green,#00FF88)', blue:'var(--mf-blue,#4D7CFF)',
   purple:'var(--mf-purple,#A78BFA)', pink:'var(--mf-pink,#FB7185)', gold:'var(--mf-gold,#FFD700)', danger:'var(--mf-danger,#FF3D57)',
   warn:'var(--mf-warn,#FFB31A)', orange:'var(--mf-orange,#FF6B35)',
   t0:'var(--mf-text-0,#FFFFFF)', t1:'var(--mf-text-1,#E8EEFF)', t2:'var(--mf-text-2,#7A90B8)', t3:'var(--mf-text-3,#334566)', t4:'var(--mf-text-4,#1A2440)',
@@ -96,7 +96,7 @@ const ChartTip = ({ active, payload, label, prefix='$' }) => {
 
 const Empty = ({ label }) => (
   <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'28px 0',gap:8}}>
-    <div style={{width:54,height:54,borderRadius:18,border:`1px solid ${shade(C.cyan,'26')}`,background:'linear-gradient(135deg,rgba(var(--mf-accent-rgb, 6, 230, 255),0.12),rgba(var(--mf-green-rgb, 0, 255, 136),0.05))'}}/>
+    <div style={{width:54,height:54,borderRadius:18,border:`1px solid ${shade(C.cyan,'26')}`,background:'linear-gradient(135deg,rgba(var(--mf-accent-rgb, 6, 230, 255),0.12),rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.05))'}}/>
     <span style={{fontSize:10,color:C.t3}}>{label||'No trades recorded'}</span>
   </div>
 );
@@ -209,11 +209,11 @@ function money(value = 0, signed = false) {
 const KpiStrip = () => {
   const { stats } = useDashData();
   const items = [
-    { label:'P&L Total',     value: stats.pnl >= 0 ? `+$${stats.pnl.toLocaleString()}` : `-$${Math.abs(stats.pnl).toLocaleString()}`, delta: stats.pnlPct, sub:`$${stats.expectancy}/trade`,   color:C.green,  icon:'??' },
-    { label:'Win Rate',      value:`${stats.winRate}%`,  delta: null, sub:`${stats.wins}W / ${stats.losses}L / ${shade(stats.breakevens,'BE')}`, color:C.cyan,   icon:'??' },
+    { label:'P&L Total',     value: stats.pnl >= 0 ? `+$${stats.pnl.toLocaleString()}` : `-$${Math.abs(stats.pnl).toLocaleString()}`, delta: stats.pnlPct, sub:`$${stats.expectancy}/trade`,   color:C.cyan,  icon:'??' },
+    { label:'Win Rate',      value:`${stats.winRate}%`,  delta: null, sub:`${stats.wins}W / ${stats.losses}L / ${stats.breakevens || 0}BE`, color:C.blue,   icon:'??' },
     { label:'Profit Factor', value: stats.profitFactor || '�', delta: null, sub:`Avg W $${stats.avgWin}`, color:C.teal, icon:'??' },
-    { label:'Max Drawdown',  value:`${Math.abs(stats.maxDrawdown)}%`, delta: stats.maxDrawdown !== 0 ? stats.maxDrawdown : null, sub:'Since the beginning', color:C.danger, icon:'??', invert:true },
-    { label:'Expectancy',    value:`$${stats.expectancy}`, delta: null, sub:'Per trade',                  color:C.gold,   icon:'??' },
+    { label:'Max Drawdown',  value:`${Math.abs(stats.maxDrawdown)}%`, delta: stats.maxDrawdown !== 0 ? stats.maxDrawdown : null, sub:'Since the beginning', color:C.purple, icon:'??', invert:true },
+    { label:'Expectancy',    value:`$${stats.expectancy}`, delta: null, sub:'Per trade',                  color:C.secondary,   icon:'??' },
   ];
   return (
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginBottom:18}}>
@@ -247,10 +247,10 @@ const EquityPanel = () => {
   const pnl = stats.pnl || 0;
   const pnlPct = stats.pnlPct || 0;
   return (
-    <Card custom={7} glow={C.green} hover={false} style={{padding:'22px 22px'}}>
+    <Card custom={7} glow={C.cyan} hover={false} style={{padding:'22px 22px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
         <div>
-          <SectionTitle color={C.green} icon="??">Equity Curve</SectionTitle>
+          <SectionTitle color={C.cyan} icon="??">Equity Curve</SectionTitle>
           <div style={{display:'flex',alignItems:'baseline',gap:10,marginTop:-6,marginBottom:12}}>
             <span style={{fontSize:30,fontWeight:900,fontFamily:'monospace',color:pnl>=0?C.green:C.danger,textShadow:`0 0 24px ${shade(pnl>=0?C.green:C.danger,'40')}`}}>
               {pnl>=0?'+':''}{pnl>=0?'$'+pnl.toLocaleString():'-$'+Math.abs(pnl).toLocaleString()}
@@ -261,7 +261,7 @@ const EquityPanel = () => {
         </div>
         <div style={{display:'flex',gap:3}}>
           {['1M','3M','6M','1Y','All'].map(r => (
-            <button key={r} onClick={()=>setRange(r)} style={{padding:'5px 10px',borderRadius:6,border:`1px solid ${range===r?C.green:C.brd}`,background:range===r?`${shade(C.green,'18')}`:'transparent',color:range===r?C.green:C.t3,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}>
+            <button key={r} onClick={()=>setRange(r)} style={{padding:'5px 10px',borderRadius:6,border:`1px solid ${range===r?C.cyan:C.brd}`,background:range===r?`${shade(C.cyan,'18')}`:'transparent',color:range===r?C.cyan:C.t3,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}>
               {r}
             </button>
           ))}
@@ -285,18 +285,18 @@ const EquityPanel = () => {
           <AreaChart data={data} margin={{top:4,right:4,bottom:0,left:0}}>
             <defs>
               <linearGradient id="eg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={C.green} stopOpacity={0.35}/>
-                <stop offset="100%" stopColor={C.green} stopOpacity={0.01}/>
+                <stop offset="0%" stopColor={C.cyan} stopOpacity={0.3}/>
+                <stop offset="100%" stopColor={C.cyan} stopOpacity={0.01}/>
               </linearGradient>
               <linearGradient id="el" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor={C.cyan}/><stop offset="60%" stopColor={C.green}/><stop offset="100%" stopColor={C.teal}/>
+                <stop offset="0%" stopColor={C.cyan}/><stop offset="60%" stopColor={C.secondary}/><stop offset="100%" stopColor={C.blue}/>
               </linearGradient>
             </defs>
             <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
             <XAxis dataKey="d" tick={{fill:C.t3,fontSize:7.5}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`} width={36}/>
             <Tooltip content={<ChartTip/>}/>
-            <Area type="monotone" dataKey="v" stroke="url(#el)" strokeWidth={2.5} fill="url(#eg)" dot={false} activeDot={{r:5,fill:C.green,stroke:'#fff',strokeWidth:2}}/>
+            <Area type="monotone" dataKey="v" stroke="url(#el)" strokeWidth={2.5} fill="url(#eg)" dot={false} activeDot={{r:5,fill:C.cyan,stroke:'#fff',strokeWidth:2}}/>
           </AreaChart>
         </ResponsiveContainer>
       ) : <Empty label="Add trades to see the equity curve"/>}
@@ -645,8 +645,8 @@ const PairPanel = () => {
   const { stats } = useDashData();
   const data = stats.pairData || [];
   return (
-    <Card custom={14} glow={C.gold} hover={false} style={{padding:'20px 20px'}}>
-      <SectionTitle color={C.gold} icon="??">By Pair</SectionTitle>
+    <Card custom={14} glow={C.secondary} hover={false} style={{padding:'20px 20px'}}>
+      <SectionTitle color={C.secondary} icon="??">By Pair</SectionTitle>
       {data.length > 0 ? (
         <div style={{display:'flex',flexDirection:'column',gap:5}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 36px 46px 64px',gap:10,padding:'0 10px 8px',borderBottom:`1px solid ${C.brd}`}}>
@@ -731,11 +731,11 @@ const LiveTicker = () => {
   if (!visible) return null;
   return (
     <motion.div initial={{opacity:0,y:-20}} animate={{opacity:1,y:0}} transition={{duration:0.4}}
-      style={{marginBottom:12,padding:'12px 18px',borderRadius:14,background:'linear-gradient(90deg,rgba(var(--mf-green-rgb, 0, 255, 136),0.07),rgba(var(--mf-accent-rgb, 6, 230, 255),0.05),rgba(255,255,255,0.02))',border:`1px solid ${shade(C.green,'25')}`,display:'flex',alignItems:'center',justifyContent:'space-between',gap:14,boxShadow:'0 16px 40px rgba(0,0,0,0.18)'}}>
+      style={{marginBottom:12,padding:'12px 18px',borderRadius:14,background:'linear-gradient(90deg,rgba(var(--mf-accent-rgb, 6, 230, 255),0.08),rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.05),rgba(255,255,255,0.02))',border:`1px solid ${shade(C.cyan,'25')}`,display:'flex',alignItems:'center',justifyContent:'space-between',gap:14,boxShadow:'0 16px 40px rgba(0,0,0,0.18)'}}>
       <div style={{display:'flex',alignItems:'center',gap:12}}>
         <motion.div animate={{opacity:[1,0.3,1]}} transition={{duration:1.2,repeat:Infinity}}
-          style={{width:8,height:8,borderRadius:'50%',background:C.green,boxShadow:`0 0 8px ${C.green}`,flexShrink:0}}/>
-        <span style={{fontSize:10,fontWeight:800,color:C.green,textTransform:'uppercase',letterSpacing:'0.08em'}}>{snapshot?.label || 'Journal Status'}</span>
+          style={{width:8,height:8,borderRadius:'50%',background:C.cyan,boxShadow:`0 0 8px ${C.cyan}`,flexShrink:0}}/>
+        <span style={{fontSize:10,fontWeight:800,color:C.cyan,textTransform:'uppercase',letterSpacing:'0.08em'}}>{snapshot?.label || 'Journal Status'}</span>
         <div style={{width:1,height:16,background:C.brd}}/>
         <span style={{fontSize:10,color:C.t2}}>
           {snapshot ? `${snapshot.pair} / ${snapshot.dir} / ${snapshot.meta}` : 'Import trades to unlock the live execution feed'}
@@ -799,8 +799,8 @@ const JournalNote = () => {
   const { stats, trades } = useDashData();
   const note = buildJournalInsight(stats, trades);
   return (
-    <Card custom={17} glow={C.warn} hover={false} style={{padding:'20px 20px'}}>
-      <SectionTitle color={C.warn} icon="??">Today's Note</SectionTitle>
+    <Card custom={17} glow={C.secondary} hover={false} style={{padding:'20px 20px'}}>
+      <SectionTitle color={C.secondary} icon="??">Today's Note</SectionTitle>
       <div style={{fontSize:10,color:C.t2,lineHeight:1.75,background:'rgba(255,255,255,0.02)',borderRadius:12,padding:'12px 14px',border:`1px solid ${C.brd}`,marginBottom:12,minHeight:88}}>
         <span style={{color:C.gold,fontWeight:700}}>Strengths :</span> {note.strength}
         <br/><span style={{color:C.danger,fontWeight:700}}>To improve :</span> {note.improve}
@@ -1110,7 +1110,7 @@ export default function Dashboard() {
         {/* BG ambiance */}
         <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:0}}>
           <div style={{position:'absolute',top:0,left:'18%',width:620,height:420,background:'radial-gradient(ellipse,rgba(var(--mf-accent-rgb, 6, 230, 255),0.12) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatA 14s ease-in-out infinite'}}/>
-          <div style={{position:'absolute',bottom:0,right:'8%',width:560,height:360,background:'radial-gradient(ellipse,rgba(var(--mf-green-rgb, 0, 255, 136),0.08) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatB 16s ease-in-out infinite'}}/>
+          <div style={{position:'absolute',bottom:0,right:'8%',width:560,height:360,background:'radial-gradient(ellipse,rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.08) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatB 16s ease-in-out infinite'}}/>
           <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.008) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.008) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
           <div style={{position:'absolute',inset:0,background:'linear-gradient(112deg,transparent 0%,rgba(var(--mf-accent-rgb, 6, 230, 255),0.06) 48%,transparent 56%)',transform:'translateX(-120%)',animation:'mfDashboardScan 10s linear infinite'}}/>
         </div>
