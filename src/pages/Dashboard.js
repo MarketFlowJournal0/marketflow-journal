@@ -192,6 +192,18 @@ function getRankBenchmarks(score, tradeCount = 0) {
   };
 }
 
+function money(value = 0, signed = false) {
+  const amount = Number(value) || 0;
+  const abs = Math.abs(amount).toLocaleString();
+
+  if (signed) {
+    if (amount > 0) return `+$${abs}`;
+    if (amount < 0) return `-$${abs}`;
+  }
+
+  return `$${abs}`;
+}
+
 // --- KPI STRIP ----------------------------------------------------------------
 const KpiStrip = () => {
   const { stats } = useDashData();
