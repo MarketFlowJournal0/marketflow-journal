@@ -11,8 +11,8 @@ import {
   getJournalTheme,
   applyJournalTheme,
 } from '../lib/journalTheme';
+import MarketFlowMark from './MarketFlowMark';
 
-const MARKETFLOW_LOGO = '/logo192.png';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 const Ic = {
@@ -562,19 +562,39 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
       <div style={{ padding: collapsed ? '16px 10px 14px' : '18px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', minWidth: 0 }} onClick={() => go('dashboard')}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, overflow: 'hidden', flexShrink: 0, border: `1px solid ${withAlpha(planInfo.accent, 0.2)}`, background: 'linear-gradient(180deg, rgba(7,14,26,0.96), rgba(11,22,38,0.92))', boxShadow: `0 10px 26px ${withAlpha(planInfo.accent, 0.16)}` }}>
-              <img src={MARKETFLOW_LOGO} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
+            <div
+              style={{
+                width: collapsed ? 34 : 40,
+                height: collapsed ? 34 : 40,
+                position: 'relative',
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+                filter: `drop-shadow(0 10px 28px ${withAlpha(planInfo.accent, 0.16)})`,
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: collapsed ? 5 : 3,
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, ${withAlpha(planInfo.accent, 0.18)} 0%, ${withAlpha(planInfo.secondary, 0.08)} 36%, transparent 74%)`,
+                  filter: 'blur(12px)',
+                  opacity: 0.92,
+                }}
+              />
+              <MarketFlowMark accent={planInfo.accent} secondary={planInfo.secondary} size={collapsed ? 30 : 36} />
             </div>
             <AnimatePresence>
               {!collapsed && (
                 <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: 0.16 }} style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 800, letterSpacing: '-0.05em', lineHeight: 1, color: '#FFFFFF' }}>
+                  <div className="mf-sidebar-brand" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 800, letterSpacing: '-0.055em', lineHeight: 0.98, color: '#F3F7FF' }}>
                     Market
-                    <span style={{ display: 'inline-block', background: `linear-gradient(90deg, ${planInfo.accent}, ${planInfo.secondary}, ${planInfo.accent})`, backgroundSize: '200% 100%', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>
+                    <span style={{ color: planInfo.accent }}>
                       Flow
                     </span>
                   </div>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)', marginTop: 4 }}>Trading Journal</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.58)', marginTop: 5 }}>Trading Journal</div>
                 </motion.div>
               )}
             </AnimatePresence>

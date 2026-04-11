@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import MarketFlowMark from '../components/MarketFlowMark';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW JOURNAL — Landing Page v3
@@ -200,7 +201,7 @@ const STYLES = `
   }
   .lp-nav.scrolled { background:rgba(3,5,8,0.95); border-bottom-color:var(--brd); }
   .lp-nav-logo { display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none; }
-  .lp-nav-logo-icon { width:36px;height:36px;border-radius:10px;overflow:hidden;border:1px solid rgba(6,230,255,0.15);box-shadow:0 0 16px rgba(6,230,255,0.1); }
+  .lp-nav-logo-icon { width:36px;height:36px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 10px 22px rgba(6,230,255,0.12)); }
   .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--t0);letter-spacing:-0.5px; }
   .lp-nav-links { display:flex;align-items:center;gap:4px; }
   .lp-nav-links a { padding:8px 16px;border-radius:8px;color:var(--t2);text-decoration:none;font-size:13.5px;font-weight:500;transition:all 0.18s; }
@@ -527,7 +528,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       {/* ── NAV ── */}
       <nav className={`lp-nav ${scrolled?'scrolled':''}`}>
         <div className="lp-nav-logo" onClick={()=>window.scrollTo({top:0,behavior:'smooth'})}>
-          <div className="lp-nav-logo-icon"><img src="/logo192.png" alt="" style={{width:'100%',height:'100%',objectFit:'contain',padding:2}}/></div>
+          <div className="lp-nav-logo-icon"><MarketFlowMark size={32} accent="#06E6FF" secondary="#67F5E0" /></div>
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
         <div className="lp-nav-links">
@@ -785,7 +786,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <div className="lp-footer-top">
             <div className="lp-footer-brand">
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <div style={{width:28,height:28,borderRadius:8,overflow:'hidden',border:'1px solid rgba(6,230,255,0.15)'}}><img src="/logo192.png" alt="" style={{width:'100%',height:'100%',objectFit:'contain',padding:2}}/></div>
+                <div style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',filter:'drop-shadow(0 10px 22px rgba(6,230,255,0.12))'}}><MarketFlowMark size={28} accent="#06E6FF" secondary="#67F5E0" /></div>
                 <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:16,color:'#fff'}}>Market<span className="flow-text">Flow</span></span>
               </div>
               <p>The most powerful trading journal with AI analytics. Built for traders who want to level up.</p>
