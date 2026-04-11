@@ -24,6 +24,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import AuthCallback from './pages/AuthCallback';
 import BrokerConnect from './pages/BrokerConnect';
 import AIChatBot from './components/AIChatBot';
+import JournalAmbientBackground from './components/JournalAmbientBackground';
 import ReportsPage from './pages/Reports';
 import AlertsPage from './pages/Alerts';
 import ApiAccessPage from './pages/ApiAccess';
@@ -163,6 +164,7 @@ function AppLayout({ user, onLogout }) {
           </div>
         )}
         <div className="mf-main" style={{ marginLeft: sidebarWidth, flex: 1, minHeight: '100vh', transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)', backgroundColor: 'var(--bg)', overflow: 'auto', position: 'relative', zIndex: 1 }}>
+          <JournalAmbientBackground />
           <div className="mf-main-content">
             <Routes>
               <Route path="/dashboard" element={renderProtectedRoute('dashboard', <Dashboard />)} />

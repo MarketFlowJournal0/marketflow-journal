@@ -1204,7 +1204,7 @@ export default function AllTrades(){
 
   return(
     <div style={{backgroundColor:'transparent',minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'28px 24px 48px',position:'relative',overflow:'hidden'}}>
-      <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 8% 0%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.05), transparent 28%), radial-gradient(circle at 92% 4%, rgba(var(--mf-green-rgb, 0, 255, 136),0.03), transparent 22%), linear-gradient(180deg, rgba(6,10,18,0.2), transparent 56%)',pointerEvents:'none'}}/>
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 10% 0%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.065), transparent 24%), radial-gradient(circle at 88% 10%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.03), transparent 20%), linear-gradient(135deg, rgba(255,255,255,0.015), transparent 36%, transparent 64%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.02) 100%)',pointerEvents:'none'}}/>
       <div style={{position:'relative',zIndex:1,maxWidth:1480,margin:'0 auto'}}>
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'grid',gridTemplateColumns:'minmax(0,1.35fr) minmax(280px,0.75fr)',gap:14,marginBottom:18}}>
         <div><h1 style={{margin:0,fontSize:26,fontWeight:900,background:C.grad,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-0.5px'}}>All Trades</h1><p style={{margin:'5px 0 0',color:C.t2,fontSize:12,fontWeight:500}}>Trading journal · {trades.length} trades total</p></div>
