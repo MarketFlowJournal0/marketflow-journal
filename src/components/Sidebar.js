@@ -1,9 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { hasRouteAccess, normalizePlan } from '../lib/subscription';
 
 const MARKETFLOW_LOGO = '/logo192.png';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
+const ELITE_ACCENT_KEY = 'mfj_elite_sidebar_accent';
+const ELITE_THEMES = [
+  { value: '#FFD700', secondary: '#FF9A3C', label: 'Gold' },
+  { value: '#06E6FF', secondary: '#00FF88', label: 'Aqua' },
+  { value: '#00FF88', secondary: '#7CFFB2', label: 'Emerald' },
+  { value: '#A78BFA', secondary: '#6EE7FF', label: 'Iris' },
+  { value: '#FB7185', secondary: '#FDBA74', label: 'Rose' },
+  { value: '#F97316', secondary: '#FACC15', label: 'Amber' },
+];
 
 const Ic = {
   Dashboard: () => (
@@ -140,7 +149,6 @@ const NAV = (isAdmin, plan) => [
   {
     id: 'trading',
     label: 'Trading',
-    description: 'Core review',
     items: [
       { id: 'dashboard', label: 'Dashboard', Icon: Ic.Dashboard },
       { id: 'all-trades', label: 'All Trades', Icon: Ic.Trades },
@@ -153,7 +161,6 @@ const NAV = (isAdmin, plan) => [
   {
     id: 'tools',
     label: 'Tools',
-    description: 'Execution tools',
     items: [
       { id: 'psychology', label: 'Psychology', Icon: Ic.Psychology },
       { id: 'broker-connect', label: 'Brokers', Icon: Ic.Broker },
@@ -163,7 +170,6 @@ const NAV = (isAdmin, plan) => [
   {
     id: 'reports',
     label: 'Reports',
-    description: 'Delivery layer',
     items: [
       { id: 'reports', label: 'Reports', Icon: Ic.Reports },
       { id: 'alerts', label: 'Alerts', Icon: Ic.Alerts },
@@ -173,10 +179,240 @@ const NAV = (isAdmin, plan) => [
   ...(isAdmin ? [{
     id: 'admin',
     label: 'Admin',
-    description: 'Admin access',
     items: [{ id: 'onboarding-stats', label: 'Onboarding', Icon: Ic.Admin }],
   }] : []),
 ].filter((section) => section.items.length > 0);
+
+function hexToRgb(hex) {
+  const normalized = hex.replace('#', '');
+  const full = normalized.length === 3
+    ? normalized.split('').map((part) => part + part).join('')
+    : normalized;
+
+  return {
+    r: parseInt(full.slice(0, 2), 16),
+    g: parseInt(full.slice(2, 4), 16),
+    b: parseInt(full.slice(4, 6), 16),
+  };
+}
+
+function withAlpha(hex, alpha) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getPlanTheme(plan, eliteAccent) {
+  const eliteTheme = ELITE_THEMES.find((item) => item.value === eliteAccent) || ELITE_THEMES[0];
+
+  if (plan === 'elite') {
+    return {
+      label: 'Elite',
+      accent: eliteTheme.value,
+      secondary: eliteTheme.secondary,
+      description: 'Full journal suite with a personalized interface tone.',
+    };
+  }
+
+  if (plan === 'pro') {
+    return {
+      label: 'Pro',
+      accent: '#06E6FF',
+      secondary: '#00FF88',
+      description: 'Advanced analytics and performance review tools.',
+    };
+  }
+
+  if (plan === 'starter') {
+    return {
+      label: 'Starter',
+      accent: '#00F5D4',
+      secondary: '#06E6FF',
+      description: 'Focused journal access for disciplined execution review.',
+    };
+  }
+
+  return {
+    label: 'Trial',
+    accent: '#FB923C',
+    secondary: '#FFD166',
+    description: 'Core journal access while activation finishes syncing.',
+  };
+}
+
+function SidebarAmbientCanvas({ accent, secondary }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
+    const ctx = canvas.getContext('2d');
+    const parent = canvas.parentElement;
+    if (!ctx || !parent) return undefined;
+
+    let animationFrame = 0;
+    let width = 0;
+    let height = 0;
+    const particles = [];
+    const lines = [];
+
+    const initScene = () => {
+      particles.length = 0;
+      lines.length = 0;
+
+      const particleCount = Math.max(14, Math.round(width / 9));
+      const lineCount = Math.max(4, Math.round(width / 46));
+
+      for (let index = 0; index < particleCount; index += 1) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.18,
+          vy: (Math.random() - 0.5) * 0.18,
+          radius: Math.random() * 1.4 + 0.45,
+          alpha: Math.random() * 0.28 + 0.05,
+          tint: Math.random() > 0.5 ? accent : secondary,
+        });
+      }
+
+      for (let index = 0; index < lineCount; index += 1) {
+        const points = [];
+        let pointX = Math.random() * width;
+        let pointY = Math.random() * height;
+
+        for (let step = 0; step < 7; step += 1) {
+          points.push({
+            x: pointX,
+            y: pointY,
+            sway: Math.random() * Math.PI * 2,
+          });
+          pointX += 18 + Math.random() * 42;
+          pointY += (Math.random() - 0.5) * 44;
+        }
+
+        lines.push({
+          points,
+          speed: Math.random() * 0.16 + 0.05,
+          alpha: Math.random() * 0.06 + 0.018,
+          tint: index % 2 === 0 ? accent : secondary,
+        });
+      }
+    };
+
+    const resize = () => {
+      const bounds = parent.getBoundingClientRect();
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      width = Math.max(1, bounds.width);
+      height = Math.max(1, bounds.height);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initScene();
+    };
+
+    const draw = (time) => {
+      ctx.clearRect(0, 0, width, height);
+
+      const topGlow = ctx.createRadialGradient(width * 0.18, height * 0.08, 0, width * 0.18, height * 0.08, width * 0.75);
+      topGlow.addColorStop(0, withAlpha(accent, 0.12));
+      topGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = topGlow;
+      ctx.fillRect(0, 0, width, height);
+
+      const lowerGlow = ctx.createRadialGradient(width * 0.82, height * 0.82, 0, width * 0.82, height * 0.82, width * 0.6);
+      lowerGlow.addColorStop(0, withAlpha(secondary, 0.08));
+      lowerGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = lowerGlow;
+      ctx.fillRect(0, 0, width, height);
+
+      lines.forEach((line, index) => {
+        ctx.beginPath();
+        line.points.forEach((point, pointIndex) => {
+          const pointX = (point.x + time * line.speed * 0.02 + index * 16) % (width + 110) - 55;
+          const pointY = point.y + Math.sin(time * 0.001 + point.sway + pointIndex * 0.35) * 5.5;
+
+          if (pointIndex === 0) ctx.moveTo(pointX, pointY);
+          else ctx.lineTo(pointX, pointY);
+        });
+        ctx.strokeStyle = withAlpha(line.tint, line.alpha);
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      });
+
+      particles.forEach((particle) => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        if (particle.x < -10) particle.x = width + 10;
+        if (particle.x > width + 10) particle.x = -10;
+        if (particle.y < -10) particle.y = height + 10;
+        if (particle.y > height + 10) particle.y = -10;
+
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.fillStyle = withAlpha(particle.tint, particle.alpha);
+        ctx.fill();
+      });
+
+      for (let first = 0; first < particles.length; first += 1) {
+        for (let second = first + 1; second < particles.length; second += 1) {
+          const deltaX = particles[first].x - particles[second].x;
+          const deltaY = particles[first].y - particles[second].y;
+          const distance = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+
+          if (distance < 78) {
+            ctx.beginPath();
+            ctx.moveTo(particles[first].x, particles[first].y);
+            ctx.lineTo(particles[second].x, particles[second].y);
+            ctx.strokeStyle = withAlpha(
+              first % 2 === 0 ? accent : secondary,
+              0.035 * (1 - (distance / 78)),
+            );
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      animationFrame = window.requestAnimationFrame(draw);
+    };
+
+    resize();
+    animationFrame = window.requestAnimationFrame(draw);
+
+    const handleResize = () => resize();
+    window.addEventListener('resize', handleResize);
+
+    let observer;
+    if (window.ResizeObserver) {
+      observer = new ResizeObserver(() => resize());
+      observer.observe(parent);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener('resize', handleResize);
+      observer?.disconnect();
+    };
+  }, [accent, secondary]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        opacity: 0.95,
+      }}
+    />
+  );
+}
 
 function Tooltip({ text, children }) {
   const [visible, setVisible] = useState(false);
@@ -220,24 +456,25 @@ function Tooltip({ text, children }) {
 function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, onLogout }) {
   const [hovered, setHovered] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [eliteAccent, setEliteAccent] = useState(() => localStorage.getItem(ELITE_ACCENT_KEY) || ELITE_THEMES[0].value);
 
   const firstName = user?.firstName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
   const initials = firstName.slice(0, 2).toUpperCase();
   const email = user?.email || '';
   const plan = normalizePlan(user?.plan || user?.user_metadata?.plan);
   const isAdmin = email === ADMIN_EMAIL;
-
-  const PLAN = {
-    starter: { label: 'Starter', accent: '#00F5D4', description: 'Focused journal access for clean execution review.' },
-    pro: { label: 'Pro', accent: '#06E6FF', description: 'Advanced analytics and review tools for serious traders.' },
-    elite: { label: 'Elite', accent: '#FFD700', description: 'Full MarketFlow access with AI, alerts, and API tools.' },
-    trial: { label: 'Trial', accent: '#FB923C', description: 'Core journal access while the subscription finishes syncing.' },
-  };
-
-  const planInfo = PLAN[plan] || PLAN.trial;
-  const sidebarWidth = collapsed ? 76 : 276;
+  const isElite = plan === 'elite';
+  const planInfo = getPlanTheme(plan, eliteAccent);
+  const sidebarWidth = collapsed ? 72 : 260;
   const sections = NAV(isAdmin, plan);
-  const unlockedModules = sections.reduce((sum, section) => sum + section.items.length, 0);
+
+  useEffect(() => {
+    const hasTheme = ELITE_THEMES.some((item) => item.value === eliteAccent);
+    if (!hasTheme) {
+      setEliteAccent(ELITE_THEMES[0].value);
+      localStorage.setItem(ELITE_ACCENT_KEY, ELITE_THEMES[0].value);
+    }
+  }, [eliteAccent]);
 
   useEffect(() => {
     if (!panelOpen) return;
@@ -257,21 +494,26 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
     setPanelOpen(false);
   }, [setCurrentPage]);
 
+  const setEliteTone = (value) => {
+    setEliteAccent(value);
+    localStorage.setItem(ELITE_ACCENT_KEY, value);
+  };
+
   const actionButtonStyle = {
     width: '100%',
     display: 'flex',
     alignItems: 'center',
     gap: 10,
     padding: '10px 11px',
-    borderRadius: 10,
-    border: '1px solid rgba(66,86,122,0.32)',
-    background: 'rgba(255,255,255,0.02)',
+    borderRadius: 11,
+    border: '1px solid rgba(255,255,255,0.05)',
+    background: 'rgba(255,255,255,0.025)',
     cursor: 'pointer',
     color: 'rgba(232,238,255,0.72)',
     fontSize: 12,
     fontWeight: 500,
     fontFamily: 'inherit',
-    transition: 'all 0.14s ease',
+    transition: 'all 0.16s ease',
   };
 
   return (
@@ -291,25 +533,54 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         flexShrink: 0,
         fontFamily: "'Inter', 'DM Sans', -apple-system, sans-serif",
         isolation: 'isolate',
-        background: 'linear-gradient(180deg, rgba(7,11,18,0.98) 0%, rgba(4,7,13,0.98) 100%)',
-        borderRight: '1px solid rgba(61,78,110,0.26)',
-        boxShadow: '24px 0 80px rgba(0,0,0,0.28)',
+        background: 'linear-gradient(180deg, rgba(3,5,8,0.98) 0%, rgba(4,7,13,0.98) 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.04)',
+        boxShadow: '24px 0 80px rgba(0,0,0,0.32)',
       }}
     >
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 14% 0%, rgba(6,230,255,0.12), transparent 30%), radial-gradient(circle at 85% 16%, rgba(0,255,136,0.07), transparent 24%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.02), transparent 16%, transparent 80%, rgba(255,255,255,0.015))', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 1, background: 'linear-gradient(180deg, rgba(6,230,255,0.42), rgba(0,255,136,0.1), transparent 70%)', pointerEvents: 'none' }} />
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700;800&display=swap');
 
-      <div style={{ padding: collapsed ? '16px 10px 12px' : '18px 16px 14px', borderBottom: '1px solid rgba(61,78,110,0.2)', position: 'relative', zIndex: 2 }}>
+        @keyframes mf-sidebar-float-a {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+          50% { transform: translate3d(10px, 16px, 0) scale(1.04); }
+        }
+
+        @keyframes mf-sidebar-float-b {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+          50% { transform: translate3d(-8px, -14px, 0) scale(1.06); }
+        }
+
+        @keyframes mf-sidebar-sheen {
+          0% { transform: translateY(-120%); opacity: 0; }
+          22% { opacity: 1; }
+          100% { transform: translateY(120%); opacity: 0; }
+        }
+      `}</style>
+
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.02), transparent 18%, transparent 78%, rgba(255,255,255,0.02))', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.02), transparent 30%, transparent 70%, rgba(255,255,255,0.015))', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 1, background: `linear-gradient(180deg, ${withAlpha(planInfo.accent, 0.6)}, ${withAlpha(planInfo.secondary, 0.2)}, transparent 72%)`, pointerEvents: 'none' }} />
+      <SidebarAmbientCanvas accent={planInfo.accent} secondary={planInfo.secondary} />
+      <div style={{ position: 'absolute', top: -72, left: -42, width: collapsed ? 140 : 220, height: collapsed ? 140 : 220, borderRadius: '50%', background: `radial-gradient(circle, ${withAlpha(planInfo.accent, 0.18)} 0%, transparent 68%)`, filter: 'blur(14px)', pointerEvents: 'none', animation: 'mf-sidebar-float-a 11s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', right: collapsed ? -58 : -76, bottom: collapsed ? 54 : 34, width: collapsed ? 120 : 190, height: collapsed ? 120 : 190, borderRadius: '50%', background: `radial-gradient(circle, ${withAlpha(planInfo.secondary, 0.12)} 0%, transparent 70%)`, filter: 'blur(18px)', pointerEvents: 'none', animation: 'mf-sidebar-float-b 13s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 0%, transparent 24%, ${withAlpha(planInfo.accent, 0.03)} 42%, transparent 70%)`, pointerEvents: 'none', animation: 'mf-sidebar-sheen 12s linear infinite' }} />
+
+      <div style={{ padding: collapsed ? '16px 10px 14px' : '18px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', minWidth: 0 }} onClick={() => go('dashboard')}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(6,230,255,0.18)', background: 'linear-gradient(180deg, rgba(7,14,26,0.96), rgba(11,22,38,0.92))', boxShadow: '0 10px 22px rgba(0,0,0,0.2)' }}>
+            <div style={{ width: 38, height: 38, borderRadius: 12, overflow: 'hidden', flexShrink: 0, border: `1px solid ${withAlpha(planInfo.accent, 0.2)}`, background: 'linear-gradient(180deg, rgba(7,14,26,0.96), rgba(11,22,38,0.92))', boxShadow: `0 10px 26px ${withAlpha(planInfo.accent, 0.16)}` }}>
               <img src={MARKETFLOW_LOGO} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
             </div>
             <AnimatePresence>
               {!collapsed && (
                 <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: 0.16 }} style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.03em', color: '#E8EEFF', lineHeight: 1.05 }}>MarketFlow</div>
+                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 800, letterSpacing: '-0.05em', lineHeight: 1, color: '#FFFFFF' }}>
+                    Market
+                    <span style={{ background: `linear-gradient(90deg, ${planInfo.accent}, ${planInfo.secondary}, ${planInfo.accent})`, backgroundSize: '200% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                      Flow
+                    </span>
+                  </div>
                   <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)', marginTop: 4 }}>Trading Journal</div>
                 </motion.div>
               )}
@@ -322,8 +593,8 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
               style={{ width: 28, height: 28, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(66,86,122,0.3)', cursor: 'pointer', color: 'rgba(122,144,184,0.7)', flexShrink: 0, transition: 'all 0.14s ease' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = '#E8EEFF';
-                e.currentTarget.style.borderColor = 'rgba(6,230,255,0.22)';
-                e.currentTarget.style.background = 'rgba(6,230,255,0.06)';
+                e.currentTarget.style.borderColor = withAlpha(planInfo.accent, 0.28);
+                e.currentTarget.style.background = withAlpha(planInfo.accent, 0.08);
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.color = 'rgba(122,144,184,0.7)';
@@ -344,48 +615,36 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
             <Ic.ChevronR />
           </button>
         )}
-      </div>
-
-      <AnimatePresence>
         {!collapsed && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.16 }} style={{ padding: '14px 14px 10px', position: 'relative', zIndex: 2 }}>
-            <div style={{ borderRadius: 18, padding: '16px 16px 14px', background: 'linear-gradient(160deg, rgba(12,20,34,0.98), rgba(8,13,23,0.94))', border: '1px solid rgba(66,86,122,0.32)', boxShadow: '0 20px 48px rgba(0,0,0,0.16)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div>
-                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.64)', marginBottom: 6 }}>Workspace</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#E8EEFF', letterSpacing: '-0.04em' }}>Journal Core</div>
-                </div>
-                <div style={{ padding: '4px 9px', borderRadius: 999, border: `1px solid ${planInfo.accent}30`, background: `${planInfo.accent}14`, color: planInfo.accent, fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{planInfo.label}</div>
-              </div>
-              <div style={{ fontSize: 12, color: 'rgba(232,238,255,0.68)', lineHeight: 1.65 }}>{planInfo.description}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
-                <div style={{ padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(66,86,122,0.22)' }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.58)', marginBottom: 6 }}>Unlocked</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: '#E8EEFF', letterSpacing: '-0.04em' }}>{unlockedModules}</div>
-                </div>
-                <div style={{ padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(66,86,122,0.22)' }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.58)', marginBottom: 6 }}>Profile</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#E8EEFF', letterSpacing: '-0.02em' }}>{firstName}</div>
-                </div>
-              </div>
+          <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: planInfo.accent, boxShadow: `0 0 14px ${withAlpha(planInfo.accent, 0.75)}` }} />
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.6)' }}>
+                Navigation
+              </span>
             </div>
-          </motion.div>
+            <div style={{ padding: '5px 10px', borderRadius: 999, background: withAlpha(planInfo.accent, 0.1), border: `1px solid ${withAlpha(planInfo.accent, 0.18)}`, color: planInfo.accent, fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              {planInfo.label}
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: collapsed ? '10px 8px 12px' : '8px 12px 14px', display: 'flex', flexDirection: 'column', gap: 16, scrollbarWidth: 'none', position: 'relative', zIndex: 2 }}>
         {sections.map((section, index) => (
           <div key={section.id}>
             {!collapsed ? (
               <div style={{ padding: '0 10px 8px' }}>
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)' }}>{section.label}</div>
-                <div style={{ fontSize: 11, color: 'rgba(232,238,255,0.34)', marginTop: 3 }}>{section.description}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 16, height: 1, background: `linear-gradient(90deg, ${withAlpha(planInfo.accent, 0.42)}, transparent)` }} />
+                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)' }}>{section.label}</div>
+                </div>
               </div>
             ) : index > 0 ? (
-              <div style={{ height: 1, margin: '3px 8px 8px', background: 'linear-gradient(90deg, transparent, rgba(66,86,122,0.34), transparent)' }} />
+              <div style={{ height: 1, margin: '4px 8px 10px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)' }} />
             ) : null}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {section.items.map((item) => {
                 const isActive = currentPage === item.id;
                 const isHovered = hovered === item.id;
@@ -409,19 +668,20 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                       gap: collapsed ? 0 : 12,
                       padding: collapsed ? '9px 0' : '9px 10px',
                       borderRadius: 14,
-                      border: `1px solid ${isActive ? `${planInfo.accent}26` : isHovered ? 'rgba(66,86,122,0.36)' : 'transparent'}`,
-                      background: isActive ? `linear-gradient(135deg, ${planInfo.accent}18, rgba(255,255,255,0.03))` : isHovered ? 'rgba(255,255,255,0.03)' : 'transparent',
+                      border: `1px solid ${isActive ? withAlpha(planInfo.accent, 0.18) : isHovered ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
+                      background: isActive ? `linear-gradient(135deg, ${withAlpha(planInfo.accent, 0.16)}, ${withAlpha(planInfo.secondary, 0.06)})` : isHovered ? 'rgba(255,255,255,0.03)' : 'transparent',
                       color: isActive ? '#E8EEFF' : 'rgba(232,238,255,0.72)',
                       cursor: 'pointer',
                       position: 'relative',
                       overflow: 'hidden',
                       textAlign: 'left',
+                      transition: 'all 0.16s ease',
                     }}
                   >
                     {isActive && (
-                      <motion.div layoutId="sidebar-active" style={{ position: 'absolute', left: 0, top: 10, bottom: 10, width: 2, borderRadius: 999, background: planInfo.accent, boxShadow: `0 0 14px ${planInfo.accent}70` }} />
+                      <motion.div layoutId="sidebar-active" style={{ position: 'absolute', left: 0, top: 9, bottom: 9, width: 2, borderRadius: 999, background: `linear-gradient(180deg, ${planInfo.accent}, ${planInfo.secondary})`, boxShadow: `0 0 14px ${withAlpha(planInfo.accent, 0.5)}` }} />
                     )}
-                    <div style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: iconColor, background: isActive ? `${planInfo.accent}12` : isHovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.015)', border: `1px solid ${isActive ? `${planInfo.accent}18` : 'rgba(66,86,122,0.14)'}`, transition: 'all 0.14s ease' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: iconColor, background: isActive ? withAlpha(planInfo.accent, 0.12) : isHovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.015)', border: `1px solid ${isActive ? withAlpha(planInfo.accent, 0.18) : 'rgba(255,255,255,0.04)'}`, boxShadow: isActive ? `0 10px 22px ${withAlpha(planInfo.accent, 0.14)}` : 'none', transition: 'all 0.14s ease' }}>
                       <Icon />
                     </div>
                     <AnimatePresence>
@@ -441,7 +701,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         ))}
       </nav>
 
-      <div style={{ padding: collapsed ? '10px 8px 12px' : '10px 12px 14px', borderTop: '1px solid rgba(61,78,110,0.2)', position: 'relative', zIndex: 2 }}>
+      <div style={{ padding: collapsed ? '10px 8px 12px' : '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 2 }}>
         <AnimatePresence>
           {panelOpen && (
             <motion.div
@@ -450,21 +710,46 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.98 }}
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              style={{ position: 'absolute', bottom: 'calc(100% + 12px)', left: collapsed ? 84 : 12, width: 264, background: 'linear-gradient(160deg, rgba(11,18,32,0.98), rgba(6,10,18,0.98))', border: '1px solid rgba(66,86,122,0.34)', borderRadius: 18, padding: 12, zIndex: 300, overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.34)' }}
+              style={{ position: 'absolute', bottom: 'calc(100% + 12px)', left: collapsed ? 82 : 12, width: 268, background: 'linear-gradient(160deg, rgba(8,12,20,0.98), rgba(5,8,14,0.98))', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, padding: 12, zIndex: 300, overflow: 'hidden', boxShadow: '0 30px 70px rgba(0,0,0,0.42)' }}
             >
-              <div style={{ padding: '12px 12px 14px', borderRadius: 14, background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))', border: '1px solid rgba(66,86,122,0.2)', marginBottom: 10 }}>
+              <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 18% 0%, ${withAlpha(planInfo.accent, 0.14)}, transparent 34%), radial-gradient(circle at 88% 18%, ${withAlpha(planInfo.secondary, 0.08)}, transparent 26%)`, pointerEvents: 'none' }} />
+
+              <div style={{ position: 'relative', padding: '12px 12px 14px', borderRadius: 14, background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))', border: '1px solid rgba(255,255,255,0.05)', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, #00FF88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#030508', boxShadow: `0 10px 24px ${planInfo.accent}24` }}>{initials}</div>
+                  <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, ${planInfo.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#030508', boxShadow: `0 12px 28px ${withAlpha(planInfo.accent, 0.24)}` }}>{initials}</div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#E8EEFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{firstName}</div>
                     <div style={{ fontSize: 11, color: 'rgba(232,238,255,0.56)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
                   </div>
                 </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', marginTop: 12, padding: '4px 9px', borderRadius: 999, background: `${planInfo.accent}14`, border: `1px solid ${planInfo.accent}26`, color: planInfo.accent, fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{planInfo.label} access</div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', marginTop: 12, padding: '4px 9px', borderRadius: 999, background: withAlpha(planInfo.accent, 0.12), border: `1px solid ${withAlpha(planInfo.accent, 0.22)}`, color: planInfo.accent, fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{planInfo.label} access</div>
                 <div style={{ fontSize: 11.5, color: 'rgba(232,238,255,0.58)', lineHeight: 1.6, marginTop: 10 }}>{planInfo.description}</div>
               </div>
 
-              <div style={{ display: 'grid', gap: 8 }}>
+              {isElite && (
+                <div style={{ position: 'relative', marginBottom: 10, padding: '11px 12px', borderRadius: 13, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)' }}>Interface tone</div>
+                    <div style={{ fontSize: 10.5, color: 'rgba(232,238,255,0.42)' }}>Elite only</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {ELITE_THEMES.map((option) => {
+                      const active = eliteAccent === option.value;
+
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => setEliteTone(option.value)}
+                          title={option.label}
+                          style={{ width: 24, height: 24, borderRadius: '50%', border: active ? `2px solid ${withAlpha(option.value, 0.95)}` : '2px solid rgba(255,255,255,0.08)', background: `linear-gradient(135deg, ${option.value}, ${option.secondary})`, cursor: 'pointer', boxShadow: active ? `0 0 0 4px ${withAlpha(option.value, 0.14)}, 0 10px 18px ${withAlpha(option.value, 0.24)}` : 'none', transition: 'all 0.16s ease' }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gap: 8, position: 'relative' }}>
                 <button onClick={() => go('account-settings')} style={actionButtonStyle}>
                   <Ic.Settings /> Account Settings
                 </button>
@@ -490,9 +775,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
           onClick={() => setPanelOpen((value) => !value)}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.99 }}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10, justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '8px 0' : '10px 11px', borderRadius: 15, border: `1px solid ${panelOpen ? `${planInfo.accent}26` : 'rgba(66,86,122,0.28)'}`, background: panelOpen ? `linear-gradient(135deg, ${planInfo.accent}12, rgba(255,255,255,0.03))` : 'rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'all 0.15s ease' }}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10, justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '8px 0' : '10px 11px', borderRadius: 15, border: `1px solid ${panelOpen ? withAlpha(planInfo.accent, 0.22) : 'rgba(255,255,255,0.06)'}`, background: panelOpen ? `linear-gradient(135deg, ${withAlpha(planInfo.accent, 0.12)}, ${withAlpha(planInfo.secondary, 0.03)})` : 'rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'all 0.15s ease' }}
         >
-          <div style={{ width: 34, height: 34, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, #00FF88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#030508', boxShadow: `0 10px 18px ${planInfo.accent}20` }}>{initials}</div>
+          <div style={{ width: 34, height: 34, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, ${planInfo.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#030508', boxShadow: `0 10px 20px ${withAlpha(planInfo.accent, 0.2)}` }}>{initials}</div>
           <AnimatePresence>
             {!collapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
