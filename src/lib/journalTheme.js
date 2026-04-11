@@ -11,173 +11,242 @@ const BASE_THEME = {
   border: '#162034',
   borderHi: '#1E2E48',
   accent: '#06E6FF',
-  secondary: '#00FF88',
-  teal: '#00F5D4',
+  secondary: '#66F0FF',
+  teal: '#36EEFF',
   green: '#00FF88',
-  blue: '#4D7CFF',
-  purple: '#A78BFA',
-  pink: '#FB7185',
+  blue: '#33B8FF',
+  purple: '#5EA7FF',
+  pink: '#7BD4FF',
   gold: '#FFD700',
   warn: '#FFB31A',
-  orange: '#FF6B35',
+  orange: '#FF8B3D',
   danger: '#FF3D57',
 };
 
 export const JOURNAL_THEME_KEY = 'mfj_elite_sidebar_accent';
+export const JOURNAL_THEME_CUSTOM_KEY = 'mfj_elite_custom_accent';
+export const JOURNAL_THEME_CUSTOM_VALUE = 'custom';
+export const DEFAULT_JOURNAL_THEME_VALUE = '#06E6FF';
+export const DEFAULT_JOURNAL_CUSTOM_ACCENT = '#4C4CDD';
 
 export const JOURNAL_THEME_CHOICES = [
-  { value: '#F5F7FA', secondary: '#9AA4B2', label: 'Mono' },
-  { value: '#FFD700', secondary: '#FF9A3C', label: 'Gold' },
-  { value: '#06E6FF', secondary: '#00FF88', label: 'Aqua' },
-  { value: '#00FF88', secondary: '#7CFFB2', label: 'Emerald' },
-  { value: '#A78BFA', secondary: '#6EE7FF', label: 'Iris' },
-  { value: '#FB7185', secondary: '#FDBA74', label: 'Rose' },
-  { value: '#F97316', secondary: '#FACC15', label: 'Amber' },
+  { value: '#D7DBE4', label: 'Mono', neutral: true },
+  { value: '#06E6FF', label: 'Aqua' },
+  { value: '#00FF88', label: 'Mint' },
+  { value: '#4D7CFF', label: 'Cobalt' },
+  { value: '#8B5CF6', label: 'Iris' },
+  { value: '#FB7185', label: 'Rose' },
+  { value: '#FF7A59', label: 'Coral' },
+  { value: '#F59E0B', label: 'Amber' },
+  { value: '#FFD700', label: 'Gold' },
+  { value: '#EF4444', label: 'Crimson' },
 ];
 
-const THEME_OVERRIDES = {
-  '#F5F7FA': {
-    accent: '#F5F7FA',
-    secondary: '#9AA4B2',
-    teal: '#E5E7EB',
-    green: '#F5F7FA',
-    blue: '#CBD5E1',
-    purple: '#A1A1AA',
-    pink: '#E4E4E7',
-    gold: '#FFFFFF',
-    warn: '#D4D4D8',
-    orange: '#A1A1AA',
-    danger: '#737373',
-  },
-  '#FFD700': {
-    accent: '#FFD700',
-    secondary: '#FF9A3C',
-    teal: '#FFE066',
-    green: '#FCD34D',
-    blue: '#F59E0B',
-    purple: '#FDBA74',
-    pink: '#F97316',
-    gold: '#FFF3B0',
-    warn: '#FBBF24',
-    orange: '#FB923C',
-    danger: '#F87171',
-  },
-  '#06E6FF': {
-    accent: '#06E6FF',
-    secondary: '#00FF88',
-    teal: '#00F5D4',
-    green: '#00FF88',
-    blue: '#4D7CFF',
-    purple: '#A78BFA',
-    pink: '#FB7185',
-    gold: '#FFD700',
-    warn: '#FFB31A',
-    orange: '#FF6B35',
-    danger: '#FF3D57',
-  },
-  '#00FF88': {
-    accent: '#00FF88',
-    secondary: '#7CFFB2',
-    teal: '#5AF7D3',
-    green: '#00FF88',
-    blue: '#22C55E',
-    purple: '#86EFAC',
-    pink: '#A7F3D0',
-    gold: '#D9F99D',
-    warn: '#84CC16',
-    orange: '#65A30D',
-    danger: '#EF4444',
-  },
-  '#A78BFA': {
-    accent: '#A78BFA',
-    secondary: '#6EE7FF',
-    teal: '#7DD3FC',
-    green: '#C4B5FD',
-    blue: '#60A5FA',
-    purple: '#A78BFA',
-    pink: '#F9A8D4',
-    gold: '#FDE68A',
-    warn: '#FDBA74',
-    orange: '#FB7185',
-    danger: '#F43F5E',
-  },
-  '#FB7185': {
-    accent: '#FB7185',
-    secondary: '#FDBA74',
-    teal: '#FDA4AF',
-    green: '#FDBA74',
-    blue: '#F9A8D4',
-    purple: '#F472B6',
-    pink: '#FB7185',
-    gold: '#FDE68A',
-    warn: '#FDBA74',
-    orange: '#FB923C',
-    danger: '#EF4444',
-  },
-  '#F97316': {
-    accent: '#F97316',
-    secondary: '#FACC15',
-    teal: '#FDBA74',
-    green: '#FACC15',
-    blue: '#FB923C',
-    purple: '#FDBA74',
-    pink: '#FCA5A5',
-    gold: '#FDE68A',
-    warn: '#F59E0B',
-    orange: '#F97316',
-    danger: '#EF4444',
-  },
-};
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
-function toRgbTuple(hex) {
-  const normalized = hex.replace('#', '');
+export function normalizeHexColor(value) {
+  const normalized = String(value || '').trim().replace('#', '');
+  if (![3, 6].includes(normalized.length) || /[^0-9A-Fa-f]/.test(normalized)) return null;
+
   const full = normalized.length === 3
     ? normalized.split('').map((part) => part + part).join('')
     : normalized;
 
-  const r = parseInt(full.slice(0, 2), 16);
-  const g = parseInt(full.slice(2, 4), 16);
-  const b = parseInt(full.slice(4, 6), 16);
-  return `${r}, ${g}, ${b}`;
+  return `#${full.toUpperCase()}`;
 }
 
-function isMonoTheme(theme) {
-  return theme?.choice?.value === '#F5F7FA';
+function hexToRgbObject(hex) {
+  const normalized = normalizeHexColor(hex);
+  if (!normalized) return null;
+
+  return {
+    r: Number.parseInt(normalized.slice(1, 3), 16),
+    g: Number.parseInt(normalized.slice(3, 5), 16),
+    b: Number.parseInt(normalized.slice(5, 7), 16),
+  };
 }
 
-export function getJournalTheme(plan, storedValue) {
-  if (plan === 'elite') {
-    const choice = JOURNAL_THEME_CHOICES.find((item) => item.value === storedValue) || JOURNAL_THEME_CHOICES[2];
+function rgbToHex({ r, g, b }) {
+  return `#${[r, g, b].map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+}
+
+function rgbToHsl({ r, g, b }) {
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const lightness = (max + min) / 2;
+  const delta = max - min;
+
+  if (delta === 0) {
+    return { h: 0, s: 0, l: lightness * 100 };
+  }
+
+  const saturation = lightness > 0.5
+    ? delta / (2 - max - min)
+    : delta / (max + min);
+
+  let hue = 0;
+  if (max === red) hue = ((green - blue) / delta) + (green < blue ? 6 : 0);
+  else if (max === green) hue = ((blue - red) / delta) + 2;
+  else hue = ((red - green) / delta) + 4;
+
+  return {
+    h: hue * 60,
+    s: saturation * 100,
+    l: lightness * 100,
+  };
+}
+
+function hueToRgb(first, second, hue) {
+  let nextHue = hue;
+  if (nextHue < 0) nextHue += 1;
+  if (nextHue > 1) nextHue -= 1;
+  if (nextHue < (1 / 6)) return first + ((second - first) * 6 * nextHue);
+  if (nextHue < (1 / 2)) return second;
+  if (nextHue < (2 / 3)) return first + ((second - first) * ((2 / 3) - nextHue) * 6);
+  return first;
+}
+
+function hslToRgb(h, s, l) {
+  const hue = ((h % 360) + 360) % 360 / 360;
+  const saturation = clamp(s, 0, 100) / 100;
+  const lightness = clamp(l, 0, 100) / 100;
+
+  if (saturation === 0) {
+    const gray = Math.round(lightness * 255);
+    return { r: gray, g: gray, b: gray };
+  }
+
+  const second = lightness < 0.5
+    ? lightness * (1 + saturation)
+    : lightness + saturation - (lightness * saturation);
+  const first = (2 * lightness) - second;
+
+  return {
+    r: Math.round(hueToRgb(first, second, hue + (1 / 3)) * 255),
+    g: Math.round(hueToRgb(first, second, hue) * 255),
+    b: Math.round(hueToRgb(first, second, hue - (1 / 3)) * 255),
+  };
+}
+
+function hslToHex(h, s, l) {
+  return rgbToHex(hslToRgb(h, s, l));
+}
+
+function rotateHue(hue, offset) {
+  return ((hue + offset) % 360 + 360) % 360;
+}
+
+function deriveNeutralAccentFamily(color) {
+  const neutral = normalizeHexColor(color) || '#D7DBE4';
+  const hsl = rgbToHsl(hexToRgbObject(neutral));
+  const hue = hsl.h;
+  const saturation = clamp(hsl.s, 0, 12);
+
+  return {
+    accent: neutral,
+    secondary: hslToHex(hue, saturation, 78),
+    teal: hslToHex(hue, saturation, 74),
+    blue: hslToHex(hue, saturation, 69),
+    purple: hslToHex(hue, saturation, 72),
+    pink: hslToHex(hue, saturation, 80),
+    orange: hslToHex(hue, saturation, 67),
+  };
+}
+
+function deriveAccentFamily(color, { neutral = false } = {}) {
+  if (neutral) return deriveNeutralAccentFamily(color);
+
+  const accent = normalizeHexColor(color) || DEFAULT_JOURNAL_THEME_VALUE;
+  const rgb = hexToRgbObject(accent);
+  if (!rgb) return deriveAccentFamily(DEFAULT_JOURNAL_THEME_VALUE);
+
+  const { h, s, l } = rgbToHsl(rgb);
+  const saturation = clamp(s < 28 ? s + 28 : s, 26, 96);
+  const lightness = clamp(l, 36, 68);
+
+  return {
+    accent,
+    secondary: hslToHex(h, clamp(saturation + 4, 24, 98), clamp(lightness + 14, 48, 82)),
+    teal: hslToHex(rotateHue(h, -8), clamp(saturation + 6, 28, 98), clamp(lightness + 8, 44, 78)),
+    blue: hslToHex(rotateHue(h, -18), clamp(saturation + 8, 28, 100), clamp(lightness - 2, 34, 70)),
+    purple: hslToHex(rotateHue(h, 14), clamp(saturation + 2, 24, 98), clamp(lightness + 9, 42, 78)),
+    pink: hslToHex(rotateHue(h, 24), clamp(saturation - 4, 20, 90), clamp(lightness + 13, 48, 84)),
+    orange: hslToHex(rotateHue(h, -26), clamp(saturation + 8, 30, 100), clamp(lightness + 10, 46, 80)),
+  };
+}
+
+function toRgbTuple(hex) {
+  const rgb = hexToRgbObject(hex);
+  if (!rgb) return '255, 255, 255';
+  return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+}
+
+export function getJournalThemeChoice(value) {
+  const normalized = normalizeHexColor(value);
+  return JOURNAL_THEME_CHOICES.find((choice) => choice.value === normalized) || null;
+}
+
+function buildThemedAccent(choiceValue, customAccent) {
+  if (choiceValue === JOURNAL_THEME_CUSTOM_VALUE) {
+    return deriveAccentFamily(customAccent || DEFAULT_JOURNAL_CUSTOM_ACCENT);
+  }
+
+  const choice = getJournalThemeChoice(choiceValue) || getJournalThemeChoice(DEFAULT_JOURNAL_THEME_VALUE);
+  return deriveAccentFamily(choice?.value, { neutral: choice?.neutral });
+}
+
+export function getJournalTheme(plan, storedValue, customAccent) {
+  const normalizedPlan = String(plan || '').toLowerCase();
+
+  if (normalizedPlan === 'elite') {
+    const accentTheme = buildThemedAccent(storedValue, customAccent);
     return {
       ...BASE_THEME,
-      ...THEME_OVERRIDES[choice.value],
+      ...accentTheme,
+      choice: storedValue === JOURNAL_THEME_CUSTOM_VALUE
+        ? { value: JOURNAL_THEME_CUSTOM_VALUE, label: 'Custom' }
+        : (getJournalThemeChoice(storedValue) || getJournalThemeChoice(DEFAULT_JOURNAL_THEME_VALUE)),
+    };
+  }
+
+  if (normalizedPlan === 'pro') {
+    const choice = getJournalThemeChoice(storedValue) || getJournalThemeChoice(DEFAULT_JOURNAL_THEME_VALUE);
+    return {
+      ...BASE_THEME,
+      ...deriveAccentFamily(choice?.value, { neutral: choice?.neutral }),
       choice,
     };
   }
 
-  if (plan === 'starter') {
+  if (normalizedPlan === 'starter') {
     return {
       ...BASE_THEME,
       accent: '#00F5D4',
-      secondary: '#06E6FF',
-      teal: '#00F5D4',
-      green: '#00FF88',
+      secondary: '#59F7E1',
+      teal: '#26F9E5',
+      blue: '#4DD4FF',
+      purple: '#6AC8FF',
+      pink: '#89E4FF',
+      orange: '#2ED7C8',
       choice: null,
     };
   }
 
-  if (plan === 'trial') {
+  if (normalizedPlan === 'trial') {
     return {
       ...BASE_THEME,
       accent: '#FB923C',
-      secondary: '#FFD166',
-      teal: '#FDBA74',
-      green: '#FDE68A',
+      secondary: '#FDBA74',
+      teal: '#FDB27A',
       blue: '#F59E0B',
-      purple: '#FDBA74',
-      pink: '#FCA5A5',
-      gold: '#FFE082',
-      warn: '#F59E0B',
+      purple: '#F8B86A',
+      pink: '#FFD2A3',
       orange: '#FB923C',
       choice: null,
     };
@@ -255,12 +324,12 @@ export function applyJournalTheme(theme) {
     '--mf-warn-rgb': toRgbTuple(theme.warn),
     '--mf-orange-rgb': toRgbTuple(theme.orange),
     '--mf-danger-rgb': toRgbTuple(theme.danger),
-    '--mf-app-filter': isMonoTheme(theme) ? 'grayscale(1) saturate(0.08) contrast(1.03)' : 'none',
+    '--mf-app-filter': 'none',
   };
 
   Object.entries(entries).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
 
-  root.setAttribute('data-journal-tone', isMonoTheme(theme) ? 'mono' : 'default');
+  root.setAttribute('data-journal-tone', 'subtle');
 }

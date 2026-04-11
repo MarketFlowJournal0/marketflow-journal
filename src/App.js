@@ -29,7 +29,7 @@ import AlertsPage from './pages/Alerts';
 import ApiAccessPage from './pages/ApiAccess';
 import WelcomePage from './pages/WelcomePage';
 import { getEntryRoute, hasRouteAccess, normalizePlan } from './lib/subscription';
-import { JOURNAL_THEME_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
+import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
 import './App.css';
 import './theme.css';
 
@@ -134,7 +134,8 @@ function AppLayout({ user, onLogout }) {
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(JOURNAL_THEME_KEY);
-    applyJournalTheme(getJournalTheme(plan, storedTheme));
+    const storedCustomAccent = localStorage.getItem(JOURNAL_THEME_CUSTOM_KEY);
+    applyJournalTheme(getJournalTheme(plan, storedTheme, storedCustomAccent));
   }, [plan]);
 
   const fullscreenPages = ['subscription', 'account-settings', 'support'];
@@ -148,7 +149,7 @@ function AppLayout({ user, onLogout }) {
 
   return (
     <TradingProvider>
-      <div className="mfj-shell" style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)', fontFamily: "'Inter',sans-serif", filter: 'var(--mf-app-filter, none)', transition: 'filter 0.28s ease' }}>
+      <div className="mfj-shell" style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)', fontFamily: "'Inter',sans-serif" }}>
         {!isFullscreen && (
           <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: sidebarWidth, zIndex: 100, transition: 'width 0.30s cubic-bezier(0.4,0,0.2,1)' }}>
             <Sidebar
