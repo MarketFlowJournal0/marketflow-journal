@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getEntryRoute, getPlanDetails, normalizePlan } from '../lib/subscription';
-import MarketFlowMark from '../components/MarketFlowMark';
 
 const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
 const FORCE_JOURNAL_ACCESS_PREFIX = 'mfj_force_journal_access_';
@@ -386,24 +385,15 @@ export default function WelcomePage() {
             >
               <div
                 style={{
-                  width: 46,
-                  height: 46,
-                  position: 'relative',
-                  display: 'grid',
-                  placeItems: 'center',
-                  filter: `drop-shadow(0 14px 30px ${plan.accent}28)`,
+                  width: 43,
+                  height: 43,
+                  borderRadius: 14,
+                  border: '1px solid rgba(6,230,255,0.18)',
+                  background: 'rgba(255,255,255,0.03)',
+                  padding: 4,
                 }}
               >
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 4,
-                    borderRadius: '50%',
-                    background: `radial-gradient(circle, ${plan.accent}20 0%, ${plan.accent}08 38%, transparent 72%)`,
-                    filter: 'blur(14px)',
-                  }}
-                />
-                <MarketFlowMark accent={plan.accent} secondary={plan.accent} size={40} />
+                <img src="/logo192.png" alt="MarketFlow" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div>
                 <div
@@ -416,7 +406,7 @@ export default function WelcomePage() {
                     color: '#F0F5FF',
                   }}
                 >
-                  Market<span style={{ color: plan.accent }}>Flow</span>
+                  Market<span style={{ color: '#06E6FF' }}>Flow</span>
                 </div>
                 <div style={{ marginTop: 3, fontSize: 11, color: '#6B86B0', letterSpacing: '0.11em', textTransform: 'uppercase' }}>
                   Trading Journal

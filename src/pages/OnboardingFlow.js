@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import MarketFlowMark from '../components/MarketFlowMark';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW ONBOARDING — Premium v2
@@ -222,8 +221,8 @@ export default function OnboardingFlow({ onComplete }) {
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
-          <div style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 10px 20px rgba(6,230,255,0.12))' }}>
-            <MarketFlowMark size={30} accent="#06E6FF" secondary="#67F5E0" />
+          <div style={{ width: 32, height: 32, borderRadius: 9, overflow: 'hidden', border: '1px solid rgba(6,230,255,0.15)' }}>
+            <img src="/logo192.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
           </div>
           <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 14, color: '#fff', letterSpacing: '-0.3px' }}>Market<span style={{ color: '#06E6FF' }}>Flow</span></span>
         </div>

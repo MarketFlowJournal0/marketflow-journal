@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import MarketFlowMark from './MarketFlowMark';
+
+/* ── Logo icon ── */
+const LOGO_ICON = "/logo192.png";
 
 /* ── Knowledge base for smart responses ── */
 const KNOWLEDGE = {
@@ -201,8 +203,8 @@ export default function AIChatBot() {
             <line x1="14" y1="4" x2="4" y2="14"/>
           </svg>
         ) : (
-          <div style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.96 }}>
-            <MarketFlowMark size={28} accent="#06E6FF" secondary="#67F5E0" />
+          <div style={{ width: 28, height: 28, borderRadius: 7, overflow: 'hidden', opacity: 0.85 }}>
+            <img src={LOGO_ICON} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }}/>
           </div>
         )}
       </motion.button>
@@ -241,10 +243,10 @@ export default function AIChatBot() {
               flexShrink: 0,
             }}>
               <div style={{
-                width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                filter: 'drop-shadow(0 10px 22px rgba(6,230,255,0.12))',
+                width: 32, height: 32, borderRadius: 9, overflow: 'hidden',
+                border: '1px solid rgba(6,230,255,0.15)',
               }}>
-                <MarketFlowMark size={30} accent="#06E6FF" secondary="#67F5E0" />
+                <img src={LOGO_ICON} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }}/>
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mf-text-1,#E8EEFF)' }}>MarketFlow AI</div>

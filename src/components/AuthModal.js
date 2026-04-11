@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import MarketFlowMark from './MarketFlowMark';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW AUTH — Clean v3
@@ -148,8 +147,8 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
 
           <div style={{ position: 'relative', zIndex: 1, padding: '28px 26px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <div style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 10px 22px rgba(6,230,255,0.12))' }}>
-                <MarketFlowMark size={30} accent="#06E6FF" secondary="#67F5E0" />
+              <div style={{ width: 32, height: 32, borderRadius: 9, overflow: 'hidden', border: '1px solid rgba(6,230,255,0.15)' }}>
+                <img src="/logo192.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
               </div>
               <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.4px' }}>Market<span style={{ color: '#06E6FF' }}>Flow</span></div>
             </div>
