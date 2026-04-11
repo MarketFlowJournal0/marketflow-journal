@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -6,19 +6,20 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
+import { shade } from '../lib/colorAlpha';
 
 const DashboardDataCtx = React.createContext(null);
 const useDashData = () => React.useContext(DashboardDataCtx) || {};
 
 // --- DESIGN SYSTEM -----------------------------------------------------------
 const C = {
-  bg:'#030508', bgCard:'#0C1422', bgHigh:'#111B2E',
-  cyan:'#06E6FF', teal:'#00F5D4', green:'#00FF88', blue:'#4D7CFF',
-  purple:'#B06EFF', pink:'#FF4DC4', gold:'#FFD700', danger:'#FF3D57',
-  warn:'#FFB31A', orange:'#FF6B35',
-  t0:'#FFFFFF', t1:'#E8EEFF', t2:'#7A90B8', t3:'#334566', t4:'#1A2440',
-  brd:'#162034', brdHi:'#1E2E48',
-  gradCyan:'linear-gradient(135deg,#06E6FF,#00FF88)',
+  bg:'var(--mf-bg,#030508)', bgCard:'var(--mf-card,#0C1422)', bgHigh:'var(--mf-high,#111B2E)',
+  cyan:'var(--mf-accent,#06E6FF)', teal:'var(--mf-teal,#00F5D4)', green:'var(--mf-green,#00FF88)', blue:'var(--mf-blue,#4D7CFF)',
+  purple:'var(--mf-purple,#A78BFA)', pink:'var(--mf-pink,#FB7185)', gold:'var(--mf-gold,#FFD700)', danger:'var(--mf-danger,#FF3D57)',
+  warn:'var(--mf-warn,#FFB31A)', orange:'var(--mf-orange,#FF6B35)',
+  t0:'var(--mf-text-0,#FFFFFF)', t1:'var(--mf-text-1,#E8EEFF)', t2:'var(--mf-text-2,#7A90B8)', t3:'var(--mf-text-3,#334566)', t4:'var(--mf-text-4,#1A2440)',
+  brd:'var(--mf-border,#162034)', brdHi:'var(--mf-border-hi,#1E2E48)',
+  gradCyan:'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
 };
 
 const DASHBOARD_ANIMATIONS = `
@@ -43,18 +44,18 @@ const Card = ({ children, style={}, glow=null, hover=false, custom=0, onClick })
   <motion.div
     variants={{hidden:{opacity:0,y:16},visible:(i)=>({opacity:1,y:0,transition:{delay:i*0.05,duration:0.5,ease:[0.16,1,0.3,1]}})}}
     initial="hidden" animate="visible" custom={custom}
-    whileHover={hover?{y:-2,boxShadow:`0 8px 50px ${glow||C.cyan}15`}:{}}
+    whileHover={hover?{y:-2,boxShadow:`0 8px 50px ${shade(glow||C.cyan,'15')}`}:{}}
     onClick={onClick}
     style={{
       background:'linear-gradient(152deg,rgba(12,20,34,0.96),rgba(7,12,24,0.98))',
-      borderRadius:20, border:`1px solid ${glow?glow+'26':C.brd}`,
+      borderRadius:20, border:`1px solid ${glow ? shade(glow,'26') : C.brd}`,
       boxShadow:'0 18px 48px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.05)',
       backdropFilter:'blur(18px)',
       position:'relative', overflow:'hidden', cursor:onClick?'pointer':'default',
       ...style
     }}
   >
-    {glow && <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${glow}65,transparent)`,pointerEvents:'none'}}/>}
+    {glow && <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${shade(glow,'65')},transparent)`,pointerEvents:'none'}}/>}
     <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(255,255,255,0.05),transparent 22%,transparent 70%,rgba(255,255,255,0.02))',pointerEvents:'none'}}/>
     <div style={{position:'relative',zIndex:1,height:'100%'}}>{children}</div>
   </motion.div>
@@ -62,19 +63,19 @@ const Card = ({ children, style={}, glow=null, hover=false, custom=0, onClick })
 
 const SectionTitle = ({ children, color=C.cyan }) => (
   <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
-    <div style={{width:3,height:14,background:color,borderRadius:999,flexShrink:0,boxShadow:`0 0 12px ${color}66`}}/>
+    <div style={{width:3,height:14,background:color,borderRadius:999,flexShrink:0,boxShadow:`0 0 12px ${shade(color,'66')}`}}/>
     <span style={{fontSize:12,fontWeight:900,color:C.t1,letterSpacing:'0.01em'}}>{children}</span>
   </div>
 );
 
 const Badge = ({ children, color }) => (
-  <span style={{fontSize:8.5,fontWeight:800,padding:'2px 7px',borderRadius:4,color,background:`${color}18`,border:`1px solid ${color}30`,textTransform:'uppercase',letterSpacing:'0.5px',whiteSpace:'nowrap'}}>{children}</span>
+  <span style={{fontSize:8.5,fontWeight:800,padding:'2px 7px',borderRadius:4,color,background:`${shade(color,'18')}`,border:`1px solid ${shade(color,'30')}`,textTransform:'uppercase',letterSpacing:'0.5px',whiteSpace:'nowrap'}}>{children}</span>
 );
 
 const Delta = ({ value, suffix='%', invert=false }) => {
   const pos = invert ? value <= 0 : value >= 0;
   return (
-    <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',borderRadius:4,color:pos?C.green:C.danger,background:pos?`${C.green}15`:`${C.danger}15`,border:`1px solid ${pos?C.green:C.danger}25`}}>
+    <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',borderRadius:4,color:pos?C.green:C.danger,background:pos?`${shade(C.green,'15')}`:`${shade(C.danger,'15')}`,border:`1px solid ${shade(pos?C.green:C.danger,'25')}`}}>
       {pos?'+':'-'} {Math.abs(value)}{suffix}
     </span>
   );
@@ -95,7 +96,7 @@ const ChartTip = ({ active, payload, label, prefix='$' }) => {
 
 const Empty = ({ label }) => (
   <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'28px 0',gap:8}}>
-    <div style={{width:54,height:54,borderRadius:18,border:`1px solid ${C.cyan}26`,background:'linear-gradient(135deg,rgba(6,230,255,0.12),rgba(0,255,136,0.05))'}}/>
+    <div style={{width:54,height:54,borderRadius:18,border:`1px solid ${shade(C.cyan,'26')}`,background:'linear-gradient(135deg,rgba(var(--mf-accent-rgb, 6, 230, 255),0.12),rgba(var(--mf-green-rgb, 0, 255, 136),0.05))'}}/>
     <span style={{fontSize:10,color:C.t3}}>{label||'No trades recorded'}</span>
   </div>
 );
@@ -209,8 +210,8 @@ const KpiStrip = () => {
   const { stats } = useDashData();
   const items = [
     { label:'P&L Total',     value: stats.pnl >= 0 ? `+$${stats.pnl.toLocaleString()}` : `-$${Math.abs(stats.pnl).toLocaleString()}`, delta: stats.pnlPct, sub:`$${stats.expectancy}/trade`,   color:C.green,  icon:'??' },
-    { label:'Win Rate',      value:`${stats.winRate}%`,  delta: null, sub:`${stats.wins}W / ${stats.losses}L / ${stats.breakevens}BE`, color:C.cyan,   icon:'??' },
-    { label:'Profit Factor', value: stats.profitFactor || '—', delta: null, sub:`Avg W $${stats.avgWin}`, color:C.teal, icon:'??' },
+    { label:'Win Rate',      value:`${stats.winRate}%`,  delta: null, sub:`${stats.wins}W / ${stats.losses}L / ${shade(stats.breakevens,'BE')}`, color:C.cyan,   icon:'??' },
+    { label:'Profit Factor', value: stats.profitFactor || '�', delta: null, sub:`Avg W $${stats.avgWin}`, color:C.teal, icon:'??' },
     { label:'Max Drawdown',  value:`${Math.abs(stats.maxDrawdown)}%`, delta: stats.maxDrawdown !== 0 ? stats.maxDrawdown : null, sub:'Since the beginning', color:C.danger, icon:'??', invert:true },
     { label:'Expectancy',    value:`$${stats.expectancy}`, delta: null, sub:'Per trade',                  color:C.gold,   icon:'??' },
   ];
@@ -218,12 +219,12 @@ const KpiStrip = () => {
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginBottom:18}}>
       {items.map((k,i) => (
         <Card key={k.label} custom={i} glow={k.color} hover style={{padding:'16px 16px',minHeight:92}}>
-          <div style={{position:'absolute',top:-20,right:-12,width:60,height:60,borderRadius:'50%',background:`radial-gradient(circle,${k.color}20,transparent 70%)`,filter:'blur(10px)',pointerEvents:'none'}}/>
+          <div style={{position:'absolute',top:-20,right:-12,width:60,height:60,borderRadius:'50%',background:`radial-gradient(circle,${shade(k.color,'20')},transparent 70%)`,filter:'blur(10px)',pointerEvents:'none'}}/>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
             <span style={{fontSize:7.5,fontWeight:800,color:C.t3,letterSpacing:'1.2px',textTransform:'uppercase',lineHeight:1.4}}>{k.label}</span>
-            <span style={{width:28,height:2,borderRadius:999,background:k.color,boxShadow:`0 0 12px ${k.color}55`}}/>
+            <span style={{width:28,height:2,borderRadius:999,background:k.color,boxShadow:`0 0 12px ${shade(k.color,'55')}`}}/>
           </div>
-          <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:k.color,lineHeight:1,marginBottom:5,textShadow:`0 0 18px ${k.color}30`}}>
+          <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:k.color,lineHeight:1,marginBottom:5,textShadow:`0 0 18px ${shade(k.color,'30')}`}}>
             {k.value}
           </div>
           <div style={{display:'flex',alignItems:'center',gap:5,flexWrap:'wrap'}}>
@@ -231,7 +232,7 @@ const KpiStrip = () => {
             {k.delta !== null && k.delta !== undefined && <Delta value={k.delta} invert={k.invert}/>}
           </div>
           <motion.div animate={{opacity:[0.3,0.7,0.3]}} transition={{duration:2.5,repeat:Infinity,delay:i*0.2}}
-            style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${k.color}50,transparent)`}}/>
+            style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${shade(k.color,'50')},transparent)`}}/>
         </Card>
       ))}
     </div>
@@ -251,7 +252,7 @@ const EquityPanel = () => {
         <div>
           <SectionTitle color={C.green} icon="??">Equity Curve</SectionTitle>
           <div style={{display:'flex',alignItems:'baseline',gap:10,marginTop:-6,marginBottom:12}}>
-            <span style={{fontSize:30,fontWeight:900,fontFamily:'monospace',color:pnl>=0?C.green:C.danger,textShadow:`0 0 24px ${pnl>=0?C.green:C.danger}40`}}>
+            <span style={{fontSize:30,fontWeight:900,fontFamily:'monospace',color:pnl>=0?C.green:C.danger,textShadow:`0 0 24px ${shade(pnl>=0?C.green:C.danger,'40')}`}}>
               {pnl>=0?'+':''}{pnl>=0?'$'+pnl.toLocaleString():'-$'+Math.abs(pnl).toLocaleString()}
             </span>
             {pnlPct !== 0 && <Delta value={pnlPct} suffix="%"/>}
@@ -260,7 +261,7 @@ const EquityPanel = () => {
         </div>
         <div style={{display:'flex',gap:3}}>
           {['1M','3M','6M','1Y','All'].map(r => (
-            <button key={r} onClick={()=>setRange(r)} style={{padding:'5px 10px',borderRadius:6,border:`1px solid ${range===r?C.green:C.brd}`,background:range===r?`${C.green}18`:'transparent',color:range===r?C.green:C.t3,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}>
+            <button key={r} onClick={()=>setRange(r)} style={{padding:'5px 10px',borderRadius:6,border:`1px solid ${range===r?C.green:C.brd}`,background:range===r?`${shade(C.green,'18')}`:'transparent',color:range===r?C.green:C.t3,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}>
               {r}
             </button>
           ))}
@@ -367,7 +368,7 @@ const PerformanceScore = () => {
       <div style={{display:'flex',alignItems:'center',gap:18}}>
         <div style={{position:'relative',flexShrink:0,width:76,height:76}}>
           <svg width="76" height="76" viewBox="0 0 76 76">
-            <circle cx="38" cy="38" r="32" fill="none" stroke="rgba(176,110,255,0.12)" strokeWidth="6"/>
+            <circle cx="38" cy="38" r="32" fill="none" stroke="rgba(var(--mf-purple-rgb, 167, 139, 250),0.12)" strokeWidth="6"/>
             <circle cx="38" cy="38" r="32" fill="none" stroke="url(#sg)" strokeWidth="6"
               strokeDasharray={`${2*Math.PI*32*(score/100)} ${2*Math.PI*32*(1-score/100)}`}
               strokeLinecap="round" transform="rotate(-90 38 38)"/>
@@ -384,7 +385,7 @@ const PerformanceScore = () => {
               <span style={{fontSize:8,color:C.t3,width:58,flexShrink:0}}>{x.l}</span>
               <div style={{flex:1,height:4,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
                 <motion.div initial={{width:0}} animate={{width:`${x.v}%`}} transition={{duration:1,delay:0.3}}
-                  style={{height:'100%',background:`linear-gradient(90deg,${x.c}66,${x.c})`,borderRadius:2}}/>
+                  style={{height:'100%',background:`linear-gradient(90deg,${shade(x.c,'66')},${x.c})`,borderRadius:2}}/>
               </div>
               <span style={{fontSize:8,fontWeight:800,color:x.c,width:24,textAlign:'right',fontFamily:'monospace'}}>{x.v}</span>
             </div>
@@ -507,7 +508,7 @@ const RentabiliteGauge = () => {
           <text x="194" y="115" fontSize="8" fill={C.t3} textAnchor="middle">100%</text>
         </svg>
         <div style={{marginTop:-10,textAlign:'center'}}>
-          <div style={{fontSize:34,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,textShadow:`0 0 28px ${color}50`}}>{pct}%</div>
+          <div style={{fontSize:34,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,textShadow:`0 0 28px ${shade(color,'50')}`}}>{pct}%</div>
           <div style={{fontSize:9.5,color:C.t3,letterSpacing:'2px',textTransform:'uppercase',marginTop:4}}>Win Rate</div>
         </div>
       </div>
@@ -542,7 +543,7 @@ const RecentTrades = () => {
         <div style={{display:'flex',gap:4,alignItems:'center'}}>
           <div style={{display:'flex',gap:3}}>
             {['All','TP','SL','BE'].map(f=>(
-              <button key={f} onClick={()=>setFilter(f)} style={{padding:'4px 9px',borderRadius:5,border:`1px solid ${filter===f?C.blue:C.brd}`,background:filter===f?`${C.blue}20`:'transparent',color:filter===f?C.blue:C.t3,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+              <button key={f} onClick={()=>setFilter(f)} style={{padding:'4px 9px',borderRadius:5,border:`1px solid ${filter===f?C.blue:C.brd}`,background:filter===f?`${shade(C.blue,'20')}`:'transparent',color:filter===f?C.blue:C.t3,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
                 {f}
               </button>
             ))}
@@ -551,11 +552,11 @@ const RecentTrades = () => {
       </div>
       {trades.length > 0 && (
         <div style={{display:'flex',gap:10,marginBottom:14}}>
-          <div style={{padding:'5px 12px',borderRadius:8,background:`${weekPnl>=0?C.green:C.danger}12`,border:`1px solid ${weekPnl>=0?C.green:C.danger}25`,display:'flex',gap:8,alignItems:'center'}}>
+          <div style={{padding:'5px 12px',borderRadius:8,background:`${shade(weekPnl>=0?C.green:C.danger,'12')}`,border:`1px solid ${shade(weekPnl>=0?C.green:C.danger,'25')}`,display:'flex',gap:8,alignItems:'center'}}>
             <span style={{fontSize:8.5,color:C.t3}}>Recent P&L</span>
             <span style={{fontSize:11,fontWeight:900,color:weekPnl>=0?C.green:C.danger,fontFamily:'monospace'}}>{weekPnl>=0?'+':''}{weekPnl>=0?'$'+weekPnl.toLocaleString():'-$'+Math.abs(weekPnl).toLocaleString()}</span>
           </div>
-          <div style={{padding:'5px 12px',borderRadius:8,background:`${C.cyan}12`,border:`1px solid ${C.cyan}25`,display:'flex',gap:8,alignItems:'center'}}>
+          <div style={{padding:'5px 12px',borderRadius:8,background:`${shade(C.cyan,'12')}`,border:`1px solid ${shade(C.cyan,'25')}`,display:'flex',gap:8,alignItems:'center'}}>
             <span style={{fontSize:8.5,color:C.t3}}>Win rate</span>
             <span style={{fontSize:11,fontWeight:900,color:C.cyan,fontFamily:'monospace'}}>{weekWr}%</span>
           </div>
@@ -568,8 +569,8 @@ const RecentTrades = () => {
             return (
               <motion.div key={t.id||i} initial={{opacity:0,x:-8}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
                 style={{display:'grid',gridTemplateColumns:'36px 1fr 1fr 1fr 1fr 1fr',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:10,background:i%2===0?'rgba(255,255,255,0.018)':'rgba(255,255,255,0.010)',border:'1px solid rgba(255,255,255,0.035)',cursor:'pointer'}}
-                whileHover={{background:'rgba(77,124,255,0.06)',borderColor:'rgba(77,124,255,0.18)'}}>
-                <div style={{width:36,height:24,borderRadius:6,background:`${rc}15`,border:`1px solid ${rc}28`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                whileHover={{background:'rgba(var(--mf-blue-rgb, 77, 124, 255),0.06)',borderColor:'rgba(var(--mf-blue-rgb, 77, 124, 255),0.18)'}}>
+                <div style={{width:36,height:24,borderRadius:6,background:`${shade(rc,'15')}`,border:`1px solid ${shade(rc,'28')}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                   <span style={{fontSize:7,fontWeight:900,color:rc}}>{t.pair?.slice(0,3)}</span>
                 </div>
                 <div>
@@ -577,7 +578,7 @@ const RecentTrades = () => {
                   <div style={{fontSize:8,color:t.dir==='Long'?C.green:C.danger,fontWeight:700}}>{t.dir}</div>
                 </div>
                 <div style={{textAlign:'center'}}>
-                  <div style={{display:'inline-block',padding:'2px 7px',borderRadius:5,background:`${rc}18`,border:`1px solid ${rc}30`,fontSize:8.5,fontWeight:800,color:rc}}>{t.res}</div>
+                  <div style={{display:'inline-block',padding:'2px 7px',borderRadius:5,background:`${shade(rc,'18')}`,border:`1px solid ${shade(rc,'30')}`,fontSize:8.5,fontWeight:800,color:rc}}>{t.res}</div>
                 </div>
                 <div style={{textAlign:'right'}}>
                   <div style={{fontSize:10,fontWeight:900,fontFamily:'monospace',color:t.rr>=0?C.green:C.danger}}>{t.rr>=0?'+':''}{t.rr}R</div>
@@ -624,12 +625,12 @@ const SessionPanel = () => {
                 <div style={{display:'flex',gap:10,alignItems:'center'}}>
                   <span style={{fontSize:9,fontWeight:800,fontFamily:'monospace',color:s.pnl>=0?C.green:C.danger}}>{s.pnl>=0?'+':'-'}${Math.abs(Math.round(s.pnl)).toLocaleString()}</span>
                   <span style={{fontSize:8.5,fontWeight:800,color:wr>=65?C.green:wr>=50?C.warn:C.danger,fontFamily:'monospace'}}>{wr}%</span>
-                  <span style={{fontSize:8,color:C.t3}}>{s.tp}W·{s.sl}L·{s.be}BE</span>
+                  <span style={{fontSize:8,color:C.t3}}>{s.tp}W�{s.sl}L�{s.be}BE</span>
                 </div>
               </div>
               <div style={{height:3.5,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
                 <motion.div initial={{width:0}} animate={{width:`${pct}%`}} transition={{duration:0.8,delay:0.2+i*0.1}}
-                  style={{height:'100%',background:`linear-gradient(90deg,${C.purple}88,${C.purple})`,borderRadius:2}}/>
+                  style={{height:'100%',background:`linear-gradient(90deg,${shade(C.purple,'88')},${C.purple})`,borderRadius:2}}/>
               </div>
             </div>
           );
@@ -654,7 +655,7 @@ const PairPanel = () => {
           {data.map((p,i)=>(
             <motion.div key={i} initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} transition={{delay:0.1+i*0.06}}
               style={{display:'grid',gridTemplateColumns:'1fr 36px 46px 64px',gap:10,padding:'8px 10px',borderRadius:10,background:'rgba(255,255,255,0.02)',alignItems:'center',cursor:'pointer'}}
-              whileHover={{background:'rgba(255,215,0,0.05)'}}>
+              whileHover={{background:'rgba(var(--mf-gold-rgb, 255, 215, 0),0.05)'}}>
               <div style={{display:'flex',alignItems:'center',gap:7}}>
                 <div style={{width:7,height:7,borderRadius:'50%',background:p.col,boxShadow:`0 0 5px ${p.col}`,flexShrink:0}}/>
                 <span style={{fontSize:11,fontWeight:800,color:C.t1}}>{p.p}</span>
@@ -680,7 +681,7 @@ const TimeHeatmap = () => {
   const maxV  = Math.max(...data.flatMap(w=>Object.values(w.h).map(Math.abs)),1);
   return (
     <Card custom={15} glow={C.teal} hover={false} style={{padding:'20px 20px'}}>
-      <SectionTitle color={C.teal} icon="???">Hour × Day Heatmap</SectionTitle>
+      <SectionTitle color={C.teal} icon="???">Hour � Day Heatmap</SectionTitle>
       {data.length > 0 ? (
         <div style={{overflowX:'auto'}}>
           <table style={{borderCollapse:'separate',borderSpacing:4,minWidth:'100%'}}>
@@ -730,7 +731,7 @@ const LiveTicker = () => {
   if (!visible) return null;
   return (
     <motion.div initial={{opacity:0,y:-20}} animate={{opacity:1,y:0}} transition={{duration:0.4}}
-      style={{marginBottom:12,padding:'12px 18px',borderRadius:14,background:'linear-gradient(90deg,rgba(0,255,136,0.07),rgba(6,230,255,0.05),rgba(255,255,255,0.02))',border:`1px solid ${C.green}25`,display:'flex',alignItems:'center',justifyContent:'space-between',gap:14,boxShadow:'0 16px 40px rgba(0,0,0,0.18)'}}>
+      style={{marginBottom:12,padding:'12px 18px',borderRadius:14,background:'linear-gradient(90deg,rgba(var(--mf-green-rgb, 0, 255, 136),0.07),rgba(var(--mf-accent-rgb, 6, 230, 255),0.05),rgba(255,255,255,0.02))',border:`1px solid ${shade(C.green,'25')}`,display:'flex',alignItems:'center',justifyContent:'space-between',gap:14,boxShadow:'0 16px 40px rgba(0,0,0,0.18)'}}>
       <div style={{display:'flex',alignItems:'center',gap:12}}>
         <motion.div animate={{opacity:[1,0.3,1]}} transition={{duration:1.2,repeat:Infinity}}
           style={{width:8,height:8,borderRadius:'50%',background:C.green,boxShadow:`0 0 8px ${C.green}`,flexShrink:0}}/>
@@ -746,7 +747,7 @@ const LiveTicker = () => {
       </div>
       <div style={{display:'flex',gap:8,alignItems:'center'}}>
         <span style={{fontSize:8.5,color:C.t3}}>{snapshot ? snapshot.session : 'Your modules are active and waiting for real journal data.'}</span>
-        <button onClick={()=>setVisible(false)} style={{background:'transparent',border:'none',color:C.t3,cursor:'pointer',fontSize:14,lineHeight:1}}>×</button>
+        <button onClick={()=>setVisible(false)} style={{background:'transparent',border:'none',color:C.t3,cursor:'pointer',fontSize:14,lineHeight:1}}>�</button>
       </div>
     </motion.div>
   );
@@ -783,7 +784,7 @@ const GoalProgress = () => {
               </div>
               <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
                 <motion.div initial={{width:0}} animate={{width:`${pct}%`}} transition={{duration:0.9,delay:0.15+i*0.1}}
-                  style={{height:'100%',borderRadius:3,background:`linear-gradient(90deg,${c}66,${c})`}}/>
+                  style={{height:'100%',borderRadius:3,background:`linear-gradient(90deg,${shade(c,'66')},${c})`}}/>
               </div>
             </div>
           );
@@ -806,7 +807,7 @@ const JournalNote = () => {
       </div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
         {note.tags.map((t,i)=>(
-          <span key={i} style={{padding:'4px 9px',borderRadius:6,fontSize:8.5,fontWeight:700,background:t.ok?`${C.green}12`:`${C.danger}12`,border:`1px solid ${t.ok?C.green:C.danger}25`,color:t.ok?C.green:C.danger}}>
+          <span key={i} style={{padding:'4px 9px',borderRadius:6,fontSize:8.5,fontWeight:700,background:t.ok?`${shade(C.green,'12')}`:`${shade(C.danger,'12')}`,border:`1px solid ${shade(t.ok?C.green:C.danger,'25')}`,color:t.ok?C.green:C.danger}}>
             {t.label}
           </span>
         ))}
@@ -820,11 +821,11 @@ const MF_RANKS = [
   { rank:'Iron',        min:0,   max:19,  color:'#8B7355', icon:'??', desc:'Beginner' },
   { rank:'Bronze',      min:20,  max:39,  color:'#CD7F32', icon:'??', desc:'Progressing' },
   { rank:'Silver',      min:40,  max:59,  color:'#C0C0C0', icon:'??', desc:'Regular' },
-  { rank:'Gold',        min:60,  max:74,  color:'#FFD700', icon:'??', desc:'Performing' },
-  { rank:'Platinum',    min:75,  max:84,  color:'#00F5D4', icon:'??', desc:'Expert' },
-  { rank:'Diamond',     min:85,  max:92,  color:'#06E6FF', icon:'??', desc:'Elite' },
-  { rank:'Master',      min:93,  max:97,  color:'#B06EFF', icon:'??', desc:'Master Trader' },
-  { rank:'Grandmaster', min:98,  max:100, color:'#FF4DC4', icon:'?', desc:'Legend' },
+  { rank:'Gold',        min:60,  max:74,  color:'var(--mf-gold,#FFD700)', icon:'??', desc:'Performing' },
+  { rank:'Platinum',    min:75,  max:84,  color:'var(--mf-teal,#00F5D4)', icon:'??', desc:'Expert' },
+  { rank:'Diamond',     min:85,  max:92,  color:'var(--mf-accent,#06E6FF)', icon:'??', desc:'Elite' },
+  { rank:'Master',      min:93,  max:97,  color:'var(--mf-purple,#A78BFA)', icon:'??', desc:'Master Trader' },
+  { rank:'Grandmaster', min:98,  max:100, color:'var(--mf-pink,#FB7185)', icon:'?', desc:'Legend' },
 ];
 
 function getRank(score) {
@@ -856,18 +857,18 @@ function RankModal({ score, rank, tradeCount = 0, onClose }) {
         onClick={e=>e.stopPropagation()}
         style={{
           width:420, background:'linear-gradient(160deg,#0C1830 0%,#080F1E 50%,#060C18 100%)',
-          border:`1px solid ${rank.color}30`, borderRadius:20, overflow:'hidden',
-          boxShadow:`0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px ${rank.color}20`,
+          border:`1px solid ${shade(rank.color,'30')}`, borderRadius:20, overflow:'hidden',
+          boxShadow:`0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px ${shade(rank.color,'20')}`,
         }}
       >
         {/* Header glow */}
         <div style={{
           height:3, background:`linear-gradient(90deg,transparent,${rank.color},transparent)`,
-          boxShadow:`0 0 20px ${rank.color}60`,
+          boxShadow:`0 0 20px ${shade(rank.color,'60')}`,
         }}/>
         <div style={{padding:'28px 28px 24px'}}>
           <div style={{textAlign:'center',marginBottom:24}}>
-            <div style={{width:56,height:4,borderRadius:999,background:rank.color,boxShadow:`0 0 18px ${rank.color}80`,margin:'0 auto 18px'}}/>
+            <div style={{width:56,height:4,borderRadius:999,background:rank.color,boxShadow:`0 0 18px ${shade(rank.color,'80')}`,margin:'0 auto 18px'}}/>
             <div style={{fontSize:22,fontWeight:900,color:rank.color,letterSpacing:'0.04em',textTransform:'uppercase'}}>{rank.rank}</div>
             <div style={{fontSize:11,color:C.t2,marginTop:4}}>{rank.desc}</div>
           </div>
@@ -931,8 +932,8 @@ function RankModal({ score, rank, tradeCount = 0, onClose }) {
         {/* Close */}
         <div style={{padding:'0 28px 20px'}}>
           <button onClick={onClose} style={{
-            width:'100%',padding:'10px',borderRadius:10,border:`1px solid ${rank.color}30`,
-            background:`${rank.color}08`,color:rank.color,fontWeight:700,fontSize:12,
+            width:'100%',padding:'10px',borderRadius:10,border:`1px solid ${shade(rank.color,'30')}`,
+            background:`${shade(rank.color,'08')}`,color:rank.color,fontWeight:700,fontSize:12,
             cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',
           }}>Close</button>
         </div>
@@ -976,18 +977,18 @@ const TradingCalendar = () => {
     <>
       <Card custom={18} glow={rank.color} hover={false} style={{padding:'22px 24px'}}>
         {/* Animated scan line */}
-        <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${rank.color}50,transparent)`,pointerEvents:'none'}}/>
-        <div style={{position:'absolute',top:'30%',left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${rank.color}10,transparent)`,pointerEvents:'none',animation:'scan 8s linear infinite'}}/>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${shade(rank.color,'50')},transparent)`,pointerEvents:'none'}}/>
+        <div style={{position:'absolute',top:'30%',left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${shade(rank.color,'10')},transparent)`,pointerEvents:'none',animation:'scan 8s linear infinite'}}/>
 
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18,flexWrap:'wrap',gap:14}}>
           <SectionTitle color={rank.color} icon="??">Trading Calendar</SectionTitle>
           <motion.div
-            style={{display:'flex',alignItems:'center',gap:14,background:'rgba(255,255,255,0.03)',border:`1px solid ${rank.color}30`,borderRadius:14,padding:'10px 16px',cursor:'pointer'}}
-            whileHover={{background:`${rank.color}08`,borderColor:`${rank.color}50`}}
+            style={{display:'flex',alignItems:'center',gap:14,background:'rgba(255,255,255,0.03)',border:`1px solid ${shade(rank.color,'30')}`,borderRadius:14,padding:'10px 16px',cursor:'pointer'}}
+            whileHover={{background:`${shade(rank.color,'08')}`,borderColor:`${shade(rank.color,'50')}`}}
             onClick={()=>setRankModal(true)}
           >
             <div style={{textAlign:'center'}}>
-              <motion.div animate={{opacity:[0.7,1,0.7]}} transition={{duration:3,repeat:Infinity,repeatDelay:6}} style={{width:34,height:3,borderRadius:999,background:rank.color,boxShadow:`0 0 12px ${rank.color}80`,margin:'0 auto 10px'}}/>
+              <motion.div animate={{opacity:[0.7,1,0.7]}} transition={{duration:3,repeat:Infinity,repeatDelay:6}} style={{width:34,height:3,borderRadius:999,background:rank.color,boxShadow:`0 0 12px ${shade(rank.color,'80')}`,margin:'0 auto 10px'}}/>
               <div style={{fontSize:9.5,color:rank.color,fontWeight:800,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:3}}>{rank.rank}</div>
             </div>
             <div>
@@ -1025,9 +1026,9 @@ const TradingCalendar = () => {
         </div>
 
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-          <button onClick={()=>setCurrentMonth(new Date(year,month-1,1))} style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:10,color:C.t2,cursor:'pointer',padding:'6px 14px',fontSize:14}}>‹</button>
+          <button onClick={()=>setCurrentMonth(new Date(year,month-1,1))} style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:10,color:C.t2,cursor:'pointer',padding:'6px 14px',fontSize:14}}>�</button>
           <span style={{fontSize:15,fontWeight:700,color:C.t0}}>{MONTHS[month]} {year}</span>
-          <button onClick={()=>setCurrentMonth(new Date(year,month+1,1))} style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:10,color:C.t2,cursor:'pointer',padding:'6px 14px',fontSize:14}}>›</button>
+          <button onClick={()=>setCurrentMonth(new Date(year,month+1,1))} style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`,borderRadius:10,color:C.t2,cursor:'pointer',padding:'6px 14px',fontSize:14}}>�</button>
         </div>
 
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:5,marginBottom:8}}>
@@ -1045,13 +1046,13 @@ const TradingCalendar = () => {
             const isWeekend = ((i+startPad)%7)>=5;
             let bg='rgba(255,255,255,0.02)', border=C.brd, pnlColor=C.t3;
             if (hasData) {
-              if (dayPnl>0)      {bg=`${C.green}18`;  border=`${C.green}40`;  pnlColor=C.green;}
-              else if (dayPnl<0) {bg=`${C.danger}15`; border=`${C.danger}35`; pnlColor=C.danger;}
-              else               {bg=`${C.warn}10`;   border=`${C.warn}30`;   pnlColor=C.warn;}
+              if (dayPnl>0)      {bg=`${shade(C.green,'18')}`;  border=`${shade(C.green,'40')}`;  pnlColor=C.green;}
+              else if (dayPnl<0) {bg=`${shade(C.danger,'15')}`; border=`${shade(C.danger,'35')}`; pnlColor=C.danger;}
+              else               {bg=`${shade(C.warn,'10')}`;   border=`${shade(C.warn,'30')}`;   pnlColor=C.warn;}
             }
             if (isWeekend&&!hasData) bg='rgba(255,255,255,0.01)';
             return (
-              <motion.div key={day} whileHover={hasData?{scale:1.04}:{}} style={{background:bg,border:`1px solid ${isToday?rank.color:border}`,borderRadius:10,padding:'7px 5px',minHeight:58,textAlign:'center',position:'relative',boxShadow:isToday?`0 0 12px ${rank.color}40`:'none',transition:'all 0.15s',cursor:hasData?'pointer':'default'}}>
+              <motion.div key={day} whileHover={hasData?{scale:1.04}:{}} style={{background:bg,border:`1px solid ${isToday?rank.color:border}`,borderRadius:10,padding:'7px 5px',minHeight:58,textAlign:'center',position:'relative',boxShadow:isToday?`0 0 12px ${shade(rank.color,'40')}`:'none',transition:'all 0.15s',cursor:hasData?'pointer':'default'}}>
                 <div style={{fontSize:10.5,fontWeight:isToday?800:500,color:isToday?rank.color:isWeekend?C.t4:C.t2,marginBottom:4}}>{day}</div>
                 {hasData&&(
                   <>
@@ -1074,7 +1075,7 @@ const TradingCalendar = () => {
         <div style={{display:'flex',gap:18,marginTop:16,flexWrap:'wrap'}}>
           {[{c:C.green,'l':'Profitable day'},{c:C.danger,l:'Losing day'},{c:C.warn,l:'Breakeven'},{c:C.t4,l:'No trades'}].map(({c,l})=>(
             <div key={l} style={{display:'flex',alignItems:'center',gap:6}}>
-              <div style={{width:12,height:12,borderRadius:4,background:`${c}30`,border:`1px solid ${c}60`}}/>
+              <div style={{width:12,height:12,borderRadius:4,background:`${shade(c,'30')}`,border:`1px solid ${shade(c,'60')}`}}/>
               <span style={{fontSize:9.5,color:C.t3}}>{l}</span>
             </div>
           ))}
@@ -1104,14 +1105,14 @@ export default function Dashboard() {
 
   return (
     <DashboardDataCtx.Provider value={dashData}>
-      <div style={{background:'var(--bg,#030508)',minHeight:'100%',width:'100%',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:'var(--t1,#E8EEFF)',position:'relative'}}>
+      <div style={{background:'var(--bg,var(--mf-bg,#030508))',minHeight:'100%',width:'100%',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:'var(--t1,var(--mf-text-1,#E8EEFF))',position:'relative'}}>
         <style>{DASHBOARD_ANIMATIONS}</style>
         {/* BG ambiance */}
         <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:0}}>
-          <div style={{position:'absolute',top:0,left:'18%',width:620,height:420,background:'radial-gradient(ellipse,rgba(6,230,255,0.12) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatA 14s ease-in-out infinite'}}/>
-          <div style={{position:'absolute',bottom:0,right:'8%',width:560,height:360,background:'radial-gradient(ellipse,rgba(0,255,136,0.08) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatB 16s ease-in-out infinite'}}/>
-          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(77,124,255,0.008) 1px,transparent 1px),linear-gradient(90deg,rgba(77,124,255,0.008) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
-          <div style={{position:'absolute',inset:0,background:'linear-gradient(112deg,transparent 0%,rgba(6,230,255,0.06) 48%,transparent 56%)',transform:'translateX(-120%)',animation:'mfDashboardScan 10s linear infinite'}}/>
+          <div style={{position:'absolute',top:0,left:'18%',width:620,height:420,background:'radial-gradient(ellipse,rgba(var(--mf-accent-rgb, 6, 230, 255),0.12) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatA 14s ease-in-out infinite'}}/>
+          <div style={{position:'absolute',bottom:0,right:'8%',width:560,height:360,background:'radial-gradient(ellipse,rgba(var(--mf-green-rgb, 0, 255, 136),0.08) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatB 16s ease-in-out infinite'}}/>
+          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.008) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.008) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(112deg,transparent 0%,rgba(var(--mf-accent-rgb, 6, 230, 255),0.06) 48%,transparent 56%)',transform:'translateX(-120%)',animation:'mfDashboardScan 10s linear infinite'}}/>
         </div>
 
         <div style={{position:'relative',zIndex:1,padding:'30px 30px 54px',width:'100%',boxSizing:'border-box'}}>
@@ -1122,7 +1123,7 @@ export default function Dashboard() {
             <div>
               <div style={{fontSize:10.5,color:C.cyan,fontWeight:800,letterSpacing:'0.18em',textTransform:'uppercase',marginBottom:8}}>Trading Command Center</div>
               <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:6}}>
-                <motion.div animate={{opacity:[0.6,1,0.6]}} transition={{duration:4,repeat:Infinity,repeatDelay:8}} style={{width:34,height:3,borderRadius:999,background:C.cyan,boxShadow:`0 0 14px ${C.cyan}80`}}/>
+                <motion.div animate={{opacity:[0.6,1,0.6]}} transition={{duration:4,repeat:Infinity,repeatDelay:8}} style={{width:34,height:3,borderRadius:999,background:C.cyan,boxShadow:`0 0 14px ${shade(C.cyan,'80')}`}}/>
                 <h1 style={{margin:0,fontSize:28,fontWeight:900,color:C.t0,letterSpacing:'-0.8px',lineHeight:1}}>
                   {greeting}, <span style={{background:C.gradCyan,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Trader</span>
                 </h1>
@@ -1215,11 +1216,12 @@ export default function Dashboard() {
 
 function emptyStats() {
   return {
-    pnl:0, pnlPct:0, winRate:0, profitFactor:0, avgRR:'—', sharpe:0,
+    pnl:0, pnlPct:0, winRate:0, profitFactor:0, avgRR:'�', sharpe:0,
     maxDrawdown:0, expectancy:0, totalTrades:0, wins:0, losses:0, breakevens:0,
     avgWin:0, avgLoss:0, streakWin:0, streakLoss:0, bestTrade:0, worstTrade:0,
     equityData:[], dailyPnl:[], sessionData:[], pairData:[], biaisData:[],
     radarData:[], heatmap:[], recentTrades:[],
   };
 }
+
 

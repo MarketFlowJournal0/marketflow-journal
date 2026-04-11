@@ -21,31 +21,32 @@ import{
   XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,
   Cell,ReferenceLine,PieChart,Pie,
 }from'recharts';
+import { shade } from '../lib/colorAlpha';
 
 // ═══════════════════════════════════════════════════════════════════
 // 🎨 DESIGN SYSTEM
 // ═══════════════════════════════════════════════════════════════════
 const C={
-  bg0:'#030508',bg1:'#070C14',bg2:'#0A1020',bg3:'#0F1828',bg4:'#141E30',
-  bgCard:'#0C1422',bgHigh:'#121C2E',bgHover:'#0F1A2E',
-  cyan:'#06E6FF',   cyanGlow:  'rgba(6,230,255,0.35)',
-  teal:'#00F5D4',   tealGlow:  'rgba(0,245,212,0.3)',
-  green:'#00FF88',  greenGlow: 'rgba(0,255,136,0.35)',
-  danger:'#FF3D57', dangerGlow:'rgba(255,61,87,0.35)',
-  warn:'#FFB31A',   warnGlow:  'rgba(255,179,26,0.35)',
-  orange:'#FF6B35',
-  purple:'#B06EFF', purpleGlow:'rgba(176,110,255,0.35)',
-  blue:'#4D7CFF',   blueGlow:  'rgba(77,124,255,0.3)',
-  pink:'#FF4DC4',   pinkGlow:  'rgba(255,77,196,0.3)',
-  gold:'#FFD700',
-  t0:'#FFFFFF',t1:'#E8EEFF',t2:'#7A90B8',t3:'#334566',t4:'#1E2E45',
-  brd:'#162034',brdHi:'#1E2E48',
-  gradCyan:  'linear-gradient(135deg,#06E6FF,#00FF88)',
-  gradPurple:'linear-gradient(135deg,#B06EFF,#4D7CFF)',
-  gradWarm:  'linear-gradient(135deg,#FFB31A,#FF6B35)',
-  gradDanger:'linear-gradient(135deg,#FF3D57,#FF6B35)',
-  gradPink:  'linear-gradient(135deg,#FF4DC4,#B06EFF)',
-  gradGold:  'linear-gradient(135deg,#FFD700,#FF9F00)',
+  bg0:'var(--mf-bg,#030508)',bg1:'#070C14',bg2:'#0A1020',bg3:'#0F1828',bg4:'#141E30',
+  bgCard:'var(--mf-card,#0C1422)',bgHigh:'var(--mf-high,#121C2E)',bgHover:'#0F1A2E',
+  cyan:'var(--mf-accent,#06E6FF)',   cyanGlow:  'rgba(var(--mf-accent-rgb, 6, 230, 255),0.35)',
+  teal:'var(--mf-teal,#00F5D4)',   tealGlow:  'rgba(var(--mf-teal-rgb, 0, 245, 212),0.3)',
+  green:'var(--mf-green,#00FF88)',  greenGlow: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.35)',
+  danger:'var(--mf-danger,#FF3D57)', dangerGlow:'rgba(var(--mf-danger-rgb, 255, 61, 87),0.35)',
+  warn:'var(--mf-warn,#FFB31A)',   warnGlow:  'rgba(var(--mf-warn-rgb, 255, 179, 26),0.35)',
+  orange:'var(--mf-orange,#FF6B35)',
+  purple:'var(--mf-purple,#A78BFA)', purpleGlow:'rgba(var(--mf-purple-rgb, 176, 110, 255),0.35)',
+  blue:'var(--mf-blue,#4D7CFF)',   blueGlow:  'rgba(var(--mf-blue-rgb, 77, 124, 255),0.3)',
+  pink:'var(--mf-pink,#FB7185)',   pinkGlow:  'rgba(var(--mf-pink-rgb, 255, 77, 196),0.3)',
+  gold:'var(--mf-gold,#FFD700)',
+  t0:'var(--mf-text-0,#FFFFFF)',t1:'var(--mf-text-1,#E8EEFF)',t2:'var(--mf-text-2,#7A90B8)',t3:'var(--mf-text-3,#334566)',t4:'var(--mf-text-4,#1E2E45)',
+  brd:'var(--mf-border,#162034)',brdHi:'var(--mf-border-hi,#1E2E48)',
+  gradCyan:  'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  gradPurple:'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-blue,#4D7CFF))',
+  gradWarm:  'linear-gradient(135deg,var(--mf-warn,#FFB31A),var(--mf-orange,#FF6B35))',
+  gradDanger:'linear-gradient(135deg,var(--mf-danger,#FF3D57),var(--mf-orange,#FF6B35))',
+  gradPink:  'linear-gradient(135deg,var(--mf-pink,#FB7185),var(--mf-purple,#A78BFA))',
+  gradGold:  'linear-gradient(135deg,var(--mf-gold,#FFD700),var(--mf-gold,#FFB31A))',
 };
 
 const fadeUp={
@@ -60,8 +61,8 @@ const GlassCard=({children,style={},glow=null,hover=true,custom=0,onClick,...p})
     style={{position:'relative',overflow:'hidden',
       background:'linear-gradient(145deg,rgba(15,24,44,0.92),rgba(10,16,32,0.96))',
       backdropFilter:'blur(20px) saturate(1.4)',borderRadius:20,
-      border:`1px solid ${glow?glow+'26':C.brd}`,
-      boxShadow:`0 4px 40px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04)${glow?`,0 0 55px ${glow}08`:''}`,
+      border:`1px solid ${glow ? shade(glow,'26') : C.brd}`,
+      boxShadow:`0 4px 40px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04)${glow ? `,0 0 55px ${shade(glow,'08')}` : ''}`,
       cursor:onClick?'pointer':'default',transition:'box-shadow 0.4s',...style}} {...p}>
     <div style={{position:'absolute',inset:0,opacity:0.024,backgroundImage:NOISE,backgroundSize:'128px',pointerEvents:'none',zIndex:0}}/>
     <div style={{position:'relative',zIndex:1,height:'100%'}}>{children}</div>
@@ -71,7 +72,7 @@ const GlassCard=({children,style={},glow=null,hover=true,custom=0,onClick,...p})
 const ST=({children,sub,color=C.cyan,mb=14})=>(
   <div style={{marginBottom:mb}}>
     <div style={{display:'flex',alignItems:'center',gap:9}}>
-      <div style={{width:3,height:16,background:`linear-gradient(180deg,${color},${color}50)`,borderRadius:2,flexShrink:0}}/>
+      <div style={{width:3,height:16,background:`linear-gradient(180deg,${color},${shade(color,'50')})`,borderRadius:2,flexShrink:0}}/>
       <span style={{fontSize:14,fontWeight:800,color:C.t1,letterSpacing:'-0.3px'}}>{children}</span>
     </div>
     {sub&&<p style={{margin:'4px 0 0',fontSize:9,color:C.t3,paddingLeft:12}}>{sub}</p>}
@@ -210,16 +211,16 @@ const ScoreCard=({sessions})=>{
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18}}>
         <ST color={sc} mb={0}>Psychological Score</ST>
         <div style={{display:'flex',gap:7}}>
-          <div style={{padding:'3px 10px',borderRadius:20,background:`${C.purple}18`,border:`1px solid ${C.purple}30`,fontSize:9,fontWeight:700,color:C.purple}}>Avg {avgScore}</div>
-          <div style={{padding:'3px 10px',borderRadius:20,background:`${C.gold}18`,border:`1px solid ${C.gold}30`,fontSize:9,fontWeight:700,color:C.gold}}>Best {bestScore}</div>
+          <div style={{padding:'3px 10px',borderRadius:20,background:`${shade(C.purple,'18')}`,border:`1px solid ${shade(C.purple,'30')}`,fontSize:9,fontWeight:700,color:C.purple}}>Avg {avgScore}</div>
+          <div style={{padding:'3px 10px',borderRadius:20,background:`${shade(C.gold,'18')}`,border:`1px solid ${shade(C.gold,'30')}`,fontSize:9,fontWeight:700,color:C.gold}}>Best {bestScore}</div>
         </div>
       </div>
 
       {/* ── BIG SCORE : horizontal segmented bar ── */}
       <div style={{
         padding:'18px 20px',borderRadius:16,
-        background:`linear-gradient(135deg,${sc}0F,${sc}06)`,
-        border:`1px solid ${sc}30`,marginBottom:16,
+        background:`linear-gradient(135deg,${shade(sc,'0F')},${shade(sc,'06')})`,
+        border:`1px solid ${shade(sc,'30')}`,marginBottom:16,
       }}>
         {/* Valeur + label */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:12}}>
@@ -230,7 +231,7 @@ const ScoreCard=({sessions})=>{
                 key={score}
                 initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}
                 style={{fontSize:64,fontWeight:900,fontFamily:'monospace',lineHeight:1,
-                  color:sc,textShadow:`0 0 40px ${sc}70`,letterSpacing:'-3px'}}>
+                  color:sc,textShadow:`0 0 40px ${shade(sc,'70')}`,letterSpacing:'-3px'}}>
                 {animScore}
               </motion.span>
               <span style={{fontSize:18,color:C.t3,fontWeight:700,marginBottom:4}}>/100</span>
@@ -249,11 +250,11 @@ const ScoreCard=({sessions})=>{
         <div style={{position:'relative',height:14,borderRadius:7,background:'rgba(255,255,255,0.05)',overflow:'hidden',marginBottom:6}}>
           {/* Fixed color zones */}
           <div style={{position:'absolute',inset:0,background:`linear-gradient(90deg,
-            ${C.danger}45 0%,${C.danger}45 30%,
-            ${C.orange}45 30%,${C.orange}45 45%,
-            ${C.warn}45 45%,${C.warn}45 60%,
-            ${C.cyan}45 60%,${C.cyan}45 75%,
-            ${C.green}45 75%,${C.green}45 100%
+            ${shade(C.danger,'45')} 0%,${shade(C.danger,'45')} 30%,
+            ${shade(C.orange,'45')} 30%,${shade(C.orange,'45')} 45%,
+            ${shade(C.warn,'45')} 45%,${shade(C.warn,'45')} 60%,
+            ${shade(C.cyan,'45')} 60%,${shade(C.cyan,'45')} 75%,
+            ${shade(C.green,'45')} 75%,${shade(C.green,'45')} 100%
           )`,borderRadius:7}}/>
           {/* Animated fill */}
           <motion.div
@@ -268,7 +269,7 @@ const ScoreCard=({sessions})=>{
                 ${C.cyan}   60%,${C.cyan}   75%,
                 ${C.green}  75%,${C.green}  100%
               )`,
-              boxShadow:`0 0 16px ${sc}60`,
+              boxShadow:`0 0 16px ${shade(sc,'60')}`,
             }}/>
           {/* Marqueur score moyen */}
           <div style={{position:'absolute',top:-2,bottom:-2,left:`${avgScore}%`,
@@ -327,8 +328,8 @@ const ScoreCard=({sessions})=>{
                   animate={{width:`${pct}%`}}
                   transition={{duration:0.8,delay:i*0.04,ease:[0.22,1,0.36,1]}}
                   style={{height:'100%',borderRadius:3,
-                    background:`linear-gradient(90deg,${ax.color}45,${ax.color})`,
-                    boxShadow:`0 0 6px ${ax.color}35`}}/>
+                    background:`linear-gradient(90deg,${shade(ax.color,'45')},${ax.color})`,
+                    boxShadow:`0 0 6px ${shade(ax.color,'35')}`}}/>
               </div>
             </div>
           );
@@ -381,10 +382,10 @@ const PsychByDay=({sessions})=>{
         <ST color={C.purple} mb={0}>Psychology by Day of Week</ST>
         {/* Summary best/worst */}
         <div style={{display:'flex',gap:10}}>
-          {bestDay&&<div style={{padding:'4px 12px',borderRadius:20,background:`${C.green}15`,border:`1px solid ${C.green}28`,fontSize:9,fontWeight:700,color:C.green}}>
+          {bestDay&&<div style={{padding:'4px 12px',borderRadius:20,background:`${shade(C.green,'15')}`,border:`1px solid ${shade(C.green,'28')}`,fontSize:9,fontWeight:700,color:C.green}}>
             Best {bestDay.day} / {bestDay.score}
           </div>}
-          {worstDay&&worstDay.day!==bestDay?.day&&<div style={{padding:'4px 12px',borderRadius:20,background:`${C.danger}15`,border:`1px solid ${C.danger}28`,fontSize:9,fontWeight:700,color:C.danger}}>
+          {worstDay&&worstDay.day!==bestDay?.day&&<div style={{padding:'4px 12px',borderRadius:20,background:`${shade(C.danger,'15')}`,border:`1px solid ${shade(C.danger,'28')}`,fontSize:9,fontWeight:700,color:C.danger}}>
             Risk {worstDay.day} / {worstDay.score}
           </div>}
         </div>
@@ -411,8 +412,8 @@ const PsychByDay=({sessions})=>{
                   <motion.div initial={{opacity:0,y:6,scale:0.92}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:4,scale:0.95}}
                     transition={{duration:0.18}}
                     style={{position:'absolute',marginBottom:4,zIndex:20,
-                      background:C.bgHigh,border:`1px solid ${sc}40`,borderRadius:11,
-                      padding:'10px 12px',boxShadow:`0 12px 36px rgba(0,0,0,0.8),0 0 0 1px ${sc}20`,
+                      background:C.bgHigh,border:`1px solid ${shade(sc,'40')}`,borderRadius:11,
+                      padding:'10px 12px',boxShadow:`0 12px 36px rgba(0,0,0,0.8),0 0 0 1px ${shade(sc,'20')}`,
                       pointerEvents:'none',minWidth:130,transform:'translateY(-210px)'}}>
                     <div style={{fontSize:11,fontWeight:900,color:sc,marginBottom:4}}>{d.day} — {d.count} session{d.count>1?'s':''}</div>
                     <div style={{fontSize:10,color:C.t1,fontWeight:800,marginBottom:2}}>Score: {d.score}/100</div>
@@ -436,7 +437,7 @@ const PsychByDay=({sessions})=>{
                 {/* Glow halo */}
                 {d.count>0&&isHov&&(
                   <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',
-                    width:'110%',height:barH+20,background:`radial-gradient(ellipse at bottom,${sc}30,transparent 70%)`,
+                    width:'110%',height:barH+20,background:`radial-gradient(ellipse at bottom,${shade(sc,'30')},transparent 70%)`,
                     borderRadius:'50%',filter:'blur(8px)',pointerEvents:'none'}}/>
                 )}
 
@@ -449,11 +450,11 @@ const PsychByDay=({sessions})=>{
                     width:'100%',borderRadius:'6px 6px 3px 3px',
                     position:'relative',overflow:'hidden',
                     background:d.count
-                      ?`linear-gradient(180deg,${sc}EE 0%,${sc}99 60%,${sc}44 100%)`
+                      ?`linear-gradient(180deg,${shade(sc,'EE')} 0%,${shade(sc,'99')} 60%,${shade(sc,'44')} 100%)`
                       :'rgba(255,255,255,0.05)',
-                    boxShadow:isHov&&d.count?`0 0 20px ${sc}60,0 4px 16px ${sc}30`:'none',
+                    boxShadow:isHov&&d.count?`0 0 20px ${shade(sc,'60')},0 4px 16px ${shade(sc,'30')}`:'none',
                     transition:'box-shadow 0.2s',
-                    border:`1px solid ${d.count?(isHov?sc+'80':sc+'30'):'rgba(255,255,255,0.07)'}`,
+                    border:`1px solid ${d.count?(isHov ? shade(sc,'80') : shade(sc,'30')):'rgba(255,255,255,0.07)'}`,
                   }}>
                   {/* Internal shimmer */}
                   {d.count>0&&(
@@ -484,8 +485,8 @@ const PsychByDay=({sessions})=>{
                     initial={{height:0}} animate={{height:Math.max(3,Math.round(d.emotRate/100*20))}}
                     transition={{duration:0.7,delay:i*0.06+0.4}}
                     style={{width:'80%',borderRadius:'0 0 4px 4px',marginTop:1,
-                      background:`linear-gradient(180deg,${C.danger}90,${C.danger}40)`,
-                      boxShadow:`0 2px 6px ${C.danger}30`}}/>
+                      background:`linear-gradient(180deg,${shade(C.danger,'90')},${shade(C.danger,'40')})`,
+                      boxShadow:`0 2px 6px ${shade(C.danger,'30')}`}}/>
                 )}
               </div>
             </div>
@@ -576,17 +577,17 @@ const ProfileRadar=({sessions})=>{
           </defs>
           {[0.25,0.5,0.75,1].map(s=>(
             <path key={s} d={AXES7.map((_,i)=>{const[x,y]=polar(i,R*s);return`${i===0?'M':'L'}${x.toFixed(1)},${y.toFixed(1)}`;}).join(' ')+'Z'}
-              fill={s===1?'rgba(176,110,255,0.04)':'none'}
-              stroke={s===1?'rgba(176,110,255,0.22)':'rgba(255,255,255,0.06)'} strokeWidth={s===1?1.5:0.7}/>
+              fill={s===1?'rgba(var(--mf-purple-rgb, 167, 139, 250),0.04)':'none'}
+              stroke={s===1?'rgba(var(--mf-purple-rgb, 167, 139, 250),0.22)':'rgba(255,255,255,0.06)'} strokeWidth={s===1?1.5:0.7}/>
           ))}
           {[25,50,75,100].map(pct=>{
             const[x,y]=polar(0,R*(pct/100));
             return<text key={pct} x={x-6} y={y} fill="rgba(255,255,255,0.2)" fontSize={7.5} fontFamily="monospace" textAnchor="end">{pct}</text>;
           })}
           {AXES7.map((_,i)=>{const[x,y]=polar(i,R);return<line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth={1} strokeDasharray="3 4"/>;} )}
-          {compare&&<path d={poly(compare)} fill="url(#rg-c)" stroke="rgba(6,230,255,0.38)" strokeWidth={1.5} strokeDasharray="5 4"/>}
+          {compare&&<path d={poly(compare)} fill="url(#rg-c)" stroke="rgba(var(--mf-accent-rgb, 6, 230, 255),0.38)" strokeWidth={1.5} strokeDasharray="5 4"/>}
           <motion.path initial={{pathLength:0,opacity:0}} animate={{pathLength:1,opacity:1}} transition={{duration:1.8,delay:0.2}}
-            d={poly(latest)} fill="url(#rg-m)" stroke="rgba(176,110,255,0.95)" strokeWidth={2} filter="url(#rg-gl)"/>
+            d={poly(latest)} fill="url(#rg-m)" stroke="rgba(var(--mf-purple-rgb, 167, 139, 250),0.95)" strokeWidth={2} filter="url(#rg-gl)"/>
           {AXES7.map((ax,i)=>{
             const[dx,dy]=polar(i,R*norm(latest?.[ax.key]||0));
             const[lx,ly]=polar(i,R+34);
@@ -667,7 +668,7 @@ const ScoreEvolution=({sessions})=>{
           <YAxis yAxisId="s" domain={[0,100]} tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} width={26}/>
           <YAxis yAxisId="p" orientation="right" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`} width={38}/>
           <Tooltip content={<CustomTT/>}/>
-          <ReferenceLine yAxisId="s" y={70} stroke={`${C.green}22`} strokeDasharray="4 3"/>
+          <ReferenceLine yAxisId="s" y={70} stroke={`${shade(C.green,'22')}`} strokeDasharray="4 3"/>
           <ReferenceLine yAxisId="s" y={50} stroke="rgba(255,255,255,0.07)" strokeDasharray="4 3"/>
           <Area yAxisId="p" type="monotone" dataKey="pnl" stroke={C.green} strokeWidth={2.5} fill="url(#ev-pnl)" dot={false} activeDot={{r:5,fill:C.green,stroke:'#fff',strokeWidth:2}} name="pnl"/>
           <Line yAxisId="s" type="monotone" dataKey="score" stroke={C.purple} strokeWidth={2.5}
@@ -737,7 +738,7 @@ const EmotionDist=({sessions})=>{
                     <motion.path d={d2} fill={m.color} opacity={0.82}
                       initial={{scale:0.5,opacity:0}} animate={{scale:1,opacity:0.82}}
                       transition={{duration:0.55,delay:i*0.08}}
-                      style={{transformOrigin:'80px 80px',filter:`drop-shadow(0 0 5px ${m.color}55)`}}/>
+                      style={{transformOrigin:'80px 80px',filter:`drop-shadow(0 0 5px ${shade(m.color,'55')})`}}/>
                     {m.pct>=12&&<text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={900} fill="rgba(255,255,255,0.95)">{m.pct}%</text>}
                   </g>
                 );
@@ -758,7 +759,7 @@ const EmotionDist=({sessions})=>{
                 </div>
                 <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
                   <motion.div initial={{width:0}} animate={{width:`${m.pct}%`}} transition={{duration:0.8,delay:i*0.06}}
-                    style={{height:'100%',background:`linear-gradient(90deg,${m.color}55,${m.color})`,borderRadius:3,boxShadow:`0 0 5px ${m.color}40`}}/>
+                    style={{height:'100%',background:`linear-gradient(90deg,${shade(m.color,'55')},${m.color})`,borderRadius:3,boxShadow:`0 0 5px ${shade(m.color,'40')}`}}/>
                 </div>
                 <div style={{fontSize:8,color:C.t3,marginTop:2}}>{m.count}x / WR {m.winRate}% / Avg Score {m.avgScore}</div>
               </div>
@@ -797,7 +798,7 @@ const EmotionHeatmap=({sessions})=>{
     AXES7.forEach(ax=>{row[ax.key]=ss.length?Math.round(ss.reduce((s,v)=>s+(v[ax.key]||0),0)/ss.length):0;});
     return row;
   }).filter(r=>r.count>0),[sessions]);
-  const heat=v=>{if(v>=80)return{bg:`${C.green}28`,border:`${C.green}50`,c:C.green};if(v>=65)return{bg:`${C.cyan}22`,border:`${C.cyan}40`,c:C.cyan};if(v>=50)return{bg:`${C.warn}18`,border:`${C.warn}35`,c:C.warn};if(v>=35)return{bg:`${C.orange}18`,border:`${C.orange}30`,c:C.orange};return{bg:`${C.danger}18`,border:`${C.danger}30`,c:C.danger};};
+  const heat=v=>{if(v>=80)return{bg:`${shade(C.green,'28')}`,border:`${shade(C.green,'50')}`,c:C.green};if(v>=65)return{bg:`${shade(C.cyan,'22')}`,border:`${shade(C.cyan,'40')}`,c:C.cyan};if(v>=50)return{bg:`${shade(C.warn,'18')}`,border:`${shade(C.warn,'35')}`,c:C.warn};if(v>=35)return{bg:`${shade(C.orange,'18')}`,border:`${shade(C.orange,'30')}`,c:C.orange};return{bg:`${shade(C.danger,'18')}`,border:`${shade(C.danger,'30')}`,c:C.danger};};
   return(
     <GlassCard custom={8} glow={C.pink} style={{padding:'24px 22px'}}>
       <ST color={C.pink}>Heatmap Mood x Psychological Axes</ST>
@@ -823,7 +824,7 @@ const EmotionHeatmap=({sessions})=>{
                     <div style={{background:h.bg,border:`1px solid ${h.border}`,borderRadius:7,padding:'5px 4px',textAlign:'center',fontSize:11,fontWeight:900,fontFamily:'monospace',color:h.c}}>{row[ax.key]}</div>
                   </td>);})}
                 <td style={{padding:2}}>
-                  <div style={{background:row.avgPnl>=0?`${C.green}22`:`${C.danger}18`,border:`1px solid ${row.avgPnl>=0?C.green:C.danger}40`,borderRadius:7,padding:'5px 6px',textAlign:'center',fontSize:10,fontWeight:900,fontFamily:'monospace',color:row.avgPnl>=0?C.green:C.danger}}>
+                  <div style={{background:row.avgPnl>=0?`${shade(C.green,'22')}`:`${shade(C.danger,'18')}`,border:`1px solid ${shade(row.avgPnl>=0?C.green:C.danger,'40')}`,borderRadius:7,padding:'5px 6px',textAlign:'center',fontSize:10,fontWeight:900,fontFamily:'monospace',color:row.avgPnl>=0?C.green:C.danger}}>
                     {row.avgPnl>=0?'+':''}${row.avgPnl}
                   </div>
                 </td>
@@ -835,7 +836,7 @@ const EmotionHeatmap=({sessions})=>{
       <div style={{display:'flex',gap:10,marginTop:12,flexWrap:'wrap'}}>
         {[{c:C.green,l:'≥ 80'},{c:C.cyan,l:'65–80'},{c:C.warn,l:'50–65'},{c:C.orange,l:'35–50'},{c:C.danger,l:'< 35'}].map(({c,l})=>(
           <div key={l} style={{display:'flex',alignItems:'center',gap:4,fontSize:8,color:C.t3}}>
-            <div style={{width:10,height:10,borderRadius:3,background:`${c}40`,border:`1px solid ${c}60`}}/>{l}
+            <div style={{width:10,height:10,borderRadius:3,background:`${shade(c,'40')}`,border:`1px solid ${shade(c,'60')}`}}/>{l}
           </div>
         ))}
       </div>
@@ -956,11 +957,11 @@ const Patterns=({sessions})=>{
         {insights.map((ins,i)=>(
           <motion.div key={i} initial={{opacity:0,x:14}} animate={{opacity:1,x:0}} transition={{delay:i*0.07}}
             whileHover={{x:3}} style={{display:'flex',gap:14,padding:'14px 16px',borderRadius:14,cursor:'default',
-              background:`linear-gradient(135deg,${ins.color}0A,${ins.color}05)`,border:`1px solid ${ins.color}28`,alignItems:'flex-start',
-              boxShadow:`0 2px 16px ${ins.color}08`}}>
-            <div style={{width:40,height:40,borderRadius:12,background:`${ins.color}18`,border:`1px solid ${ins.color}30`,
+              background:`linear-gradient(135deg,${shade(ins.color,'0A')},${shade(ins.color,'05')})`,border:`1px solid ${shade(ins.color,'28')}`,alignItems:'flex-start',
+              boxShadow:`0 2px 16px ${shade(ins.color,'08')}`}}>
+            <div style={{width:40,height:40,borderRadius:12,background:`${shade(ins.color,'18')}`,border:`1px solid ${shade(ins.color,'30')}`,
               display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
-              boxShadow:`0 0 14px ${ins.color}25`}}>
+              boxShadow:`0 0 14px ${shade(ins.color,'25')}`}}>
               <span style={{width:18,height:2,borderRadius:999,background:ins.color,boxShadow:`0 0 10px ${ins.color}`}}/>
             </div>
             <div style={{flex:1}}>
@@ -968,7 +969,7 @@ const Patterns=({sessions})=>{
               <div style={{fontSize:10.5,color:C.t2,lineHeight:1.65}}>{ins.desc}</div>
               {ins.sub&&<div style={{fontSize:9.5,color:C.t3,marginTop:4,lineHeight:1.5}}>{ins.sub}</div>}
             </div>
-            {ins.badge&&<div style={{padding:'5px 12px',borderRadius:20,background:`${ins.color}18`,border:`1px solid ${ins.color}35`,
+            {ins.badge&&<div style={{padding:'5px 12px',borderRadius:20,background:`${shade(ins.color,'18')}`,border:`1px solid ${shade(ins.color,'35')}`,
               fontSize:11,fontWeight:900,color:ins.color,flexShrink:0,fontFamily:'monospace'}}>{ins.badge}</div>}
           </motion.div>
         ))}
@@ -1024,8 +1025,8 @@ const PerfByScore=({sessions})=>{
               <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
                 formatter={(v,n,{payload:p})=>[<span style={{fontFamily:'monospace',fontWeight:900,color:v>=0?C.green:C.danger}}>{v>=0?'+':''}${v}</span>,`P&L / score ${p.score}`]}/>
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)"/>
-              <ReferenceLine x={70} stroke={`${C.green}30`} strokeDasharray="4 3" label={{value:'70',fill:C.green,fontSize:8,position:'top'}}/>
-              <ReferenceLine x={50} stroke={`${C.warn}25`} strokeDasharray="4 3" label={{value:'50',fill:C.warn,fontSize:8,position:'top'}}/>
+              <ReferenceLine x={70} stroke={`${shade(C.green,'30')}`} strokeDasharray="4 3" label={{value:'70',fill:C.green,fontSize:8,position:'top'}}/>
+              <ReferenceLine x={50} stroke={`${shade(C.warn,'25')}`} strokeDasharray="4 3" label={{value:'50',fill:C.warn,fontSize:8,position:'top'}}/>
               <Bar dataKey="pnl" maxBarSize={9} radius={[3,3,0,0]}>
                 {[...sessions].sort((a,b)=>a.date.localeCompare(b.date)).map((s,i)=><Cell key={i} fill={(s.pnl||0)>=0?C.green:C.danger} fillOpacity={0.75}/>)}
               </Bar>
@@ -1053,7 +1054,7 @@ const PerfByScore=({sessions})=>{
                 </div>
                 <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
                   <motion.div initial={{width:0}} animate={{width:`${b.winRate}%`}} transition={{duration:0.85,delay:i*0.08}}
-                    style={{height:'100%',borderRadius:3,background:`linear-gradient(90deg,${b.color}50,${b.color})`,boxShadow:`0 0 6px ${b.color}35`}}/>
+                    style={{height:'100%',borderRadius:3,background:`linear-gradient(90deg,${shade(b.color,'50')},${b.color})`,boxShadow:`0 0 6px ${shade(b.color,'35')}`}}/>
                 </div>
               </div>
             ))}
@@ -1083,7 +1084,7 @@ const PerfByScore=({sessions})=>{
               </div>
             ))}
           </div>
-          <div style={{marginTop:12,padding:'10px 14px',borderRadius:11,background:`${C.teal}08`,border:`1px solid ${C.teal}22`}}>
+          <div style={{marginTop:12,padding:'10px 14px',borderRadius:11,background:`${shade(C.teal,'08')}`,border:`1px solid ${shade(C.teal,'22')}`}}>
             <div style={{fontSize:10,fontWeight:800,color:C.teal,marginBottom:4}}>Recommendation</div>
             <div style={{fontSize:9.5,color:C.t2,lineHeight:1.7}}>
               {(()=>{
@@ -1130,11 +1131,11 @@ const Journal=({sessions})=>{
         <div style={{
           padding:isLg?'4px 14px':'2px 9px',
           borderRadius:isLg?10:7,
-          background:`linear-gradient(135deg,${sc}22,${sc}10)`,
-          border:`1px solid ${sc}45`,
+          background:`linear-gradient(135deg,${shade(sc,'22')},${shade(sc,'10')})`,
+          border:`1px solid ${shade(sc,'45')}`,
           fontSize:isLg?15:10,fontWeight:900,fontFamily:'monospace',
           color:sc,
-          boxShadow:`0 0 12px ${sc}30`,
+          boxShadow:`0 0 12px ${shade(sc,'30')}`,
           letterSpacing:'-0.5px',
           display:'flex',alignItems:'center',gap:isLg?6:4,
         }}>
@@ -1158,7 +1159,7 @@ const Journal=({sessions})=>{
                     position:'absolute',top:0,left:0,height:'100%',
                     width:partial?`${pct}%`:'100%',
                     background:z.c,opacity:0.9,borderRadius:2,
-                    boxShadow:`0 0 4px ${z.c}60`,
+                    boxShadow:`0 0 4px ${shade(z.c,'60')}`,
                   }}/>
                 )}
               </div>
@@ -1177,9 +1178,9 @@ const Journal=({sessions})=>{
           {[{k:'all',l:'All'},{k:'high',l:'Score ≥70'},{k:'low',l:'Score <50'},{k:'win',l:'Wins'},{k:'loss',l:'Losses'}].map(({k,l})=>(
             <motion.button key={k} onClick={()=>setFilter(k)} whileHover={{scale:1.04}} whileTap={{scale:0.96}}
               style={{padding:'5px 10px',borderRadius:8,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',border:'none',
-                background:filter===k?`${C.teal}20`:'rgba(255,255,255,0.04)',
+                background:filter===k?`${shade(C.teal,'20')}`:'rgba(255,255,255,0.04)',
                 color:filter===k?C.teal:C.t3,
-                boxShadow:filter===k?`0 0 0 1px ${C.teal}40`:`0 0 0 1px rgba(255,255,255,0.07)`}}>
+                boxShadow:filter===k?`0 0 0 1px ${shade(C.teal,'40')}`:`0 0 0 1px rgba(255,255,255,0.07)`}}>
               {l}
             </motion.button>
           ))}
@@ -1197,9 +1198,9 @@ const Journal=({sessions})=>{
               <motion.div whileHover={{x:-2,backgroundColor:'rgba(255,255,255,0.04)'}} onClick={()=>setExpanded(isOpen?null:s.id)}
                 style={{padding:'11px 13px',borderRadius:12,cursor:'pointer',transition:'all 0.2s',
                   background:isOpen?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.025)',
-                  border:`1px solid ${isOpen?sc+'45':C.brd}`}}>
+                  border:`1px solid ${isOpen ? shade(sc,'45') : C.brd}`}}>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
-                  <div style={{width:38,height:38,borderRadius:10,flexShrink:0,background:`${em?.color||C.t3}14`,border:`1px solid ${em?.color||C.t3}28`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <div style={{width:38,height:38,borderRadius:10,flexShrink:0,background:`${shade(em?.color||C.t3,'14')}`,border:`1px solid ${shade(em?.color||C.t3,'28')}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                     <span style={{width:18,height:2,borderRadius:999,background:em?.color||C.t3,boxShadow:`0 0 10px ${em?.color||C.t3}`}}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
@@ -1208,7 +1209,7 @@ const Journal=({sessions})=>{
                         <span style={{fontSize:12,fontWeight:700,color:C.t1}}>
                           {new Date(s.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}
                         </span>
-                        {s.routine&&<span style={{fontSize:8,padding:'1px 6px',borderRadius:4,background:`${C.green}15`,color:C.green,border:`1px solid ${C.green}25`}}>Routine</span>}
+                        {s.routine&&<span style={{fontSize:8,padding:'1px 6px',borderRadius:4,background:`${shade(C.green,'15')}`,color:C.green,border:`1px solid ${shade(C.green,'25')}`}}>Routine</span>}
                       </div>
                       <div style={{display:'flex',gap:8,alignItems:'center'}}>
                         <span style={{fontSize:9,color:C.t3}}>{s.trades||0}T / {wr}%WR</span>
@@ -1218,7 +1219,7 @@ const Journal=({sessions})=>{
                     </div>
                     <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden'}}>
                       <motion.div initial={{width:0}} animate={{width:`${score}%`}} transition={{duration:0.8,delay:i*0.025}}
-                        style={{height:'100%',borderRadius:2,background:`linear-gradient(90deg,${sc}45,${sc})`,boxShadow:`0 0 5px ${sc}35`}}/>
+                        style={{height:'100%',borderRadius:2,background:`linear-gradient(90deg,${shade(sc,'45')},${sc})`,boxShadow:`0 0 5px ${shade(sc,'35')}`}}/>
                     </div>
                   </div>
                   <motion.span animate={{rotate:isOpen?180:0}} transition={{duration:0.22}} style={{fontSize:10,color:C.t3,marginLeft:2}}>▾</motion.span>
@@ -1228,17 +1229,17 @@ const Journal=({sessions})=>{
               <AnimatePresence>
                 {isOpen&&(
                   <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} style={{overflow:'hidden'}}>
-                    <div style={{padding:'12px 12px 8px',borderLeft:`2px solid ${sc}22`,marginLeft:4,display:'flex',flexDirection:'column',gap:10}}>
+                    <div style={{padding:'12px 12px 8px',borderLeft:`2px solid ${shade(sc,'22')}`,marginLeft:4,display:'flex',flexDirection:'column',gap:10}}>
                       {/* ── Detailed score — segmented bar version ── */}
-                      <div style={{padding:'14px 16px',borderRadius:14,background:`${sc}08`,border:`1px solid ${sc}22`,overflow:'hidden',position:'relative'}}>
+                      <div style={{padding:'14px 16px',borderRadius:14,background:`${shade(sc,'08')}`,border:`1px solid ${shade(sc,'22')}`,overflow:'hidden',position:'relative'}}>
                         {/* Orb glow */}
-                        <div style={{position:'absolute',top:-20,right:-20,width:100,height:100,borderRadius:'50%',background:`radial-gradient(circle,${sc}25,transparent 70%)`,filter:'blur(20px)',pointerEvents:'none'}}/>
+                        <div style={{position:'absolute',top:-20,right:-20,width:100,height:100,borderRadius:'50%',background:`radial-gradient(circle,${shade(sc,'25')},transparent 70%)`,filter:'blur(20px)',pointerEvents:'none'}}/>
                         <div style={{position:'relative',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16}}>
                           {/* Gauche: valeur + label */}
                           <div>
                             <div style={{fontSize:8,color:C.t3,marginBottom:5,textTransform:'uppercase',letterSpacing:'1px',fontWeight:700}}>Psychological score</div>
                             <div style={{display:'flex',alignItems:'flex-end',gap:6,marginBottom:8}}>
-                              <span style={{fontSize:48,fontWeight:900,fontFamily:'monospace',lineHeight:1,color:sc,textShadow:`0 0 32px ${sc}70`,letterSpacing:'-2px'}}>{score}</span>
+                              <span style={{fontSize:48,fontWeight:900,fontFamily:'monospace',lineHeight:1,color:sc,textShadow:`0 0 32px ${shade(sc,'70')}`,letterSpacing:'-2px'}}>{score}</span>
                               <span style={{fontSize:14,color:C.t3,fontWeight:700,marginBottom:4}}>/100</span>
                             </div>
                             {/* Segmented bar large */}
@@ -1252,7 +1253,7 @@ const Journal=({sessions})=>{
                                   <div key={i} style={{flex:1,height:8,borderRadius:3,background:'rgba(255,255,255,0.05)',overflow:'hidden',position:'relative'}}>
                                     {filled&&(
                                       <motion.div initial={{width:0}} animate={{width:partial?`${pct}%`:'100%'}} transition={{duration:0.9,delay:i*0.07}}
-                                        style={{position:'absolute',top:0,left:0,height:'100%',background:z.c,borderRadius:3,boxShadow:`0 0 8px ${z.c}50`}}/>
+                                        style={{position:'absolute',top:0,left:0,height:'100%',background:z.c,borderRadius:3,boxShadow:`0 0 8px ${shade(z.c,'50')}`}}/>
                                     )}
                                   </div>
                                 );
@@ -1269,17 +1270,17 @@ const Journal=({sessions})=>{
                           {/* Right: mini radar */}
                           <svg width={90} height={90} viewBox="0 0 90 90" style={{flexShrink:0}}>
                             {[0.35,0.7,1].map(r=>(
-                              <polygon key={r} stroke={r===1?`${sc}35`:'rgba(255,255,255,0.07)'} fill={r===1?`${sc}07`:'none'} strokeWidth={0.7}
+                              <polygon key={r} stroke={r===1?`${shade(sc,'35')}`:'rgba(255,255,255,0.07)'} fill={r===1?`${shade(sc,'07')}`:'none'} strokeWidth={0.7}
                                 points={Array.from({length:7},(_,ii)=>{const a=(2*Math.PI*ii/7)-Math.PI/2;return`${45+38*r*Math.cos(a)},${45+38*r*Math.sin(a)}`;}).join(' ')}/>
                             ))}
                             <motion.polygon initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.8}}
-                              fill={`${sc}22`} stroke={sc} strokeWidth={1.5}
+                              fill={`${shade(sc,'22')}`} stroke={sc} strokeWidth={1.5}
                               points={AXES7.map((ax,ii)=>{const v=(s[ax.key]||0)/100;const a=(2*Math.PI*ii/7)-Math.PI/2;return`${45+38*v*Math.cos(a)},${45+38*v*Math.sin(a)}`;}).join(' ')}/>
                             {AXES7.map((ax,ii)=>{const v=(s[ax.key]||0)/100;const a=(2*Math.PI*ii/7)-Math.PI/2;const px=45+38*v*Math.cos(a),py=45+38*v*Math.sin(a);return<circle key={ii} cx={px} cy={py} r={2.5} fill={ax.color} stroke="rgba(255,255,255,0.7)" strokeWidth={0.8}/>;} )}
                           </svg>
                         </div>
                         {/* Level label */}
-                        <div style={{marginTop:8,display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:`${sc}18`,border:`1px solid ${sc}35`}}>
+                        <div style={{marginTop:8,display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:`${shade(sc,'18')}`,border:`1px solid ${shade(sc,'35')}`}}>
                           <span style={{fontSize:10,fontWeight:800,color:sc}}>{sLabel(score)}</span>
                         </div>
                       </div>
@@ -1315,7 +1316,7 @@ const Journal=({sessions})=>{
                           {cond:s.notes,label:'Notes',val:s.notes,c:C.purple},
                           {cond:s.stressors,label:'Stressors',val:s.stressors,c:C.warn},
                         ].filter(x=>x.cond).map(({label,val,c})=>(
-                          <div key={label} style={{padding:'9px 12px',borderRadius:9,background:`${c}08`,border:`1px solid ${c}18`}}>
+                          <div key={label} style={{padding:'9px 12px',borderRadius:9,background:`${shade(c,'08')}`,border:`1px solid ${shade(c,'18')}`}}>
                             <div style={{fontSize:8,color:c,marginBottom:3,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.5px'}}>{label}</div>
                             <div style={{fontSize:10.5,color:C.t2,lineHeight:1.6}}>{val}</div>
                           </div>
@@ -1338,14 +1339,14 @@ const Journal=({sessions})=>{
 // ═══════════════════════════════════════════════════════════════════
 const KpiCard=({label,value,sub,color,custom,trend})=>(
   <GlassCard custom={custom} glow={color} style={{padding:'20px 18px',position:'relative'}}>
-    <div style={{position:'absolute',top:-20,right:-20,width:90,height:90,borderRadius:'50%',background:`radial-gradient(circle,${color}22,transparent 70%)`,filter:'blur(14px)',pointerEvents:'none'}}/>
-    <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${color}45,transparent)`}}/>
+    <div style={{position:'absolute',top:-20,right:-20,width:90,height:90,borderRadius:'50%',background:`radial-gradient(circle,${shade(color,'22')},transparent 70%)`,filter:'blur(14px)',pointerEvents:'none'}}/>
+    <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${shade(color,'45')},transparent)`}}/>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
       <span style={{fontSize:7.5,fontWeight:800,color:C.t3,letterSpacing:'1.8px',textTransform:'uppercase'}}>{label}</span>
       <motion.span animate={{opacity:[0.5,1,0.5]}} transition={{duration:3,repeat:Infinity,delay:(custom||0)*0.4}}
-        style={{width:28,height:2,borderRadius:999,background:color,boxShadow:`0 0 12px ${color}70`}}/>
+        style={{width:28,height:2,borderRadius:999,background:color,boxShadow:`0 0 12px ${shade(color,'70')}`}}/>
     </div>
-    <div style={{fontSize:26,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,marginBottom:5,textShadow:`0 0 24px ${color}50`}}>{value}</div>
+    <div style={{fontSize:26,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,marginBottom:5,textShadow:`0 0 24px ${shade(color,'50')}`}}>{value}</div>
     <div style={{fontSize:9.5,color:C.t2,lineHeight:1.4}}>{sub}</div>
     {trend!==undefined&&(
       <div style={{marginTop:6,fontSize:9,fontWeight:700,color:trend>=0?C.green:C.danger,display:'flex',alignItems:'center',gap:4}}>
@@ -1353,7 +1354,7 @@ const KpiCard=({label,value,sub,color,custom,trend})=>(
       </div>
     )}
     <motion.div animate={{opacity:[0.4,0.8,0.4]}} transition={{duration:2.5,repeat:Infinity,delay:(custom||0)*0.3}}
-      style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${color}50,transparent)`}}/>
+      style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${shade(color,'50')},transparent)`}}/>
   </GlassCard>
 );
 
@@ -1463,9 +1464,9 @@ export default function Psychology(){
   // Empty state
   if(!hasData){
     return(
-      <div style={{background:'radial-gradient(ellipse 130% 60% at 50% -10%,rgba(176,110,255,0.10) 0%,#030508 65%)',minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:40}}>
+      <div style={{background:'radial-gradient(ellipse 130% 60% at 50% -10%,rgba(var(--mf-purple-rgb, 167, 139, 250),0.10) 0%,var(--mf-bg,#030508) 65%)',minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:40}}>
         <motion.div initial={{scale:0.8,opacity:0}} animate={{scale:1,opacity:1}} transition={{type:'spring',stiffness:120}}>
-          <div style={{width:70,height:4,borderRadius:999,background:C.gradPurple,boxShadow:`0 0 22px ${C.purple}70`,margin:'0 auto 26px'}}/>
+          <div style={{width:70,height:4,borderRadius:999,background:C.gradPurple,boxShadow:`0 0 22px ${shade(C.purple,'70')}`,margin:'0 auto 26px'}}/>
           <h2 style={{fontSize:28,fontWeight:900,background:C.gradPurple,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:12}}>Psychology Tracker</h2>
           <p style={{fontSize:15,color:C.t2,maxWidth:440,lineHeight:1.7,marginBottom:8}}>
             No trades recorded yet.
@@ -1473,7 +1474,7 @@ export default function Psychology(){
           <p style={{fontSize:13,color:C.t3,maxWidth:400,lineHeight:1.7}}>
             Import or add your trades in <strong style={{color:C.cyan}}>All Trades</strong> — psychology data will appear automatically here.
           </p>
-          <motion.div animate={{opacity:[0.4,0.9,0.4]}} transition={{duration:2.5,repeat:Infinity}} style={{marginTop:28,display:'inline-flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:12,background:`${C.purple}14`,border:`1px solid ${C.purple}30`,fontSize:12,color:C.purple,fontWeight:700}}>
+          <motion.div animate={{opacity:[0.4,0.9,0.4]}} transition={{duration:2.5,repeat:Infinity}} style={{marginTop:28,display:'inline-flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:12,background:`${shade(C.purple,'14')}`,border:`1px solid ${shade(C.purple,'30')}`,fontSize:12,color:C.purple,fontWeight:700}}>
             Your statistics will appear here
           </motion.div>
         </motion.div>
@@ -1482,7 +1483,7 @@ export default function Psychology(){
   }
 
   return(
-    <div style={{background:`radial-gradient(ellipse 130% 60% at 50% -10%,rgba(176,110,255,0.10) 0%,#030508 65%)`,minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,position:'relative'}}>
+    <div style={{background:`radial-gradient(ellipse 130% 60% at 50% -10%,rgba(var(--mf-purple-rgb, 167, 139, 250),0.10) 0%,var(--mf-bg,#030508) 65%)`,minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,position:'relative'}}>
       {/* Particles */}
       <div style={{position:'fixed',inset:0,pointerEvents:'none',overflow:'hidden',zIndex:0}}>
         {Array.from({length:24}).map((_,i)=>(
@@ -1511,7 +1512,7 @@ export default function Psychology(){
                   <h1 style={{margin:0,fontSize:28,fontWeight:900,background:C.gradPurple,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-1.2px',lineHeight:1}}>
                     Trading Psychology Pro
                   </h1>
-                  <span style={{padding:'2px 9px',borderRadius:6,background:`${C.blue}20`,border:`1px solid ${C.blue}40`,fontSize:9,fontWeight:800,color:C.blue,letterSpacing:'0.5px'}}>v3.0</span>
+                  <span style={{padding:'2px 9px',borderRadius:6,background:`${shade(C.blue,'20')}`,border:`1px solid ${shade(C.blue,'40')}`,fontSize:9,fontWeight:800,color:C.blue,letterSpacing:'0.5px'}}>v3.0</span>
                 </div>
                 <div style={{fontSize:11,color:C.t3}}>Composite score / 8 dimensions / {sessions.length} sessions analyzed</div>
               </div>
@@ -1522,9 +1523,9 @@ export default function Psychology(){
                 <motion.button key={t.id} onClick={()=>setTab(t.id)} whileHover={{scale:1.04}} whileTap={{scale:0.95}}
                   style={{padding:'9px 18px',borderRadius:10,border:'none',cursor:'pointer',fontFamily:'inherit',
                     display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,transition:'all 0.2s',
-                    background:tab===t.id?`linear-gradient(135deg,${C.purple}24,${C.blue}16)`:'transparent',
+                    background:tab===t.id?`linear-gradient(135deg,${shade(C.purple,'24')},${shade(C.blue,'16')})`:'transparent',
                     color:tab===t.id?C.purple:C.t3,
-                    boxShadow:tab===t.id?`0 0 0 1px ${C.purple}45,0 2px 14px ${C.purple}18`:'none'}}>
+                    boxShadow:tab===t.id?`0 0 0 1px ${shade(C.purple,'45')},0 2px 14px ${shade(C.purple,'18')}`:'none'}}>
                   {t.label}
                 </motion.button>
               ))}
@@ -1609,3 +1610,4 @@ export default function Psychology(){
     </div>
   );
 }
+

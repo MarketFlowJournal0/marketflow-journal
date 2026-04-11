@@ -129,7 +129,7 @@ export default function SupportWidget({ onOpenPage }) {
         .mfw-btn {
           position:fixed; bottom:28px; right:28px; z-index:9000;
           width:56px; height:56px; border-radius:50%;
-          background:linear-gradient(135deg,#06E6FF,#00FF88);
+          background:linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88));
           border:none; cursor:pointer;
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 4px 24px rgba(6,230,255,0.5);
@@ -139,7 +139,7 @@ export default function SupportWidget({ onOpenPage }) {
         }
         .mfw-btn:hover { transform:scale(1.1); box-shadow:0 6px 32px rgba(6,230,255,0.7); }
         @keyframes mfw-pulse {
-          0%,100% { box-shadow:0 4px 24px rgba(6,230,255,0.5),0 0 0 0 rgba(6,230,255,0.3); }
+          0%,100% { box-shadow:0 4px 24px rgba(6,230,255,0.5),0 0 0 0 rgba(var(--mf-accent-rgb, 6, 230, 255),0.3); }
           50% { box-shadow:0 4px 24px rgba(6,230,255,0.5),0 0 0 10px rgba(6,230,255,0); }
         }
         .mfw-panel {
@@ -165,19 +165,19 @@ export default function SupportWidget({ onOpenPage }) {
         }
         .mfw-head::before {
           content:''; position:absolute; top:0; left:0; right:0; height:1px;
-          background:linear-gradient(90deg,transparent,#06E6FF,#00FF88,transparent);
+          background:linear-gradient(90deg,transparent,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88),transparent);
         }
         .mfw-av {
           width:40px; height:40px; border-radius:50%;
-          background:linear-gradient(135deg,#06E6FF22,#00FF8822);
-          border:1.5px solid rgba(6,230,255,0.3);
+          background:linear-gradient(135deg,rgba(var(--mf-accent-rgb, 6, 230, 255),0.14),rgba(var(--mf-green-rgb, 0, 255, 136),0.14));
+          border:1.5px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.3);
           display:flex; align-items:center; justify-content:center;
           flex-shrink:0; overflow:hidden;
-          box-shadow:0 0 14px rgba(6,230,255,0.25);
+          box-shadow:0 0 14px rgba(var(--mf-accent-rgb, 6, 230, 255),0.25);
         }
         .mfw-dot {
           width:7px; height:7px; border-radius:50%;
-          background:#00FF88; box-shadow:0 0 5px #00FF88;
+          background:var(--mf-green,#00FF88); box-shadow:0 0 5px var(--mf-green,#00FF88);
           animation:mfw-blink 1.5s ease infinite;
         }
         @keyframes mfw-blink { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
@@ -216,11 +216,11 @@ export default function SupportWidget({ onOpenPage }) {
         }
         .mfw-typing span {
           width:5px; height:5px; border-radius:50%;
-          background:#06E6FF;
+          background:var(--mf-accent,#06E6FF);
           animation:mfw-tb 0.9s ease infinite;
         }
         .mfw-typing span:nth-child(2){animation-delay:0.15s;background:#00DDFF;}
-        .mfw-typing span:nth-child(3){animation-delay:0.3s;background:#00FF88;}
+        .mfw-typing span:nth-child(3){animation-delay:0.3s;background:var(--mf-green,#00FF88);}
         @keyframes mfw-tb{0%,60%,100%{transform:translateY(0);opacity:0.4;}30%{transform:translateY(-5px);opacity:1;}}
         .mfw-quick {
           padding:8px 12px 6px;
@@ -235,7 +235,7 @@ export default function SupportWidget({ onOpenPage }) {
           color:#6AB8CC; font-size:11px; font-weight:600;
           cursor:pointer; transition:all 0.15s; font-family:inherit;
         }
-        .mfw-qbtn:hover{background:rgba(6,230,255,0.12);border-color:rgba(6,230,255,0.35);color:#06E6FF;}
+        .mfw-qbtn:hover{background:rgba(6,230,255,0.12);border-color:rgba(var(--mf-accent-rgb, 6, 230, 255),0.35);color:var(--mf-accent,#06E6FF);}
         .mfw-foot {
           padding:10px 13px;
           border-top:1px solid rgba(255,255,255,0.05);
@@ -253,27 +253,27 @@ export default function SupportWidget({ onOpenPage }) {
           min-height:38px; max-height:90px; line-height:1.5;
           transition:border-color 0.2s;
         }
-        .mfw-ta:focus{border-color:rgba(6,230,255,0.3);}
+        .mfw-ta:focus{border-color:rgba(var(--mf-accent-rgb, 6, 230, 255),0.3);}
         .mfw-ta::placeholder{color:#2A4060;}
         .mfw-send {
           width:36px; height:36px; border-radius:9px;
-          border:none; background:linear-gradient(135deg,#06E6FF,#00FF88);
+          border:none; background:linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88));
           color:#060912; cursor:pointer; flex-shrink:0;
           display:flex; align-items:center; justify-content:center;
           transition:all 0.2s;
         }
-        .mfw-send:hover{transform:scale(1.08);box-shadow:0 4px 14px rgba(6,230,255,0.45);}
+        .mfw-send:hover{transform:scale(1.08);box-shadow:0 4px 14px rgba(var(--mf-accent-rgb, 6, 230, 255),0.45);}
         .mfw-send:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
         .mfw-link {
           text-align:center; padding:7px 0 0;
           font-size:10.5px; color:#2A4060;
         }
         .mfw-link button {
-          background:none; border:none; color:#06E6FF;
+          background:none; border:none; color:var(--mf-accent,#06E6FF);
           font-size:10.5px; cursor:pointer; font-family:inherit;
           text-decoration:underline; padding:0;
         }
-        .mfw-link button:hover{color:#00FF88;}
+        .mfw-link button:hover{color:var(--mf-green,#00FF88);}
         .mfw-x {
           margin-left:auto; background:none; border:none;
           color:#2A4060; cursor:pointer; font-size:17px;
@@ -305,7 +305,7 @@ export default function SupportWidget({ onOpenPage }) {
           {/* Header */}
           <div className="mfw-head">
             <div className="mfw-av">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06E6FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--mf-accent,#06E6FF)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>

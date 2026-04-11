@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { shade } from '../lib/colorAlpha';
 
 const C = {
-  bg: '#030508', bgCard: '#0C1422', cyan: '#06E6FF', green: '#00FF88',
-  purple: '#B06EFF', danger: '#FF3D57', gold: '#FFD700',
-  t0: '#FFFFFF', t1: '#E8EEFF', t2: '#7A90B8', t3: '#334566', brd: '#162034',
+  bg: 'var(--mf-bg,#030508)', bgCard: 'var(--mf-card,#0C1422)', cyan: 'var(--mf-accent,#06E6FF)', green: 'var(--mf-green,#00FF88)',
+  purple: 'var(--mf-purple,#B06EFF)', danger: 'var(--mf-danger,#FF3D57)', gold: 'var(--mf-gold,#FFD700)',
+  t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)', brd: 'var(--mf-border,#162034)',
 };
 
 const Ic = {
@@ -121,7 +122,7 @@ export default function ApiAccessPage() {
               <button onClick={handleCreate} disabled={!newKeyName.trim()} style={{
                 padding: '8px 14px', borderRadius: 6, border: 'none',
                 background: newKeyName.trim() ? C.cyan : 'rgba(255,255,255,0.04)',
-                color: newKeyName.trim() ? '#030508' : C.t3, fontSize: 11, fontWeight: 700,
+                color: newKeyName.trim() ? 'var(--mf-bg,#030508)' : C.t3, fontSize: 11, fontWeight: 700,
                 cursor: newKeyName.trim() ? 'pointer' : 'default', fontFamily: 'inherit',
               }}>Create</button>
             </motion.div>
@@ -189,7 +190,7 @@ export default function ApiAccessPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{
                     padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 800,
-                    background: methodColor(ep.method) + '15', border: '1px solid ' + methodColor(ep.method) + '30',
+                    background: shade(methodColor(ep.method),'15'), border: '1px solid ' + shade(methodColor(ep.method),'30'),
                     color: methodColor(ep.method), fontFamily: "'JetBrains Mono',monospace",
                   }}>{ep.method}</span>
                   <span style={{ fontSize: 11, color: C.t1, fontFamily: "'JetBrains Mono',monospace" }}>{ep.path}</span>
@@ -213,3 +214,4 @@ export default function ApiAccessPage() {
     </div>
   );
 }
+

@@ -6,9 +6,9 @@ import { motion } from 'framer-motion';
    ═══════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: '#030508', bgCard: '#0C1422', cyan: '#06E6FF', green: '#00FF88',
-  purple: '#B06EFF', danger: '#FF3D57', gold: '#FFD700',
-  t0: '#FFFFFF', t1: '#E8EEFF', t2: '#7A90B8', t3: '#334566', brd: '#162034',
+  bg: 'var(--mf-bg,#030508)', bgCard: 'var(--mf-card,#0C1422)', cyan: 'var(--mf-accent,#06E6FF)', green: 'var(--mf-green,#00FF88)',
+  purple: 'var(--mf-purple,#B06EFF)', danger: 'var(--mf-danger,#FF3D57)', gold: 'var(--mf-gold,#FFD700)',
+  t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)', brd: 'var(--mf-border,#162034)',
 };
 
 const Ic = {
@@ -45,11 +45,11 @@ function Toggle({ on, onChange }) {
     <div onClick={() => onChange(!on)} style={{
       width: 36, height: 20, borderRadius: 10, cursor: 'pointer',
       background: on ? C.cyan : 'rgba(255,255,255,0.08)',
-      border: `1px solid ${on ? 'rgba(6,230,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
+      border: `1px solid ${on ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.3)' : 'rgba(255,255,255,0.06)'}`,
       position: 'relative', transition: 'all 0.2s', flexShrink: 0,
     }}>
       <motion.div animate={{ x: on ? 16 : 0 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }} style={{
-        width: 14, height: 14, borderRadius: '50%', background: on ? '#030508' : 'rgba(255,255,255,0.3)',
+        width: 14, height: 14, borderRadius: '50%', background: on ? 'var(--mf-bg,#030508)' : 'rgba(255,255,255,0.3)',
         position: 'absolute', top: 2, left: 2,
       }} />
     </div>
@@ -91,14 +91,14 @@ export default function AlertsPage() {
           {/* Category Filter */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
             <button onClick={() => setActiveCat('all')} style={{
-              padding: '6px 12px', borderRadius: 6, border: `1px solid ${activeCat === 'all' ? 'rgba(6,230,255,0.2)' : C.brd}`,
+              padding: '6px 12px', borderRadius: 6, border: `1px solid ${activeCat === 'all' ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)' : C.brd}`,
               background: activeCat === 'all' ? 'rgba(6,230,255,0.08)' : 'transparent',
               color: activeCat === 'all' ? C.cyan : C.t2, fontSize: 11, fontWeight: 600,
               cursor: 'pointer', fontFamily: 'inherit',
             }}>All</button>
             {ALERT_CATEGORIES.map(cat => (
               <button key={cat.id} onClick={() => setActiveCat(cat.id)} style={{
-                padding: '6px 12px', borderRadius: 6, border: `1px solid ${activeCat === cat.id ? 'rgba(6,230,255,0.2)' : C.brd}`,
+                padding: '6px 12px', borderRadius: 6, border: `1px solid ${activeCat === cat.id ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)' : C.brd}`,
                 background: activeCat === cat.id ? 'rgba(6,230,255,0.08)' : 'transparent',
                 color: activeCat === cat.id ? C.cyan : C.t2, fontSize: 11, fontWeight: 600,
                 cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
@@ -183,3 +183,4 @@ export default function AlertsPage() {
     </div>
   );
 }
+

@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { shade } from '../lib/colorAlpha';
 
 const C = {
-  bg: '#030508', bgCard: '#0C1422', bgHigh: '#111B2E',
-  cyan: '#06E6FF', green: '#00FF88', danger: '#FF3D57',
-  t0: '#FFFFFF', t1: '#E8EEFF', t2: '#7A90B8', t3: '#334566',
-  brd: '#162034', brdHi: '#1E2E48',
+  bg: 'var(--mf-bg,#030508)', bgCard: 'var(--mf-card,#0C1422)', bgHigh: 'var(--mf-high,#111B2E)',
+  cyan: 'var(--mf-accent,#06E6FF)', green: 'var(--mf-green,#00FF88)', danger: 'var(--mf-danger,#FF3D57)',
+  t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)',
+  brd: 'var(--mf-border,#162034)', brdHi: 'var(--mf-border-hi,#1E2E48)',
 };
 
 const Field = ({ label, children }) => (
@@ -41,8 +42,8 @@ const Btn = ({ children, onClick, color = C.cyan, loading = false, danger = fals
     disabled={loading}
     style={{
       padding: '10px 22px', borderRadius: 10, border: 'none', cursor: loading ? 'wait' : 'pointer',
-      background: danger ? `${C.danger}20` : `${color}20`,
-      border: `1px solid ${danger ? C.danger : color}50`,
+      background: danger ? `${shade(C.danger,'20')}` : `${shade(color,'20')}`,
+      border: `1px solid ${shade(danger ? C.danger : color,'50')}`,
       color: danger ? C.danger : color,
       fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
       transition: 'all 0.15s', opacity: loading ? 0.6 : 1,
@@ -59,10 +60,10 @@ export default function AccountSettings({ user, onBack }) {
   const plan      = user?.user_metadata?.plan || 'trial';
 
   const PLAN_LABELS = {
-    starter: { label: 'Starter',       color: '#00F5D4' },
-    pro:     { label: 'Pro',           color: '#06E6FF' },
-    elite:   { label: 'Elite ✦',       color: '#FFD700' },
-    trial:   { label: 'Free Trial',    color: '#00FF88' },
+    starter: { label: 'Starter',       color: 'var(--mf-teal,#00F5D4)' },
+    pro:     { label: 'Pro',           color: 'var(--mf-accent,#06E6FF)' },
+    elite:   { label: 'Elite ✦',       color: 'var(--mf-gold,#FFD700)' },
+    trial:   { label: 'Free Trial',    color: 'var(--mf-green,#00FF88)' },
   };
   const planInfo = PLAN_LABELS[plan] || PLAN_LABELS.trial;
 
@@ -82,7 +83,7 @@ export default function AccountSettings({ user, onBack }) {
       });
       if (error) throw error;
       toast.success('Profile updated ✓', {
-        style: { background: '#0D1627', color: '#00FF88', borderRadius: '10px' },
+        style: { background: '#0D1627', color: 'var(--mf-green,#00FF88)', borderRadius: '10px' },
       });
     } catch (err) {
       toast.error(err.message || 'Error during update');
@@ -108,7 +109,7 @@ export default function AccountSettings({ user, onBack }) {
       setNewPassword('');
       setConfirmPw('');
       toast.success('Password updated ✓', {
-        style: { background: '#0D1627', color: '#00FF88', borderRadius: '10px' },
+        style: { background: '#0D1627', color: 'var(--mf-green,#00FF88)', borderRadius: '10px' },
       });
     } catch (err) {
       toast.error(err.message || 'Error changing password');
@@ -122,7 +123,7 @@ export default function AccountSettings({ user, onBack }) {
 
       {/* Ambient background */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: 0, left: '20%', width: 500, height: 350, background: 'radial-gradient(ellipse,rgba(77,124,255,0.05) 0%,transparent 70%)', filter: 'blur(40px)' }}/>
+        <div style={{ position: 'absolute', top: 0, left: '20%', width: 500, height: 350, background: 'radial-gradient(ellipse,rgba(var(--mf-blue-rgb, 77, 124, 255),0.05) 0%,transparent 70%)', filter: 'blur(40px)' }}/>
       </div>
 
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 680, margin: '0 auto' }}>
@@ -170,7 +171,7 @@ export default function AccountSettings({ user, onBack }) {
               width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
               background: `linear-gradient(135deg, ${C.cyan}, ${C.green})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, fontWeight: 800, color: '#030508',
+              fontSize: 20, fontWeight: 800, color: 'var(--mf-bg,#030508)',
             }}>
               {(fname || email).slice(0, 2).toUpperCase()}
             </div>
@@ -180,7 +181,7 @@ export default function AccountSettings({ user, onBack }) {
               <div style={{ marginTop: 6 }}>
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 100,
-                  background: planInfo.color + '22', border: `1px solid ${planInfo.color}44`,
+                  background: planInfo.color + '22', border: `1px solid ${shade(planInfo.color,'44')}`,
                   color: planInfo.color,
                 }}>
                   {planInfo.label}
@@ -220,7 +221,7 @@ export default function AccountSettings({ user, onBack }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-            <div style={{ width: 2, height: 14, background: '#B06EFF', borderRadius: 2 }}/>
+            <div style={{ width: 2, height: 14, background: 'var(--mf-purple,#A78BFA)', borderRadius: 2 }}/>
             <span style={{ fontSize: 12, fontWeight: 800, color: C.t1 }}>Security</span>
           </div>
 
@@ -232,7 +233,7 @@ export default function AccountSettings({ user, onBack }) {
           </Field>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Btn onClick={handleChangePassword} loading={savingPw} color="#B06EFF">
+            <Btn onClick={handleChangePassword} loading={savingPw} color="var(--mf-purple,#A78BFA)">
               Change Password
             </Btn>
           </div>
@@ -242,8 +243,8 @@ export default function AccountSettings({ user, onBack }) {
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.14 }}
           style={{
-            background: 'rgba(255,61,87,0.04)',
-            border: `1px solid rgba(255,61,87,0.18)`, borderRadius: 16, padding: '20px 26px',
+            background: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.04)',
+            border: `1px solid rgba(var(--mf-danger-rgb, 255, 61, 87),0.18)`, borderRadius: 16, padding: '20px 26px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -256,7 +257,7 @@ export default function AccountSettings({ user, onBack }) {
           <Btn
             danger
             onClick={() => toast.error('Contact support to delete your account.', {
-              style: { background: '#0D1627', color: '#FF3D57', borderRadius: '10px' },
+              style: { background: '#0D1627', color: 'var(--mf-danger,#FF3D57)', borderRadius: '10px' },
             })}
           >
             Delete my account
@@ -267,3 +268,4 @@ export default function AccountSettings({ user, onBack }) {
     </div>
   );
 }
+

@@ -16,29 +16,30 @@ import {
   ReferenceLine, ComposedChart,
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
+import { shade } from '../lib/colorAlpha';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🎨 PALETTE
 // ─────────────────────────────────────────────────────────────────────────────
 const C = {
-  bgPage: '#0F1420', bgCard: '#161D2E', bgDeep: '#0D1117',
+  bgPage: '#0F1420', bgCard: 'var(--mf-card,#161D2E)', bgDeep: 'var(--mf-deep,#0D1117)',
   bgHigh: '#1C2540', bgHov:  '#1F2B42',
-  cyan: '#00D4FF',   cyanGlow: 'rgba(0,212,255,0.3)',
-  teal: '#00C9A7',   green: '#00E676', greenGlow: 'rgba(0,230,118,0.3)',
-  danger: '#FF4757', dangerGlow: 'rgba(255,71,87,0.3)',
-  warn: '#FFB300',   orange: '#FF6B35',
-  purple: '#A78BFA', blue: '#5B7BF6',
-  t1: '#E8EEFF', t2: '#8B9BB4', t3: '#3D4F6B', t4: '#64748B',
-  brd: '#1E2D45', brdSoft: '#243454', brdBright: '#334155',
-  grad:       'linear-gradient(135deg,#00D4FF,#00E676)',
-  gradBlue:   'linear-gradient(135deg,#5B7BF6,#4C6EF5)',
-  gradPurple: 'linear-gradient(135deg,#A78BFA,#8B5CF6)',
-  gradOrange: 'linear-gradient(135deg,#FF6B35,#FF8C00)',
+  cyan: 'var(--mf-accent,#06E6FF)',   cyanGlow: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.3)',
+  teal: 'var(--mf-teal,#00F5D4)',   green: 'var(--mf-green,#00FF88)', greenGlow: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.3)',
+  danger: 'var(--mf-danger,#FF3D57)', dangerGlow: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.3)',
+  warn: 'var(--mf-warn,#FFB31A)',   orange: 'var(--mf-orange,#FF6B35)',
+  purple: 'var(--mf-purple,#A78BFA)', blue: 'var(--mf-blue,#4D7CFF)',
+  t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#8B9BB4)', t3: 'var(--mf-text-3,#3D4F6B)', t4: 'var(--mf-text-3,#64748B)',
+  brd: 'var(--mf-border,#1E2D45)', brdSoft: 'var(--mf-border-hi,#243454)', brdBright: 'var(--mf-border-hi,#334155)',
+  grad:       'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  gradBlue:   'linear-gradient(135deg,var(--mf-blue,#4D7CFF),var(--mf-blue,#4D7CFF))',
+  gradPurple: 'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-purple,#8B5CF6))',
+  gradOrange: 'linear-gradient(135deg,var(--mf-orange,#FF6B35),var(--mf-orange,#FF8C00))',
 };
 
 const CHART_COLORS = [
   C.cyan, C.green, C.purple, C.warn, C.orange,
-  C.teal, C.blue, C.danger, '#EC4899', '#F97316',
+  C.teal, C.blue, C.danger, 'var(--mf-pink,#EC4899)', 'var(--mf-orange,#F97316)',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,8 +85,8 @@ const STitle = ({ icon, title, sub, badge, color = C.cyan }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <div style={{
         width: 30, height: 30, borderRadius: 8,
-        background: `linear-gradient(135deg,${color}30,${color}10)`,
-        border: `1px solid ${color}30`,
+        background: `linear-gradient(135deg,${shade(color,'30')},${shade(color,'10')})`,
+        border: `1px solid ${shade(color,'30')}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
       }}>{icon}</div>
       <div style={{ flex: 1 }}>
@@ -99,7 +100,7 @@ const STitle = ({ icon, title, sub, badge, color = C.cyan }) => (
         </div>
         {sub && <div style={{ fontSize: 10, color: C.t3, marginTop: 1 }}>{sub}</div>}
       </div>
-      <div style={{ height: 1, width: 50, background: `linear-gradient(90deg,${color}25,transparent)` }} />
+      <div style={{ height: 1, width: 50, background: `linear-gradient(90deg,${shade(color,'25')},transparent)` }} />
     </div>
   </div>
 );
@@ -156,12 +157,12 @@ const KpiCard = ({ label, value, color, icon, sub, index }) => {
         backgroundColor: C.bgCard, borderRadius: 12,
         border: `1px solid ${hov ? color + '45' : C.brd}`,
         padding: '14px 16px', position: 'relative', overflow: 'hidden',
-        boxShadow: hov ? `0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px ${color}22` : '0 2px 8px rgba(0,0,0,0.2)',
+        boxShadow: hov ? `0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px ${shade(color,'22')}` : '0 2px 8px rgba(0,0,0,0.2)',
         transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)', cursor: 'default',
       }}
     >
       <motion.div animate={{ opacity: hov ? 1 : 0 }} transition={{ duration: 0.2 }}
-        style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${color}12,transparent)`, pointerEvents: 'none' }}
+        style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${shade(color,'12')},transparent)`, pointerEvents: 'none' }}
       />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -170,7 +171,7 @@ const KpiCard = ({ label, value, color, icon, sub, index }) => {
         </div>
         <div style={{
           fontSize: 21, fontWeight: 900, color, fontFamily: 'monospace',
-          textShadow: hov ? `0 0 18px ${color}60` : 'none', transition: 'text-shadow 0.3s',
+          textShadow: hov ? `0 0 18px ${shade(color,'60')}` : 'none', transition: 'text-shadow 0.3s',
         }}>{value}</div>
         <div style={{ fontSize: 10, color: C.t3, marginTop: 4 }}>{sub}</div>
       </div>
@@ -512,10 +513,10 @@ const HourHeatmap = ({ trades }) => {
 
       <div style={{ display: 'flex', gap: 14, marginTop: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
         {[
-          { label: '≥70% WR', bg: 'rgba(0,230,118,0.65)' },
-          { label: '50–70%',  bg: 'rgba(0,201,167,0.55)' },
-          { label: '30–50%',  bg: 'rgba(255,179,0,0.5)'  },
-          { label: '<30%',    bg: 'rgba(255,71,87,0.55)'  },
+          { label: '≥70% WR', bg: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.65)' },
+          { label: '50–70%',  bg: 'rgba(var(--mf-teal-rgb, 0, 245, 212),0.55)' },
+          { label: '30–50%',  bg: 'rgba(var(--mf-warn-rgb, 255, 179, 26),0.5)'  },
+          { label: '<30%',    bg: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.55)'  },
           { label: 'None',    bg: C.bgDeep, border: `1px solid ${C.brd}` },
         ].map(l => (
           <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -693,7 +694,7 @@ const SessionBreakdown = ({ trades }) => {
             <div style={{ height: 6, borderRadius: 3, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
                 transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                style={{ height: '100%', background: `linear-gradient(90deg,${d.color},${d.color}80)`, boxShadow: `0 0 8px ${d.color}40` }} />
+                style={{ height: '100%', background: `linear-gradient(90deg,${d.color},${shade(d.color,'80')})`, boxShadow: `0 0 8px ${shade(d.color,'40')}` }} />
             </div>
           </div>
         ))}
@@ -723,7 +724,7 @@ const LongVsShort = ({ trades }) => {
         <div key={d.type} style={{ marginBottom: 18 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: `${colors[d.type]}18`, border: `1px solid ${colors[d.type]}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: `${shade(colors[d.type],'18')}`, border: `1px solid ${shade(colors[d.type],'35')}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
                 {d.type === 'Long' ? '↗' : '↘'}
               </div>
               <div>
@@ -739,7 +740,7 @@ const LongVsShort = ({ trades }) => {
           <div style={{ height: 8, borderRadius: 4, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
             <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
               transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              style={{ height: '100%', background: `linear-gradient(90deg,${colors[d.type]},${colors[d.type]}70)`, boxShadow: `0 0 10px ${colors[d.type]}40` }} />
+              style={{ height: '100%', background: `linear-gradient(90deg,${colors[d.type]},${shade(colors[d.type],'70')})`, boxShadow: `0 0 10px ${shade(colors[d.type],'40')}` }} />
           </div>
         </div>
       ))}
@@ -1058,7 +1059,7 @@ const StreakTracker = ({ trades }) => {
               width: Math.min(46, 26 + s.count * 3), height: 30, minWidth: 26,
               borderRadius: 6, cursor: 'default',
               backgroundColor: s.isWin ? `rgba(0,230,118,${0.12 + Math.min(s.count * 0.06, 0.5)})` : `rgba(255,71,87,${0.12 + Math.min(s.count * 0.06, 0.5)})`,
-              border: `1px solid ${s.isWin ? C.green : C.danger}35`,
+              border: `1px solid ${shade(s.isWin ? C.green : C.danger,'35')}`,
               fontSize: 10, fontWeight: 800, color: s.isWin ? C.green : C.danger,
             }}
           >
@@ -1103,7 +1104,7 @@ const NewsImpact = ({ trades }) => {
             <div style={{ height: 6, borderRadius: 3, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
                 transition={{ duration: 0.9 }}
-                style={{ height: '100%', background: `linear-gradient(90deg,${newsColors[d.level]},${newsColors[d.level]}70)`, boxShadow: `0 0 8px ${newsColors[d.level]}40` }} />
+                style={{ height: '100%', background: `linear-gradient(90deg,${newsColors[d.level]},${shade(newsColors[d.level],'70')})`, boxShadow: `0 0 8px ${shade(newsColors[d.level],'40')}` }} />
             </div>
           </div>
         ))}
@@ -1145,7 +1146,7 @@ const BiasAnalysis = ({ trades }) => {
             <div style={{ height: 8, borderRadius: 4, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
                 transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                style={{ height: '100%', background: `linear-gradient(90deg,${colors[d.bias]},${colors[d.bias]}80)`, boxShadow: `0 0 10px ${colors[d.bias]}40` }} />
+                style={{ height: '100%', background: `linear-gradient(90deg,${colors[d.bias]},${shade(colors[d.bias],'80')})`, boxShadow: `0 0 10px ${shade(colors[d.bias],'40')}` }} />
             </div>
           </div>
         ))}
@@ -1249,3 +1250,4 @@ export default function AnalyticsPro() {
     </div>
   );
 }
+

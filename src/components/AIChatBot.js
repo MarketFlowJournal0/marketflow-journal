@@ -186,7 +186,7 @@ export default function AIChatBot() {
           height: 52,
           borderRadius: 16,
           background: 'linear-gradient(135deg, rgba(6,230,255,0.15), rgba(0,255,136,0.1))',
-          border: '1px solid rgba(6,230,255,0.2)',
+          border: '1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)',
           cursor: 'pointer',
           zIndex: 1000,
           display: 'flex',
@@ -249,10 +249,10 @@ export default function AIChatBot() {
                 <img src={LOGO_ICON} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }}/>
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#E8EEFF' }}>MarketFlow AI</div>
-                <div style={{ fontSize: 10, color: '#00FF88', fontWeight: 500 }}>Online</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mf-text-1,#E8EEFF)' }}>MarketFlow AI</div>
+                <div style={{ fontSize: 10, color: 'var(--mf-green,#00FF88)', fontWeight: 500 }}>Online</div>
               </div>
-              <div style={{ marginLeft: 'auto', fontSize: 9, color: '#334566', fontWeight: 500 }}>
+              <div style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--mf-text-3,#334566)', fontWeight: 500 }}>
                 {trades.length} trades loaded
               </div>
             </div>
@@ -268,16 +268,16 @@ export default function AIChatBot() {
               scrollbarWidth: 'none',
             }}>
               {messages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#334566' }}>
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--mf-text-3,#334566)' }}>
                   <div style={{ fontSize: 28, marginBottom: 12 }}>
-                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="rgba(6,230,255,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', display: 'block' }}>
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', display: 'block' }}>
                       <path d="M6 8A3 3 0 019 5h18a3 3 0 013 3v14a3 3 0 01-3 3H15l-6 5V8z"/>
-                      <circle cx="13" cy="15" r="1.5" fill="rgba(6,230,255,0.2)" stroke="none"/>
-                      <circle cx="18" cy="15" r="1.5" fill="rgba(6,230,255,0.2)" stroke="none"/>
-                      <circle cx="23" cy="15" r="1.5" fill="rgba(6,230,255,0.2)" stroke="none"/>
+                      <circle cx="13" cy="15" r="1.5" fill="rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)" stroke="none"/>
+                      <circle cx="18" cy="15" r="1.5" fill="rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)" stroke="none"/>
+                      <circle cx="23" cy="15" r="1.5" fill="rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)" stroke="none"/>
                     </svg>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#7A90B8', marginBottom: 6 }}>Ask me anything</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--mf-text-2,#7A90B8)', marginBottom: 6 }}>Ask me anything</div>
                   <div style={{ fontSize: 11, lineHeight: 1.5 }}>
                     Your stats, performance, platform help, or just chat
                   </div>
@@ -296,7 +296,7 @@ export default function AIChatBot() {
                     border: m.role === 'user' ? '1px solid rgba(6,230,255,0.15)' : '1px solid rgba(255,255,255,0.04)',
                     fontSize: 12.5,
                     lineHeight: 1.55,
-                    color: m.role === 'user' ? '#E8EEFF' : 'rgba(255,255,255,0.7)',
+                    color: m.role === 'user' ? 'var(--mf-text-1,#E8EEFF)' : 'rgba(255,255,255,0.7)',
                     whiteSpace: 'pre-wrap',
                   }}>
                     {m.text}
@@ -352,7 +352,7 @@ export default function AIChatBot() {
                   background: 'rgba(255,255,255,0.03)',
                   border: '1px solid rgba(255,255,255,0.06)',
                   borderRadius: 9,
-                  color: '#E8EEFF',
+                  color: 'var(--mf-text-1,#E8EEFF)',
                   fontSize: 12.5,
                   outline: 'none',
                   fontFamily: 'inherit',
@@ -363,11 +363,11 @@ export default function AIChatBot() {
                 disabled={!input.trim() || typing}
                 style={{
                   padding: '9px 14px',
-                  background: input.trim() && !typing ? 'linear-gradient(135deg, #06E6FF, #00FF88)' : 'rgba(255,255,255,0.04)',
+                  background: input.trim() && !typing ? 'linear-gradient(135deg, var(--mf-accent,#06E6FF), var(--mf-green,#00FF88))' : 'rgba(255,255,255,0.04)',
                   border: 'none',
                   borderRadius: 9,
                   cursor: input.trim() && !typing ? 'pointer' : 'default',
-                  color: input.trim() && !typing ? '#030508' : '#334566',
+                  color: input.trim() && !typing ? 'var(--mf-bg,#030508)' : 'var(--mf-text-3,#334566)',
                   fontWeight: 600,
                   fontSize: 12,
                   transition: 'all 0.15s ease',
@@ -385,3 +385,4 @@ export default function AIChatBot() {
     </>
   );
 }
+

@@ -18,32 +18,33 @@ import {
   Cell, ReferenceLine, Legend,
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
+import { shade } from '../lib/colorAlpha';
 
 // ══════════════════════════════════════════════════════
 // 🎨 DESIGN SYSTEM — same MarketFlow DA
 // ══════════════════════════════════════════════════════
 const C = {
-  bg:      '#030508',
-  bgCard:  '#0C1422',
-  bgHigh:  '#121C2E',
-  bgDeep:  '#07090F',
-  cyan:    '#06E6FF', cyanGlow:   'rgba(6,230,255,0.35)',
-  teal:    '#00F5D4', tealGlow:   'rgba(0,245,212,0.3)',
-  green:   '#00FF88', greenGlow:  'rgba(0,255,136,0.35)',
-  danger:  '#FF3D57', dangerGlow: 'rgba(255,61,87,0.35)',
-  warn:    '#FFB31A', warnGlow:   'rgba(255,179,26,0.35)',
-  orange:  '#FF6B35',
-  purple:  '#B06EFF', purpleGlow: 'rgba(176,110,255,0.35)',
-  blue:    '#4D7CFF', blueGlow:   'rgba(77,124,255,0.3)',
-  pink:    '#FF4DC4',
-  gold:    '#FFD700', goldGlow:   'rgba(255,215,0,0.3)',
-  t0: '#FFFFFF', t1: '#E8EEFF', t2: '#7A90B8', t3: '#334566', t4: '#1E2E45',
-  brd: '#162034', brdHi: '#1E2E48',
-  gradCyan:   'linear-gradient(135deg,#06E6FF,#00FF88)',
-  gradPurple: 'linear-gradient(135deg,#B06EFF,#4D7CFF)',
-  gradWarm:   'linear-gradient(135deg,#FFB31A,#FF6B35)',
-  gradDanger: 'linear-gradient(135deg,#FF3D57,#FF6B35)',
-  gradGold:   'linear-gradient(135deg,#FFD700,#FF9F00)',
+  bg:      'var(--mf-bg,#030508)',
+  bgCard:  'var(--mf-card,#0C1422)',
+  bgHigh:  'var(--mf-high,#121C2E)',
+  bgDeep:  'var(--mf-deep,#07090F)',
+  cyan:    'var(--mf-accent,#06E6FF)', cyanGlow:   'rgba(var(--mf-accent-rgb, 6, 230, 255),0.35)',
+  teal:    'var(--mf-teal,#00F5D4)', tealGlow:   'rgba(var(--mf-teal-rgb, 0, 245, 212),0.3)',
+  green:   'var(--mf-green,#00FF88)', greenGlow:  'rgba(var(--mf-green-rgb, 0, 255, 136),0.35)',
+  danger:  'var(--mf-danger,#FF3D57)', dangerGlow: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.35)',
+  warn:    'var(--mf-warn,#FFB31A)', warnGlow:   'rgba(var(--mf-warn-rgb, 255, 179, 26),0.35)',
+  orange:  'var(--mf-orange,#FF6B35)',
+  purple:  'var(--mf-purple,#A78BFA)', purpleGlow: 'rgba(var(--mf-purple-rgb, 176, 110, 255),0.35)',
+  blue:    'var(--mf-blue,#4D7CFF)', blueGlow:   'rgba(var(--mf-blue-rgb, 77, 124, 255),0.3)',
+  pink:    'var(--mf-pink,#FB7185)',
+  gold:    'var(--mf-gold,#FFD700)', goldGlow:   'rgba(var(--mf-gold-rgb, 255, 215, 0),0.3)',
+  t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)', t4: 'var(--mf-text-4,#1E2E45)',
+  brd: 'var(--mf-border,#162034)', brdHi: 'var(--mf-border-hi,#1E2E48)',
+  gradCyan:   'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  gradPurple: 'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-blue,#4D7CFF))',
+  gradWarm:   'linear-gradient(135deg,var(--mf-warn,#FFB31A),var(--mf-orange,#FF6B35))',
+  gradDanger: 'linear-gradient(135deg,var(--mf-danger,#FF3D57),var(--mf-orange,#FF6B35))',
+  gradGold:   'linear-gradient(135deg,var(--mf-gold,#FFD700),var(--mf-gold,#FFB31A))',
 };
 
 const NOISE = 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")';
@@ -61,8 +62,8 @@ const GlassCard = ({ children, style = {}, glow = null, hover = true, custom = 0
       position: 'relative', overflow: 'hidden',
       background: 'linear-gradient(145deg,rgba(15,24,44,0.93),rgba(10,16,32,0.97))',
       backdropFilter: 'blur(20px) saturate(1.4)', borderRadius: 20,
-      border: `1px solid ${glow ? glow + '28' : C.brd}`,
-      boxShadow: `0 4px 40px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04)${glow ? `,0 0 55px ${glow}08` : ''}`,
+      border: `1px solid ${glow ? shade(glow,'28') : C.brd}`,
+      boxShadow: `0 4px 40px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04)${glow ? `,0 0 55px ${shade(glow,'08')}` : ''}`,
       cursor: onClick ? 'pointer' : 'default', ...style,
     }} {...p}>
     <div style={{ position: 'absolute', inset: 0, opacity: 0.022, backgroundImage: NOISE, backgroundSize: '128px', pointerEvents: 'none', zIndex: 0 }} />
@@ -74,7 +75,7 @@ const ST = ({ children, sub, color = C.cyan, icon, mb = 16 }) => (
   <div style={{ marginBottom: mb }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       {icon && <span style={{ fontSize: 15, filter: `drop-shadow(0 0 8px ${color})` }}>{icon}</span>}
-      <div style={{ width: 3, height: 16, background: `linear-gradient(180deg,${color},${color}50)`, borderRadius: 2, flexShrink: 0 }} />
+      <div style={{ width: 3, height: 16, background: `linear-gradient(180deg,${color},${shade(color,'50')})`, borderRadius: 2, flexShrink: 0 }} />
       <span style={{ fontSize: 13, fontWeight: 800, color: C.t1, letterSpacing: '-0.3px' }}>{children}</span>
     </div>
     {sub && <p style={{ margin: '3px 0 0', fontSize: 9, color: C.t3, paddingLeft: icon ? 31 : 11 }}>{sub}</p>}
@@ -268,17 +269,17 @@ function buildEquityStats(trades) {
 // ══════════════════════════════════════════════════════
 const KpiBadge = ({ label, value, sub, color, icon, custom = 0 }) => (
   <GlassCard custom={custom} glow={color} hover={false} style={{ padding: '18px 16px', position: 'relative', minHeight: 96 }}>
-    <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle,${color}20,transparent 70%)`, filter: 'blur(14px)', pointerEvents: 'none' }} />
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${color}60,transparent)` }} />
+    <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle,${shade(color,'20')},transparent 70%)`, filter: 'blur(14px)', pointerEvents: 'none' }} />
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${shade(color,'60')},transparent)` }} />
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
       <span style={{ fontSize: 7.5, fontWeight: 800, color: C.t3, letterSpacing: '1.4px', textTransform: 'uppercase' }}>{label}</span>
       <motion.span animate={{ scale: [1, 1.13, 1] }} transition={{ duration: 3.5, repeat: Infinity, delay: custom * 0.22 }}
         style={{ fontSize: 17, filter: `drop-shadow(0 0 7px ${color})` }}>{icon}</motion.span>
     </div>
-    <div style={{ fontSize: 26, fontWeight: 900, fontFamily: 'monospace', color, lineHeight: 1, marginBottom: 4, textShadow: `0 0 22px ${color}40` }}>{value}</div>
+    <div style={{ fontSize: 26, fontWeight: 900, fontFamily: 'monospace', color, lineHeight: 1, marginBottom: 4, textShadow: `0 0 22px ${shade(color,'40')}` }}>{value}</div>
     {sub && <div style={{ fontSize: 8.5, color: C.t2, lineHeight: 1.5 }}>{sub}</div>}
     <motion.div animate={{ opacity: [0.3, 0.8, 0.3] }} transition={{ duration: 2.5, repeat: Infinity, delay: custom * 0.15 }}
-      style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${color}60,transparent)` }} />
+      style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${shade(color,'60')},transparent)` }} />
   </GlassCard>
 );
 
@@ -318,7 +319,7 @@ const EquityCurve = ({ s }) => {
         <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
           {['all', ...s.years].map(v => (
             <button key={v} onClick={() => setView(v)}
-              style={{ padding: '4px 10px', borderRadius: 7, border: `1px solid ${view === v ? col : C.brd}`, background: view === v ? `${col}18` : 'transparent', color: view === v ? col : C.t3, fontSize: 9, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ padding: '4px 10px', borderRadius: 7, border: `1px solid ${view === v ? col : C.brd}`, background: view === v ? `${shade(col,'18')}` : 'transparent', color: view === v ? col : C.t3, fontSize: 9, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               {v === 'all' ? 'Global' : v}
             </button>
           ))}
@@ -378,7 +379,7 @@ const EquityCurve = ({ s }) => {
       <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
         {[{ c: C.green, l: 'Winning trade' }, { c: C.danger, l: 'Losing trade' }].map(({ c, l }) => (
           <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: `${c}40`, border: `1px solid ${c}` }} />
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: `${shade(c,'40')}`, border: `1px solid ${c}` }} />
             <span style={{ fontSize: 8, color: C.t3 }}>{l}</span>
           </div>
         ))}
@@ -403,7 +404,7 @@ const DrawdownChart = ({ s }) => (
         { l: 'Nb periods', v: s.ddPeriods.length, c: C.t2 },
         { l: '% trades in DD', v: `${Math.round(s.ddSeries.filter(d => d.v < 0).length / s.n * 100)}%`, c: C.orange },
       ].map(({ l, v, c }) => (
-        <div key={l} style={{ padding: '8px 10px', borderRadius: 10, background: `${c}0A`, border: `1px solid ${c}20`, textAlign: 'center' }}>
+        <div key={l} style={{ padding: '8px 10px', borderRadius: 10, background: `${shade(c,'0A')}`, border: `1px solid ${shade(c,'20')}`, textAlign: 'center' }}>
           <div style={{ fontSize: 7, color: C.t3, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4, fontWeight: 700 }}>{l}</div>
           <div style={{ fontSize: 15, fontWeight: 900, fontFamily: 'monospace', color: c }}>{v}</div>
         </div>
@@ -434,7 +435,7 @@ const DrawdownChart = ({ s }) => (
         <div style={{ fontSize: 8, color: C.t3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>Top 5 — Deepest Drawdowns</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {s.worstDD.map((d, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '22px 1fr 56px 64px', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 9, background: 'rgba(255,61,87,0.06)', border: '1px solid rgba(255,61,87,0.15)' }}>
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '22px 1fr 56px 64px', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 9, background: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.06)', border: '1px solid rgba(var(--mf-danger-rgb, 255, 61, 87),0.15)' }}>
               <span style={{ fontSize: 10, fontWeight: 900, color: C.danger }}>#{i + 1}</span>
               <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
                 <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, d.depth / s.maxDD * 100)}%` }} transition={{ duration: 0.8, delay: i * 0.08 }}
@@ -476,7 +477,7 @@ const AdvancedStats = ({ s }) => {
     {
       label: 'Win / Loss', color: C.purple, icon: '🏆',
       items: [
-        { l: 'Win Rate',     v: `${s.wr}%`,                                                            c: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, desc: `${s.wins}W · ${s.losses}L · ${s.bes}BE` },
+        { l: 'Win Rate',     v: `${s.wr}%`,                                                            c: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, desc: `${s.wins}W · ${s.losses}L · ${shade(s.bes,'BE')}` },
         { l: 'Avg Win',      v: `+${s.avgWin.toFixed(2)}`,                                             c: C.green,   desc: 'Average gains' },
         { l: 'Avg Loss',     v: `-${s.avgLoss.toFixed(2)}`,                                            c: C.danger,  desc: 'Average losses' },
         { l: 'Ratio W/L',    v: parseFloat((s.avgWin / Math.max(0.01, s.avgLoss)).toFixed(2)),         c: s.avgWin / s.avgLoss >= 2 ? C.green : C.warn, desc: 'Avg gain / loss size' },
@@ -500,7 +501,7 @@ const AdvancedStats = ({ s }) => {
         {groups.map(({ label, color, icon, items }) => (
           <div key={label}>
             {/* Group header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 7, borderBottom: `1px solid ${color}28` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 7, borderBottom: `1px solid ${shade(color,'28')}` }}>
               <span style={{ fontSize: 12, filter: `drop-shadow(0 0 5px ${color})` }}>{icon}</span>
               <span style={{ fontSize: 8.5, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.6px' }}>{label}</span>
             </div>
@@ -559,9 +560,9 @@ const YearBreakdown = ({ s }) => {
         {s.yearStats.map((y, i) => {
           const col = YEAR_COLORS[i % YEAR_COLORS.length];
           return (
-            <div key={y.year} style={{ padding: '16px 14px', borderRadius: 14, background: `${col}09`, border: `1px solid ${col}30` }}>
+            <div key={y.year} style={{ padding: '16px 14px', borderRadius: 14, background: `${shade(col,'09')}`, border: `1px solid ${shade(col,'30')}` }}>
               {/* Year header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12, paddingBottom: 9, borderBottom: `1px solid ${col}22` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12, paddingBottom: 9, borderBottom: `1px solid ${shade(col,'22')}` }}>
                 <motion.div animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
                   style={{ width: 9, height: 9, borderRadius: '50%', background: col, boxShadow: `0 0 9px ${col}` }} />
                 <span style={{ fontSize: 16, fontWeight: 900, color: col }}>{y.year}</span>
@@ -637,7 +638,7 @@ const MonthlyHeatmap = ({ s }) => {
         <div style={{ display: 'flex', gap: 3 }}>
           {[{ v: 'pnl', l: 'P&L' }, { v: 'wr', l: 'WR%' }, { v: 'n', l: '# Trades' }].map(({ v, l }) => (
             <button key={v} onClick={() => setMetric(v)}
-              style={{ padding: '3px 9px', borderRadius: 7, border: `1px solid ${metric === v ? C.teal : C.brd}`, background: metric === v ? `${C.teal}18` : 'transparent', color: metric === v ? C.teal : C.t3, fontSize: 8.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{l}</button>
+              style={{ padding: '3px 9px', borderRadius: 7, border: `1px solid ${metric === v ? C.teal : C.brd}`, background: metric === v ? `${shade(C.teal,'18')}` : 'transparent', color: metric === v ? C.teal : C.t3, fontSize: 8.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{l}</button>
           ))}
         </div>
       </div>
@@ -667,7 +668,7 @@ const MonthlyHeatmap = ({ s }) => {
                         <div
                           title={d ? `${y}-${String(mi + 1).padStart(2, '0')}: ${d.n} trades · P&L ${d.pnl >= 0 ? '+' : ''}${d.pnl.toFixed(2)} · WR ${d.wr}%` : ''}
                           style={{ height: 44, borderRadius: 8, background: bg, border: `1px solid ${d ? 'rgba(255,255,255,0.07)' : C.brd}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.12s, box-shadow 0.12s', cursor: d ? 'pointer' : 'default' }}
-                          onMouseEnter={e => { if (d) { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.boxShadow = `0 4px 16px ${tc}30`; } }}
+                          onMouseEnter={e => { if (d) { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.boxShadow = `0 4px 16px ${shade(tc,'30')}`; } }}
                           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
                         >
                           {d ? (
@@ -700,7 +701,7 @@ const MonthlyHeatmap = ({ s }) => {
         <span style={{ fontSize: 7.5, color: C.t4 }}>Hover = details · click = zoom (coming soon)</span>
         {[{ c: C.green, l: metric === 'wr' ? 'WR ≥ 50%' : 'Positive' }, { c: C.danger, l: metric === 'wr' ? 'WR < 50%' : 'Negative' }].map(({ c, l }) => (
           <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: `${c}30`, border: `1px solid ${c}60` }} />
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: `${shade(c,'30')}`, border: `1px solid ${shade(c,'60')}` }} />
             <span style={{ fontSize: 7.5, color: C.t3 }}>{l}</span>
           </div>
         ))}
@@ -737,7 +738,7 @@ const MonteCarlo = ({ s }) => {
             {[500, 1000, 2000, 5000].map(n => <option key={n} value={n}>{n} runs</option>)}
           </select>
           <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={launch} disabled={loading}
-            style={{ padding: '7px 18px', borderRadius: 10, border: `1px solid ${C.gold}`, background: result ? `${C.gold}22` : `${C.gold}18`, color: C.gold, fontSize: 10, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, boxShadow: result ? `0 0 20px ${C.goldGlow}` : 'none', transition: 'all 0.2s' }}>
+            style={{ padding: '7px 18px', borderRadius: 10, border: `1px solid ${C.gold}`, background: result ? `${shade(C.gold,'22')}` : `${shade(C.gold,'18')}`, color: C.gold, fontSize: 10, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, boxShadow: result ? `0 0 20px ${C.goldGlow}` : 'none', transition: 'all 0.2s' }}>
             {loading ? <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}>⟳</motion.span> : '▶'}
             {loading ? 'Calculating…' : result ? `Relaunch (${runs})` : `Run ${runs} simulations`}
           </motion.button>
@@ -808,7 +809,7 @@ const MonteCarlo = ({ s }) => {
                 { l: 'Optimistic P95',   v: `+${result.p95}`,                 c: C.blue },
                 { l: 'Median DD',       v: `-${result.ddP50}`,               c: C.warn },
               ].map(({ l, v, c }) => (
-                <div key={l} style={{ padding: '9px 10px', borderRadius: 10, background: `${c}0A`, border: `1px solid ${c}22`, textAlign: 'center' }}>
+                <div key={l} style={{ padding: '9px 10px', borderRadius: 10, background: `${shade(c,'0A')}`, border: `1px solid ${shade(c,'22')}`, textAlign: 'center' }}>
                   <div style={{ fontSize: 7, color: C.t3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4, lineHeight: 1.4 }}>{l}</div>
                   <div style={{ fontSize: 14, fontWeight: 900, fontFamily: 'monospace', color: c }}>{v}</div>
                 </div>
@@ -857,7 +858,7 @@ export default function Equity() {
 
   if (!trades?.length) {
     return (
-      <div style={{ background: `radial-gradient(ellipse 120% 50% at 50% -5%,rgba(77,124,255,0.12) 0%,#030508 60%)`, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif" }}>
+      <div style={{ background: `radial-gradient(ellipse 120% 50% at 50% -5%,rgba(var(--mf-blue-rgb, 77, 124, 255),0.12) 0%,var(--mf-bg,#030508) 60%)`, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif" }}>
         <GlassCard glow={C.blue} style={{ padding: '60px 48px', textAlign: 'center', maxWidth: 420 }}>
           <div style={{ fontSize: 48, marginBottom: 20 }}>📊</div>
           <div style={{ fontSize: 20, fontWeight: 900, color: C.t1, marginBottom: 8 }}>No trades</div>
@@ -871,7 +872,7 @@ export default function Equity() {
 
   const KPI_ROW = [
     { label: 'Total P&L',    value: `${last >= 0 ? '+' : ''}${last.toFixed(2)}`,  sub: `${s.n} trades · ${s.yrs}y`, color: last >= 0 ? C.green : C.danger, icon: '💹', custom: 0 },
-    { label: 'Win Rate',     value: `${s.wr}%`,                                    sub: `${s.wins}W · ${s.losses}L · ${s.bes}BE`, color: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, icon: '🎯', custom: 1 },
+    { label: 'Win Rate',     value: `${s.wr}%`,                                    sub: `${s.wins}W · ${s.losses}L · ${shade(s.bes,'BE')}`, color: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, icon: '🎯', custom: 1 },
     { label: 'Profit Factor',value: s.pf,                                           sub: `${s.grossW.toFixed(2)} won / ${s.grossL.toFixed(2)} lost`, color: s.pf >= 2 ? C.green : s.pf >= 1.3 ? C.cyan : s.pf >= 1 ? C.warn : C.danger, icon: '⚖️', custom: 2 },
     { label: 'Sharpe',       value: s.sharpe,                                       sub: '≥1 good · ≥2 excellent',  color: s.sharpe  >= 2 ? C.green : s.sharpe  >= 1 ? C.cyan : C.warn, icon: '📏', custom: 3 },
     { label: 'Sortino',      value: s.sortino,                                      sub: 'Negative vol only',    color: s.sortino >= 2 ? C.green : s.sortino >= 1 ? C.cyan : C.warn, icon: '📐', custom: 4 },
@@ -881,7 +882,7 @@ export default function Equity() {
   ];
 
   return (
-    <div style={{ background: `radial-gradient(ellipse 130% 55% at 50% -5%,rgba(77,124,255,0.13) 0%,#030508 60%)`, minHeight: '100vh', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif", color: C.t1 }}>
+    <div style={{ background: `radial-gradient(ellipse 130% 55% at 50% -5%,rgba(var(--mf-blue-rgb, 77, 124, 255),0.13) 0%,var(--mf-bg,#030508) 60%)`, minHeight: '100vh', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif", color: C.t1 }}>
 
       {/* Background */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
@@ -889,7 +890,7 @@ export default function Equity() {
           <motion.div key={i} animate={{ y: [0, -42, 0], opacity: [0.025, 0.15, 0.025] }} transition={{ duration: p.dur, repeat: Infinity, delay: p.delay }}
             style={{ position: 'absolute', left: p.left, top: p.top, width: 2, height: 2, borderRadius: '50%', background: p.color }} />
         ))}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(77,124,255,0.011) 1px,transparent 1px),linear-gradient(90deg,rgba(77,124,255,0.011) 1px,transparent 1px)', backgroundSize: '64px 64px' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.011) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.011) 1px,transparent 1px)', backgroundSize: '64px 64px' }} />
       </div>
 
       <div style={{ position: 'relative', zIndex: 1, padding: '24px 28px 60px' }}>
@@ -905,10 +906,10 @@ export default function Equity() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
                 <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, background: C.gradCyan, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-1px' }}>Equity</h1>
-                <span style={{ padding: '3px 9px', borderRadius: 6, background: `${C.green}18`, border: `1px solid ${C.green}38`, fontSize: 9, fontWeight: 800, color: C.green }}>
+                <span style={{ padding: '3px 9px', borderRadius: 6, background: `${shade(C.green,'18')}`, border: `1px solid ${shade(C.green,'38')}`, fontSize: 9, fontWeight: 800, color: C.green }}>
                   {last >= 0 ? '+' : ''}{last.toFixed(2)} total
                 </span>
-                <span style={{ padding: '3px 9px', borderRadius: 6, background: `${C.cyan}12`, border: `1px solid ${C.cyan}30`, fontSize: 9, fontWeight: 800, color: C.cyan }}>
+                <span style={{ padding: '3px 9px', borderRadius: 6, background: `${shade(C.cyan,'12')}`, border: `1px solid ${shade(C.cyan,'30')}`, fontSize: 9, fontWeight: 800, color: C.cyan }}>
                   {s.n} trades · {s.yrs}y
                 </span>
               </div>
@@ -955,3 +956,4 @@ export default function Equity() {
     </div>
   );
 }
+

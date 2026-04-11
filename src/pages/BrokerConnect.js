@@ -3,18 +3,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { shade } from '../lib/colorAlpha';
 
 const C = {
-  bg: '#030508', bgCard: '#0C1422', bgHigh: '#111B2E',
-  cyan: '#06E6FF', green: '#00FF88', purple: '#B06EFF',
-  blue: '#4D7CFF', danger: '#FF3D57', warn: '#FFB31A',
-  t0: '#FFFFFF', t1: '#E8EEFF', t2: '#7A90B8', t3: '#334566',
-  brd: '#162034',
+  bg: 'var(--mf-bg,#030508)', bgCard: 'var(--mf-card,#0C1422)', bgHigh: 'var(--mf-high,#111B2E)',
+  cyan: 'var(--mf-accent,#06E6FF)', green: 'var(--mf-green,#00FF88)', purple: 'var(--mf-purple,#A78BFA)',
+  blue: 'var(--mf-blue,#4D7CFF)', danger: 'var(--mf-danger,#FF3D57)', warn: 'var(--mf-warn,#FFB31A)',
+  t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)',
+  brd: 'var(--mf-border,#162034)',
 };
 
 const BROKERS = [
   {
-    id: 'mt4', name: 'MetaTrader 4', short: 'MT4', icon: '📊', color: '#06E6FF',
+    id: 'mt4', name: 'MetaTrader 4', short: 'MT4', icon: '📊', color: 'var(--mf-accent,#06E6FF)',
     desc: 'Real-time sync via Expert Advisor. Trades sync automatically as they close.',
     features: ['Real-time sync', 'All trade fields', 'Auto retry', 'Multi-account'],
     setup: [
@@ -30,7 +31,7 @@ const BROKERS = [
     ],
   },
   {
-    id: 'mt5', name: 'MetaTrader 5', short: 'MT5', icon: '📈', color: '#00FF88',
+    id: 'mt5', name: 'MetaTrader 5', short: 'MT5', icon: '📈', color: 'var(--mf-green,#00FF88)',
     desc: 'Full MT5 support with advanced position tracking and hedging detection.',
     features: ['Real-time sync', 'Hedge mode support', 'Position tracking', 'Netting support'],
     setup: [
@@ -48,7 +49,7 @@ const BROKERS = [
     ],
   },
   {
-    id: 'ctrader', name: 'cTrader', short: 'cT', icon: '⚡', color: '#B06EFF',
+    id: 'ctrader', name: 'cTrader', short: 'cT', icon: '⚡', color: 'var(--mf-purple,#A78BFA)',
     desc: 'cTrader sync via cBot or manual CSV export. Coming soon: API integration.',
     features: ['CSV import', 'cBot (coming soon)', 'Full history', 'Multi-account'],
     setup: [
@@ -61,7 +62,7 @@ const BROKERS = [
     status: 'csv',
   },
   {
-    id: 'tradingview', name: 'TradingView', short: 'TV', icon: '📉', color: '#4D7CFF',
+    id: 'tradingview', name: 'TradingView', short: 'TV', icon: '📉', color: 'var(--mf-blue,#4D7CFF)',
     desc: 'Import TradingView broker trades via CSV or webhook alerts.',
     features: ['CSV import', 'Webhook alerts', 'Paper trading', 'All brokers'],
     setup: [
@@ -73,7 +74,7 @@ const BROKERS = [
     status: 'csv',
   },
   {
-    id: 'ibkr', name: 'Interactive Brokers', short: 'IBKR', icon: '🏦', color: '#FFB31A',
+    id: 'ibkr', name: 'Interactive Brokers', short: 'IBKR', icon: '🏦', color: 'var(--mf-warn,#FFB31A)',
     desc: 'IBKR activity statement import. Full trade history with commissions.',
     features: ['CSV import', 'Commission tracking', 'Multi-currency', 'Full history'],
     setup: [
@@ -87,7 +88,7 @@ const BROKERS = [
     status: 'csv',
   },
   {
-    id: 'webhook', name: 'Webhook / API', short: 'API', icon: '🔗', color: '#FF4DC4',
+    id: 'webhook', name: 'Webhook / API', short: 'API', icon: '🔗', color: 'var(--mf-pink,#FB7185)',
     desc: 'Send trades from any platform via HTTP POST. Universal compatibility.',
     features: ['Any platform', 'Real-time', 'REST API', 'Custom fields'],
     setup: [
@@ -191,11 +192,11 @@ export default function BrokerConnect() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 style={{ fontSize: 26, fontWeight: 800, color: C.t0, margin: 0, letterSpacing: '-0.5px' }}>
-              Broker <span style={{ background: 'linear-gradient(135deg,#06E6FF,#00FF88)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Connections</span>
+              Broker <span style={{ background: 'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Connections</span>
             </h1>
             <p style={{ fontSize: 14, color: C.t2, margin: '8px 0 0', maxWidth: 500 }}>Connect your trading accounts for automatic trade synchronization. Supports MT4, MT5, cTrader, TradingView, and any platform via webhook.</p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} style={{ padding: '11px 22px', background: 'linear-gradient(135deg, #06E6FF, #00FF88)', color: '#030508', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 20px rgba(6,230,255,0.25)' }}>{showForm ? 'Cancel' : '+ Connect Broker'}</button>
+          <button onClick={() => setShowForm(!showForm)} style={{ padding: '11px 22px', background: 'linear-gradient(135deg, var(--mf-accent,#06E6FF), var(--mf-green,#00FF88))', color: 'var(--mf-bg,#030508)', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 20px rgba(var(--mf-accent-rgb, 6, 230, 255),0.25)' }}>{showForm ? 'Cancel' : '+ Connect Broker'}</button>
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
           {[{ l: 'Connected', v: connectedCount, c: C.green, icon: '●' }, { l: 'Total Accounts', v: accounts.length, c: C.cyan, icon: '◉' }, { l: 'Trades Synced', v: totalSynced.toLocaleString(), c: C.purple, icon: '◆' }].map((s, i) => (
@@ -209,16 +210,16 @@ export default function BrokerConnect() {
 
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} style={{ background: 'linear-gradient(160deg, #0C1830, #080F1E)', border: '1px solid rgba(6,230,255,0.15)', borderRadius: 16, padding: 28, marginBottom: 28, boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
+          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} style={{ background: 'linear-gradient(160deg, #0C1830, #080F1E)', border: '1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.15)', borderRadius: 16, padding: 28, marginBottom: 28, boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: C.t0, marginBottom: 20 }}>Connect New Account</h3>
             <form onSubmit={handleAdd}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Platform</label><select value={form.broker_type} onChange={e => setForm(f => ({ ...f, broker_type: e.target.value }))} style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid #162034', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}>{BROKERS.filter(b => b.status !== 'csv' && b.status !== 'webhook').map(b => (<option key={b.id} value={b.id}>{b.name}</option>))}</select></div>
-                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account Number</label><input value={form.account_number} onChange={e => setForm(f => ({ ...f, account_number: e.target.value }))} placeholder="e.g. 50123456" style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid #162034', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} /></div>
-                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account Label</label><input value={form.account_name} onChange={e => setForm(f => ({ ...f, account_name: e.target.value }))} placeholder="e.g. FTMO Challenge #1" style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid #162034', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} /></div>
-                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Server</label><input value={form.server_name} onChange={e => setForm(f => ({ ...f, server_name: e.target.value }))} placeholder="e.g. ICMarkets-Live07" style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid #162034', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} /></div>
+                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Platform</label><select value={form.broker_type} onChange={e => setForm(f => ({ ...f, broker_type: e.target.value }))} style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid var(--mf-border,#162034)', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}>{BROKERS.filter(b => b.status !== 'csv' && b.status !== 'webhook').map(b => (<option key={b.id} value={b.id}>{b.name}</option>))}</select></div>
+                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account Number</label><input value={form.account_number} onChange={e => setForm(f => ({ ...f, account_number: e.target.value }))} placeholder="e.g. 50123456" style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid var(--mf-border,#162034)', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} /></div>
+                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account Label</label><input value={form.account_name} onChange={e => setForm(f => ({ ...f, account_name: e.target.value }))} placeholder="e.g. FTMO Challenge #1" style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid var(--mf-border,#162034)', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} /></div>
+                <div><label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Server</label><input value={form.server_name} onChange={e => setForm(f => ({ ...f, server_name: e.target.value }))} placeholder="e.g. ICMarkets-Live07" style={{ width: '100%', padding: '11px 14px', background: '#060D1A', color: C.t0, border: '1px solid var(--mf-border,#162034)', borderRadius: 10, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} /></div>
               </div>
-              <button type="submit" style={{ padding: '12px 28px', background: 'linear-gradient(135deg, #06E6FF, #00FF88)', color: '#030508', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Generate API Token →</button>
+              <button type="submit" style={{ padding: '12px 28px', background: 'linear-gradient(135deg, var(--mf-accent,#06E6FF), var(--mf-green,#00FF88))', color: 'var(--mf-bg,#030508)', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Generate API Token →</button>
             </form>
           </motion.div>
         )}
@@ -226,7 +227,7 @@ export default function BrokerConnect() {
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
         {[{ id: 'all', l: 'All' }, ...BROKERS.filter(b => accounts.some(a => a.broker_type === b.id)).map(b => ({ id: b.id, l: b.short }))].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${activeTab === tab.id ? C.cyan : C.brd}`, background: activeTab === tab.id ? 'rgba(6,230,255,0.08)' : 'transparent', color: activeTab === tab.id ? C.cyan : C.t3, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>{tab.l}</button>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${activeTab === tab.id ? C.cyan : C.brd}`, background: activeTab === tab.id ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)' : 'transparent', color: activeTab === tab.id ? C.cyan : C.t3, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>{tab.l}</button>
         ))}
       </div>
 
@@ -243,18 +244,18 @@ export default function BrokerConnect() {
           {filteredAccounts.map(acc => {
             const broker = BROKERS.find(b => b.id === acc.broker_type) || BROKERS[0];
             return (
-              <motion.div key={acc.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'linear-gradient(160deg, rgba(12,20,34,0.95), rgba(8,14,26,0.98))', border: `1px solid ${acc.status === 'connected' ? `${broker.color}30` : C.brd}`, borderRadius: 16, padding: 24, position: 'relative', overflow: 'hidden' }}>
-                {acc.status === 'connected' && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${broker.color}60, transparent)` }} />}
+              <motion.div key={acc.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'linear-gradient(160deg, rgba(12,20,34,0.95), rgba(8,14,26,0.98))', border: `1px solid ${acc.status === 'connected' ? shade(broker.color,'30') : C.brd}`, borderRadius: 16, padding: 24, position: 'relative', overflow: 'hidden' }}>
+                {acc.status === 'connected' && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${shade(broker.color,'60')}, transparent)` }} />}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
                   <div style={{ flex: 1, minWidth: 280 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                       <span style={{ fontSize: 22 }}>{broker.icon}</span>
                       <div><div style={{ fontSize: 16, fontWeight: 700, color: C.t0 }}>{acc.account_name || acc.account_number}</div><div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>{broker.name} · {acc.server_name || 'Default Server'}</div></div>
-                      <span style={{ padding: '4px 10px', borderRadius: 6, background: acc.status === 'connected' ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.04)', color: acc.status === 'connected' ? C.green : C.t3, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, border: `1px solid ${acc.status === 'connected' ? 'rgba(0,255,136,0.2)' : C.brd}` }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: acc.status === 'connected' ? C.green : C.t3, boxShadow: acc.status === 'connected' ? `0 0 6px ${C.green}` : 'none' }} />{acc.status === 'connected' ? 'Connected' : 'Disconnected'}</span>
+                      <span style={{ padding: '4px 10px', borderRadius: 6, background: acc.status === 'connected' ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)' : 'rgba(255,255,255,0.04)', color: acc.status === 'connected' ? C.green : C.t3, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, border: `1px solid ${acc.status === 'connected' ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.2)' : C.brd}` }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: acc.status === 'connected' ? C.green : C.t3, boxShadow: acc.status === 'connected' ? `0 0 6px ${C.green}` : 'none' }} />{acc.status === 'connected' ? 'Connected' : 'Disconnected'}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                       <code style={{ background: '#060D1A', padding: '7px 12px', borderRadius: 8, fontSize: 11.5, color: broker.color, fontFamily: 'monospace', border: `1px solid ${C.brd}` }}>{acc.api_token}</code>
-                      <button onClick={() => copyToken(acc.api_token)} style={{ padding: '7px 12px', background: 'rgba(6,230,255,0.08)', color: C.cyan, border: '1px solid rgba(6,230,255,0.15)', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>{copiedToken === acc.api_token ? '✓ Copied' : 'Copy'}</button>
+                      <button onClick={() => copyToken(acc.api_token)} style={{ padding: '7px 12px', background: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)', color: C.cyan, border: '1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.15)', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>{copiedToken === acc.api_token ? '✓ Copied' : 'Copy'}</button>
                     </div>
                     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 10, color: C.t3 }}>Last sync: <span style={{ color: C.t2 }}>{timeAgo(acc.last_sync_at)}</span></span>
@@ -263,7 +264,7 @@ export default function BrokerConnect() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    {acc.broker_type.startsWith('mt') && <button onClick={() => handleSync(acc.id)} disabled={syncingId === acc.id} style={{ padding: '8px 16px', background: 'rgba(6,230,255,0.08)', color: C.cyan, border: '1px solid rgba(6,230,255,0.15)', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>{syncingId === acc.id ? 'Syncing...' : 'Sync Now'}</button>}
+                    {acc.broker_type.startsWith('mt') && <button onClick={() => handleSync(acc.id)} disabled={syncingId === acc.id} style={{ padding: '8px 16px', background: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)', color: C.cyan, border: '1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.15)', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>{syncingId === acc.id ? 'Syncing...' : 'Sync Now'}</button>}
                     <button onClick={() => openSetup(broker)} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', color: C.t2, border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>Setup Guide</button>
                     <button onClick={() => handleDelete(acc.id)} disabled={deletingId === acc.id} style={{ padding: '8px 14px', background: 'rgba(255,70,70,0.06)', color: C.danger, border: '1px solid rgba(255,70,70,0.1)', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>{deletingId === acc.id ? '...' : 'Remove'}</button>
                   </div>
@@ -282,7 +283,7 @@ export default function BrokerConnect() {
             <motion.div key={broker.id} whileHover={{ y: -2 }} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.brd}`, borderRadius: 14, padding: 22, cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => openSetup(broker)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}><span style={{ fontSize: 28 }}>{broker.icon}</span><div><div style={{ fontSize: 14, fontWeight: 700, color: C.t0 }}>{broker.name}</div><div style={{ fontSize: 10, color: broker.color, fontWeight: 600 }}>{broker.status === 'csv' ? 'CSV Import' : broker.status === 'webhook' ? 'API / Webhook' : 'Real-time Sync'}</div></div></div>
               <p style={{ fontSize: 12, color: C.t2, lineHeight: 1.6, marginBottom: 12 }}>{broker.desc}</p>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{broker.features.map((f, i) => (<span key={i} style={{ padding: '3px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, background: `${broker.color}10`, color: broker.color, border: `1px solid ${broker.color}20` }}>{f}</span>))}</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{broker.features.map((f, i) => (<span key={i} style={{ padding: '3px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, background: `${shade(broker.color,'10')}`, color: broker.color, border: `1px solid ${shade(broker.color,'20')}` }}>{f}</span>))}</div>
             </motion.div>
           ))}
         </div>
@@ -291,10 +292,10 @@ export default function BrokerConnect() {
       <AnimatePresence>
         {showSetup && selectedBroker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(2,4,10,0.85)', backdropFilter: 'blur(12px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowSetup(false)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ width: 560, maxHeight: '85vh', overflow: 'auto', background: 'linear-gradient(160deg, #0C1830, #080F1E)', border: `1px solid ${selectedBroker.color}25`, borderRadius: 20, boxShadow: `0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px ${selectedBroker.color}15` }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ width: 560, maxHeight: '85vh', overflow: 'auto', background: 'linear-gradient(160deg, #0C1830, #080F1E)', border: `1px solid ${shade(selectedBroker.color,'25')}`, borderRadius: 20, boxShadow: `0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px ${shade(selectedBroker.color,'15')}` }}>
               <div style={{ padding: '28px 28px 20px', borderBottom: `1px solid ${C.brd}` }}><div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}><span style={{ fontSize: 36 }}>{selectedBroker.icon}</span><div><h3 style={{ fontSize: 20, fontWeight: 800, color: C.t0, margin: 0 }}>{selectedBroker.name} Setup</h3><p style={{ fontSize: 12, color: C.t2, margin: '4px 0 0' }}>{selectedBroker.desc}</p></div></div></div>
-              <div style={{ padding: '24px 28px' }}>{selectedBroker.setup.map((step, i) => (<div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18 }}><div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: `${selectedBroker.color}15`, border: `1px solid ${selectedBroker.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: selectedBroker.color }}>{i + 1}</div><p style={{ fontSize: 13, color: C.t1, lineHeight: 1.65, margin: 0, paddingTop: 3 }}>{step}</p></div>))}</div>
-              <div style={{ padding: '16px 28px 24px', borderTop: `1px solid ${C.brd}` }}><button onClick={() => setShowSetup(false)} style={{ width: '100%', padding: '11px', borderRadius: 10, border: `1px solid ${selectedBroker.color}30`, background: `${selectedBroker.color}08`, color: selectedBroker.color, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Got it</button></div>
+              <div style={{ padding: '24px 28px' }}>{selectedBroker.setup.map((step, i) => (<div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18 }}><div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: `${shade(selectedBroker.color,'15')}`, border: `1px solid ${shade(selectedBroker.color,'30')}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: selectedBroker.color }}>{i + 1}</div><p style={{ fontSize: 13, color: C.t1, lineHeight: 1.65, margin: 0, paddingTop: 3 }}>{step}</p></div>))}</div>
+              <div style={{ padding: '16px 28px 24px', borderTop: `1px solid ${C.brd}` }}><button onClick={() => setShowSetup(false)} style={{ width: '100%', padding: '11px', borderRadius: 10, border: `1px solid ${shade(selectedBroker.color,'30')}`, background: `${shade(selectedBroker.color,'08')}`, color: selectedBroker.color, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Got it</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -302,3 +303,4 @@ export default function BrokerConnect() {
     </div>
   );
 }
+

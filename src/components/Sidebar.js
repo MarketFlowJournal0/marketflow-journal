@@ -6,6 +6,7 @@ const MARKETFLOW_LOGO = '/logo192.png';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 const ELITE_ACCENT_KEY = 'mfj_elite_sidebar_accent';
 const ELITE_THEMES = [
+  { value: '#F5F7FA', secondary: '#9AA4B2', label: 'Mono' },
   { value: '#FFD700', secondary: '#FF9A3C', label: 'Gold' },
   { value: '#06E6FF', secondary: '#00FF88', label: 'Aqua' },
   { value: '#00FF88', secondary: '#7CFFB2', label: 'Emerald' },

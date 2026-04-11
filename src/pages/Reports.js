@@ -2,15 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTradingContext } from '../context/TradingContext';
 import { useAuth } from '../context/AuthContext';
+import { shade } from '../lib/colorAlpha';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW REPORTS — Premium PDF Export
    ═══════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: '#030508', bgCard: '#0C1422', cyan: '#06E6FF', green: '#00FF88',
-  purple: '#B06EFF', blue: '#4D7CFF', danger: '#FF3D57', gold: '#FFD700',
-  t0: '#FFFFFF', t1: '#E8EEFF', t2: '#7A90B8', t3: '#334566', brd: '#162034',
+  bg: 'var(--mf-bg,#030508)', bgCard: 'var(--mf-card,#0C1422)', cyan: 'var(--mf-accent,#06E6FF)', green: 'var(--mf-green,#00FF88)',
+  purple: 'var(--mf-purple,#B06EFF)', blue: 'var(--mf-blue,#4D7CFF)', danger: 'var(--mf-danger,#FF3D57)', gold: 'var(--mf-gold,#FFD700)',
+  t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)', brd: 'var(--mf-border,#162034)',
 };
 
 const Ic = {
@@ -31,8 +32,8 @@ const REPORT_TYPES = [
 const PROP_FIRMS = [
   { id: 'ftmo', name: 'FTMO', color: '#3B82F6' },
   { id: 'the5ers', name: 'The5%ers', color: '#10B981' },
-  { id: 'e8', name: 'E8 Funding', color: '#8B5CF6' },
-  { id: 'topstep', name: 'TopStep', color: '#F59E0B' },
+  { id: 'e8', name: 'E8 Funding', color: 'var(--mf-purple,#8B5CF6)' },
+  { id: 'topstep', name: 'TopStep', color: 'var(--mf-warn,#F59E0B)' },
 ];
 
 export default function ReportsPage() {
@@ -94,7 +95,7 @@ export default function ReportsPage() {
                   display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
                   borderRadius: 10, cursor: 'pointer',
                   background: selectedType === rt.id ? 'rgba(6,230,255,0.06)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${selectedType === rt.id ? 'rgba(6,230,255,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                  border: `1px solid ${selectedType === rt.id ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)' : 'rgba(255,255,255,0.04)'}`,
                   transition: 'all 0.15s',
                 }}
               >
@@ -119,7 +120,7 @@ export default function ReportsPage() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {['all', '7d', '30d', '90d', 'custom'].map(r => (
                 <button key={r} onClick={() => setDateRange(r)} style={{
-                  padding: '7px 14px', borderRadius: 8, border: `1px solid ${dateRange === r ? 'rgba(6,230,255,0.2)' : C.brd}`,
+                  padding: '7px 14px', borderRadius: 8, border: `1px solid ${dateRange === r ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)' : C.brd}`,
                   background: dateRange === r ? 'rgba(6,230,255,0.08)' : 'transparent',
                   color: dateRange === r ? C.cyan : C.t2, fontSize: 12, fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
@@ -137,8 +138,8 @@ export default function ReportsPage() {
               <div style={{ display: 'flex', gap: 8 }}>
                 {PROP_FIRMS.map(f => (
                   <button key={f.id} onClick={() => setSelectedFirm(f.id)} style={{
-                    flex: 1, padding: '10px 0', borderRadius: 8, border: `1px solid ${selectedFirm === f.id ? f.color + '40' : C.brd}`,
-                    background: selectedFirm === f.id ? f.color + '10' : 'transparent',
+                    flex: 1, padding: '10px 0', borderRadius: 8, border: `1px solid ${selectedFirm === f.id ? shade(f.color,'40') : C.brd}`,
+                    background: selectedFirm === f.id ? shade(f.color,'10') : 'transparent',
                     color: selectedFirm === f.id ? f.color : C.t2, fontSize: 11, fontWeight: 700,
                     cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
                   }}>
@@ -164,15 +165,15 @@ export default function ReportsPage() {
                 </div>
                 <button onClick={handleGenerate} disabled={generating || !stats.totalTrades} style={{
                   width: '100%', padding: 12, borderRadius: 10, border: 'none',
-                  background: generating || !stats.totalTrades ? 'rgba(255,255,255,0.04)' : 'linear-gradient(135deg, #06E6FF, #00FF88)',
-                  color: generating || !stats.totalTrades ? C.t3 : '#030508',
+                  background: generating || !stats.totalTrades ? 'rgba(255,255,255,0.04)' : 'linear-gradient(135deg, var(--mf-accent,#06E6FF), var(--mf-green,#00FF88))',
+                  color: generating || !stats.totalTrades ? C.t3 : 'var(--mf-bg,#030508)',
                   fontSize: 13, fontWeight: 700, cursor: generating || !stats.totalTrades ? 'not-allowed' : 'pointer',
                   fontFamily: 'inherit', transition: 'all 0.2s',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}>
                   {generating ? (
                     <>
-                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ width: 14, height: 14, border: '2px solid rgba(3,5,8,0.2)', borderTopColor: '#030508', borderRadius: '50%' }} />
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ width: 14, height: 14, border: '2px solid rgba(3,5,8,0.2)', borderTopColor: 'var(--mf-bg,#030508)', borderRadius: '50%' }} />
                       Generating...
                     </>
                   ) : (
@@ -239,3 +240,4 @@ function generateTextReport(stats, trades, type, firm, dateRange) {
   report += `\n${'='.repeat(50)}\nMarketFlow Journal — Trade Smarter`;
   return report;
 }
+

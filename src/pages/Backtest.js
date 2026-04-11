@@ -6,25 +6,26 @@
 import React,{useState,useMemo,useRef}from'react';
 import{motion,AnimatePresence}from'framer-motion';
 import{AreaChart,Area,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,Cell,ReferenceLine,ComposedChart,Line}from'recharts';
+import { shade } from '../lib/colorAlpha';
 
 const C={
-  bg0:'#0F1420',bgCard:'#0C1422',bgHigh:'#121C2E',
-  cyan:'#06E6FF',cyanGlow:'rgba(6,230,255,0.35)',
-  teal:'#00F5D4',tealGlow:'rgba(0,245,212,0.3)',
-  green:'#00FF88',greenGlow:'rgba(0,255,136,0.35)',
-  danger:'#FF3D57',dangerGlow:'rgba(255,61,87,0.35)',
-  warn:'#FFB31A',warnGlow:'rgba(255,179,26,0.35)',
-  orange:'#FF6B35',
-  purple:'#B06EFF',purpleGlow:'rgba(176,110,255,0.35)',
-  blue:'#4D7CFF',blueGlow:'rgba(77,124,255,0.3)',
-  pink:'#FF4DC4',pinkGlow:'rgba(255,77,196,0.3)',
-  gold:'#FFD700',
-  t0:'#FFFFFF',t1:'#E8EEFF',t2:'#7A90B8',t3:'#334566',t4:'#1E2E45',
-  brd:'#162034',brdHi:'#1E2E48',
-  gradCyan:'linear-gradient(135deg,#06E6FF,#00FF88)',
-  gradPurple:'linear-gradient(135deg,#B06EFF,#4D7CFF)',
-  gradWarm:'linear-gradient(135deg,#FFB31A,#FF6B35)',
-  gradDanger:'linear-gradient(135deg,#FF3D57,#FF6B35)',
+  bg0:'#0F1420',bgCard:'var(--mf-card,#0C1422)',bgHigh:'var(--mf-high,#121C2E)',
+  cyan:'var(--mf-accent,#06E6FF)',cyanGlow:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.35)',
+  teal:'var(--mf-teal,#00F5D4)',tealGlow:'rgba(var(--mf-teal-rgb, 0, 245, 212),0.3)',
+  green:'var(--mf-green,#00FF88)',greenGlow:'rgba(var(--mf-green-rgb, 0, 255, 136),0.35)',
+  danger:'var(--mf-danger,#FF3D57)',dangerGlow:'rgba(var(--mf-danger-rgb, 255, 61, 87),0.35)',
+  warn:'var(--mf-warn,#FFB31A)',warnGlow:'rgba(var(--mf-warn-rgb, 255, 179, 26),0.35)',
+  orange:'var(--mf-orange,#FF6B35)',
+  purple:'var(--mf-purple,#A78BFA)',purpleGlow:'rgba(var(--mf-purple-rgb, 176, 110, 255),0.35)',
+  blue:'var(--mf-blue,#4D7CFF)',blueGlow:'rgba(var(--mf-blue-rgb, 77, 124, 255),0.3)',
+  pink:'var(--mf-pink,#FB7185)',pinkGlow:'rgba(var(--mf-pink-rgb, 255, 77, 196),0.3)',
+  gold:'var(--mf-gold,#FFD700)',
+  t0:'var(--mf-text-0,#FFFFFF)',t1:'var(--mf-text-1,#E8EEFF)',t2:'var(--mf-text-2,#7A90B8)',t3:'var(--mf-text-3,#334566)',t4:'var(--mf-text-4,#1E2E45)',
+  brd:'var(--mf-border,#162034)',brdHi:'var(--mf-border-hi,#1E2E48)',
+  gradCyan:'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  gradPurple:'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-blue,#4D7CFF))',
+  gradWarm:'linear-gradient(135deg,var(--mf-warn,#FFB31A),var(--mf-orange,#FF6B35))',
+  gradDanger:'linear-gradient(135deg,var(--mf-danger,#FF3D57),var(--mf-orange,#FF6B35))',
 };
 const fadeUp={hidden:{opacity:0,y:20,scale:0.97},visible:(i=0)=>({opacity:1,y:0,scale:1,transition:{delay:i*0.04,duration:0.5,ease:[0.16,1,0.3,1]}})};
 const NOISE='url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")';
@@ -35,8 +36,8 @@ const GlassCard=({children,style={},glow=null,hover=true,custom=0,onClick,...p})
     style={{position:'relative',overflow:'hidden',
       background:'linear-gradient(145deg,rgba(15,24,44,0.93),rgba(10,16,32,0.97))',
       backdropFilter:'blur(20px) saturate(1.4)',borderRadius:20,
-      border:`1px solid ${glow?glow+'28':C.brd}`,
-      boxShadow:`0 4px 40px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04)${glow?`,0 0 55px ${glow}08`:''}`,
+      border:`1px solid ${glow ? shade(glow,'28') : C.brd}`,
+      boxShadow:`0 4px 40px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04)${glow ? `,0 0 55px ${shade(glow,'08')}` : ''}`,
       cursor:onClick?'pointer':'default',...style}} {...p}>
     <div style={{position:'absolute',inset:0,opacity:0.022,backgroundImage:NOISE,backgroundSize:'128px',pointerEvents:'none',zIndex:0}}/>
     <div style={{position:'relative',zIndex:1,height:'100%'}}>{children}</div>
@@ -47,7 +48,7 @@ const ST=({children,sub,color=C.cyan,icon,mb=14})=>(
   <div style={{marginBottom:mb}}>
     <div style={{display:'flex',alignItems:'center',gap:8}}>
       {icon&&<span style={{fontSize:14,filter:`drop-shadow(0 0 7px ${color})`}}>{icon}</span>}
-      <div style={{width:3,height:15,background:`linear-gradient(180deg,${color},${color}50)`,borderRadius:2,flexShrink:0}}/>
+      <div style={{width:3,height:15,background:`linear-gradient(180deg,${color},${shade(color,'50')})`,borderRadius:2,flexShrink:0}}/>
       <span style={{fontSize:13,fontWeight:800,color:C.t1,letterSpacing:'-0.3px'}}>{children}</span>
     </div>
     {sub&&<p style={{margin:'3px 0 0',fontSize:9,color:C.t3,paddingLeft:icon?30:11}}>{sub}</p>}
@@ -298,15 +299,15 @@ function parseXL(buf){const XLSX=window.XLSX;const wb=XLSX.read(buf,{type:'array
 
 const KpiCard=({label,value,sub,color,icon,custom})=>(
   <GlassCard custom={custom} glow={color} style={{padding:'16px 15px',position:'relative',overflow:'hidden',minHeight:88}}>
-    <div style={{position:'absolute',top:-18,right:-18,width:70,height:70,borderRadius:'50%',background:`radial-gradient(circle,${color}22,transparent 70%)`,filter:'blur(12px)',pointerEvents:'none'}}/>
-    <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${color}60,transparent)`}}/>
+    <div style={{position:'absolute',top:-18,right:-18,width:70,height:70,borderRadius:'50%',background:`radial-gradient(circle,${shade(color,'22')},transparent 70%)`,filter:'blur(12px)',pointerEvents:'none'}}/>
+    <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${shade(color,'60')},transparent)`}}/>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:7}}>
       <span style={{fontSize:7.5,fontWeight:800,color:C.t3,letterSpacing:'1.4px',textTransform:'uppercase'}}>{label}</span>
       <motion.span animate={{scale:[1,1.12,1]}} transition={{duration:3.5,repeat:Infinity,delay:(custom||0)*0.2}} style={{fontSize:16,filter:`drop-shadow(0 0 6px ${color})`}}>{icon}</motion.span>
     </div>
-    <div style={{fontSize:24,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,marginBottom:3,textShadow:`0 0 20px ${color}40`}}>{value}</div>
+    <div style={{fontSize:24,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,marginBottom:3,textShadow:`0 0 20px ${shade(color,'40')}`}}>{value}</div>
     {sub&&<div style={{fontSize:8.5,color:C.t2,lineHeight:1.5}}>{sub}</div>}
-    <motion.div animate={{opacity:[0.3,0.8,0.3]}} transition={{duration:2.5,repeat:Infinity,delay:(custom||0)*0.15}} style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${color}60,transparent)`}}/>
+    <motion.div animate={{opacity:[0.3,0.8,0.3]}} transition={{duration:2.5,repeat:Infinity,delay:(custom||0)*0.15}} style={{position:'absolute',bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${shade(color,'60')},transparent)`}}/>
   </GlassCard>
 );
 
@@ -380,7 +381,7 @@ const ConfCard=({title,icon,color,data,custom=0})=>{
         <ST icon={icon} color={color} mb={0}>{title}</ST>
         <div style={{display:'flex',gap:3}}>
           {[{v:'wr',l:'WR'},{v:'avgRR',l:'R:R'},{v:'totalRR',l:'Tot'},{v:'pf',l:'PF'},{v:'n',l:'#'}].map(({v,l})=>(
-            <button key={v} onClick={()=>setSort(v)} style={{padding:'2px 6px',borderRadius:5,border:`1px solid ${sort===v?color:C.brd}`,background:sort===v?`${color}18`:'transparent',color:sort===v?color:C.t3,fontSize:7.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{l}</button>
+            <button key={v} onClick={()=>setSort(v)} style={{padding:'2px 6px',borderRadius:5,border:`1px solid ${sort===v?color:C.brd}`,background:sort===v?`${shade(color,'18')}`:'transparent',color:sort===v?color:C.t3,fontSize:7.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{l}</button>
           ))}
         </div>
       </div>
@@ -409,7 +410,7 @@ const ConfCard=({title,icon,color,data,custom=0})=>{
               {d.n>0&&(
                 <div style={{display:'flex',gap:3,alignItems:'center'}}>
                   <div style={{flex:1,height:3,borderRadius:2,background:'rgba(255,255,255,0.05)',overflow:'hidden'}}>
-                    <motion.div initial={{width:0}} animate={{width:`${d.wr}%`}} transition={{duration:0.75,delay:i*0.04}} style={{height:'100%',borderRadius:2,background:`linear-gradient(90deg,${wrc}44,${wrc})`}}/>
+                    <motion.div initial={{width:0}} animate={{width:`${d.wr}%`}} transition={{duration:0.75,delay:i*0.04}} style={{height:'100%',borderRadius:2,background:`linear-gradient(90deg,${shade(wrc,'44')},${wrc})`}}/>
                   </div>
                   <div style={{width:48,height:3,borderRadius:2,background:'rgba(255,255,255,0.04)',overflow:'hidden',position:'relative'}}>
                     <motion.div initial={{width:0}} animate={{width:`${Math.min(96,d.n/maxN*96)}%`}} transition={{duration:0.7,delay:i*0.04}} style={{position:'absolute',left:0,height:'100%',background:color,opacity:0.55,borderRadius:2}}/>
@@ -431,11 +432,11 @@ const DirSplit=({title,icon,color,dataByDir,labels,custom=0})=>{
     <GlassCard custom={custom} glow={color} hover={false} style={{padding:'18px 16px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
         <ST icon={icon} color={color} mb={0}>{title}</ST>
-        <div style={{display:'flex',gap:3}}>{[{v:'wr',l:'WR'},{v:'avgRR',l:'R:R'},{v:'totalRR',l:'Tot'},{v:'pf',l:'PF'},{v:'n',l:'#'}].map(({v,l})=>(<button key={v} onClick={()=>setMetric(v)} style={{padding:'2px 6px',borderRadius:5,border:`1px solid ${metric===v?color:C.brd}`,background:metric===v?`${color}18`:'transparent',color:metric===v?color:C.t3,fontSize:7.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{l}</button>))}</div>
+        <div style={{display:'flex',gap:3}}>{[{v:'wr',l:'WR'},{v:'avgRR',l:'R:R'},{v:'totalRR',l:'Tot'},{v:'pf',l:'PF'},{v:'n',l:'#'}].map(({v,l})=>(<button key={v} onClick={()=>setMetric(v)} style={{padding:'2px 6px',borderRadius:5,border:`1px solid ${metric===v?color:C.brd}`,background:metric===v?`${shade(color,'18')}`:'transparent',color:metric===v?color:C.t3,fontSize:7.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{l}</button>))}</div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',gap:3,marginBottom:6}}>
         <div/>
-        {['Long','Short'].map(d=>(<div key={d} style={{textAlign:'center',padding:'3px 0',borderRadius:6,background:d==='Long'?`${C.green}12`:`${C.danger}12`,border:`1px solid ${d==='Long'?C.green+'25':C.danger+'25'}`}}><span style={{fontSize:9,fontWeight:800,color:d==='Long'?C.green:C.danger}}>{d==='Long'?'▲ Long':'▼ Short'}</span></div>))}
+        {['Long','Short'].map(d=>(<div key={d} style={{textAlign:'center',padding:'3px 0',borderRadius:6,background:d==='Long'?`${shade(C.green,'12')}`:`${shade(C.danger,'12')}`,border:`1px solid ${d==='Long' ? shade(C.green,'25') : shade(C.danger,'25')}`}}><span style={{fontSize:9,fontWeight:800,color:d==='Long'?C.green:C.danger}}>{d==='Long'?'▲ Long':'▼ Short'}</span></div>))}
       </div>
       {labels.map((lbl,i)=>{
         const dL=dataByDir['Long']?.find(d=>d.label===lbl)||{n:0,wr:0,avgRR:0,totalRR:0,pf:0};
@@ -443,7 +444,7 @@ const DirSplit=({title,icon,color,dataByDir,labels,custom=0})=>{
         const mL=mv(dL),mS=mv(dS);
         return(<div key={lbl} style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',gap:3,marginBottom:3,opacity:(dL.n||dS.n)?1:0.3}}>
           <div style={{display:'flex',alignItems:'center',gap:5,padding:'6px 8px',borderRadius:8,background:'rgba(255,255,255,0.025)'}}><div style={{width:4,height:4,borderRadius:'50%',background:color,flexShrink:0}}/><span style={{fontSize:9.5,fontWeight:700,color:(dL.n||dS.n)?C.t1:C.t3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lbl}</span></div>
-          {[{d:dL,m:mL,dir:'Long'},{d:dS,m:mS,dir:'Short'}].map(({d,m,dir})=>(<div key={dir} style={{padding:'5px 6px',borderRadius:8,background:d.n?`${dir==='Long'?C.green:C.danger}08`:'rgba(255,255,255,0.015)',border:`1px solid ${d.n?dir==='Long'?C.green+'22':C.danger+'22':C.brd}`,textAlign:'center'}}>{d.n?(<><div style={{fontSize:9.5,fontWeight:900,fontFamily:'monospace',color:m.c,lineHeight:1}}>{m.v}</div><div style={{fontSize:6.5,color:C.t3,marginTop:1}}>×{d.n}</div></>):<div style={{fontSize:8,color:C.t4}}>—</div>}</div>))}
+          {[{d:dL,m:mL,dir:'Long'},{d:dS,m:mS,dir:'Short'}].map(({d,m,dir})=>(<div key={dir} style={{padding:'5px 6px',borderRadius:8,background:d.n?`${shade(dir==='Long'?C.green:C.danger,'08')}`:'rgba(255,255,255,0.015)',border:`1px solid ${d.n ? (dir==='Long' ? shade(C.green,'22') : shade(C.danger,'22')) : C.brd}`,textAlign:'center'}}>{d.n?(<><div style={{fontSize:9.5,fontWeight:900,fontFamily:'monospace',color:m.c,lineHeight:1}}>{m.v}</div><div style={{fontSize:6.5,color:C.t3,marginTop:1}}>×{d.n}</div></>):<div style={{fontSize:8,color:C.t4}}>—</div>}</div>))}
         </div>);
       })}
     </GlassCard>
@@ -461,7 +462,7 @@ const Heatmap=({trades,rowKey,rowLabels,colKey,colLabels,title,icon,color,metric
     <GlassCard hover={false} style={{padding:'18px 16px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
         <ST icon={icon} color={color} mb={0}>{title}</ST>
-        <div style={{display:'flex',gap:3}}>{[{v:'wr',l:'WR%'},{v:'avgRR',l:'R:R'},{v:'totalRR',l:'Total'},{v:'n',l:'#'}].map(({v,l})=>(<button key={v} onClick={()=>setMet(v)} style={{padding:'2px 6px',borderRadius:5,border:`1px solid ${met===v?color:C.brd}`,background:met===v?`${color}18`:'transparent',color:met===v?color:C.t3,fontSize:7.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{l}</button>))}</div>
+        <div style={{display:'flex',gap:3}}>{[{v:'wr',l:'WR%'},{v:'avgRR',l:'R:R'},{v:'totalRR',l:'Total'},{v:'n',l:'#'}].map(({v,l})=>(<button key={v} onClick={()=>setMet(v)} style={{padding:'2px 6px',borderRadius:5,border:`1px solid ${met===v?color:C.brd}`,background:met===v?`${shade(color,'18')}`:'transparent',color:met===v?color:C.t3,fontSize:7.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{l}</button>))}</div>
       </div>
       <div style={{overflowX:'auto'}}>
         <table style={{borderCollapse:'separate',borderSpacing:3,minWidth:'100%'}}>
@@ -499,11 +500,11 @@ const TradeList=({trades})=>{
       <div style={{overflowX:'auto'}}>
         <table style={{borderCollapse:'separate',borderSpacing:'0 2px',minWidth:'100%'}}>
           <thead><tr style={{background:'rgba(255,255,255,0.05)'}}>{COLS.map(col=>(<th key={col.k} onClick={()=>{if(sk===col.k)setSd(d=>-d);else{setSk(col.k);setSd(1);}}} style={{padding:'6px 8px',fontSize:7.5,fontWeight:800,color:sk===col.k?C.cyan:C.t3,textTransform:'uppercase',letterSpacing:'0.4px',cursor:'pointer',userSelect:'none',textAlign:'left',borderBottom:`1px solid ${C.brd}`,whiteSpace:'nowrap',width:col.w}}>{col.l}{sk===col.k&&<span style={{marginLeft:3,fontSize:8}}>{sd===1?'↑':'↓'}</span>}</th>))}</tr></thead>
-          <tbody>{vis.map((t,i)=>(<motion.tr key={t.id} initial={{opacity:0,x:-4}} animate={{opacity:1,x:0}} transition={{delay:i*0.012}} style={{background:i%2===0?'rgba(255,255,255,0.01)':'rgba(255,255,255,0.018)',cursor:'default'}} onMouseEnter={e=>e.currentTarget.style.background='rgba(6,230,255,0.04)'} onMouseLeave={e=>e.currentTarget.style.background=i%2===0?'rgba(255,255,255,0.01)':'rgba(255,255,255,0.018)'}>
+          <tbody>{vis.map((t,i)=>(<motion.tr key={t.id} initial={{opacity:0,x:-4}} animate={{opacity:1,x:0}} transition={{delay:i*0.012}} style={{background:i%2===0?'rgba(255,255,255,0.01)':'rgba(255,255,255,0.018)',cursor:'default'}} onMouseEnter={e=>e.currentTarget.style.background='rgba(var(--mf-accent-rgb, 6, 230, 255),0.04)'} onMouseLeave={e=>e.currentTarget.style.background=i%2===0?'rgba(255,255,255,0.01)':'rgba(255,255,255,0.018)'}>
             <td style={{padding:'5px 8px',fontSize:9,color:C.cyan,fontFamily:'monospace',borderRadius:'6px 0 0 6px'}}>{t.dateISO}</td>
             <td style={{padding:'5px 8px',fontSize:8.5,color:C.t3}}>{t.heure}</td>
             <td style={{padding:'5px 8px'}}><span style={{fontSize:9,fontWeight:800,color:t.pos==='Long'?C.green:C.danger}}>{t.pos}</span></td>
-            <td style={{padding:'5px 8px'}}><span style={{fontSize:8,fontWeight:800,padding:'1px 5px',borderRadius:4,background:`${RC[t.res]||C.t3}18`,color:RC[t.res]||C.t3,border:`1px solid ${RC[t.res]||C.t3}28`}}>{t.res}</span></td>
+            <td style={{padding:'5px 8px'}}><span style={{fontSize:8,fontWeight:800,padding:'1px 5px',borderRadius:4,background:`${shade(RC[t.res]||C.t3,'18')}`,color:RC[t.res]||C.t3,border:`1px solid ${shade(RC[t.res]||C.t3,'28')}`}}>{t.res}</span></td>
             <td style={{padding:'5px 8px',fontSize:9.5,fontWeight:900,fontFamily:'monospace',color:t.rr>0?C.green:t.rr<0?C.danger:C.warn}}>{t.rr>0?'+':''}{t.rr}R</td>
             <td style={{padding:'5px 8px',fontSize:8.5,color:C.purple}}>{t.session}</td>
             <td style={{padding:'5px 8px',fontSize:8.5,color:C.t2}}>{t.jour_str}</td>
@@ -522,7 +523,7 @@ const TradeList=({trades})=>{
       </div>
       {pages>1&&(<div style={{display:'flex',justifyContent:'center',gap:4,marginTop:12,alignItems:'center'}}>
         <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:'4px 10px',borderRadius:7,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.04)',color:C.t2,cursor:page===0?'not-allowed':'pointer',opacity:page===0?0.4:1,fontSize:9,fontFamily:'inherit'}}>←</button>
-        {Array.from({length:Math.min(pages,8)},(_,i)=>i).map(i=>(<button key={i} onClick={()=>setPage(i)} style={{width:26,height:26,borderRadius:7,border:`1px solid ${page===i?C.cyan:C.brd}`,background:page===i?`${C.cyan}20`:'rgba(255,255,255,0.04)',color:page===i?C.cyan:C.t3,cursor:'pointer',fontSize:9,fontWeight:page===i?800:500,fontFamily:'inherit'}}>{i+1}</button>))}
+        {Array.from({length:Math.min(pages,8)},(_,i)=>i).map(i=>(<button key={i} onClick={()=>setPage(i)} style={{width:26,height:26,borderRadius:7,border:`1px solid ${page===i?C.cyan:C.brd}`,background:page===i?`${shade(C.cyan,'20')}`:'rgba(255,255,255,0.04)',color:page===i?C.cyan:C.t3,cursor:'pointer',fontSize:9,fontWeight:page===i?800:500,fontFamily:'inherit'}}>{i+1}</button>))}
         <button onClick={()=>setPage(p=>Math.min(pages-1,p+1))} disabled={page===pages-1} style={{padding:'4px 10px',borderRadius:7,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.04)',color:C.t2,cursor:page===pages-1?'not-allowed':'pointer',opacity:page===pages-1?0.4:1,fontSize:9,fontFamily:'inherit'}}>→</button>
       </div>)}
     </GlassCard>
@@ -538,15 +539,15 @@ const ImportZone=({onImport,isReal,count})=>{
     <GlassCard glow={C.cyan} style={{padding:'20px 20px',marginBottom:18}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,flexWrap:'wrap',gap:8}}>
         <ST icon="📥" color={C.cyan} mb={0}>Excel Import — Update with your new data</ST>
-        {isReal?<span style={{fontSize:8.5,padding:'2px 9px',borderRadius:12,background:`${C.green}15`,border:`1px solid ${C.green}30`,color:C.green,fontWeight:700}}>✓ {count} trades imported</span>:<span style={{fontSize:8.5,padding:'2px 9px',borderRadius:12,background:`${C.cyan}12`,border:`1px solid ${C.cyan}30`,color:C.cyan,fontWeight:700}}>📊 {count} trades · Real EUR/USD data 2023-2025</span>}
+        {isReal?<span style={{fontSize:8.5,padding:'2px 9px',borderRadius:12,background:`${shade(C.green,'15')}`,border:`1px solid ${shade(C.green,'30')}`,color:C.green,fontWeight:700}}>✓ {count} trades imported</span>:<span style={{fontSize:8.5,padding:'2px 9px',borderRadius:12,background:`${shade(C.cyan,'12')}`,border:`1px solid ${shade(C.cyan,'30')}`,color:C.cyan,fontWeight:700}}>📊 {count} trades · Real EUR/USD data 2023-2025</span>}
       </div>
       <div style={{display:'grid',gridTemplateColumns:preview?'1fr 1fr':'1fr',gap:12}}>
-        <div onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);const f=e.dataTransfer.files[0];if(f)proc(f);}} onClick={()=>ref.current?.click()} style={{border:`2px dashed ${drag?C.cyan:err?C.danger:isReal?C.green:C.brd}`,borderRadius:12,padding:'24px 16px',display:'flex',flexDirection:'column',alignItems:'center',gap:8,cursor:'pointer',background:drag?`${C.cyan}07`:'rgba(255,255,255,0.02)',transition:'all 0.2s'}}>
+        <div onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);const f=e.dataTransfer.files[0];if(f)proc(f);}} onClick={()=>ref.current?.click()} style={{border:`2px dashed ${drag?C.cyan:err?C.danger:isReal?C.green:C.brd}`,borderRadius:12,padding:'24px 16px',display:'flex',flexDirection:'column',alignItems:'center',gap:8,cursor:'pointer',background:drag?`${shade(C.cyan,'07')}`:'rgba(255,255,255,0.02)',transition:'all 0.2s'}}>
           <input ref={ref} type="file" accept=".xlsx,.xls,.csv,.ods" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)proc(f);e.target.value='';}}/>
           <div style={{fontSize:28}}>{loading?'⏳':preview?'✅':'📂'}</div>
           <div style={{fontSize:11,fontWeight:700,color:drag?C.cyan:C.t2,textAlign:'center'}}>{loading?'Analyzing…':preview?`${raw.length} trades detected — ready to import`:'Drag your Excel file or click to browse'}</div>
           <div style={{fontSize:8.5,color:C.t3}}>xlsx · xls · csv — auto-detected columns, FR formats accepted</div>
-          {err&&<div style={{padding:'4px 10px',borderRadius:6,background:`${C.danger}12`,fontSize:9,color:C.danger}}>{err}</div>}
+          {err&&<div style={{padding:'4px 10px',borderRadius:6,background:`${shade(C.danger,'12')}`,fontSize:9,color:C.danger}}>{err}</div>}
         </div>
         {preview&&(<div style={{display:'flex',flexDirection:'column',gap:7}}>
           <div style={{fontSize:8,color:C.t3,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Preview — first 4 rows</div>
@@ -559,7 +560,7 @@ const ImportZone=({onImport,isReal,count})=>{
               <span style={{fontSize:8,color:C.purple}}>{t.session}</span>
             </div>))}
           </div>
-          <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={()=>{onImport(raw);setPreview(null);setRaw(null);}} style={{padding:'8px',borderRadius:8,border:`1px solid ${C.green}`,background:`${C.green}18`,color:C.green,fontSize:10,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>✓ Import {raw.length} trades</motion.button>
+          <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={()=>{onImport(raw);setPreview(null);setRaw(null);}} style={{padding:'8px',borderRadius:8,border:`1px solid ${C.green}`,background:`${shade(C.green,'18')}`,color:C.green,fontSize:10,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>✓ Import {raw.length} trades</motion.button>
         </div>)}
       </div>
     </GlassCard>
@@ -599,7 +600,7 @@ export default function Backtest(){
 
   const KPI=stats?[
     {label:'Total Trades',value:stats.n,sub:`${stats.yrs} years · EUR/USD M5`,color:C.cyan,icon:'📊',custom:0},
-    {label:'Win Rate (TP)',value:`${stats.wr}%`,sub:`${stats.wins}TP · ${stats.losses}SL · ${stats.bes}BE`,color:stats.wr>=60?C.green:stats.wr>=50?C.warn:C.danger,icon:'🎯',custom:1},
+    {label:'Win Rate (TP)',value:`${stats.wr}%`,sub:`${stats.wins}TP · ${stats.losses}SL · ${shade(stats.bes,'BE')}`,color:stats.wr>=60?C.green:stats.wr>=50?C.warn:C.danger,icon:'🎯',custom:1},
     {label:'Profit Factor',value:stats.pf,sub:`${stats.grossW}R won / ${stats.grossL}R lost`,color:stats.pf>=2?C.green:stats.pf>=1.3?C.cyan:stats.pf>=1?C.warn:C.danger,icon:'⚖️',custom:2},
     {label:'Total R Won',value:`+${stats.totalRR}R`,sub:`Avg/trade: ${stats.avgRR}R`,color:stats.totalRR>=0?C.green:C.danger,icon:'💹',custom:3},
     {label:'Avg Win / Loss',value:`+${stats.avgWin}R`,sub:`Avg loss: -${stats.avgLoss}R · ratio ${parseFloat((stats.avgWin/Math.max(0.01,stats.avgLoss)).toFixed(2))}:1`,color:C.green,icon:'📐',custom:4},
@@ -619,9 +620,9 @@ export default function Backtest(){
       position:'relative',
     }}>
       {/* Subtle top glow — much lighter than before */}
-      <div style={{position:'absolute',top:0,left:0,right:0,height:320,background:'radial-gradient(ellipse 80% 40% at 50% -5%,rgba(77,124,255,0.08) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}}/>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:320,background:'radial-gradient(ellipse 80% 40% at 50% -5%,rgba(var(--mf-blue-rgb, 77, 124, 255),0.08) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}}/>
       {/* Grid texture */}
-      <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0,backgroundImage:'linear-gradient(rgba(77,124,255,0.009) 1px,transparent 1px),linear-gradient(90deg,rgba(77,124,255,0.009) 1px,transparent 1px)',backgroundSize:'60px 60px'}}/>
+      <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0,backgroundImage:'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.009) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.009) 1px,transparent 1px)',backgroundSize:'60px 60px'}}/>
       {/* Floating dots */}
       <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0}}>
         {Array.from({length:14}).map((_,i)=>(
@@ -643,8 +644,8 @@ export default function Backtest(){
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:3}}>
                   <h1 style={{margin:0,fontSize:26,fontWeight:900,background:C.gradCyan,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-1px'}}>Backtest Analytics</h1>
-                  <span style={{padding:'2px 8px',borderRadius:5,background:`${C.green}18`,border:`1px solid ${C.green}38`,fontSize:8.5,fontWeight:800,color:C.green}}>EUR/USD · M5 · 2023-2025</span>
-                  {stats&&<span style={{padding:'2px 8px',borderRadius:5,background:`${C.cyan}12`,border:`1px solid ${C.cyan}30`,fontSize:8.5,fontWeight:800,color:C.cyan}}>{stats.n} trades</span>}
+                  <span style={{padding:'2px 8px',borderRadius:5,background:`${shade(C.green,'18')}`,border:`1px solid ${shade(C.green,'38')}`,fontSize:8.5,fontWeight:800,color:C.green}}>EUR/USD · M5 · 2023-2025</span>
+                  {stats&&<span style={{padding:'2px 8px',borderRadius:5,background:`${shade(C.cyan,'12')}`,border:`1px solid ${shade(C.cyan,'30')}`,fontSize:8.5,fontWeight:800,color:C.cyan}}>{stats.n} trades</span>}
                 </div>
                 <div style={{fontSize:10.5,color:C.t3}}>Your real data · All ICT confluences · Long vs Short split</div>
               </div>
@@ -653,9 +654,9 @@ export default function Backtest(){
               {MAIN_TABS.map(t=>(
                 <motion.button key={t.id} onClick={()=>setMainTab(t.id)} whileHover={{scale:1.03}} whileTap={{scale:0.95}}
                   style={{padding:'9px 20px',borderRadius:10,border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:800,transition:'all 0.2s',
-                    background:mainTab===t.id?`linear-gradient(135deg,${C.blue}28,${C.cyan}15)`:'transparent',
+                    background:mainTab===t.id?`linear-gradient(135deg,${shade(C.blue,'28')},${shade(C.cyan,'15')})`:'transparent',
                     color:mainTab===t.id?C.cyan:C.t3,
-                    boxShadow:mainTab===t.id?`0 0 0 1px ${C.cyan}40,0 2px 14px ${C.cyan}15`:'none'}}>
+                    boxShadow:mainTab===t.id?`0 0 0 1px ${shade(C.cyan,'40')},0 2px 14px ${shade(C.cyan,'15')}`:'none'}}>
                   <span style={{fontSize:13}}>{t.icon}</span>{t.label}
                 </motion.button>
               ))}
@@ -676,9 +677,9 @@ export default function Backtest(){
             <div style={{display:'flex',gap:3,marginBottom:18,padding:'3px',borderRadius:12,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.brd}`,width:'fit-content',flexWrap:'wrap'}}>
               {SEC_TABS.map(s=>(<motion.button key={s.id} onClick={()=>setSecTab(s.id)} whileHover={{scale:1.03}} whileTap={{scale:0.96}}
                 style={{padding:'7px 15px',borderRadius:9,border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:5,fontSize:10.5,fontWeight:700,transition:'all 0.2s',
-                  background:secTab===s.id?`linear-gradient(135deg,${C.blue}22,${C.purple}14)`:'transparent',
+                  background:secTab===s.id?`linear-gradient(135deg,${shade(C.blue,'22')},${shade(C.purple,'14')})`:'transparent',
                   color:secTab===s.id?C.cyan:C.t3,
-                  boxShadow:secTab===s.id?`0 0 0 1px ${C.cyan}32,0 2px 10px ${C.cyan}12`:'none'}}>
+                  boxShadow:secTab===s.id?`0 0 0 1px ${shade(C.cyan,'32')},0 2px 10px ${shade(C.cyan,'12')}`:'none'}}>
                 <span>{s.icon}</span>{s.label}
               </motion.button>))}
             </div>
@@ -700,7 +701,7 @@ export default function Backtest(){
                 <ConfCard title="Retracement after CISD" icon="🔁" color={C.pink} data={bRetr} custom={4}/>
               </motion.div>)}
               {secTab==='dirsplit'&&(<motion.div key="dir" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.25}}>
-                <div style={{background:`${C.blue}08`,border:`1px solid ${C.blue}18`,borderRadius:12,padding:'10px 14px',marginBottom:14,fontSize:9.5,color:C.t2,lineHeight:1.65}}><strong style={{color:C.cyan}}>How to read:</strong> Each table shows the same confluence broken down by direction.&nbsp;<span style={{color:C.green}}>▲ Long</span> = Long trades · <span style={{color:C.danger}}>▼ Short</span> = Short trades · Switch WR/R:R/Tot/PF/# to change the metric.</div>
+                <div style={{background:`${shade(C.blue,'08')}`,border:`1px solid ${shade(C.blue,'18')}`,borderRadius:12,padding:'10px 14px',marginBottom:14,fontSize:9.5,color:C.t2,lineHeight:1.65}}><strong style={{color:C.cyan}}>How to read:</strong> Each table shows the same confluence broken down by direction.&nbsp;<span style={{color:C.green}}>▲ Long</span> = Long trades · <span style={{color:C.danger}}>▼ Short</span> = Short trades · Switch WR/R:R/Tot/PF/# to change the metric.</div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}><DirSplit title="Asian Take × Direction" icon="🌙" color={C.cyan} dataByDir={asianDir} labels={ASIAN_OPTS}/><DirSplit title="Previous Daily × Direction" icon="📌" color={C.teal} dataByDir={pdDir} labels={PD_OPTS} custom={1}/></div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}><DirSplit title="Turtle Soup × Direction" icon="🐢" color={C.orange} dataByDir={tsDir} labels={TS_OPTS} custom={2}/><DirSplit title="Structure (Key-Level) × Direction" icon="🔷" color={C.purple} dataByDir={klDir} labels={KEY_LEVELS} custom={3}/></div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}><DirSplit title="CISD Retracement × Direction" icon="🔁" color={C.pink} dataByDir={retrDir} labels={RETR_OPTS} custom={4}/><DirSplit title="Session × Direction" icon="🌍" color={C.green} dataByDir={sessDir} labels={SESSIONS} custom={5}/></div>
@@ -724,7 +725,7 @@ export default function Backtest(){
               <div style={{fontSize:22,fontWeight:900,color:C.t1,marginBottom:8,letterSpacing:'-0.5px'}}>Manual Backtest</div>
               <div style={{fontSize:12,color:C.t3,maxWidth:400,margin:'0 auto',lineHeight:1.7}}>Trade-by-trade entry with all ICT confluences.<br/><span style={{color:C.cyan,fontWeight:700}}>Under construction — next step.</span></div>
               <div style={{marginTop:22,display:'inline-flex',gap:7,flexWrap:'wrap',justifyContent:'center'}}>
-                {['Trade form','ICT validation','Live stats','Excel export'].map(f=>(<span key={f} style={{padding:'5px 13px',borderRadius:20,background:`${C.purple}12`,border:`1px solid ${C.purple}28`,fontSize:9.5,fontWeight:700,color:C.purple}}>{f}</span>))}
+                {['Trade form','ICT validation','Live stats','Excel export'].map(f=>(<span key={f} style={{padding:'5px 13px',borderRadius:20,background:`${shade(C.purple,'12')}`,border:`1px solid ${shade(C.purple,'28')}`,fontSize:9.5,fontWeight:700,color:C.purple}}>{f}</span>))}
               </div>
             </GlassCard>
           </motion.div>
@@ -734,3 +735,4 @@ export default function Backtest(){
     </div>
   );
 }
+
