@@ -43,17 +43,17 @@ const C = {
 const DEFAULT_COLUMNS = [
   { key:'select',    label:'',        visible:true, locked:true, sortable:false, width:40  },
   { key:'date',      label:'Date',    visible:true, sortable:true, width:120 },
-  { key:'symbol',    label:'Symbol', visible:true, sortable:true, width:140 },
+  { key:'symbol',    label:'Symbol', visible:true, sortable:true, width:160 },
   { key:'type',      label:'Type',    visible:true, sortable:true, width:80  },
   { key:'session',   label:'Session', visible:true, sortable:true, width:100 },
-  { key:'bias',      label:'Bias',    visible:true, sortable:true, width:100 },
-  { key:'news',      label:'News',    visible:true, sortable:true, width:90  },
+  { key:'bias',      label:'Bias',    visible:false, sortable:true, width:100 },
+  { key:'news',      label:'News',    visible:false, sortable:true, width:90  },
   { key:'entry',     label:'Entry',   visible:true, sortable:true, width:100 },
   { key:'exit',      label:'Exit',    visible:true, sortable:true, width:100 },
-  { key:'tpPercent', label:'TP%',     visible:true, sortable:true, width:90  },
+  { key:'tpPercent', label:'TP%',     visible:false, sortable:true, width:90  },
   { key:'rr',        label:'RR',      visible:true, sortable:true, width:80  },
   { key:'setup',     label:'Setup',   visible:true, sortable:true, width:120 },
-  { key:'psychology',label:'Psycho',  visible:true, sortable:true, width:80  },
+  { key:'psychology',label:'Psychology',visible:false, sortable:true, width:100  },
   { key:'pnl',       label:'P&L',     visible:true, sortable:true, width:100, important:true },
 ];
 
@@ -170,61 +170,91 @@ const GlassBtn=({children,onClick,variant='default',disabled,loading,size='md',f
 
 const StatCard=({label,value,color,sub,index})=>{
   const[hov,setHov]=useState(false);
-  return(<motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={index} whileHover={{scale:1.01,y:-3}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{background:'linear-gradient(180deg, rgba(12,20,34,0.92), rgba(8,13,23,0.9))',border:`1px solid ${hov ? shade(color,'40') : C.brd}`,borderRadius:16,padding:'16px 18px',position:'relative',overflow:'hidden',cursor:'default',boxShadow:hov?`0 18px 42px rgba(0,0,0,0.28), 0 0 0 1px ${shade(color,'16')}`:'0 10px 26px rgba(0,0,0,0.18)',transition:'all 0.25s cubic-bezier(0.4,0,0.2,1)'}}><motion.div animate={{opacity:hov?1:0.58}} style={{position:'absolute',inset:0,background:`linear-gradient(145deg,${shade(color,'12')},transparent 55%)`,pointerEvents:'none'}}/><div style={{position:'relative',zIndex:1}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}><span style={{color:C.t3,fontSize:9,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>{label}</span><div style={{width:26,height:2,borderRadius:999,background:color,opacity:0.85}}/></div><div style={{fontSize:24,fontWeight:900,color,fontFamily:'monospace',lineHeight:1,textShadow:hov?`0 0 18px ${shade(color,'45')}`:'none',transition:'text-shadow 0.3s'}}>{value}</div>{sub&&<div style={{fontSize:10,color:'rgba(139,155,180,0.86)',marginTop:7,lineHeight:1.6}}>{sub}</div>}</div></motion.div>);
+  return(
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      custom={index}
+      whileHover={{y:-2}}
+      onMouseEnter={()=>setHov(true)}
+      onMouseLeave={()=>setHov(false)}
+      style={{
+        background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',
+        border:`1px solid ${hov ? shade(color,'32') : C.brd}`,
+        borderRadius:18,
+        padding:'15px 16px',
+        position:'relative',
+        overflow:'hidden',
+        minHeight:108,
+        boxShadow:hov?'0 18px 34px rgba(0,0,0,0.22)':'0 12px 24px rgba(0,0,0,0.16)',
+        transition:'all 0.22s ease',
+      }}
+    >
+      <div style={{position:'absolute',inset:0,background:`linear-gradient(145deg,${shade(color,'09')},transparent 58%)`,pointerEvents:'none',opacity:hov?1:0.72}}/>
+      <div style={{position:'relative',zIndex:1}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+          <span style={{color:C.t3,fontSize:9,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>{label}</span>
+          <div style={{width:22,height:2,borderRadius:999,background:color,opacity:0.88}}/>
+        </div>
+        <div style={{fontSize:24,fontWeight:900,color,fontFamily:'monospace',lineHeight:1.05,letterSpacing:'-0.03em'}}>{value}</div>
+        {sub&&<div style={{fontSize:10.5,color:'rgba(139,155,180,0.86)',marginTop:8,lineHeight:1.55}}>{sub}</div>}
+      </div>
+    </motion.div>
+  );
 };
 
 const FilterBar=({filters,setFilters,trades,onReset})=>{
-  const[expanded,setExpanded]=useState(false);
   const symbols=useMemo(()=>[...new Set(trades.map(t=>t.symbol).filter(Boolean))].sort(),[trades]);
   const activeCount=[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length;
-  const iStyle={padding:'8px 11px',borderRadius:8,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit',cursor:'pointer'};
+  const iStyle={padding:'10px 12px',borderRadius:12,border:`1px solid ${C.brd}`,backgroundColor:'rgba(6,10,18,0.88)',color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit',cursor:'pointer',minHeight:40};
+  const resultFilters=[{id:'all',label:'All'},{id:'wins',label:'Winners'},{id:'losses',label:'Losers'},{id:'long',label:'Long'},{id:'short',label:'Short'}];
   return(
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{backgroundColor:C.bgCard,border:`1px solid ${C.brd}`,borderRadius:12,padding:'12px 14px',marginBottom:12}}>
-      <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-        <input type="text" placeholder="Search symbol, setup, notes..." value={filters.search||''} onChange={e=>setFilters({...filters,search:e.target.value})} style={{...iStyle,flex:'1 1 220px',cursor:'text'}}/>
-        <select value={filters.result||'all'} onChange={e=>setFilters({...filters,result:e.target.value})} style={iStyle}>
-          <option value="all">All results</option>
-          <option value="wins">Winners</option>
-          <option value="losses">Losers</option>
-          <option value="long">Long only</option>
-          <option value="short">Short only</option>
-        </select>
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',border:`1px solid ${C.brd}`,borderRadius:20,padding:'16px 16px 14px',marginBottom:14,boxShadow:'0 18px 34px rgba(0,0,0,0.16)'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12,flexWrap:'wrap',marginBottom:12}}>
+        <div>
+          <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:6}}>Trade filters</div>
+          <div style={{fontSize:13,color:C.t2,lineHeight:1.6}}>Search, segment, and isolate the exact executions you want to review.</div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+          {activeCount>0&&<div style={{padding:'8px 10px',borderRadius:999,border:`1px solid ${shade(C.cyan,'24')}`,background:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.cyan}}>{activeCount} active</div>}
+          {activeCount>0&&(<GlassBtn size="sm" variant="danger" onClick={onReset}>Clear filters</GlassBtn>)}
+        </div>
+      </div>
+      <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap',marginBottom:10}}>
+        <input type="text" placeholder="Search symbol, setup, or notes" value={filters.search||''} onChange={e=>setFilters({...filters,search:e.target.value})} style={{...iStyle,flex:'1 1 280px',cursor:'text'}}/>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          {resultFilters.map(option=>(
+            <button key={option.id} onClick={()=>setFilters({...filters,result:option.id})} style={{minHeight:38,padding:'0 12px',borderRadius:11,border:`1px solid ${filters.result===option.id ? shade(C.cyan,'34') : C.brd}`,background:filters.result===option.id ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.12)' : 'rgba(255,255,255,0.02)',color:filters.result===option.id ? C.cyan : C.t2,fontSize:11,fontWeight:800,letterSpacing:'0.04em',cursor:'pointer'}}>
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
         {symbols.length>0&&(
-          <select value={filters.symbol||'all'} onChange={e=>setFilters({...filters,symbol:e.target.value})} style={iStyle}>
+          <select value={filters.symbol||'all'} onChange={e=>setFilters({...filters,symbol:e.target.value})} style={{...iStyle,minWidth:150}}>
             <option value="all">All symbols</option>
             {symbols.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
         )}
-        <GlassBtn size="sm" variant="ghost" icon={expanded?'Less':'More'} onClick={()=>setExpanded(p=>!p)}>
-          Filters {activeCount>0&&<span style={{background:C.cyan,color:C.bgDeep,borderRadius:999,padding:'1px 6px',fontSize:9,fontWeight:900}}>{activeCount}</span>}
-        </GlassBtn>
-        {activeCount>0&&(<GlassBtn size="sm" variant="danger" onClick={onReset}>Reset</GlassBtn>)}
+        <select value={filters.session||'all'} onChange={e=>setFilters({...filters,session:e.target.value})} style={{...iStyle,minWidth:140}}>
+          <option value="all">All sessions</option>
+          {['NY','London','Asia'].map(s=><option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={filters.bias||'all'} onChange={e=>setFilters({...filters,bias:e.target.value})} style={{...iStyle,minWidth:140}}>
+          <option value="all">All bias</option>
+          {['Bullish','Bearish','Neutral'].map(b=><option key={b} value={b}>{b}</option>)}
+        </select>
+        <input type="date" value={filters.dateFrom||''} onChange={e=>setFilters({...filters,dateFrom:e.target.value})} style={{...iStyle,cursor:'text'}}/>
+        <input type="date" value={filters.dateTo||''} onChange={e=>setFilters({...filters,dateTo:e.target.value})} style={{...iStyle,cursor:'text'}}/>
       </div>
-      <AnimatePresence>
-        {expanded&&(
-          <motion.div initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:0.22}} style={{overflow:'hidden'}}>
-            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10,paddingTop:10,borderTop:`1px solid ${C.brd}`}}>
-              <select value={filters.session||'all'} onChange={e=>setFilters({...filters,session:e.target.value})} style={iStyle}>
-                <option value="all">All sessions</option>
-                {['NY','London','Asia'].map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
-              <select value={filters.bias||'all'} onChange={e=>setFilters({...filters,bias:e.target.value})} style={iStyle}>
-                <option value="all">All biases</option>
-                {['Bullish','Bearish','Neutral'].map(b=><option key={b} value={b}>{b}</option>)}
-              </select>
-              <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:11,color:C.t3,fontWeight:600}}>From</span><input type="date" value={filters.dateFrom||''} onChange={e=>setFilters({...filters,dateFrom:e.target.value})} style={{...iStyle,cursor:'text'}}/></div>
-              <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:11,color:C.t3,fontWeight:600}}>To</span><input type="date" value={filters.dateTo||''} onChange={e=>setFilters({...filters,dateTo:e.target.value})} style={{...iStyle,cursor:'text'}}/></div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };
 
 const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClickEdit,cols,cumulativePnl})=>{
   const[hov,setHov]=useState(false);
-  // Compatibility Supabase fields ↔ local fields
   const pnl    = parseFloat(trade.profit_loss??trade.pnl??0);
   const isWin  = pnl>=0;
   const symbol = trade.symbol||'';
@@ -232,12 +262,13 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
   const entry  = parseFloat(trade.entry_price??trade.entry??0);
   const exit   = parseFloat(trade.exit_price??trade.exit??0);
   const date   = trade.open_date?.split('T')[0]||trade.date||'';
-  const rowBg  = isSelected?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.06)':hov?C.bgHov:isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.025)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.025)';
+  const psychology = trade.psychologyScore ?? trade.psychology_score;
+  const rowBg  = isSelected?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.09)':hov?'rgba(255,255,255,0.026)':isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.018)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.018)';
 
   const cell=(key)=>{
     switch(key){
-      case 'date':return(<div><div style={{color:C.t1,fontSize:12,fontWeight:600}}>{date.substring(0,10)||'N/A'}</div><div style={{color:C.t3,fontSize:10}}>{trade.time||''}</div></div>);
-      case 'symbol':return(<div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:30,height:30,borderRadius:7,background:C.grad,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:900,color:C.bgDeep,flexShrink:0}}>{symbol.substring(0,2)||'??'}</div><div><div style={{color:C.t1,fontSize:12,fontWeight:700}}>{symbol||'N/A'}</div><div style={{color:C.t3,fontSize:10}}>{trade.marketType||''}</div></div></div>);
+      case 'date':return(<div><div style={{color:C.t1,fontSize:12,fontWeight:700}}>{date.substring(0,10)||'N/A'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.time||'No time'}</div></div>);
+      case 'symbol':return(<div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.18), rgba(var(--mf-accent-rgb, 6, 230, 255),0.04))',border:`1px solid ${shade(C.cyan,'26')}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:900,color:C.cyan,flexShrink:0}}>{symbol.substring(0,3)||'--'}</div><div><div style={{color:C.t1,fontSize:12.5,fontWeight:800,letterSpacing:'0.01em'}}>{symbol||'N/A'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.marketType||trade.setup||'Journal entry'}</div></div></div>);
       case 'type':return<Tag label={type==='Long'?'Long':'Short'} color={type==='Long'?C.green:C.danger} bg={type==='Long'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)'}/>;
       case 'session':return<Tag label={trade.session||'—'} color={C.cyan} bg="rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)"/>;
       case 'bias':return<Tag label={trade.bias||'—'} color={trade.bias==='Bullish'?C.green:trade.bias==='Bearish'?C.danger:C.t2} bg={trade.bias==='Bullish'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':trade.bias==='Bearish'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)':'rgba(255,255,255,0.04)'}/>;
@@ -247,18 +278,18 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
       case 'tpPercent':{const v=parseFloat(trade.metrics?.tpPercent||0);return<Tag label={`${v>=0?'+':''}${v.toFixed(1)}%`} color={v>=0?C.green:C.danger} bg={v>=0?'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)'}/>;}
       case 'rr':return<Tag label={`1:${trade.metrics?.rrReel||0}`} color={C.teal} bg="rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)"/>;
       case 'setup':return trade.setup?<Tag label={trade.setup} color={C.purple} bg="rgba(167,139,250,0.1)"/>:<span style={{color:C.t3}}>—</span>;
-      case 'psychology':{const s=trade.psychologyScore;if(s==null)return<span style={{color:C.t3}}>—</span>;return<Tag label={s} color={s>=80?C.green:s>=60?C.warn:C.danger} bg={s>=80?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':s>=60?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)'}/>;}
-      case 'pnl':return(<div><div style={{color:isWin?C.green:C.danger,fontSize:13,fontWeight:800,fontFamily:'monospace'}}>{fmtPnl(pnl)}</div>{cumulativePnl!=null&&(<div style={{color:cumulativePnl>=0?C.greenDim:C.dangerDim,fontSize:9,fontWeight:600,marginTop:1}}>Cum: {fmtPnl(cumulativePnl)}</div>)}</div>);
+      case 'psychology':{const s=psychology;if(s==null)return<span style={{color:C.t3}}>—</span>;return<Tag label={s} color={s>=80?C.green:s>=60?C.warn:C.danger} bg={s>=80?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':s>=60?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)'}/>;}
+      case 'pnl':return(<div><div style={{color:isWin?C.green:C.danger,fontSize:13,fontWeight:900,fontFamily:'monospace',letterSpacing:'-0.02em'}}>{fmtPnl(pnl)}</div>{cumulativePnl!=null&&(<div style={{color:C.t3,fontSize:9.5,fontWeight:700,marginTop:3}}>Running {fmtPnl(cumulativePnl)}</div>)}</div>);
       default:return<span style={{color:C.t3,fontSize:11}}>—</span>;
     }
   };
-  return(<motion.tr initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.15}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClickDetail} onDoubleClick={()=>onDoubleClickEdit(trade)} style={{backgroundColor:rowBg,borderLeft:`2px solid ${isSelected?C.cyan:isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.15)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.15)'}`,cursor:'pointer',transition:'all 0.12s ease'}}>{cols.map(col=>(<td key={col.key} onClick={col.key==='select'?(e)=>{e.stopPropagation();onSelect(trade.id);}:undefined} style={{padding:'10px 14px',whiteSpace:'nowrap',borderBottom:`1px solid ${C.brd}`,verticalAlign:'middle'}}>{col.key==='select'?<input type="checkbox" checked={isSelected} onChange={()=>onSelect(trade.id)} onClick={e=>e.stopPropagation()} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:cell(col.key)}</td>))}</motion.tr>);
+  return(<motion.tr initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.15}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClickDetail} onDoubleClick={()=>onDoubleClickEdit(trade)} style={{backgroundColor:rowBg,borderLeft:`2px solid ${isSelected?C.cyan:isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.14)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.14)'}`,cursor:'pointer',transition:'all 0.12s ease'}}>{cols.map(col=>(<td key={col.key} onClick={col.key==='select'?(e)=>{e.stopPropagation();onSelect(trade.id);}:undefined} style={{padding:'12px 14px',whiteSpace:'nowrap',borderBottom:'1px solid rgba(255,255,255,0.05)',verticalAlign:'middle'}}>{col.key==='select'?<input type="checkbox" checked={isSelected} onChange={()=>onSelect(trade.id)} onClick={e=>e.stopPropagation()} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:cell(col.key)}</td>))}</motion.tr>);
 });
 TradeRow.displayName='TradeRow';
 
 const Pagination=({page,total,perPage,onPage,onPerPage})=>{
   const totalPages=Math.ceil(total/perPage)||1;
-  return(<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:12,marginTop:16}}><div style={{fontSize:12,color:C.t3}}>{((page-1)*perPage)+1}-{Math.min(page*perPage,total)} of <span style={{color:C.cyan,fontWeight:700}}>{total}</span> trades</div><div style={{display:'flex',gap:6,alignItems:'center'}}><motion.button whileHover={{scale:1.04}} onClick={()=>onPage(page-1)} disabled={page===1} style={{height:32,padding:'0 12px',borderRadius:6,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:page===1?C.t3:C.t1,cursor:page===1?'not-allowed':'pointer',opacity:page===1?0.4:1,fontSize:11,fontWeight:800}}>Prev</motion.button><span style={{fontSize:12,color:C.t1,padding:'0 12px'}}>Page {page} / {totalPages}</span><motion.button whileHover={{scale:1.04}} onClick={()=>onPage(page+1)} disabled={page===totalPages} style={{height:32,padding:'0 12px',borderRadius:6,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:page===totalPages?C.t3:C.t1,cursor:page===totalPages?'not-allowed':'pointer',opacity:page===totalPages?0.4:1,fontSize:11,fontWeight:800}}>Next</motion.button></div><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:12,color:C.t3}}>Per page:</span><select value={perPage} onChange={e=>onPerPage(Number(e.target.value))} style={{padding:'6px 10px',borderRadius:6,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,cursor:'pointer',outline:'none',fontFamily:'inherit'}}>{[10,25,50,100].map(n=><option key={n} value={n}>{n}</option>)}</select></div></div>);
+  return(<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:12,marginTop:16,padding:'12px 14px',border:`1px solid ${C.brd}`,borderRadius:16,background:'rgba(8,13,22,0.74)'}}><div style={{fontSize:12,color:C.t2}}>{((page-1)*perPage)+1}-{Math.min(page*perPage,total)} of <span style={{color:C.t1,fontWeight:800}}>{total}</span> trades</div><div style={{display:'flex',gap:6,alignItems:'center'}}><motion.button whileHover={{scale:1.03}} onClick={()=>onPage(page-1)} disabled={page===1} style={{height:34,padding:'0 14px',borderRadius:10,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:page===1?C.t3:C.t1,cursor:page===1?'not-allowed':'pointer',opacity:page===1?0.4:1,fontSize:11,fontWeight:800}}>Previous</motion.button><span style={{fontSize:11.5,color:C.t2,padding:'0 12px',fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase'}}>Page {page} / {totalPages}</span><motion.button whileHover={{scale:1.03}} onClick={()=>onPage(page+1)} disabled={page===totalPages} style={{height:34,padding:'0 14px',borderRadius:10,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:page===totalPages?C.t3:C.t1,cursor:page===totalPages?'not-allowed':'pointer',opacity:page===totalPages?0.4:1,fontSize:11,fontWeight:800}}>Next</motion.button></div><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:11.5,color:C.t2,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase'}}>Rows</span><select value={perPage} onChange={e=>onPerPage(Number(e.target.value))} style={{padding:'7px 11px',borderRadius:10,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,cursor:'pointer',outline:'none',fontFamily:'inherit'}}>{[10,25,50,100].map(n=><option key={n} value={n}>{n}</option>)}</select></div></div>);
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1110,8 +1141,8 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null})=>{
   useEffect(()=>{if(trade){setForm(trade);setErrors({});}},[trade]);
   const calcRR=d=>{const[en,ex,sl]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.sl)];if(!en||!ex||!sl||isNaN(en)||isNaN(ex)||isNaN(sl))return'0.00';const risk=Math.abs(en-sl),reward=Math.abs(ex-en);return risk>0?(reward/risk).toFixed(2):'0.00';};
   const calcTPP=d=>{const[en,ex,tp]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.tp)];if(!en||!ex||!tp||isNaN(en)||isNaN(ex)||isNaN(tp))return'0.0';const target=Math.abs(tp-en);return target>0?((Math.abs(ex-en)/target)*100).toFixed(1):'0.0';};
-  const validate=()=>{const errs={};if(!form.symbol?.trim())errs.symbol='Obligatoire';if(!form.entry||isNaN(parseFloat(form.entry)))errs.entry='Prix invalide';if(!form.exit||isNaN(parseFloat(form.exit)))errs.exit='Prix invalide';if(!form.pnl||isNaN(parseFloat(form.pnl)))errs.pnl='Montant invalide';setErrors(errs);return Object.keys(errs).length===0;};
-  const handleSubmit=()=>{if(!validate()){toast.error('Fix the errors');return;}setSaving(true);setTimeout(()=>{onSave({...form,id:form.id||`manual_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,win:parseFloat(form.pnl)>0,metrics:{rrReel:calcRR(form),tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});toast.success(isEdit?'Trade modified':'Trade added');setSaving(false);setErrors({});onClose();},450);};
+  const validate=()=>{const errs={};if(!form.symbol?.trim())errs.symbol='Required';if(!form.entry||isNaN(parseFloat(form.entry)))errs.entry='Invalid price';if(!form.exit||isNaN(parseFloat(form.exit)))errs.exit='Invalid price';if(!form.pnl||isNaN(parseFloat(form.pnl)))errs.pnl='Invalid amount';setErrors(errs);return Object.keys(errs).length===0;};
+  const handleSubmit=()=>{if(!validate()){toast.error('Check the highlighted fields');return;}setSaving(true);setTimeout(()=>{onSave({...form,id:form.id||`manual_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,win:parseFloat(form.pnl)>0,metrics:{rrReel:calcRR(form),tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});toast.success(isEdit?'Trade updated':'Trade added');setSaving(false);setErrors({});onClose();},450);};
   if(!isOpen)return null;
   const iStyle={width:'100%',padding:'8px 11px',borderRadius:7,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit'};
   const lStyle={display:'block',fontSize:10,fontWeight:600,color:C.t3,marginBottom:5};
@@ -1174,13 +1205,13 @@ export default function AllTrades(){
   const[filters,setFilters]=useState({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});
   const[sort,setSort]=useState({key:'date',dir:'desc'});
   const[selected,setSelected]=useState(new Set());
-  const[cols,setCols]=useState(()=>{try{const s=localStorage.getItem('mf_cols_v2');return s?JSON.parse(s):DEFAULT_COLUMNS;}catch{return DEFAULT_COLUMNS;}});
+  const[cols,setCols]=useState(()=>{try{const s=localStorage.getItem('mf_cols_v3');return s?JSON.parse(s):DEFAULT_COLUMNS;}catch{return DEFAULT_COLUMNS;}});
   const[page,setPage]=useState(1);const[perPage,setPerPage]=useState(25);
-  const[modalAdd,setModalAdd]=useState(false);const[modalImport,setModalImport]=useState(false);
+  const[modalImport,setModalImport]=useState(false);
   const[modalForm,setModalForm]=useState(false);const[editTrade,setEditTrade]=useState(null);
   const[detailTrade,setDetailTrade]=useState(null);
 
-  useEffect(()=>{try{localStorage.setItem('mf_cols_v2',JSON.stringify(cols));}catch{}},[cols]);
+  useEffect(()=>{try{localStorage.setItem('mf_cols_v3',JSON.stringify(cols));}catch{}},[cols]);
   useEffect(()=>{setPage(1);},[filters,sort]);
 
   const visibleCols=useMemo(()=>cols.filter(c=>c.visible),[cols]);
@@ -1190,64 +1221,166 @@ export default function AllTrades(){
   const paginated=useMemo(()=>sorted.slice((page-1)*perPage,page*perPage),[sorted,page,perPage]);
   const cumulMap=useMemo(()=>{let r=0;const m={};[...sorted].reverse().forEach(t=>{r+=parseFloat(t.profit_loss??t.pnl??0);m[t.id]=r;});return m;},[sorted]);
   const stats=useMemo(()=>calcStats(filtered),[filtered]);
+  const activeFilterCount=useMemo(()=>[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length,[filters]);
+  const symbolCount=useMemo(()=>new Set(filtered.map(t=>t.symbol).filter(Boolean)).size,[filtered]);
+  const averageTrade=stats.total?stats.totalPnL/stats.total:0;
+  const latestTrade=sorted[0]||null;
+  const topSetup=useMemo(()=>{
+    const setups=filtered.reduce((acc,trade)=>{
+      const key=String(trade.setup||'').trim();
+      if(!key)return acc;
+      if(!acc[key])acc[key]={count:0,pnl:0};
+      acc[key].count+=1;
+      acc[key].pnl+=parseFloat(trade.profit_loss??trade.pnl??0)||0;
+      return acc;
+    },{});
+    return Object.entries(setups).sort((a,b)=>b[1].count-a[1].count||b[1].pnl-a[1].pnl)[0]?.[0]||'Unassigned';
+  },[filtered]);
+  const selectedTrades=useMemo(()=>sorted.filter(trade=>selected.has(trade.id)),[sorted,selected]);
+  const selectedPnl=useMemo(()=>selectedTrades.reduce((sum,trade)=>sum+(parseFloat(trade.profit_loss??trade.pnl??0)||0),0),[selectedTrades]);
+  const activeSortLabel=visibleCols.find(col=>col.key===sort.key)?.label||'Date';
   const handleSort=useCallback(k=>{setSort(p=>({key:k,dir:p.key===k&&p.dir==='asc'?'desc':'asc'}));},[]);
   const handleSelectAll=useCallback(()=>{setSelected(prev=>{const ids=new Set(paginated.map(t=>t.id));const allSel=paginated.every(t=>prev.has(t.id));if(allSel){const n=new Set(prev);ids.forEach(id=>n.delete(id));return n;}return new Set([...prev,...ids]);});},[paginated]);
-  const handleDeleteSelected=useCallback(()=>{if(!selected.size)return;if(!window.confirm(`Delete ${selected.size} trade(s) ?`))return;const id=toast.loading('Deleting...');setTimeout(()=>{selected.forEach(tid=>deleteTrade(tid));toast.dismiss(id);toast.success(`${selected.size} trade(s) deleted !`);setSelected(new Set());},350);},[selected,deleteTrade]);
-  const handleMethodSelect=useCallback(m=>{if(m==='auto')setModalImport(true);else{setEditTrade(null);setModalForm(true);}},[]);
-
-  // 🔧 FIX: handleImport passes one trade at a time to addTrade (correct interface)
+  const handleDeleteSelected=useCallback(()=>{if(!selected.size)return;if(!window.confirm(`Delete ${selected.size} selected trade${selected.size>1?'s':''}?`))return;const id=toast.loading('Deleting selected trades');setTimeout(()=>{selected.forEach(tid=>deleteTrade(tid));toast.dismiss(id);toast.success(`${selected.size} trade${selected.size>1?'s':''} deleted`);setSelected(new Set());},350);},[selected,deleteTrade]);
   const handleImport=useCallback((trade)=>addTrade(trade),[addTrade]);
 
   const handleSave=useCallback(t=>{if(t.id&&trades.find(x=>x.id===t.id))updateTrade(t.id,t);else addTrade(t);setEditTrade(null);},[trades,updateTrade,addTrade]);
   const handleEdit=useCallback(t=>{setEditTrade(toTradeFormData(t));setModalForm(true);},[]);
-  const handleReset=useCallback(()=>{setFilters({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});toast.success('Filters reset');},[]);
+  const handleCreate=useCallback(()=>{setEditTrade(null);setModalForm(true);},[]);
+  const handleReset=useCallback(()=>{setFilters({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});toast.success('Filters cleared');},[]);
 
   return(
     <div style={{backgroundColor:'transparent',minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'28px 24px 48px',position:'relative',overflow:'hidden'}}>
       <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 10% 0%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.065), transparent 24%), radial-gradient(circle at 88% 10%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.03), transparent 20%), linear-gradient(135deg, rgba(255,255,255,0.015), transparent 36%, transparent 64%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.02) 100%)',pointerEvents:'none'}}/>
-      <div style={{position:'relative',zIndex:1,maxWidth:1480,margin:'0 auto'}}>
-      <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'grid',gridTemplateColumns:'minmax(0,1.35fr) minmax(280px,0.75fr)',gap:14,marginBottom:18}}>
-        <div><h1 style={{margin:0,fontSize:26,fontWeight:900,background:C.grad,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-0.5px'}}>All Trades</h1><p style={{margin:'5px 0 0',color:C.t2,fontSize:12,fontWeight:500}}>Trading journal · {trades.length} trades total</p></div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><GlassBtn icon="Export" onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn><GlassBtn variant="primary" icon="+" onClick={()=>setModalAdd(true)}>Add Trade</GlassBtn></div>
-      </motion.div>
+      <div style={{position:'relative',zIndex:1,maxWidth:1520,margin:'0 auto'}}>
+        <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'grid',gridTemplateColumns:'minmax(0,1.4fr) minmax(320px,0.8fr)',gap:16,marginBottom:18}}>
+          <div style={{padding:'22px 22px 20px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)',position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',top:-120,right:-120,width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.12), transparent 68%)',pointerEvents:'none'}}/>
+            <div style={{position:'relative',zIndex:1}}>
+              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:10}}>Execution ledger</div>
+              <div style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
+                <div style={{maxWidth:760}}>
+                  <h1 style={{margin:0,fontSize:34,fontWeight:900,letterSpacing:'-0.04em',lineHeight:1.02,color:C.t1}}>All Trades</h1>
+                  <p style={{margin:'10px 0 0',color:C.t2,fontSize:13.5,lineHeight:1.7,maxWidth:640}}>A cleaner, table-first execution journal built for review speed. Scan every trade, isolate the right segment fast, and move straight into detail without dashboard noise.</p>
+                </div>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  <GlassBtn onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn>
+                  <GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>
+                  <GlassBtn variant="primary" onClick={handleCreate}>Add trade</GlassBtn>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:18}}>
+                {[
+                  `${filtered.length} filtered / ${trades.length} total`,
+                  `${symbolCount} active symbols`,
+                  activeFilterCount ? `${activeFilterCount} live filters` : 'No active filters',
+                  `Top setup: ${topSetup}`,
+                ].map(item=>(
+                  <div key={item} style={{padding:'9px 12px',borderRadius:999,border:`1px solid ${shade(C.cyan,'18')}`,background:'rgba(255,255,255,0.03)',fontSize:11,fontWeight:700,color:C.t2}}>
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginTop:18}}>
+                <div style={{padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Latest execution</div>
+                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{latestTrade?.symbol || 'No trades yet'}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{latestTrade ? `${(latestTrade.open_date || latestTrade.date || '').substring(0,10)} / ${latestTrade.direction || latestTrade.type || 'Trade'}` : 'Import your first executions to start the ledger.'}</div>
+                </div>
+                <div style={{padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Average trade</div>
+                  <div style={{fontSize:14,fontWeight:900,color:averageTrade>=0?C.green:C.danger,fontFamily:'monospace'}}>{fmtPnl(averageTrade)}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Per execution across the current filtered set.</div>
+                </div>
+                <div style={{padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Active sort</div>
+                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{activeSortLabel}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{sort.dir==='asc'?'Ascending order':'Descending order'} across the visible ledger.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{padding:'20px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)'}}>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:14}}>Desk snapshot</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+              {[
+                {label:'Net P&L', value:fmtPnl(stats.totalPnL), color:stats.totalPnL>=0?C.green:C.danger},
+                {label:'Win rate', value:`${stats.winRate.toFixed(1)}%`, color:stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger},
+                {label:'Profit factor', value:stats.pf, color:parseFloat(stats.pf)>=2?C.green:parseFloat(stats.pf)>=1.5?C.warn:C.danger},
+                {label:'Max drawdown', value:`-${stats.maxDD.toFixed(1)}%`, color:C.danger},
+              ].map(card=>(
+                <div key={card.label} style={{padding:'12px 13px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:8}}>{card.label}</div>
+                  <div style={{fontSize:19,fontWeight:900,color:card.color,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{card.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{padding:'14px',borderRadius:18,border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))'}}>
+              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:8}}>MarketFlow focus</div>
+              <div style={{fontSize:14,fontWeight:800,color:C.t1,marginBottom:4}}>{topSetup !== 'Unassigned' ? `${topSetup} is leading this book.` : 'Your ledger is ready for structured review.'}</div>
+              <div style={{fontSize:11.5,color:C.t2,lineHeight:1.7}}>{filtered.length ? `You are reviewing ${filtered.length} executions across ${symbolCount || 0} symbols, with ${stats.wins} winning trades in the current scope.` : 'Import or add trades to turn this page into your main review surface.'}</div>
+            </div>
+          </div>
+        </motion.div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:18}}>
-        <StatCard index={0} label="Total Trades"  value={stats.total}  color={C.cyan}  icon="📊" sub={`${stats.wins}W / ${stats.losses}L`}/>
-        <StatCard index={1} label="Win Rate"      value={`${stats.winRate.toFixed(1)}%`} color={stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger} icon="🎯" sub={`${stats.wins} wins`}/>
-        <StatCard index={2} label="Avg R:R"      value={`1:${stats.avgRR}`} color={C.teal} icon="⚖️" sub="Risk/Reward"/>
-        <StatCard index={3} label="P&L Total"     value={fmtPnl(stats.totalPnL)} color={stats.totalPnL>=0?C.green:C.danger} icon="💰" sub={`${fmtPnl(stats.totalPnL/Math.max(1,stats.total))} / trade`}/>
-        <StatCard index={4} label="Profit Factor" value={stats.pf} color={parseFloat(stats.pf)>=2?C.green:parseFloat(stats.pf)>=1.5?C.warn:C.danger} icon="📈" sub="Gross W / Gross L"/>
-        <StatCard index={5} label="Max Drawdown"  value={`-${stats.maxDD.toFixed(1)}%`} color={C.danger} icon="⚠️" sub="Maximum drawdown"/>
+        <StatCard index={0} label="Filtered P&L" value={fmtPnl(stats.totalPnL)} color={stats.totalPnL>=0?C.green:C.danger} sub={`${stats.total} trade${stats.total===1?'':'s'} in scope`}/>
+        <StatCard index={1} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} color={stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger} sub={`${stats.wins} winners / ${stats.losses} losers`}/>
+        <StatCard index={2} label="Average Trade" value={fmtPnl(averageTrade)} color={averageTrade>=0?C.green:C.danger} sub="Average P&L per execution"/>
+        <StatCard index={3} label="Average R:R" value={`1:${stats.avgRR}`} color={C.teal} sub="Average realized risk to reward"/>
+        <StatCard index={4} label="Profit Factor" value={stats.pf} color={parseFloat(stats.pf)>=2?C.green:parseFloat(stats.pf)>=1.5?C.warn:C.danger} sub="Gross wins divided by gross losses"/>
+        <StatCard index={5} label="Max Drawdown" value={`-${stats.maxDD.toFixed(1)}%`} color={C.danger} sub="Largest pullback in the filtered scope"/>
       </div>
 
       <FilterBar filters={filters} setFilters={setFilters} trades={trades} onReset={handleReset}/>
 
       <AnimatePresence>
         {selected.size>0&&(
-          <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} style={{backgroundColor:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.05)',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.18)`,borderRadius:9,padding:'9px 14px',marginBottom:10,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
-            <div style={{display:'flex',alignItems:'center',gap:8}}><span style={{color:C.cyan,fontSize:13,fontWeight:700}}>{selected.size} trade(s) selected</span></div>
-            <div style={{display:'flex',gap:8}}>
-              <GlassBtn size="sm" variant="cyan" icon="↓" onClick={()=>exportToCSV(trades.filter(t=>selected.has(t.id)),`selection_${Date.now()}.csv`)}>Export selection</GlassBtn>
-              <GlassBtn size="sm" variant="danger" icon="🗑️" onClick={handleDeleteSelected}>Delete</GlassBtn>
-              <GlassBtn size="sm" onClick={()=>setSelected(new Set())}>Deselect all</GlassBtn>
+          <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} style={{background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)`,borderRadius:18,padding:'12px 14px',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+            <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><span style={{color:C.t1,fontSize:13,fontWeight:800}}>{selected.size} trade{selected.size>1?'s':''} selected</span><span style={{padding:'7px 10px',borderRadius:999,border:`1px solid ${shade(selectedPnl>=0?C.green:C.danger,'26')}`,background:selectedPnl>=0?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)',fontSize:11,fontWeight:800,color:selectedPnl>=0?C.green:C.danger}}>Selection P&L {fmtPnl(selectedPnl)}</span></div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <GlassBtn size="sm" variant="cyan" onClick={()=>exportToCSV(selectedTrades,`selection_${Date.now()}.csv`)}>Export selection</GlassBtn>
+              <GlassBtn size="sm" variant="danger" onClick={handleDeleteSelected}>Delete selected</GlassBtn>
+              <GlassBtn size="sm" onClick={()=>setSelected(new Set())}>Clear selection</GlassBtn>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={1} style={{backgroundColor:C.bgCard,border:`1px solid ${C.brd}`,borderRadius:11,overflow:'hidden'}}>
+      <motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={1} style={{background:'linear-gradient(180deg, rgba(10,17,28,0.95), rgba(8,13,22,0.98))',border:`1px solid ${C.brd}`,borderRadius:24,overflow:'hidden',boxShadow:'0 24px 48px rgba(0,0,0,0.18)'}}>
+        <div style={{padding:'16px 18px',borderBottom:`1px solid ${C.brd}`,display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap',background:'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))'}}>
+          <div>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:6}}>Execution ledger</div>
+            <div style={{fontSize:20,fontWeight:900,color:C.t1,letterSpacing:'-0.03em'}}>Trade review table</div>
+            <div style={{fontSize:12,color:C.t2,marginTop:5}}>Double-click a row to edit. Single click opens the full execution panel.</div>
+          </div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <div style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2}}>
+              Sorted by <span style={{color:C.t1,fontWeight:800}}>{activeSortLabel}</span> / {sort.dir==='asc'?'ASC':'DESC'}
+            </div>
+            <div style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2}}>
+              {visibleCols.length} visible columns
+            </div>
+          </div>
+        </div>
         {filtered.length===0?(
-          <div style={{padding:'80px 20px',textAlign:'center'}}>
-            <h3 style={{color:C.t1,fontSize:18,fontWeight:700,marginBottom:8}}>{trades.length===0?'No trades':'No results'}</h3>
-            <p style={{color:C.t2,fontSize:13,marginBottom:22}}>{trades.length===0?'Import or add your first trade':'Modify your filters'}</p>
-            {trades.length===0&&<GlassBtn variant="primary" icon="+" onClick={()=>setModalAdd(true)}>Add a trade</GlassBtn>}
+          <div style={{padding:'84px 22px',textAlign:'center'}}>
+            <div style={{width:54,height:54,borderRadius:18,margin:'0 auto 18px',border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))'}}/>
+            <h3 style={{color:C.t1,fontSize:20,fontWeight:800,margin:'0 0 8px'}}>{trades.length===0?'Your ledger is empty':'No trades match the current filters'}</h3>
+            <p style={{color:C.t2,fontSize:13,lineHeight:1.7,maxWidth:520,margin:'0 auto 22px'}}>{trades.length===0?'Import broker data or add your first execution manually to start building your review database.':'Reset or widen the filters to bring the right executions back into view.'}</p>
+            <div style={{display:'flex',justifyContent:'center',gap:8,flexWrap:'wrap'}}>
+              {trades.length===0&&<GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>}
+              <GlassBtn variant="primary" onClick={handleCreate}>{trades.length===0?'Add first trade':'Add trade manually'}</GlassBtn>
+              {trades.length>0&&<GlassBtn onClick={handleReset}>Reset filters</GlassBtn>}
+            </div>
           </div>
         ):(
           <div style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',minWidth:980}}>
               <thead>
-                <tr style={{backgroundColor:C.bgDeep}}>
-                  {visibleCols.map(col=>(<th key={col.key} onClick={col.sortable?()=>handleSort(col.key):undefined} style={{padding:'11px 14px',textAlign:'left',fontSize:9,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:sort.key===col.key?C.cyan:C.t3,cursor:col.sortable?'pointer':'default',borderBottom:`1px solid ${C.brd}`,whiteSpace:'nowrap',userSelect:'none',transition:'color 0.2s'}}>
-                    {col.key==='select'?<input type="checkbox" checked={paginated.every(t=>selected.has(t.id))&&paginated.length>0} onChange={handleSelectAll} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:<span style={{display:'flex',alignItems:'center',gap:5}}>{col.label}{col.sortable&&<span style={{opacity:0.45,fontSize:9}}>{sort.key===col.key?sort.dir==='asc'?'ASC':'DESC':'SORT'}</span>}</span>}
+                <tr style={{background:'rgba(7,12,20,0.92)'}}>
+                  {visibleCols.map(col=>(<th key={col.key} onClick={col.sortable?()=>handleSort(col.key):undefined} style={{padding:'13px 14px',textAlign:'left',fontSize:9,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',color:sort.key===col.key?C.cyan:C.t3,cursor:col.sortable?'pointer':'default',borderBottom:`1px solid ${C.brd}`,whiteSpace:'nowrap',userSelect:'none',transition:'color 0.2s',position:'sticky',top:0,zIndex:3,background:'rgba(7,12,20,0.96)',backdropFilter:'blur(14px)'}}>
+                    {col.key==='select'?<input type="checkbox" checked={paginated.every(t=>selected.has(t.id))&&paginated.length>0} onChange={handleSelectAll} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:<span style={{display:'flex',alignItems:'center',gap:6}}>{col.label}{col.sortable&&<span style={{opacity:0.5,fontSize:8.5}}>{sort.key===col.key?sort.dir==='asc'?'ASC':'DESC':'SORT'}</span>}</span>}
                   </th>))}
                 </tr>
               </thead>
@@ -1263,7 +1396,6 @@ export default function AllTrades(){
 
       {filtered.length>0&&(<Pagination page={page} total={filtered.length} perPage={perPage} onPage={p=>setPage(Math.max(1,Math.min(p,totalPages)))} onPerPage={n=>{setPerPage(n);setPage(1);}}/>)}
 
-      <AddMethodModal isOpen={modalAdd}    onClose={()=>setModalAdd(false)}    onSelectMethod={handleMethodSelect}/>
       <ImportModal    isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport}/>
       <TradeFormModal isOpen={modalForm}   onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade}/>
       <TradeDetailPanel trade={detailTrade} onClose={()=>setDetailTrade(null)} onEdit={t=>{handleEdit(t);setDetailTrade(null);}} onDelete={id=>{deleteTrade(id);setDetailTrade(null);toast.success('Trade deleted');}}/>
