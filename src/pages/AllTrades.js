@@ -17,6 +17,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+import * as XLSX from 'xlsx';
 import { useTradingContext } from '../context/TradingContext';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -168,7 +169,7 @@ const GlassBtn=({children,onClick,variant='default',disabled,loading,size='md',f
 
 const StatCard=({label,value,color,sub,index})=>{
   const[hov,setHov]=useState(false);
-  return(<motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={index} whileHover={{scale:1.03,y:-5}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{backgroundColor:C.bgCard,border:`1px solid ${hov?C.brdBright:C.brd}`,borderRadius:11,padding:'14px 16px',position:'relative',overflow:'hidden',cursor:'default',boxShadow:hov?`0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px ${color}30`:'0 2px 8px rgba(0,0,0,0.2)',transition:'all 0.25s cubic-bezier(0.4,0,0.2,1)'}}><motion.div animate={{opacity:hov?1:0}} style={{position:'absolute',inset:0,background:`linear-gradient(135deg,${color}18,transparent)`,pointerEvents:'none'}}/><div style={{position:'relative',zIndex:1}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}><span style={{color:C.t3,fontSize:9,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>{label}</span></div><div style={{fontSize:22,fontWeight:900,color,fontFamily:'monospace',lineHeight:1,textShadow:hov?`0 0 20px ${color}60`:'none',transition:'text-shadow 0.3s'}}>{value}</div>{sub&&<div style={{fontSize:10,color:C.t3,marginTop:5}}>{sub}</div>}</div>{hov&&(<motion.div initial={{opacity:0,scale:0.8}} animate={{opacity:1,scale:1}} style={{position:'absolute',bottom:-8,left:'50%',transform:'translateX(-50%)',width:'80%',height:5,background:color,borderRadius:'0 0 8px 8px',filter:'blur(8px)',pointerEvents:'none'}}/>)}</motion.div>);
+  return(<motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={index} whileHover={{scale:1.01,y:-3}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{background:'linear-gradient(180deg, rgba(12,20,34,0.92), rgba(8,13,23,0.9))',border:`1px solid ${hov?`${color}40`:C.brd}`,borderRadius:16,padding:'16px 18px',position:'relative',overflow:'hidden',cursor:'default',boxShadow:hov?`0 18px 42px rgba(0,0,0,0.28), 0 0 0 1px ${color}16`:'0 10px 26px rgba(0,0,0,0.18)',transition:'all 0.25s cubic-bezier(0.4,0,0.2,1)'}}><motion.div animate={{opacity:hov?1:0.58}} style={{position:'absolute',inset:0,background:`linear-gradient(145deg,${color}12,transparent 55%)`,pointerEvents:'none'}}/><div style={{position:'relative',zIndex:1}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}><span style={{color:C.t3,fontSize:9,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>{label}</span><div style={{width:26,height:2,borderRadius:999,background:color,opacity:0.85}}/></div><div style={{fontSize:24,fontWeight:900,color,fontFamily:'monospace',lineHeight:1,textShadow:hov?`0 0 18px ${color}45`:'none',transition:'text-shadow 0.3s'}}>{value}</div>{sub&&<div style={{fontSize:10,color:'rgba(139,155,180,0.86)',marginTop:7,lineHeight:1.6}}>{sub}</div>}</div></motion.div>);
 };
 
 const FilterBar=({filters,setFilters,trades,onReset})=>{
@@ -401,7 +402,7 @@ const TradeDetailPanel=({trade,onClose,onEdit,onDelete})=>{
 const AddMethodModal=({isOpen,onClose,onSelectMethod})=>{
   if(!isOpen)return null;
   const methods=[
-    {m:'auto',title:'Import CSV',desc:'Import broker data from CSV, TXT or TSV.'},
+    {m:'auto',title:'Import file',desc:'Import broker exports from CSV, XLSX, XLS, TXT or TSV.'},
     {m:'manual',title:'Manual trade',desc:'Add one clean trade with the detailed form.'},
   ];
   return(
@@ -603,13 +604,70 @@ const CLEAN_FIELD_LABELS={
 const normalizeKey=(k)=>k.toString().trim().toLowerCase().replace(/[\u{1F300}-\u{1F9FF}]/gu,'').replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
 const detectSeparator=(content)=>{const line=content.split(/\r?\n/)[0];const seps=[',',';','\t','|'];const counts=seps.map(s=>line.split(s).length-1);return seps[counts.indexOf(Math.max(...counts))];};
 const parseCSVLine=(line,sep)=>{const vals=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===sep&&!inQ){vals.push(cur.trim().replace(/^["']|["']$/g,'').replace(/""/g,'"').trim());cur='';}else cur+=c;}vals.push(cur.trim().replace(/^["']|["']$/g,'').replace(/""/g,'"').trim());return vals;};
+const isSpreadsheetFile=(fileName='')=>/\.(xlsx|xls)$/i.test(fileName);
+const normalizeImportedCell=(value)=>{
+  if(value==null)return'';
+  if(value instanceof Date)return value.toISOString().split('T')[0];
+  return String(value).trim();
+};
+const prepareImportedRows=(rows=[])=>{
+  const cleanRows=rows
+    .map(row=>(Array.isArray(row)?row:[row]).map(normalizeImportedCell))
+    .filter(row=>row.some(Boolean));
+  if(cleanRows.length<2)throw new Error('Invalid file: you need at least 1 header line + 1 data line.');
+  const headers=cleanRows[0].map((header,index)=>header||`Column ${index+1}`);
+  const dataRows=cleanRows.slice(1);
+  return{headers,dataRows,preview:dataRows.slice(0,7)};
+};
+const getRowsFromWorkbook=(arrayBuffer)=>{
+  const workbook=XLSX.read(arrayBuffer,{type:'array',cellDates:true});
+  const firstSheetName=workbook.SheetNames[0];
+  if(!firstSheetName)throw new Error('The spreadsheet is empty.');
+  return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName],{header:1,raw:false,defval:''});
+};
 
 const normalizeType=(raw)=>{if(!raw)return'Long';const r=raw.toString().toLowerCase().trim();if(['buy','long','b','1','bullish','achat','hausse','up'].includes(r))return'Long';if(['sell','short','s','-1','bearish','vente','baisse','down'].includes(r))return'Short';if(r.includes('buy')||r.includes('long')||r.includes('achat'))return'Long';if(r.includes('sell')||r.includes('short')||r.includes('vente'))return'Short';return'Long';};
 const normalizeSession=(raw)=>{if(!raw)return'NY';const r=raw.toString().toLowerCase().trim();if(r.includes('new york')||r==='ny'||r.includes('new_york')||r.includes('newyo')||r==='us'||r.includes('american')||r.includes('nyse')||r.includes('nasdaq')||r==='new-york')return'NY';if(r.includes('london')||r==='ldn'||r.includes('europe')||r==='eu'||r.includes('lse')||r.includes('euro')||r==='lon')return'London';if(r.includes('asia')||r.includes('tokyo')||r.includes('asian')||r.includes('japan')||r.includes('sydney')||r==='jp')return'Asia';return raw;};
 const normalizeBias=(raw)=>{if(!raw)return'Neutral';const r=raw.toString().toLowerCase().trim();if(r.includes('bull')||r.includes('long')||r.includes('haussier')||r.includes('hausse')||r==='up'||r==='1')return'Bullish';if(r.includes('bear')||r.includes('short')||r.includes('baissier')||r.includes('baisse')||r==='down'||r==='-1')return'Bearish';return'Neutral';};
 const normalizeNews=(raw)=>{if(!raw)return'Low';const r=raw.toString().toLowerCase().trim();if(r.includes('high')||r.includes('fort')||r==='3'||r==='red'||r==='rouge')return'High';if(r.includes('med')||r.includes('moyen')||r==='2'||r==='orange'||r==='yellow')return'Medium';return'Low';};
 const parseNum=(v)=>{if(v==null||v==='')return null;let s=v.toString().trim().replace(/[$€£¥\s]/g,'').replace(/[^0-9.,\-+%]/g,'').replace(/%/g,'');if(s.includes(',')&&!s.includes('.'))s=s.replace(',','.');else if(s.includes(',')&&s.includes('.'))s=s.replace(/,/g,'');const n=parseFloat(s);return isNaN(n)?null:n;};
-const parseDate=(raw)=>{if(!raw)return new Date().toISOString().split('T')[0];const s=raw.toString().trim();if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.substring(0,10);const dmy=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);if(dmy)return`${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;const mdy=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);if(mdy){const y=mdy[3].length===2?'20'+mdy[3]:mdy[3];return`${y}-${mdy[1].padStart(2,'0')}-${mdy[2].padStart(2,'0')}`;}if(/^\d{10,13}$/.test(s)){const d=new Date(s.length===10?parseInt(s)*1000:parseInt(s));return d.toISOString().split('T')[0];}try{const d=new Date(s);if(!isNaN(d))return d.toISOString().split('T')[0];}catch{}return new Date().toISOString().split('T')[0];};
+const parseDate=(raw)=>{
+  if(!raw&&raw!==0)return new Date().toISOString().split('T')[0];
+  if(typeof raw==='number'&&raw>20000&&raw<80000){
+    const excelDate=XLSX.SSF.parse_date_code(raw);
+    if(excelDate){
+      const month=`${excelDate.m}`.padStart(2,'0');
+      const day=`${excelDate.d}`.padStart(2,'0');
+      return`${excelDate.y}-${month}-${day}`;
+    }
+  }
+  const s=raw.toString().trim();
+  if(/^\d{5}(\.\d+)?$/.test(s)){
+    const excelDate=XLSX.SSF.parse_date_code(Number(s));
+    if(excelDate){
+      const month=`${excelDate.m}`.padStart(2,'0');
+      const day=`${excelDate.d}`.padStart(2,'0');
+      return`${excelDate.y}-${month}-${day}`;
+    }
+  }
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.substring(0,10);
+  const dmy=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  if(dmy)return`${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+  const mdy=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+  if(mdy){
+    const y=mdy[3].length===2?'20'+mdy[3]:mdy[3];
+    return`${y}-${mdy[1].padStart(2,'0')}-${mdy[2].padStart(2,'0')}`;
+  }
+  if(/^\d{10,13}$/.test(s)){
+    const d=new Date(s.length===10?parseInt(s,10)*1000:parseInt(s,10));
+    return d.toISOString().split('T')[0];
+  }
+  try{
+    const d=new Date(s);
+    if(!isNaN(d))return d.toISOString().split('T')[0];
+  }catch{}
+  return new Date().toISOString().split('T')[0];
+};
 
 const guessFieldFromContent=(values)=>{
   const samples=values.filter(v=>v&&v.toString().trim()).slice(0,10);
@@ -664,12 +722,25 @@ const ImportModal=({isOpen,onClose,onImport})=>{
     const reader=new FileReader();
     reader.onload=(e)=>{
       try{
-        const bytes=new Uint8Array(e.target.result);
+        const arrayBuffer=e.target.result;
+        let headers=[];
+        let preview=[];
+        let importedRows=[];
+        let detectedSep=',';
+        if(isSpreadsheetFile(f.name)){
+          const prepared=prepareImportedRows(getRowsFromWorkbook(arrayBuffer));
+          headers=prepared.headers;
+          preview=prepared.preview;
+          importedRows=prepared.dataRows;
+          detectedSep='workbook';
+          setSep(detectedSep);
+        }else{
+        const bytes=new Uint8Array(arrayBuffer);
         let content;
         if(bytes[0]===0xEF&&bytes[1]===0xBB&&bytes[2]===0xBF)content=new TextDecoder('utf-8').decode(bytes.slice(3));
         else{try{content=new TextDecoder('utf-8').decode(bytes);}catch{content=new TextDecoder('iso-8859-1').decode(bytes);}}
         content=content.trim();
-        const detectedSep=detectSeparator(content);setSep(detectedSep);
+        detectedSep=detectSeparator(content);setSep(detectedSep);
         const lines=content.split(/\r?\n/).filter(l=>l.trim());
 
         // 🔧 FIX : clear minimum message (instead of "Fichier trop court")
@@ -678,8 +749,10 @@ const ImportModal=({isOpen,onClose,onImport})=>{
           setParsing(false);return;
         }
 
-        const headers=parseCSVLine(lines[0],detectedSep);
-        const preview=lines.slice(1,8).map(l=>parseCSVLine(l,detectedSep));
+        headers=parseCSVLine(lines[0],detectedSep);
+        preview=lines.slice(1,8).map(l=>parseCSVLine(l,detectedSep));
+        importedRows=lines.slice(1).map(l=>parseCSVLine(l,detectedSep));
+        }
 
         // PASS 1: match by name
         const autoMap={};
@@ -715,7 +788,7 @@ const ImportModal=({isOpen,onClose,onImport})=>{
           conf[h]=getMappingConfidence(h,autoMap[h],colValues);
         });
 
-        setRawHeaders(headers);setPreviewRows(preview.slice(0,5));setMapping(autoMap);setConfidence(conf);setAllLines(lines.slice(1));setParsing(false);setStep(2);
+        setRawHeaders(headers);setPreviewRows(preview.slice(0,5));setMapping(autoMap);setConfidence(conf);setAllLines(importedRows);setParsing(false);setStep(2);
         const highCount=Object.values(conf).filter(c=>c>=70).length;
         toast.success(`${highCount}/${headers.length} columns auto-detected`);
       }catch(err){toast.error(`Error: ${err.message}`);setParsing(false);}
@@ -730,8 +803,8 @@ const ImportModal=({isOpen,onClose,onImport})=>{
       try{
         const results=[];const skipped=[];
         allLines.forEach((line,idx)=>{
-          if(!line.trim())return;
-          const vals=parseCSVLine(line,sep);
+          const vals=Array.isArray(line)?line:parseCSVLine(line,sep);
+          if(!vals.some(val=>String(val||'').trim()))return;
           const raw={};rawHeaders.forEach((h,i)=>{raw[h]=(vals[i]||'').toString().trim();});
           const mapped={};const extra={};
           rawHeaders.forEach(h=>{
@@ -852,6 +925,7 @@ const ImportModal=({isOpen,onClose,onImport})=>{
     if(filterConf==='unmapped')return cur==='_extra';
     return true;
   });
+  const sourceLabel=sep==='workbook'?'Workbook':sep==='\t'?'Tab':sep;
 
   return(
     <AnimatePresence>
@@ -864,13 +938,13 @@ const ImportModal=({isOpen,onClose,onImport})=>{
           <div style={{padding:'14px 22px',borderBottom:`1px solid ${C.brd}`,background:`linear-gradient(135deg,${C.bgHigh},${C.bgCard})`,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
             <div>
               <h3 style={{margin:0,fontSize:15,fontWeight:800,color:C.t1}}>
-                {step===1&&'Import CSV'}
-                {step===2&&'Column mapping'}
+                {step===1&&'Import file'}
+                {step===2&&'Field mapping'}
                 {step===3&&'Import complete'}
               </h3>
               <p style={{margin:'2px 0 0',fontSize:10,color:C.t3}}>
-                {step===1&&'Smart detection / compatible with all brokers and trading styles'}
-                {step===2&&`${rawHeaders.length} columns / ${highCount} auto-mapped / separator: "${sep==='\t'?'Tab':sep}"`}
+                {step===1&&'Smart detection for broker exports, spreadsheets, and manual trading logs'}
+                {step===2&&`${rawHeaders.length} columns / ${highCount} auto-mapped / source: ${sourceLabel}`}
                 {step===3&&`${importResult?.count} trades imported successfully`}
               </p>
             </div>
@@ -884,10 +958,10 @@ const ImportModal=({isOpen,onClose,onImport})=>{
             <div style={{padding:'22px',flex:1,overflowY:'auto'}}>
               <div onDragEnter={e=>{e.preventDefault();setDrag(true);}} onDragLeave={e=>{e.preventDefault();setDrag(false);}} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDrop={e=>{e.preventDefault();setDrag(false);if(e.dataTransfer.files[0])handleFileLoad(e.dataTransfer.files[0]);}} onClick={()=>fileRef.current?.click()}
                 style={{border:`2px dashed ${drag?C.cyan:file?C.green:C.brd}`,borderRadius:12,padding:'38px 24px',textAlign:'center',backgroundColor:drag?'rgba(0,212,255,0.04)':file?'rgba(0,230,118,0.03)':C.bgDeep,cursor:'pointer',transition:'all 0.25s'}}>
-                <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" style={{display:'none'}} onChange={e=>e.target.files[0]&&handleFileLoad(e.target.files[0])}/>
+                <input ref={fileRef} type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" style={{display:'none'}} onChange={e=>e.target.files[0]&&handleFileLoad(e.target.files[0])}/>
                 {parsing?<div style={{fontSize:13,color:C.cyan}}><motion.div animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}} style={{width:26,height:26,border:`3px solid ${C.cyan}`,borderTopColor:'transparent',borderRadius:'50%',margin:'0 auto 10px'}}/>Smart analysis in progress...</div>
                 :file?<><div style={{width:42,height:3,borderRadius:999,background:C.green,margin:'0 auto 14px'}}/><div style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:3}}>{file.name}</div><div style={{fontSize:10,color:C.t3}}>{(file.size/1024).toFixed(1)} KB / click to change</div></>
-                :<><div style={{width:48,height:3,borderRadius:999,background:C.cyan,margin:'0 auto 16px'}}/><div style={{fontSize:13,fontWeight:600,color:C.t1,marginBottom:4}}>Drop your CSV here</div><div style={{fontSize:10,color:C.t3}}>or click to browse / .csv .txt .tsv</div></>}
+                :<><div style={{width:48,height:3,borderRadius:999,background:C.cyan,margin:'0 auto 16px'}}/><div style={{fontSize:13,fontWeight:600,color:C.t1,marginBottom:4}}>Drop your trading file here</div><div style={{fontSize:10,color:C.t3}}>or click to browse / .csv .txt .tsv .xlsx .xls</div></>}
               </div>
               <div style={{marginTop:14,padding:'12px 14px',borderRadius:10,backgroundColor:'rgba(0,212,255,0.03)',border:`1px solid rgba(0,212,255,0.1)`}}>
                 <div style={{fontSize:9,fontWeight:700,color:C.cyan,marginBottom:8,letterSpacing:'1px'}}>SMART DETECTION IN 3 PASSES</div>
@@ -896,7 +970,7 @@ const ImportModal=({isOpen,onClose,onImport})=>{
                 </div>
               </div>
               <div style={{marginTop:10,padding:'10px 13px',borderRadius:9,backgroundColor:'rgba(0,212,255,0.03)',border:`1px solid rgba(0,212,255,0.1)`}}>
-                <div style={{fontSize:9,fontWeight:700,color:C.cyan,marginBottom:6}}>COMPATIBLE AVEC</div>
+                <div style={{fontSize:9,fontWeight:700,color:C.cyan,marginBottom:6}}>COMPATIBLE WITH</div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
                   {['MT4','MT5','cTrader','TradingView','TradeZella','TraderSync','FTMO','TopStep','E8','The5%ers','Binance','Bybit','Kraken','OANDA','Forex.com','Interactive Brokers','ThinkOrSwim','NinjaTrader','Tradovate','Excel','Google Sheets','Notion','Airtable'].map(b=>(<span key={b} style={{padding:'2px 7px',borderRadius:4,fontSize:9,fontWeight:600,color:C.t3,backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`}}>{b}</span>))}
                 </div>
@@ -1001,7 +1075,7 @@ const ImportModal=({isOpen,onClose,onImport})=>{
           {step===3&&(
             <div style={{padding:'40px 22px',textAlign:'center',flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
               <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type:'spring',delay:0.1,stiffness:160}}><div style={{width:70,height:4,borderRadius:999,background:C.grad,margin:'0 auto 24px'}}/></motion.div>
-              <h2 style={{margin:'0 0 8px',fontSize:24,fontWeight:900,background:C.grad,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Import successful !</h2>
+              <h2 style={{margin:'0 0 8px',fontSize:24,fontWeight:900,background:C.grad,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Import completed</h2>
               <div style={{fontSize:14,color:C.t2,marginBottom:6}}><span style={{color:C.green,fontWeight:800,fontSize:22}}>{importResult?.count}</span> trades imported to Supabase</div>
               {importResult?.ignored>0&&<div style={{fontSize:12,color:C.warn,marginBottom:14}}>{importResult.ignored} line(s) skipped</div>}
               <div style={{marginTop:24}}><GlassBtn variant="primary" icon="✓" onClick={handleClose}>Close and view trades</GlassBtn></div>
@@ -1128,12 +1202,14 @@ export default function AllTrades(){
   const handleReset=useCallback(()=>{setFilters({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});toast.success('Filters reset');},[]);
 
   return(
-    <div style={{backgroundColor:C.bgPage,minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'24px'}}>
-      <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:22,flexWrap:'wrap',gap:10}}>
+    <div style={{backgroundColor:'#030508',minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'28px 24px 48px',position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 8% 0%, rgba(0,212,255,0.16), transparent 28%), radial-gradient(circle at 92% 4%, rgba(0,230,118,0.12), transparent 22%), linear-gradient(180deg, rgba(6,10,18,0.96), #030508 56%)',pointerEvents:'none'}}/>
+      <div style={{position:'relative',zIndex:1,maxWidth:1480,margin:'0 auto'}}>
+      <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'grid',gridTemplateColumns:'minmax(0,1.35fr) minmax(280px,0.75fr)',gap:14,marginBottom:18}}>
         <div><h1 style={{margin:0,fontSize:26,fontWeight:900,background:C.grad,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-0.5px'}}>All Trades</h1><p style={{margin:'5px 0 0',color:C.t2,fontSize:12,fontWeight:500}}>Trading journal · {trades.length} trades total</p></div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><GlassBtn icon="Export" onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn><GlassBtn variant="primary" icon="+" onClick={()=>setModalAdd(true)}>Add Trade</GlassBtn></div>
       </motion.div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:11,marginBottom:18}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:18}}>
         <StatCard index={0} label="Total Trades"  value={stats.total}  color={C.cyan}  icon="📊" sub={`${stats.wins}W / ${stats.losses}L`}/>
         <StatCard index={1} label="Win Rate"      value={`${stats.winRate.toFixed(1)}%`} color={stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger} icon="🎯" sub={`${stats.wins} wins`}/>
         <StatCard index={2} label="Avg R:R"      value={`1:${stats.avgRR}`} color={C.teal} icon="⚖️" sub="Risk/Reward"/>
@@ -1190,6 +1266,7 @@ export default function AllTrades(){
       <ImportModal    isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport}/>
       <TradeFormModal isOpen={modalForm}   onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade}/>
       <TradeDetailPanel trade={detailTrade} onClose={()=>setDetailTrade(null)} onEdit={t=>{handleEdit(t);setDetailTrade(null);}} onDelete={id=>{deleteTrade(id);setDetailTrade(null);toast.success('Trade deleted');}}/>
+      </div>
     </div>
   );
 }
