@@ -96,6 +96,17 @@ html, body {
   color: var(--t0) !important;
 }
 
+@keyframes mf-journal-ambient-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, -14px, 0) scale(1.02); }
+}
+
+@keyframes mf-journal-ambient-sweep {
+  0% { transform: translate3d(-10%, 0, 0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate3d(10%, 0, 0); opacity: 0; }
+}
+
 /* Transitions thème fluides */
 *, *::before, *::after {
   transition: background-color 0.22s ease, border-color 0.18s ease, color 0.15s ease !important;
@@ -153,8 +164,46 @@ html, body {
 
 /* ─── MAIN CONTENT ──────────────────────────────────────────────────────────── */
 .mf-main {
-  background: var(--bg) !important;
+  background:
+    linear-gradient(180deg, rgba(5,8,14,0.94) 0%, rgba(3,5,8,0.98) 56%, rgba(2,4,7,1) 100%) !important;
   color: var(--t0) !important;
+  isolation: isolate;
+}
+
+.mf-main::before,
+.mf-main::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.mf-main::before {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.045) 0%, transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255), 0.03) 0%, transparent 24%),
+    linear-gradient(rgba(255,255,255,0.007) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.007) 1px, transparent 1px);
+  background-size: auto, auto, 72px 72px, 72px 72px;
+  opacity: 0.9;
+}
+
+.mf-main::after {
+  inset: -8% -4%;
+  background:
+    radial-gradient(circle at 22% 16%, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.03) 0%, transparent 36%),
+    radial-gradient(circle at 78% 78%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255), 0.022) 0%, transparent 32%),
+    linear-gradient(115deg, transparent 0%, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.012) 46%, transparent 54%);
+  filter: blur(26px);
+  animation: mf-journal-ambient-drift 22s ease-in-out infinite, mf-journal-ambient-sweep 20s linear infinite;
+  opacity: 0.72;
+}
+
+.mf-main-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
 }
 
 /* ─── CARDS light ───────────────────────────────────────────────────────────── */

@@ -388,10 +388,10 @@ export default function AccountSettings({ user, onBack }) {
   };
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', padding: '32px 32px 60px', fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
+    <div style={{ background: 'transparent', minHeight: '100vh', padding: '32px 32px 60px', fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: 0, left: '20%', width: 520, height: 360, background: 'radial-gradient(ellipse,rgba(var(--mf-accent-rgb, 6, 230, 255),0.08) 0%,transparent 70%)', filter: 'blur(42px)' }} />
-        <div style={{ position: 'absolute', bottom: 0, right: '10%', width: 420, height: 280, background: 'radial-gradient(ellipse,rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.06) 0%,transparent 70%)', filter: 'blur(42px)' }} />
+        <div style={{ position: 'absolute', top: 0, left: '20%', width: 520, height: 360, background: 'radial-gradient(ellipse,rgba(var(--mf-accent-rgb, 6, 230, 255),0.03) 0%,transparent 70%)', filter: 'blur(46px)' }} />
+        <div style={{ position: 'absolute', bottom: 0, right: '10%', width: 420, height: 280, background: 'radial-gradient(ellipse,rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.02) 0%,transparent 70%)', filter: 'blur(46px)' }} />
       </div>
 
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1180, margin: '0 auto' }}>

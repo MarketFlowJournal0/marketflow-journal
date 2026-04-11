@@ -858,7 +858,7 @@ export default function Equity() {
 
   if (!trades?.length) {
     return (
-      <div style={{ background: `radial-gradient(ellipse 120% 50% at 50% -5%,rgba(var(--mf-blue-rgb, 77, 124, 255),0.12) 0%,var(--mf-bg,#030508) 60%)`, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif" }}>
+      <div style={{ background: 'transparent', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif" }}>
         <GlassCard glow={C.blue} style={{ padding: '60px 48px', textAlign: 'center', maxWidth: 420 }}>
           <div style={{ fontSize: 48, marginBottom: 20 }}>📊</div>
           <div style={{ fontSize: 20, fontWeight: 900, color: C.t1, marginBottom: 8 }}>No trades</div>
@@ -882,15 +882,15 @@ export default function Equity() {
   ];
 
   return (
-    <div style={{ background: `radial-gradient(ellipse 130% 55% at 50% -5%,rgba(var(--mf-blue-rgb, 77, 124, 255),0.13) 0%,var(--mf-bg,#030508) 60%)`, minHeight: '100vh', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif", color: C.t1 }}>
+    <div style={{ background: 'transparent', minHeight: '100vh', fontFamily: "'SF Pro Display','Segoe UI',system-ui,sans-serif", color: C.t1 }}>
 
       {/* Background */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        {particles.map((p, i) => (
-          <motion.div key={i} animate={{ y: [0, -42, 0], opacity: [0.025, 0.15, 0.025] }} transition={{ duration: p.dur, repeat: Infinity, delay: p.delay }}
+        {particles.slice(0, 12).map((p, i) => (
+          <motion.div key={i} animate={{ y: [0, -28, 0], opacity: [0.01, 0.06, 0.01] }} transition={{ duration: p.dur + 1.5, repeat: Infinity, delay: p.delay }}
             style={{ position: 'absolute', left: p.left, top: p.top, width: 2, height: 2, borderRadius: '50%', background: p.color }} />
         ))}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.011) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.011) 1px,transparent 1px)', backgroundSize: '64px 64px' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.005) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.005) 1px,transparent 1px)', backgroundSize: '64px 64px' }} />
       </div>
 
       <div style={{ position: 'relative', zIndex: 1, padding: '24px 28px 60px' }}>

@@ -612,7 +612,7 @@ export default function Backtest(){
   return(
     /* ── OUTER WRAPPER: same bg as Dashboard (#0F1420), fills full height ── */
     <div style={{
-      background:'#0F1420',
+      background:'transparent',
       minHeight:'100%',
       width:'100%',
       fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",
@@ -620,13 +620,13 @@ export default function Backtest(){
       position:'relative',
     }}>
       {/* Subtle top glow — much lighter than before */}
-      <div style={{position:'absolute',top:0,left:0,right:0,height:320,background:'radial-gradient(ellipse 80% 40% at 50% -5%,rgba(var(--mf-blue-rgb, 77, 124, 255),0.08) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}}/>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:320,background:'radial-gradient(ellipse 80% 40% at 50% -5%,rgba(var(--mf-blue-rgb, 77, 124, 255),0.035) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}}/>
       {/* Grid texture */}
-      <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0,backgroundImage:'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.009) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.009) 1px,transparent 1px)',backgroundSize:'60px 60px'}}/>
+      <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0,backgroundImage:'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.005) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.005) 1px,transparent 1px)',backgroundSize:'60px 60px'}}/>
       {/* Floating dots */}
       <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0}}>
-        {Array.from({length:14}).map((_,i)=>(
-          <motion.div key={i} animate={{y:[0,-35,0],opacity:[0.02,0.10,0.02]}} transition={{duration:5.5+i*0.38,repeat:Infinity,delay:i*0.44}}
+        {Array.from({length:10}).map((_,i)=>(
+          <motion.div key={i} animate={{y:[0,-28,0],opacity:[0.008,0.05,0.008]}} transition={{duration:6.5+i*0.42,repeat:Infinity,delay:i*0.52}}
             style={{position:'absolute',left:`${(i*17+3)%100}%`,top:`${(i*9.3+7)%100}%`,width:2,height:2,borderRadius:'50%',background:[C.blue,C.cyan,C.purple,C.green,C.teal][i%5]}}/>
         ))}
       </div>

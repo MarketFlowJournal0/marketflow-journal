@@ -1464,7 +1464,7 @@ export default function Psychology(){
   // Empty state
   if(!hasData){
     return(
-      <div style={{background:'radial-gradient(ellipse 130% 60% at 50% -10%,rgba(var(--mf-purple-rgb, 167, 139, 250),0.10) 0%,var(--mf-bg,#030508) 65%)',minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:40}}>
+      <div style={{background:'transparent',minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:40}}>
         <motion.div initial={{scale:0.8,opacity:0}} animate={{scale:1,opacity:1}} transition={{type:'spring',stiffness:120}}>
           <div style={{width:70,height:4,borderRadius:999,background:C.gradPurple,boxShadow:`0 0 22px ${shade(C.purple,'70')}`,margin:'0 auto 26px'}}/>
           <h2 style={{fontSize:28,fontWeight:900,background:C.gradPurple,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:12}}>Psychology Tracker</h2>
@@ -1483,17 +1483,17 @@ export default function Psychology(){
   }
 
   return(
-    <div style={{background:`radial-gradient(ellipse 130% 60% at 50% -10%,rgba(var(--mf-purple-rgb, 167, 139, 250),0.10) 0%,var(--mf-bg,#030508) 65%)`,minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,position:'relative'}}>
+    <div style={{background:'transparent',minHeight:'100vh',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:C.t1,position:'relative'}}>
       {/* Particles */}
       <div style={{position:'fixed',inset:0,pointerEvents:'none',overflow:'hidden',zIndex:0}}>
-        {Array.from({length:24}).map((_,i)=>(
-          <motion.div key={i} animate={{y:[0,-50,0],x:[0,(i%2?1:-1)*14,0],opacity:[0.04,0.18,0.04]}}
-            transition={{duration:7+i*0.38,repeat:Infinity,delay:i*0.58,ease:'easeInOut'}}
+        {Array.from({length:14}).map((_,i)=>(
+          <motion.div key={i} animate={{y:[0,-34,0],x:[0,(i%2?1:-1)*10,0],opacity:[0.012,0.07,0.012]}}
+            transition={{duration:8.5+i*0.42,repeat:Infinity,delay:i*0.62,ease:'easeInOut'}}
             style={{position:'absolute',left:`${(i*14.1)%100}%`,top:`${(i*8.3+10)%100}%`,
               width:i%5===0?3:2,height:i%5===0?3:2,borderRadius:'50%',
               background:[C.purple,C.cyan,C.pink,C.blue,C.teal][i%5]}}/>
         ))}
-        <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(255,255,255,0.011) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.011) 1px,transparent 1px)',backgroundSize:'60px 60px'}}/>
+        <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(255,255,255,0.005) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.005) 1px,transparent 1px)',backgroundSize:'60px 60px'}}/>
       </div>
 
       <div style={{position:'relative',zIndex:1,padding:'28px 36px 56px'}}>

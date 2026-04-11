@@ -1170,7 +1170,7 @@ export default function AnalyticsPro() {
   }, [trades, period]);
 
   return (
-    <div style={{ backgroundColor: C.bgPage, minHeight: '100vh', fontFamily: 'system-ui,-apple-system,sans-serif', color: C.t1, padding: '24px' }}>
+    <div style={{ backgroundColor: 'transparent', minHeight: '100vh', fontFamily: 'system-ui,-apple-system,sans-serif', color: C.t1, padding: '24px' }}>
 
       {/* ── HEADER ── */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible"

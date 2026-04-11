@@ -251,17 +251,17 @@ function SidebarAmbientCanvas({ accent, secondary }) {
       particles.length = 0;
       lines.length = 0;
 
-      const particleCount = Math.max(14, Math.round(width / 9));
-      const lineCount = Math.max(4, Math.round(width / 46));
+      const particleCount = Math.max(10, Math.round(width / 13));
+      const lineCount = Math.max(3, Math.round(width / 72));
 
       for (let index = 0; index < particleCount; index += 1) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.18,
-          vy: (Math.random() - 0.5) * 0.18,
-          radius: Math.random() * 1.4 + 0.45,
-          alpha: Math.random() * 0.28 + 0.05,
+          vx: (Math.random() - 0.5) * 0.11,
+          vy: (Math.random() - 0.5) * 0.11,
+          radius: Math.random() * 1.1 + 0.4,
+          alpha: Math.random() * 0.12 + 0.02,
           tint: Math.random() > 0.5 ? accent : secondary,
         });
       }
@@ -283,8 +283,8 @@ function SidebarAmbientCanvas({ accent, secondary }) {
 
         lines.push({
           points,
-          speed: Math.random() * 0.16 + 0.05,
-          alpha: Math.random() * 0.06 + 0.018,
+          speed: Math.random() * 0.1 + 0.035,
+          alpha: Math.random() * 0.028 + 0.01,
           tint: index % 2 === 0 ? accent : secondary,
         });
       }
@@ -307,13 +307,13 @@ function SidebarAmbientCanvas({ accent, secondary }) {
       ctx.clearRect(0, 0, width, height);
 
       const topGlow = ctx.createRadialGradient(width * 0.18, height * 0.08, 0, width * 0.18, height * 0.08, width * 0.75);
-      topGlow.addColorStop(0, withAlpha(accent, 0.12));
+      topGlow.addColorStop(0, withAlpha(accent, 0.05));
       topGlow.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = topGlow;
       ctx.fillRect(0, 0, width, height);
 
       const lowerGlow = ctx.createRadialGradient(width * 0.82, height * 0.82, 0, width * 0.82, height * 0.82, width * 0.6);
-      lowerGlow.addColorStop(0, withAlpha(secondary, 0.08));
+      lowerGlow.addColorStop(0, withAlpha(secondary, 0.035));
       lowerGlow.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = lowerGlow;
       ctx.fillRect(0, 0, width, height);
@@ -322,13 +322,13 @@ function SidebarAmbientCanvas({ accent, secondary }) {
         ctx.beginPath();
         line.points.forEach((point, pointIndex) => {
           const pointX = (point.x + time * line.speed * 0.02 + index * 16) % (width + 110) - 55;
-          const pointY = point.y + Math.sin(time * 0.001 + point.sway + pointIndex * 0.35) * 5.5;
+          const pointY = point.y + Math.sin(time * 0.001 + point.sway + pointIndex * 0.35) * 3.2;
 
           if (pointIndex === 0) ctx.moveTo(pointX, pointY);
           else ctx.lineTo(pointX, pointY);
         });
         ctx.strokeStyle = withAlpha(line.tint, line.alpha);
-        ctx.lineWidth = 0.8;
+        ctx.lineWidth = 0.65;
         ctx.stroke();
       });
 
@@ -353,13 +353,13 @@ function SidebarAmbientCanvas({ accent, secondary }) {
           const deltaY = particles[first].y - particles[second].y;
           const distance = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
 
-          if (distance < 78) {
+          if (distance < 64) {
             ctx.beginPath();
             ctx.moveTo(particles[first].x, particles[first].y);
             ctx.lineTo(particles[second].x, particles[second].y);
             ctx.strokeStyle = withAlpha(
               first % 2 === 0 ? accent : secondary,
-              0.035 * (1 - (distance / 78)),
+              0.016 * (1 - (distance / 64)),
             );
             ctx.lineWidth = 0.5;
             ctx.stroke();
@@ -399,7 +399,7 @@ function SidebarAmbientCanvas({ accent, secondary }) {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        opacity: 0.95,
+        opacity: 0.58,
       }}
     />
   );
@@ -536,12 +536,12 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
 
         @keyframes mf-sidebar-float-a {
           0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-          50% { transform: translate3d(10px, 16px, 0) scale(1.04); }
+          50% { transform: translate3d(8px, 12px, 0) scale(1.03); }
         }
 
         @keyframes mf-sidebar-float-b {
           0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-          50% { transform: translate3d(-8px, -14px, 0) scale(1.06); }
+          50% { transform: translate3d(-6px, -10px, 0) scale(1.04); }
         }
 
         @keyframes mf-sidebar-sheen {
@@ -551,13 +551,13 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
         }
       `}</style>
 
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.02), transparent 18%, transparent 78%, rgba(255,255,255,0.02))', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.02), transparent 30%, transparent 70%, rgba(255,255,255,0.015))', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 1, background: `linear-gradient(180deg, ${withAlpha(planInfo.accent, 0.6)}, ${withAlpha(planInfo.secondary, 0.2)}, transparent 72%)`, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.012), transparent 18%, transparent 78%, rgba(255,255,255,0.012))', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.012), transparent 30%, transparent 70%, rgba(255,255,255,0.01))', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 1, background: `linear-gradient(180deg, ${withAlpha(planInfo.accent, 0.32)}, ${withAlpha(planInfo.secondary, 0.1)}, transparent 72%)`, pointerEvents: 'none' }} />
       <SidebarAmbientCanvas accent={planInfo.accent} secondary={planInfo.secondary} />
-      <div style={{ position: 'absolute', top: -72, left: -42, width: collapsed ? 140 : 220, height: collapsed ? 140 : 220, borderRadius: '50%', background: `radial-gradient(circle, ${withAlpha(planInfo.accent, 0.18)} 0%, transparent 68%)`, filter: 'blur(14px)', pointerEvents: 'none', animation: 'mf-sidebar-float-a 11s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', right: collapsed ? -58 : -76, bottom: collapsed ? 54 : 34, width: collapsed ? 120 : 190, height: collapsed ? 120 : 190, borderRadius: '50%', background: `radial-gradient(circle, ${withAlpha(planInfo.secondary, 0.12)} 0%, transparent 70%)`, filter: 'blur(18px)', pointerEvents: 'none', animation: 'mf-sidebar-float-b 13s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 0%, transparent 24%, ${withAlpha(planInfo.accent, 0.03)} 42%, transparent 70%)`, pointerEvents: 'none', animation: 'mf-sidebar-sheen 12s linear infinite' }} />
+      <div style={{ position: 'absolute', top: -72, left: -42, width: collapsed ? 140 : 220, height: collapsed ? 140 : 220, borderRadius: '50%', background: `radial-gradient(circle, ${withAlpha(planInfo.accent, 0.08)} 0%, transparent 68%)`, filter: 'blur(16px)', pointerEvents: 'none', animation: 'mf-sidebar-float-a 14s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', right: collapsed ? -58 : -76, bottom: collapsed ? 54 : 34, width: collapsed ? 120 : 190, height: collapsed ? 120 : 190, borderRadius: '50%', background: `radial-gradient(circle, ${withAlpha(planInfo.secondary, 0.05)} 0%, transparent 70%)`, filter: 'blur(20px)', pointerEvents: 'none', animation: 'mf-sidebar-float-b 16s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 0%, transparent 24%, ${withAlpha(planInfo.accent, 0.012)} 42%, transparent 70%)`, pointerEvents: 'none', animation: 'mf-sidebar-sheen 18s linear infinite' }} />
 
       <div style={{ padding: collapsed ? '16px 10px 14px' : '18px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 10 }}>

@@ -24,12 +24,12 @@ const C = {
 
 const DASHBOARD_ANIMATIONS = `
   @keyframes mfDashboardFloatA {
-    0%,100% { transform: translate3d(0,0,0) scale(1); opacity: 0.32; }
-    50% { transform: translate3d(52px,28px,0) scale(1.08); opacity: 0.42; }
+    0%,100% { transform: translate3d(0,0,0) scale(1); opacity: 0.12; }
+    50% { transform: translate3d(34px,18px,0) scale(1.05); opacity: 0.18; }
   }
   @keyframes mfDashboardFloatB {
-    0%,100% { transform: translate3d(0,0,0) scale(1); opacity: 0.18; }
-    50% { transform: translate3d(-46px,-26px,0) scale(1.05); opacity: 0.28; }
+    0%,100% { transform: translate3d(0,0,0) scale(1); opacity: 0.08; }
+    50% { transform: translate3d(-30px,-18px,0) scale(1.03); opacity: 0.12; }
   }
   @keyframes mfDashboardScan {
     0% { transform: translateX(-120%); opacity: 0; }
@@ -1105,14 +1105,14 @@ export default function Dashboard() {
 
   return (
     <DashboardDataCtx.Provider value={dashData}>
-      <div style={{background:'var(--bg,var(--mf-bg,#030508))',minHeight:'100%',width:'100%',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:'var(--t1,var(--mf-text-1,#E8EEFF))',position:'relative'}}>
+      <div style={{background:'transparent',minHeight:'100%',width:'100%',fontFamily:"'SF Pro Display','Segoe UI',system-ui,sans-serif",color:'var(--t1,var(--mf-text-1,#E8EEFF))',position:'relative'}}>
         <style>{DASHBOARD_ANIMATIONS}</style>
         {/* BG ambiance */}
         <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:0}}>
-          <div style={{position:'absolute',top:0,left:'18%',width:620,height:420,background:'radial-gradient(ellipse,rgba(var(--mf-accent-rgb, 6, 230, 255),0.12) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatA 14s ease-in-out infinite'}}/>
-          <div style={{position:'absolute',bottom:0,right:'8%',width:560,height:360,background:'radial-gradient(ellipse,rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.08) 0%,transparent 70%)',filter:'blur(46px)',animation:'mfDashboardFloatB 16s ease-in-out infinite'}}/>
-          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.008) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.008) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
-          <div style={{position:'absolute',inset:0,background:'linear-gradient(112deg,transparent 0%,rgba(var(--mf-accent-rgb, 6, 230, 255),0.06) 48%,transparent 56%)',transform:'translateX(-120%)',animation:'mfDashboardScan 10s linear infinite'}}/>
+          <div style={{position:'absolute',top:0,left:'18%',width:620,height:420,background:'radial-gradient(ellipse,rgba(var(--mf-accent-rgb, 6, 230, 255),0.045) 0%,transparent 70%)',filter:'blur(52px)',animation:'mfDashboardFloatA 18s ease-in-out infinite'}}/>
+          <div style={{position:'absolute',bottom:0,right:'8%',width:560,height:360,background:'radial-gradient(ellipse,rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.028) 0%,transparent 70%)',filter:'blur(52px)',animation:'mfDashboardFloatB 20s ease-in-out infinite'}}/>
+          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(var(--mf-blue-rgb, 77, 124, 255),0.005) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--mf-blue-rgb, 77, 124, 255),0.005) 1px,transparent 1px)',backgroundSize:'52px 52px'}}/>
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(112deg,transparent 0%,rgba(var(--mf-accent-rgb, 6, 230, 255),0.018) 48%,transparent 56%)',transform:'translateX(-120%)',animation:'mfDashboardScan 16s linear infinite'}}/>
         </div>
 
         <div style={{position:'relative',zIndex:1,padding:'30px 30px 54px',width:'100%',boxSizing:'border-box'}}>

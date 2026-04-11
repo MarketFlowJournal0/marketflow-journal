@@ -163,38 +163,40 @@ function AppLayout({ user, onLogout }) {
           </div>
         )}
         <div className="mf-main" style={{ marginLeft: sidebarWidth, flex: 1, minHeight: '100vh', transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)', backgroundColor: 'var(--bg)', overflow: 'auto', position: 'relative', zIndex: 1 }}>
-          <Routes>
-            <Route path="/dashboard" element={renderProtectedRoute('dashboard', <Dashboard />)} />
-            <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />
-            <Route path="/analytics" element={renderProtectedRoute('analytics', <Analytics />)} />
-            <Route path="/analytics-pro" element={renderProtectedRoute('analytics-pro', <AnalyticsPro />)} />
-            <Route path="/backtest" element={renderProtectedRoute('backtest', <Backtest />)} />
-            <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />
-            <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
-            <Route path="/psychology" element={renderProtectedRoute('psychology', <Psychology />)} />
-            <Route path="/ai-chat" element={renderProtectedRoute('ai-chat', <AIChat />)} />
-            <Route path="/broker-connect" element={renderProtectedRoute('broker-connect', <BrokerConnect />)} />
-            <Route
-              path="/account-settings"
-              element={renderProtectedRoute('account-settings', <AccountSettings user={effectiveUser} onBack={() => navigate(fallbackRoute)} />)}
-            />
-            <Route
-              path="/subscription"
-              element={renderProtectedRoute('subscription', <PlanSelection user={effectiveUser} onSkip={() => navigate(fallbackRoute)} />)}
-            />
-            <Route
-              path="/support"
-              element={renderProtectedRoute('support', <SupportPage user={effectiveUser} onBack={() => navigate(fallbackRoute)} />)}
-            />
-            <Route
-              path="/onboarding-stats"
-              element={renderProtectedRoute('onboarding-stats', <OnboardingStats onBack={() => navigate(fallbackRoute)} />)}
-            />
-            <Route path="/reports" element={renderProtectedRoute('reports', <ReportsPage />)} />
-            <Route path="/alerts" element={renderProtectedRoute('alerts', <AlertsPage />)} />
-            <Route path="/api-access" element={renderProtectedRoute('api-access', <ApiAccessPage />)} />
-            <Route path="*" element={<Navigate to={fallbackRoute} replace />} />
-          </Routes>
+          <div className="mf-main-content">
+            <Routes>
+              <Route path="/dashboard" element={renderProtectedRoute('dashboard', <Dashboard />)} />
+              <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />
+              <Route path="/analytics" element={renderProtectedRoute('analytics', <Analytics />)} />
+              <Route path="/analytics-pro" element={renderProtectedRoute('analytics-pro', <AnalyticsPro />)} />
+              <Route path="/backtest" element={renderProtectedRoute('backtest', <Backtest />)} />
+              <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />
+              <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
+              <Route path="/psychology" element={renderProtectedRoute('psychology', <Psychology />)} />
+              <Route path="/ai-chat" element={renderProtectedRoute('ai-chat', <AIChat />)} />
+              <Route path="/broker-connect" element={renderProtectedRoute('broker-connect', <BrokerConnect />)} />
+              <Route
+                path="/account-settings"
+                element={renderProtectedRoute('account-settings', <AccountSettings user={effectiveUser} onBack={() => navigate(fallbackRoute)} />)}
+              />
+              <Route
+                path="/subscription"
+                element={renderProtectedRoute('subscription', <PlanSelection user={effectiveUser} onSkip={() => navigate(fallbackRoute)} />)}
+              />
+              <Route
+                path="/support"
+                element={renderProtectedRoute('support', <SupportPage user={effectiveUser} onBack={() => navigate(fallbackRoute)} />)}
+              />
+              <Route
+                path="/onboarding-stats"
+                element={renderProtectedRoute('onboarding-stats', <OnboardingStats onBack={() => navigate(fallbackRoute)} />)}
+              />
+              <Route path="/reports" element={renderProtectedRoute('reports', <ReportsPage />)} />
+              <Route path="/alerts" element={renderProtectedRoute('alerts', <AlertsPage />)} />
+              <Route path="/api-access" element={renderProtectedRoute('api-access', <ApiAccessPage />)} />
+              <Route path="*" element={<Navigate to={fallbackRoute} replace />} />
+            </Routes>
+          </div>
         </div>
         {hasRouteAccess(plan, 'ai-chat') && <AIChatBot />}
       </div>
