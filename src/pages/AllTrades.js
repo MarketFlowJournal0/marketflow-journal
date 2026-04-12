@@ -1319,9 +1319,6 @@ export default function AllTrades(){
                   <div style={{fontSize:11,color:C.t2,marginTop:4}}>{sort.dir==='asc'?'Ascending':'Descending'}</div>
                 </div>
               </div>
-              <div style={{marginTop:14}}>
-                <FilterBar filters={filters} setFilters={setFilters} trades={trades} onReset={handleReset} compact />
-              </div>
             </div>
           </div>
 
@@ -1380,6 +1377,9 @@ export default function AllTrades(){
               {visibleCols.length} visible columns
             </div>
           </div>
+        </div>
+        <div style={{padding:'12px 18px 0'}}>
+          <FilterBar filters={filters} setFilters={setFilters} trades={trades} onReset={handleReset} compact />
         </div>
         {filtered.length===0?(
           <div style={{padding:'84px 22px',textAlign:'center'}}>
