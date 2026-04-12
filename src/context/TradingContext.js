@@ -81,6 +81,7 @@ export function TradingProvider({ children }) {
         swap:               tradeData.swap        ?? null,
         market_type:        tradeData.marketType  || tradeData.market_type || null,
         time:               tradeData.time        || null,
+        extra:              tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
       };
 
       const { data, error } = await supabase
@@ -323,6 +324,7 @@ function normalizeTradeRecord(trade = {}) {
   const breakEven = trade.break_even ?? trade.breakEven ?? null;
   const trailingStop = trade.trailing_stop ?? trade.trailingStop ?? null;
   const marketType = trade.market_type || trade.marketType || '';
+  const extra = trade.extra && typeof trade.extra === 'object' ? trade.extra : {};
   const risk = entry && stopLoss ? Math.abs(entry - stopLoss) : 0;
   const reward = entry && exit ? Math.abs(exit - entry) : 0;
   const rr = risk > 0 ? reward / risk : 0;
@@ -362,6 +364,7 @@ function normalizeTradeRecord(trade = {}) {
     emotionBefore: trade.emotion_before || trade.emotionBefore || '',
     emotionDuring: trade.emotion_during || trade.emotionDuring || '',
     emotionAfter: trade.emotion_after || trade.emotionAfter || '',
+    extra,
     metrics: {
       ...(trade.metrics || {}),
       rrReel: trade.metrics?.rrReel ?? (rr > 0 ? rr : 0),
@@ -403,6 +406,7 @@ function mapTradeUpdates(tradeData = {}) {
     swap:              tradeData.swap ?? null,
     market_type:       tradeData.marketType || tradeData.market_type || null,
     time:              tradeData.time || null,
+    extra:             tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
   };
 
   return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));

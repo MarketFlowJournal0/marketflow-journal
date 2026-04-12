@@ -58,6 +58,94 @@ const DEFAULT_COLUMNS = [
   { key:'pnl',       label:'P&L',     visible:true, sortable:true, width:100, important:true },
 ];
 
+const COLUMN_STORAGE_KEY='mf_cols_v4';
+const CUSTOM_COLUMN_PREFIX='custom:';
+
+const DEFAULT_STANDARD_COLUMNS=DEFAULT_COLUMNS.map(column=>({ ...column, source:'standard' }));
+
+const slugifyColumnKey=(value='')=>String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||`field_${Date.now()}`;
+const prettifyColumnLabel=(value='')=>String(value).replace(/[_-]+/g,' ').replace(/\b\w/g,char=>char.toUpperCase()).trim()||'Custom column';
+const isCustomColumnKey=(key='')=>String(key).startsWith(CUSTOM_COLUMN_PREFIX);
+const getCustomFieldKey=(columnOrKey='')=>{
+  if(typeof columnOrKey==='object'&&columnOrKey) return columnOrKey.fieldKey||String(columnOrKey.key||'').replace(CUSTOM_COLUMN_PREFIX,'');
+  return String(columnOrKey).replace(CUSTOM_COLUMN_PREFIX,'');
+};
+const createCustomColumn=(label,dataType='text',visible=true)=>{const fieldKey=slugifyColumnKey(label);return{key:`${CUSTOM_COLUMN_PREFIX}${fieldKey}`,fieldKey,label:prettifyColumnLabel(label),visible,sortable:true,width:140,source:'custom',dataType};};
+const getTradeExtraValue=(trade,fieldKey='')=>{
+  if(!fieldKey) return '';
+  const extra=trade?.extra&&typeof trade.extra==='object'?trade.extra:{};
+  if(extra[fieldKey]!=null&&extra[fieldKey]!=='') return extra[fieldKey];
+  const looseKey=Object.keys(extra).find(key=>slugifyColumnKey(key)===fieldKey);
+  if(looseKey) return extra[looseKey];
+  return trade?.[fieldKey]??'';
+};
+const normalizeStoredColumns=(storedColumns=[])=>{
+  const savedByKey=new Map((Array.isArray(storedColumns)?storedColumns:[]).map(column=>[column.key,column]));
+  const standard=DEFAULT_STANDARD_COLUMNS.map(column=>savedByKey.has(column.key)?{...column,...savedByKey.get(column.key),source:'standard'}:column);
+  const custom=(Array.isArray(storedColumns)?storedColumns:[])
+    .filter(column=>isCustomColumnKey(column.key))
+    .map(column=>{
+      const base=createCustomColumn(column.label||column.fieldKey||column.key.replace(CUSTOM_COLUMN_PREFIX,''),column.dataType||'text',column.visible!==false);
+      return {...base,...column,source:'custom',fieldKey:column.fieldKey||getCustomFieldKey(column.key)};
+    });
+  return [...standard,...custom];
+};
+const loadColumns=()=>{
+  try{
+    const raw=localStorage.getItem(COLUMN_STORAGE_KEY)||localStorage.getItem('mf_cols_v3');
+    if(!raw) return DEFAULT_STANDARD_COLUMNS;
+    return normalizeStoredColumns(JSON.parse(raw));
+  }catch{
+    return DEFAULT_STANDARD_COLUMNS;
+  }
+};
+const upsertCustomColumns=(columns,nextColumns=[])=>{
+  const existingKeys=new Set(columns.filter(column=>isCustomColumnKey(column.key)).map(column=>column.fieldKey||getCustomFieldKey(column.key)));
+  const created=(nextColumns||[])
+    .map(column=>{
+      const label=column.label||column.fieldKey||'Custom column';
+      const fieldKey=column.fieldKey||slugifyColumnKey(label);
+      const dataType=column.dataType||'text';
+      return { ...createCustomColumn(label,dataType,column.visible!==false), fieldKey, label:prettifyColumnLabel(label), dataType };
+    })
+    .filter(column=>!existingKeys.has(column.fieldKey));
+  return created.length?[...columns,...created]:columns;
+};
+const moveColumn=(columns,key,direction)=>{
+  const index=columns.findIndex(column=>column.key===key);
+  if(index===-1) return columns;
+  const target=index+direction;
+  if(target<0||target>=columns.length) return columns;
+  const next=[...columns];
+  const [column]=next.splice(index,1);
+  next.splice(target,0,column);
+  return next;
+};
+const cleanExtraValues=(extra={})=>Object.fromEntries(Object.entries(extra||{}).filter(([,value])=>value!==''&&value!=null));
+const createEmptyTradeForm=(customColumns=[])=>({
+  date:new Date().toISOString().split('T')[0],
+  time:new Date().toTimeString().slice(0,5),
+  symbol:'',
+  type:'Long',
+  entry:'',
+  exit:'',
+  pnl:'',
+  session:'NY',
+  bias:'Bullish',
+  newsImpact:'Low',
+  sl:'',
+  tp:'',
+  setup:'',
+  psychologyScore:80,
+  notes:'',
+  extra:(customColumns||[]).reduce((accumulator,column)=>({...accumulator,[getCustomFieldKey(column)]:''}),{}),
+});
+const mergeCustomColumnsWithExtra=(customColumns=[],extra={})=>{
+  const map=new Map((customColumns||[]).map(column=>[getCustomFieldKey(column),{...column,fieldKey:getCustomFieldKey(column),label:column.label||prettifyColumnLabel(getCustomFieldKey(column)),dataType:column.dataType||'text'}]));
+  Object.keys(extra||{}).forEach(key=>{if(!map.has(key)) map.set(key,{...createCustomColumn(key,'text',false),fieldKey:key,label:prettifyColumnLabel(key),dataType:'text'});});
+  return Array.from(map.values());
+};
+
 const fadeInUp = {
   hidden:{ opacity:0, y:20, scale:0.97 },
   visible:(i=0)=>({ opacity:1, y:0, scale:1, transition:{ delay:i*0.04, duration:0.5, ease:[0.22,1,0.36,1] } })
@@ -106,6 +194,11 @@ const sortTrades=(trades,key,dir)=>{
   return[...trades].sort((a,b)=>{
     // Compatibility Supabase fields
     const getVal=(t,k)=>{
+      if(isCustomColumnKey(k)){
+        const raw=getTradeExtraValue(t,getCustomFieldKey(k));
+        const numeric=parseFloat(raw);
+        return raw!==''&&raw!=null&&Number.isFinite(numeric)?numeric:String(raw||'');
+      }
       if(k==='pnl') return parseFloat(t.profit_loss??t.pnl??0)||0;
       if(k==='date') return new Date(t.open_date||t.date||'').getTime();
       if(k==='symbol') return t.symbol||'';
@@ -153,6 +246,7 @@ const toTradeFormData=(trade={})=>({
   marketType:trade.marketType??trade.market_type??'',
   newsImpact:trade.newsImpact??trade.news_impact??'Low',
   psychologyScore:trade.psychologyScore??trade.psychology_score??80,
+  extra:trade.extra&&typeof trade.extra==='object'?trade.extra:{},
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -305,7 +399,14 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
       case 'setup':return trade.setup?<Tag label={trade.setup} color={C.purple} bg="rgba(167,139,250,0.1)"/>:<span style={{color:C.t3}}>—</span>;
       case 'psychology':{const s=psychology;if(s==null)return<span style={{color:C.t3}}>—</span>;return<Tag label={s} color={s>=80?C.green:s>=60?C.warn:C.danger} bg={s>=80?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':s>=60?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)'}/>;}
       case 'pnl':return(<div><div style={{color:isWin?C.green:C.danger,fontSize:13,fontWeight:900,fontFamily:'monospace',letterSpacing:'-0.02em'}}>{fmtPnl(pnl)}</div>{cumulativePnl!=null&&(<div style={{color:C.t3,fontSize:9.5,fontWeight:700,marginTop:3}}>Running {fmtPnl(cumulativePnl)}</div>)}</div>);
-      default:return<span style={{color:C.t3,fontSize:11}}>—</span>;
+      default:
+        if(isCustomColumnKey(key)){
+          const value=getTradeExtraValue(trade,getCustomFieldKey(key));
+          if(value==null||value==='') return<span style={{color:C.t3,fontSize:11}}>—</span>;
+          const numeric=parseFloat(value);
+          return <span style={{color:C.t1,fontSize:12,fontFamily:Number.isFinite(numeric)?'monospace':'inherit'}}>{String(value)}</span>;
+        }
+        return<span style={{color:C.t3,fontSize:11}}>—</span>;
     }
   };
   return(<motion.tr initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.15}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClickDetail} onDoubleClick={()=>onDoubleClickEdit(trade)} style={{backgroundColor:rowBg,borderLeft:`2px solid ${isSelected?C.cyan:isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.14)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.14)'}`,cursor:'pointer',transition:'all 0.12s ease'}}>{cols.map(col=>(<td key={col.key} onClick={col.key==='select'?(e)=>{e.stopPropagation();onSelect(trade.id);}:undefined} style={{padding:'12px 14px',whiteSpace:'nowrap',borderBottom:'1px solid rgba(255,255,255,0.05)',verticalAlign:'middle'}}>{col.key==='select'?<input type="checkbox" checked={isSelected} onChange={()=>onSelect(trade.id)} onClick={e=>e.stopPropagation()} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:cell(col.key)}</td>))}</motion.tr>);
@@ -320,6 +421,24 @@ const Pagination=({page,total,perPage,onPage,onPerPage})=>{
 // ══════════════════════════════════════════════════════════════════════════════
 // 🎯 TRADE DETAIL PANEL
 // ══════════════════════════════════════════════════════════════════════════════
+const ColumnStudioModal=({isOpen,onClose,cols,onChange})=>{
+  const [label,setLabel]=useState('');
+  const [type,setType]=useState('text');
+  if(!isOpen) return null;
+  const customCount=cols.filter(column=>isCustomColumnKey(column.key)).length;
+  const addColumn=()=>{
+    const cleanLabel=label.trim();
+    if(!cleanLabel){toast.error('Add a column name first');return;}
+    const next=upsertCustomColumns(cols,[{label:cleanLabel,dataType:type}]);
+    if(next===cols){toast.error('This column already exists');return;}
+    onChange(next);
+    setLabel('');
+    setType('text');
+    toast.success('Custom column added');
+  };
+  return(<AnimatePresence><motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(7,11,19,0.78)',backdropFilter:'blur(8px)',zIndex:420}}/><motion.div initial={{opacity:0,y:24,scale:0.98}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:24,scale:0.98}} transition={{duration:0.2}} style={{position:'fixed',inset:0,zIndex:421,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}><div onClick={event=>event.stopPropagation()} style={{width:'min(980px,100%)',maxHeight:'88vh',overflow:'hidden',borderRadius:26,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.98), rgba(8,13,22,0.98))',boxShadow:'0 30px 90px rgba(0,0,0,0.44)',display:'flex',flexDirection:'column'}}><div style={{padding:'22px 24px 18px',borderBottom:`1px solid ${C.brd}`,display:'flex',justifyContent:'space-between',gap:16,alignItems:'flex-start'}}><div><div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Columns</div><div style={{marginTop:6,fontSize:28,fontWeight:900,letterSpacing:'-0.03em',color:C.t1}}>Ledger column studio</div><div style={{marginTop:8,fontSize:13,color:C.t2}}>{cols.filter(column=>column.visible).length} visible / {customCount} custom</div></div><GlassBtn onClick={onClose}>Close</GlassBtn></div><div style={{padding:24,overflowY:'auto',display:'grid',gridTemplateColumns:'minmax(320px,0.8fr) minmax(0,1.2fr)',gap:18}}><div style={{padding:18,borderRadius:22,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}><div style={{fontSize:11,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Add a custom column</div><div style={{marginTop:14,display:'grid',gap:10}}><input value={label} onChange={event=>setLabel(event.target.value)} placeholder="Example: Grade, Playbook note, HTF bias" style={{width:'100%',padding:'12px 14px',borderRadius:14,border:`1px solid ${C.brd}`,background:C.bgDeep,color:C.t1,fontSize:13,outline:'none',fontFamily:'inherit'}}/><select value={type} onChange={event=>setType(event.target.value)} style={{width:'100%',padding:'12px 14px',borderRadius:14,border:`1px solid ${C.brd}`,background:C.bgDeep,color:C.t1,fontSize:13,outline:'none',fontFamily:'inherit'}}><option value="text">Text</option><option value="number">Number</option></select><GlassBtn variant="primary" onClick={addColumn} fullWidth>Add column</GlassBtn></div><div style={{marginTop:16,padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:12,color:C.t2,lineHeight:1.7}}>New columns appear in the review table and inside the add trade form. Hidden columns stay available until you delete them.</div></div><div style={{padding:18,borderRadius:22,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}><div style={{fontSize:11,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:14}}>Active structure</div><div style={{display:'grid',gap:10}}>{cols.map((column,index)=>(<div key={column.key} style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto auto auto',gap:10,alignItems:'center',padding:'12px 14px',borderRadius:16,border:`1px solid ${column.visible?shade(C.cyan,'16'):C.brd}`,background:column.visible?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.04)':'rgba(255,255,255,0.02)'}}><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.t1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{column.label||prettifyColumnLabel(column.key)}</div><div style={{marginTop:4,fontSize:11,color:C.t3}}>{column.source==='custom'?'Custom column':'Core column'}</div></div><button type="button" onClick={()=>onChange(cols.map(item=>item.key===column.key?{...item,visible:!item.visible}:item))} style={{padding:'8px 10px',borderRadius:10,border:`1px solid ${column.visible?shade(C.cyan,'24'):C.brd}`,background:column.visible?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)':'rgba(255,255,255,0.02)',color:column.visible?C.cyan:C.t2,fontSize:11,fontWeight:800,cursor:'pointer'}}>{column.visible?'Visible':'Hidden'}</button><div style={{display:'flex',gap:6}}><button type="button" onClick={()=>onChange(moveColumn(cols,column.key,-1))} disabled={index===0} style={{width:34,height:34,borderRadius:10,border:`1px solid ${C.brd}`,background:C.bgDeep,color:index===0?C.t3:C.t1,cursor:index===0?'not-allowed':'pointer'}}>↑</button><button type="button" onClick={()=>onChange(moveColumn(cols,column.key,1))} disabled={index===cols.length-1} style={{width:34,height:34,borderRadius:10,border:`1px solid ${C.brd}`,background:C.bgDeep,color:index===cols.length-1?C.t3:C.t1,cursor:index===cols.length-1?'not-allowed':'pointer'}}>↓</button></div>{column.source==='custom'?<button type="button" onClick={()=>onChange(cols.filter(item=>item.key!==column.key))} style={{padding:'8px 10px',borderRadius:10,border:`1px solid ${shade(C.danger,'24')}`,background:'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)',color:C.danger,fontSize:11,fontWeight:800,cursor:'pointer'}}>Delete</button>:<div style={{fontSize:11,color:C.t3,fontWeight:700,textAlign:'right'}}>{column.locked?'Locked':'Core'}</div>}</div>))}</div></div></div></div></motion.div></AnimatePresence>);
+};
+
 const PBar=({label,value,max=100,color})=>(<div style={{marginBottom:10}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>{label}</span><span style={{fontSize:10,fontWeight:800,color}}>{value}</span></div><div style={{height:4,borderRadius:2,backgroundColor:C.bgDeep,overflow:'hidden'}}><motion.div initial={{width:0}} animate={{width:`${Math.min(100,(value/max)*100)}%`}} transition={{duration:0.8,ease:[0.22,1,0.36,1]}} style={{height:'100%',borderRadius:2,background:color,boxShadow:`0 0 8px ${shade(color,'50')}`}}/></div></div>);
 const SecTitle=({title,color=C.cyan})=>(<div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,marginTop:4}}><span style={{fontSize:10,fontWeight:800,color:C.t3,letterSpacing:'1.5px',textTransform:'uppercase'}}>{title}</span><div style={{flex:1,height:1,background:`linear-gradient(90deg,${shade(color,'40')},transparent)`}}/></div>);
 const MRow=({label,value,color,sub})=>(<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:`1px solid ${C.brd}`}}><div style={{display:'flex',alignItems:'center',gap:7}}><div><div style={{fontSize:10,color:C.t3,fontWeight:600,letterSpacing:'0.4px'}}>{label}</div>{sub&&<div style={{fontSize:9,color:C.t4,marginTop:1}}>{sub}</div>}</div></div><div style={{fontSize:13,fontWeight:800,color:color||C.t1,fontFamily:'monospace'}}>{value}</div></div>);
@@ -1159,15 +1278,25 @@ const ImportModal=({isOpen,onClose,onImport})=>{
 // ══════════════════════════════════════════════════════════════════════════════
 // ✏️ TRADE FORM MODAL
 // ══════════════════════════════════════════════════════════════════════════════
-const TradeFormModal=({isOpen,onClose,onSave,trade=null})=>{
+const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
   const isEdit=!!trade;
-  const[form,setForm]=useState(trade||{date:new Date().toISOString().split('T')[0],time:new Date().toTimeString().slice(0,5),symbol:'',type:'Long',entry:'',exit:'',pnl:'',session:'NY',bias:'Bullish',newsImpact:'Low',sl:'',tp:'',setup:'',psychologyScore:80,notes:''});
+  const[form,setForm]=useState(createEmptyTradeForm(customColumns));
   const[saving,setSaving]=useState(false);const[errors,setErrors]=useState({});
-  useEffect(()=>{if(trade){setForm(trade);setErrors({});}},[trade]);
+  useEffect(()=>{
+    const base=createEmptyTradeForm(customColumns);
+    if(trade){
+      const prepared=toTradeFormData(trade);
+      setForm({...base,...prepared,extra:{...base.extra,...(prepared.extra||{})}});
+    }else{
+      setForm(base);
+    }
+    setErrors({});
+  },[trade,isOpen,customColumns]);
+  const mergedCustomColumns=useMemo(()=>mergeCustomColumnsWithExtra(customColumns,form.extra),[customColumns,form.extra]);
   const calcRR=d=>{const[en,ex,sl]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.sl)];if(!en||!ex||!sl||isNaN(en)||isNaN(ex)||isNaN(sl))return'0.00';const risk=Math.abs(en-sl),reward=Math.abs(ex-en);return risk>0?(reward/risk).toFixed(2):'0.00';};
   const calcTPP=d=>{const[en,ex,tp]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.tp)];if(!en||!ex||!tp||isNaN(en)||isNaN(ex)||isNaN(tp))return'0.0';const target=Math.abs(tp-en);return target>0?((Math.abs(ex-en)/target)*100).toFixed(1):'0.0';};
   const validate=()=>{const errs={};if(!form.symbol?.trim())errs.symbol='Required';if(!form.entry||isNaN(parseFloat(form.entry)))errs.entry='Invalid price';if(!form.exit||isNaN(parseFloat(form.exit)))errs.exit='Invalid price';if(!form.pnl||isNaN(parseFloat(form.pnl)))errs.pnl='Invalid amount';setErrors(errs);return Object.keys(errs).length===0;};
-  const handleSubmit=()=>{if(!validate()){toast.error('Check the highlighted fields');return;}setSaving(true);setTimeout(()=>{onSave({...form,id:form.id||`manual_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,win:parseFloat(form.pnl)>0,metrics:{rrReel:calcRR(form),tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});toast.success(isEdit?'Trade updated':'Trade added');setSaving(false);setErrors({});onClose();},450);};
+  const handleSubmit=()=>{if(!validate()){toast.error('Check the highlighted fields');return;}setSaving(true);setTimeout(()=>{onSave({...form,extra:cleanExtraValues(form.extra),id:form.id||`manual_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,win:parseFloat(form.pnl)>0,metrics:{rrReel:calcRR(form),tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});toast.success(isEdit?'Trade updated':'Trade added');setSaving(false);setErrors({});onClose();},450);};
   if(!isOpen)return null;
   const iStyle={width:'100%',padding:'8px 11px',borderRadius:7,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit'};
   const lStyle={display:'block',fontSize:10,fontWeight:600,color:C.t3,marginBottom:5};
@@ -1196,6 +1325,19 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null})=>{
                 <input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/>
               </div>
             </div>
+            {mergedCustomColumns.length>0&&(
+              <div style={{marginTop:18}}>
+                <div style={{fontSize:10,fontWeight:800,color:C.t3,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:10}}>Custom columns</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
+                  {mergedCustomColumns.map(column=>(
+                    <div key={column.key||column.fieldKey}>
+                      <label style={lStyle}>{column.label}</label>
+                      <input type={column.dataType==='number'?'number':'text'} value={form.extra?.[column.fieldKey]??''} onChange={event=>setForm(current=>({...current,extra:{...(current.extra||{}),[column.fieldKey]:event.target.value}}))} style={iStyle}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div style={{marginTop:14}}>
               <label style={lStyle}>Notes</label>
               <textarea placeholder="Context, emotions, observations..." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:70}}/>
@@ -1230,16 +1372,18 @@ export default function AllTrades(){
   const[filters,setFilters]=useState({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});
   const[sort,setSort]=useState({key:'date',dir:'desc'});
   const[selected,setSelected]=useState(new Set());
-  const[cols,setCols]=useState(()=>{try{const s=localStorage.getItem('mf_cols_v3');return s?JSON.parse(s):DEFAULT_COLUMNS;}catch{return DEFAULT_COLUMNS;}});
+  const[cols,setCols]=useState(loadColumns);
   const[page,setPage]=useState(1);const[perPage,setPerPage]=useState(25);
   const[modalImport,setModalImport]=useState(false);
+  const[modalColumns,setModalColumns]=useState(false);
   const[modalForm,setModalForm]=useState(false);const[editTrade,setEditTrade]=useState(null);
   const[detailTrade,setDetailTrade]=useState(null);
 
-  useEffect(()=>{try{localStorage.setItem('mf_cols_v3',JSON.stringify(cols));}catch{}},[cols]);
+  useEffect(()=>{try{localStorage.setItem(COLUMN_STORAGE_KEY,JSON.stringify(cols));}catch{}},[cols]);
   useEffect(()=>{setPage(1);},[filters,sort]);
 
   const visibleCols=useMemo(()=>cols.filter(c=>c.visible),[cols]);
+  const customColumns=useMemo(()=>cols.filter(column=>isCustomColumnKey(column.key)),[cols]);
   const filtered=useMemo(()=>filterTrades(trades,filters),[trades,filters]);
   const sorted=useMemo(()=>sortTrades(filtered,sort.key,sort.dir),[filtered,sort]);
   const totalPages=Math.max(1,Math.ceil(sorted.length/perPage));
@@ -1268,6 +1412,7 @@ export default function AllTrades(){
   const handleSelectAll=useCallback(()=>{setSelected(prev=>{const ids=new Set(paginated.map(t=>t.id));const allSel=paginated.every(t=>prev.has(t.id));if(allSel){const n=new Set(prev);ids.forEach(id=>n.delete(id));return n;}return new Set([...prev,...ids]);});},[paginated]);
   const handleDeleteSelected=useCallback(()=>{if(!selected.size)return;if(!window.confirm(`Delete ${selected.size} selected trade${selected.size>1?'s':''}?`))return;const id=toast.loading('Deleting selected trades');setTimeout(()=>{selected.forEach(tid=>deleteTrade(tid));toast.dismiss(id);toast.success(`${selected.size} trade${selected.size>1?'s':''} deleted`);setSelected(new Set());},350);},[selected,deleteTrade]);
   const handleImport=useCallback((trade)=>addTrade(trade),[addTrade]);
+  const handleRegisterCustomColumns=useCallback((definitions)=>setCols(current=>upsertCustomColumns(current,definitions)),[]);
 
   const handleSave=useCallback(t=>{if(t.id&&trades.find(x=>x.id===t.id))updateTrade(t.id,t);else addTrade(t);setEditTrade(null);},[trades,updateTrade,addTrade]);
   const handleEdit=useCallback(t=>{setEditTrade(toTradeFormData(t));setModalForm(true);},[]);
@@ -1293,6 +1438,7 @@ export default function AllTrades(){
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                   <GlassBtn onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn>
                   <GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>
+                  <GlassBtn onClick={()=>setModalColumns(true)}>Columns</GlassBtn>
                   <GlassBtn variant="primary" onClick={handleCreate}>Add trade</GlassBtn>
                 </div>
               </div>
@@ -1300,6 +1446,7 @@ export default function AllTrades(){
                 {[
                   `${filtered.length}/${trades.length} trades`,
                   `${symbolCount} symbols`,
+                  customColumns.length?`${customColumns.length} custom columns`:null,
                   activeFilterCount ? `${activeFilterCount} filters` : null,
                   topSetup !== 'Unassigned' ? topSetup : null,
                 ].filter(Boolean).map(item=>(
@@ -1378,9 +1525,9 @@ export default function AllTrades(){
             <div style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2}}>
               Sorted by <span style={{color:C.t1,fontWeight:800}}>{activeSortLabel}</span> / {sort.dir==='asc'?'ASC':'DESC'}
             </div>
-            <div style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2}}>
+            <button type="button" onClick={()=>setModalColumns(true)} style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2,cursor:'pointer',fontFamily:'inherit'}}>
               {visibleCols.length} visible columns
-            </div>
+            </button>
           </div>
         </div>
         <div style={{padding:'12px 18px 0'}}>
@@ -1419,8 +1566,9 @@ export default function AllTrades(){
 
       {filtered.length>0&&(<Pagination page={page} total={filtered.length} perPage={perPage} onPage={p=>setPage(Math.max(1,Math.min(p,totalPages)))} onPerPage={n=>{setPerPage(n);setPage(1);}}/>)}
 
-      <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport}/>
-      <TradeFormModal isOpen={modalForm}   onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade}/>
+      <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport} onRegisterCustomColumns={handleRegisterCustomColumns}/>
+      <ColumnStudioModal isOpen={modalColumns} onClose={()=>setModalColumns(false)} cols={cols} onChange={setCols}/>
+      <TradeFormModal isOpen={modalForm} onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade} customColumns={customColumns}/>
       <TradeDetailPanel trade={detailTrade} onClose={()=>setDetailTrade(null)} onEdit={t=>{handleEdit(t);setDetailTrade(null);}} onDelete={id=>{deleteTrade(id);setDetailTrade(null);toast.success('Trade deleted');}}/>
       </div>
     </div>

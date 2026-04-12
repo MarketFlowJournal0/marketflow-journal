@@ -20,23 +20,18 @@ const UI = {
 };
 
 const FIELD_OPTIONS = [
+  ['symbol', 'Pair'],
   ['_ignore', 'Ignore'],
   ['date', 'Date'],
-  ['time', 'Time'],
-  ['symbol', 'Symbol'],
   ['type', 'Direction'],
-  ['session', 'Session'],
-  ['bias', 'Bias'],
   ['entry', 'Entry'],
   ['exit', 'Exit'],
-  ['sl', 'Stop loss'],
-  ['tp', 'Take profit'],
   ['pnl', 'P&L'],
   ['size', 'Size'],
+  ['session', 'Session'],
   ['setup', 'Setup'],
   ['notes', 'Notes'],
-  ['commission', 'Commission'],
-  ['psychologyScore', 'Psychology'],
+  ['_custom', 'Custom column'],
 ];
 
 const FIELD_ALIASES = {
@@ -61,6 +56,7 @@ const FIELD_ALIASES = {
 const SOURCE_CARDS = ['CSV / TSV', 'Excel', 'Notion', 'Broker export', 'Journal app', 'JSON'];
 
 const normalizeHeader = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const slugifyFieldKey = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || `field_${Date.now()}`;
 
 const detectDelimiter = (text) => {
   const sample = text.split(/\r?\n/).slice(0, 5).join('\n');
@@ -117,7 +113,7 @@ const autoMapHeaders = (headers) => headers.reduce((mapping, header) => {
   const match = Object.entries(FIELD_ALIASES).find(([, aliases]) =>
     aliases.some((alias) => normalized === alias || normalized.includes(alias) || alias.includes(normalized))
   );
-  return { ...mapping, [header]: match?.[0] || '_ignore' };
+  return { ...mapping, [header]: match?.[0] || '_custom' };
 }, {});
 
 const toNumber = (value) => {
@@ -177,7 +173,7 @@ const pillStyle = (active) => ({
   cursor: 'pointer',
 });
 
-export default function TradeImportModal({ isOpen, onClose, onImport }) {
+export default function TradeImportModal({ isOpen, onClose, onImport, onRegisterCustomColumns }) {
   const fileInputRef = useRef(null);
   const [mode, setMode] = useState('upload');
   const [file, setFile] = useState(null);
@@ -237,10 +233,23 @@ export default function TradeImportModal({ isOpen, onClose, onImport }) {
       toast.error('Map a symbol column before importing.');
       return;
     }
+    const customColumns = headers
+      .filter((header) => mapping[header] === '_custom')
+      .map((header) => ({ fieldKey: slugifyFieldKey(header), label: String(header).trim() || 'Custom column', dataType: 'text' }));
+
+    if (customColumns.length) {
+      onRegisterCustomColumns?.(customColumns);
+    }
+
     const normalizedTrades = rows.map((row) => {
       const read = (field) => row[reverse[field]] ?? '';
       const date = toDate(read('date')) || new Date().toISOString().slice(0, 10);
       const symbol = String(read('symbol') || '').trim().toUpperCase();
+      const extra = customColumns.reduce((accumulator, column) => {
+        const raw = row[column.label];
+        if (raw == null || raw === '') return accumulator;
+        return { ...accumulator, [column.fieldKey]: raw };
+      }, {});
       return symbol ? {
         date,
         open_date: date,
@@ -259,8 +268,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport }) {
         lots: toNumber(read('size')),
         setup: String(read('setup') || '').trim(),
         notes: String(read('notes') || '').trim(),
-        commission: toNumber(read('commission')),
-        psychologyScore: toNumber(read('psychologyScore')),
+        extra: Object.keys(extra).length ? extra : null,
       } : null;
     }).filter(Boolean);
     if (!normalizedTrades.length) {
