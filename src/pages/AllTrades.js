@@ -168,42 +168,6 @@ const GlassBtn=({children,onClick,variant='default',disabled,loading,size='md',f
   return(<motion.button onClick={addRipple} disabled={disabled||loading} whileHover={!disabled&&!loading?{scale:1.02,y:-1}:{}} whileTap={!disabled&&!loading?{scale:0.97}:{}} style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,...s,borderRadius:8,background:v.bg,border:`1px solid ${v.border}`,color:v.color,fontWeight:600,cursor:disabled||loading?'not-allowed':'pointer',opacity:disabled?0.5:1,backdropFilter:'blur(10px)',boxShadow:v.shadow,overflow:'hidden',transition:'all 0.25s cubic-bezier(0.4,0,0.2,1)',fontFamily:'inherit',width:fullWidth?'100%':'auto'}}><AnimatePresence>{ripples.map(rpl=>(<motion.span key={rpl.id} initial={{scale:0,opacity:0.5}} animate={{scale:5,opacity:0}} exit={{opacity:0}} transition={{duration:0.7}} style={{position:'absolute',left:rpl.x,top:rpl.y,width:20,height:20,borderRadius:'50%',backgroundColor:variant==='primary'?'rgba(255,255,255,0.35)':C.cyan,pointerEvents:'none',transform:'translate(-50%,-50%)'}}/>))}</AnimatePresence>{variant==='primary'&&(<motion.div animate={{backgroundPosition:['200% 0','-200% 0']}} transition={{duration:6,repeat:Infinity,ease:'linear'}} style={{position:'absolute',inset:0,background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)',backgroundSize:'200% 100%',pointerEvents:'none'}}/>)}{loading&&(<motion.div animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}} style={{width:14,height:14,border:`2px solid ${variant==='primary'?C.bgDeep:C.cyan}`,borderTopColor:'transparent',borderRadius:'50%'}}/>)}{children}</motion.button>);
 };
 
-const StatCard=({label,value,color,sub,index})=>{
-  const[hov,setHov]=useState(false);
-  return(
-    <motion.div
-      variants={fadeInUp}
-      initial="hidden"
-      animate="visible"
-      custom={index}
-      whileHover={{y:-2}}
-      onMouseEnter={()=>setHov(true)}
-      onMouseLeave={()=>setHov(false)}
-      style={{
-        background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',
-        border:`1px solid ${hov ? shade(color,'32') : C.brd}`,
-        borderRadius:18,
-        padding:'15px 16px',
-        position:'relative',
-        overflow:'hidden',
-        minHeight:108,
-        boxShadow:hov?'0 18px 34px rgba(0,0,0,0.22)':'0 12px 24px rgba(0,0,0,0.16)',
-        transition:'all 0.22s ease',
-      }}
-    >
-      <div style={{position:'absolute',inset:0,background:`linear-gradient(145deg,${shade(color,'09')},transparent 58%)`,pointerEvents:'none',opacity:hov?1:0.72}}/>
-      <div style={{position:'relative',zIndex:1}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-          <span style={{color:C.t3,fontSize:9,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>{label}</span>
-          <div style={{width:22,height:2,borderRadius:999,background:color,opacity:0.88}}/>
-        </div>
-        <div style={{fontSize:24,fontWeight:900,color,fontFamily:'monospace',lineHeight:1.05,letterSpacing:'-0.03em'}}>{value}</div>
-        {sub&&<div style={{fontSize:10.5,color:'rgba(139,155,180,0.86)',marginTop:8,lineHeight:1.55}}>{sub}</div>}
-      </div>
-    </motion.div>
-  );
-};
-
 const InfoHint=({text,align='left'})=>{
   const[open,setOpen]=useState(false);
   return(
@@ -260,34 +224,34 @@ const InfoHint=({text,align='left'})=>{
   );
 };
 
-const FilterBar=({filters,setFilters,trades,onReset})=>{
+const FilterBar=({filters,setFilters,trades,onReset,compact=false})=>{
   const symbols=useMemo(()=>[...new Set(trades.map(t=>t.symbol).filter(Boolean))].sort(),[trades]);
   const activeCount=[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length;
-  const iStyle={padding:'10px 12px',borderRadius:12,border:`1px solid ${C.brd}`,backgroundColor:'rgba(6,10,18,0.88)',color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit',cursor:'pointer',minHeight:40};
+  const iStyle={padding:compact?'8px 10px':'10px 12px',borderRadius:compact?10:12,border:`1px solid ${C.brd}`,backgroundColor:'rgba(6,10,18,0.88)',color:C.t1,fontSize:compact?11:12,outline:'none',fontFamily:'inherit',cursor:'pointer',minHeight:compact?36:40};
   const resultFilters=[{id:'all',label:'All'},{id:'wins',label:'Winners'},{id:'losses',label:'Losers'},{id:'long',label:'Long'},{id:'short',label:'Short'}];
   return(
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',border:`1px solid ${C.brd}`,borderRadius:20,padding:'16px 16px 14px',marginBottom:14,boxShadow:'0 18px 34px rgba(0,0,0,0.16)'}}>
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',border:`1px solid ${C.brd}`,borderRadius:compact?18:20,padding:compact?'12px':'16px 16px 14px',marginBottom:compact?0:14,boxShadow:compact?'none':'0 18px 34px rgba(0,0,0,0.16)'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12,flexWrap:'wrap',marginBottom:12}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>Trade filters</div>
           <InfoHint text="Use this bar to search, isolate winners or losers, narrow by session or bias, and review a specific date range."/>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-          {activeCount>0&&<div style={{padding:'8px 10px',borderRadius:999,border:`1px solid ${shade(C.cyan,'24')}`,background:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.cyan}}>{activeCount} active</div>}
+          {activeCount>0&&<div style={{padding:compact?'6px 8px':'8px 10px',borderRadius:999,border:`1px solid ${shade(C.cyan,'24')}`,background:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.cyan}}>{activeCount} active</div>}
           {activeCount>0&&(<GlassBtn size="sm" variant="danger" onClick={onReset}>Clear filters</GlassBtn>)}
         </div>
       </div>
-      <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap',marginBottom:10}}>
+      <div style={{display:'flex',gap:compact?8:10,alignItems:'center',flexWrap:'wrap',marginBottom:compact?8:10}}>
         <input type="text" placeholder="Search symbol, setup, or notes" value={filters.search||''} onChange={e=>setFilters({...filters,search:e.target.value})} style={{...iStyle,flex:'1 1 280px',cursor:'text'}}/>
         <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
           {resultFilters.map(option=>(
-            <button key={option.id} onClick={()=>setFilters({...filters,result:option.id})} style={{minHeight:38,padding:'0 12px',borderRadius:11,border:`1px solid ${filters.result===option.id ? shade(C.cyan,'34') : C.brd}`,background:filters.result===option.id ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.12)' : 'rgba(255,255,255,0.02)',color:filters.result===option.id ? C.cyan : C.t2,fontSize:11,fontWeight:800,letterSpacing:'0.04em',cursor:'pointer'}}>
+            <button key={option.id} onClick={()=>setFilters({...filters,result:option.id})} style={{minHeight:compact?34:38,padding:compact?'0 10px':'0 12px',borderRadius:compact?10:11,border:`1px solid ${filters.result===option.id ? shade(C.cyan,'34') : C.brd}`,background:filters.result===option.id ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.12)' : 'rgba(255,255,255,0.02)',color:filters.result===option.id ? C.cyan : C.t2,fontSize:11,fontWeight:800,letterSpacing:'0.04em',cursor:'pointer'}}>
               {option.label}
             </button>
           ))}
         </div>
       </div>
-      <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+      <div style={{display:'flex',gap:compact?8:10,alignItems:'center',flexWrap:'wrap'}}>
         {symbols.length>0&&(
           <select value={filters.symbol||'all'} onChange={e=>setFilters({...filters,symbol:e.target.value})} style={{...iStyle,minWidth:150}}>
             <option value="all">All symbols</option>
@@ -1355,6 +1319,9 @@ export default function AllTrades(){
                   <div style={{fontSize:11,color:C.t2,marginTop:4}}>{sort.dir==='asc'?'Ascending':'Descending'}</div>
                 </div>
               </div>
+              <div style={{marginTop:14}}>
+                <FilterBar filters={filters} setFilters={setFilters} trades={trades} onReset={handleReset} compact />
+              </div>
             </div>
           </div>
 
@@ -1382,16 +1349,6 @@ export default function AllTrades(){
             </div>
           </div>
         </motion.div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:18}}>
-        <StatCard index={0} label="Filtered P&L" value={fmtPnl(stats.totalPnL)} color={stats.totalPnL>=0?C.green:C.danger} sub={`${stats.total} in scope`}/>
-        <StatCard index={1} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} color={stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger} sub={`${stats.wins}W / ${stats.losses}L`}/>
-        <StatCard index={2} label="Average Trade" value={fmtPnl(averageTrade)} color={averageTrade>=0?C.green:C.danger} sub="per trade"/>
-        <StatCard index={3} label="Average R:R" value={`1:${stats.avgRR}`} color={C.teal} sub="realized"/>
-        <StatCard index={4} label="Profit Factor" value={stats.pf} color={parseFloat(stats.pf)>=2?C.green:parseFloat(stats.pf)>=1.5?C.warn:C.danger} sub="gross win / loss"/>
-        <StatCard index={5} label="Max Drawdown" value={`-${stats.maxDD.toFixed(1)}%`} color={C.danger} sub="in scope"/>
-      </div>
-
-      <FilterBar filters={filters} setFilters={setFilters} trades={trades} onReset={handleReset}/>
 
       <AnimatePresence>
         {selected.size>0&&(
