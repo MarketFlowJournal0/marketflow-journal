@@ -231,17 +231,21 @@ const FilterBar=({filters,setFilters,trades,onReset,compact=false})=>{
   const resultFilters=[{id:'all',label:'All'},{id:'wins',label:'Winners'},{id:'losses',label:'Losers'},{id:'long',label:'Long'},{id:'short',label:'Short'}];
   return(
     <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',border:`1px solid ${C.brd}`,borderRadius:compact?18:20,padding:compact?'12px':'16px 16px 14px',marginBottom:compact?0:14,boxShadow:compact?'none':'0 18px 34px rgba(0,0,0,0.16)'}}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12,flexWrap:'wrap',marginBottom:12}}>
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>Trade filters</div>
-          <InfoHint text="Use this bar to search, isolate winners or losers, narrow by session or bias, and review a specific date range."/>
+      {(!compact || activeCount>0)&&(
+        <div style={{display:'flex',justifyContent:compact?'flex-end':'space-between',alignItems:'flex-start',gap:12,flexWrap:'wrap',marginBottom:12}}>
+          {!compact&&(
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>Trade filters</div>
+              <InfoHint text="Use this bar to search, isolate winners or losers, narrow by session or bias, and review a specific date range."/>
+            </div>
+          )}
+          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            {activeCount>0&&<div style={{padding:compact?'6px 8px':'8px 10px',borderRadius:999,border:`1px solid ${shade(C.cyan,'24')}`,background:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.cyan}}>{activeCount} active</div>}
+            {activeCount>0&&(<GlassBtn size="sm" variant="danger" onClick={onReset}>Clear filters</GlassBtn>)}
+          </div>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-          {activeCount>0&&<div style={{padding:compact?'6px 8px':'8px 10px',borderRadius:999,border:`1px solid ${shade(C.cyan,'24')}`,background:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.cyan}}>{activeCount} active</div>}
-          {activeCount>0&&(<GlassBtn size="sm" variant="danger" onClick={onReset}>Clear filters</GlassBtn>)}
-        </div>
-      </div>
-      <div style={{display:'flex',gap:compact?8:10,alignItems:'center',flexWrap:'wrap',marginBottom:compact?8:10}}>
+      )}
+      <div style={{display:'flex',gap:compact?8:10,alignItems:'center',flexWrap:'wrap',marginBottom:compact?0:10}}>
         <input type="text" placeholder="Search symbol, setup, or notes" value={filters.search||''} onChange={e=>setFilters({...filters,search:e.target.value})} style={{...iStyle,flex:'1 1 280px',cursor:'text'}}/>
         <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
           {resultFilters.map(option=>(
