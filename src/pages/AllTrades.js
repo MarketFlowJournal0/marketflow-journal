@@ -20,6 +20,7 @@ import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 import * as XLSX from 'xlsx';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
+import TradeImportModal from '../components/TradeImportModal';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 🎨 PALETTE
@@ -1418,7 +1419,7 @@ export default function AllTrades(){
 
       {filtered.length>0&&(<Pagination page={page} total={filtered.length} perPage={perPage} onPage={p=>setPage(Math.max(1,Math.min(p,totalPages)))} onPerPage={n=>{setPerPage(n);setPage(1);}}/>)}
 
-      <ImportModal    isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport}/>
+      <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport}/>
       <TradeFormModal isOpen={modalForm}   onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade}/>
       <TradeDetailPanel trade={detailTrade} onClose={()=>setDetailTrade(null)} onEdit={t=>{handleEdit(t);setDetailTrade(null);}} onDelete={id=>{deleteTrade(id);setDetailTrade(null);toast.success('Trade deleted');}}/>
       </div>
