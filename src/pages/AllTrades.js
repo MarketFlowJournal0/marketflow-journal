@@ -57,6 +57,7 @@ const DEFAULT_COLUMNS = [
   { key:'psychology',label:'Psychology',visible:false, sortable:true, width:100  },
   { key:'pnl',       label:'P&L',     visible:true, sortable:true, width:100, important:true },
 ];
+const DEFAULT_FILTERS={search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''};
 
 const COLUMN_STORAGE_KEY='mf_cols_v4';
 const CUSTOM_COLUMN_PREFIX='custom:';
@@ -1367,9 +1368,9 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
 // 🏠 COMPOSANT PRINCIPAL - AllTrades
 // ══════════════════════════════════════════════════════════════════════════════
 export default function AllTrades(){
-  const{trades,deleteTrade,updateTrade,addTrade}=useTradingContext();
+  const{trades,deleteTrade,updateTrade,addTrade,fetchTrades}=useTradingContext();
 
-  const[filters,setFilters]=useState({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});
+  const[filters,setFilters]=useState(DEFAULT_FILTERS);
   const[sort,setSort]=useState({key:'date',dir:'desc'});
   const[selected,setSelected]=useState(new Set());
   const[cols,setCols]=useState(loadColumns);
@@ -1417,7 +1418,14 @@ export default function AllTrades(){
   const handleSave=useCallback(t=>{if(t.id&&trades.find(x=>x.id===t.id))updateTrade(t.id,t);else addTrade(t);setEditTrade(null);},[trades,updateTrade,addTrade]);
   const handleEdit=useCallback(t=>{setEditTrade(toTradeFormData(t));setModalForm(true);},[]);
   const handleCreate=useCallback(()=>{setEditTrade(null);setModalForm(true);},[]);
-  const handleReset=useCallback(()=>{setFilters({search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''});toast.success('Filters cleared');},[]);
+  const handleReset=useCallback(()=>{setFilters(DEFAULT_FILTERS);toast.success('Filters cleared');},[]);
+  const handleImportComplete=useCallback(async ()=>{
+    setFilters(DEFAULT_FILTERS);
+    setSort({key:'date',dir:'desc'});
+    setPage(1);
+    setSelected(new Set());
+    await fetchTrades?.();
+  },[fetchTrades]);
 
   return(
     <div style={{backgroundColor:'transparent',minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'28px 24px 48px',position:'relative',overflow:'hidden'}}>
@@ -1566,7 +1574,7 @@ export default function AllTrades(){
 
       {filtered.length>0&&(<Pagination page={page} total={filtered.length} perPage={perPage} onPage={p=>setPage(Math.max(1,Math.min(p,totalPages)))} onPerPage={n=>{setPerPage(n);setPage(1);}}/>)}
 
-      <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport} onRegisterCustomColumns={handleRegisterCustomColumns}/>
+      <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport} onRegisterCustomColumns={handleRegisterCustomColumns} onImportComplete={handleImportComplete}/>
       <ColumnStudioModal isOpen={modalColumns} onClose={()=>setModalColumns(false)} cols={cols} onChange={setCols}/>
       <TradeFormModal isOpen={modalForm} onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade} customColumns={customColumns}/>
       <TradeDetailPanel trade={detailTrade} onClose={()=>setDetailTrade(null)} onEdit={t=>{handleEdit(t);setDetailTrade(null);}} onDelete={id=>{deleteTrade(id);setDetailTrade(null);toast.success('Trade deleted');}}/>

@@ -31,7 +31,7 @@ const FIELD_OPTIONS = [
   ['session', 'Session'],
   ['setup', 'Setup'],
   ['notes', 'Notes'],
-  ['_custom', 'Custom column'],
+  ['_create', 'Create column'],
 ];
 
 const FIELD_ALIASES = {
@@ -54,6 +54,7 @@ const FIELD_ALIASES = {
 };
 
 const SOURCE_CARDS = ['CSV / TSV', 'Excel', 'Notion', 'Broker export', 'Journal app', 'JSON'];
+const CREATE_COLUMN_VALUE = '_create';
 
 const normalizeHeader = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const slugifyFieldKey = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || `field_${Date.now()}`;
@@ -113,7 +114,7 @@ const autoMapHeaders = (headers) => headers.reduce((mapping, header) => {
   const match = Object.entries(FIELD_ALIASES).find(([, aliases]) =>
     aliases.some((alias) => normalized === alias || normalized.includes(alias) || alias.includes(normalized))
   );
-  return { ...mapping, [header]: match?.[0] || '_custom' };
+  return { ...mapping, [header]: match?.[0] || CREATE_COLUMN_VALUE };
 }, {});
 
 const toNumber = (value) => {
@@ -173,7 +174,7 @@ const pillStyle = (active) => ({
   cursor: 'pointer',
 });
 
-export default function TradeImportModal({ isOpen, onClose, onImport, onRegisterCustomColumns }) {
+export default function TradeImportModal({ isOpen, onClose, onImport, onRegisterCustomColumns, onImportComplete }) {
   const fileInputRef = useRef(null);
   const [mode, setMode] = useState('upload');
   const [file, setFile] = useState(null);
@@ -234,8 +235,8 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onRegister
       return;
     }
     const customColumns = headers
-      .filter((header) => mapping[header] === '_custom')
-      .map((header) => ({ fieldKey: slugifyFieldKey(header), label: String(header).trim() || 'Custom column', dataType: 'text' }));
+      .filter((header) => mapping[header] === CREATE_COLUMN_VALUE)
+      .map((header) => ({ fieldKey: slugifyFieldKey(header), label: String(header).trim() || 'Created column', dataType: 'text' }));
 
     if (customColumns.length) {
       onRegisterCustomColumns?.(customColumns);
@@ -281,6 +282,12 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onRegister
       // Add sequentially so the journal stays in sync with Supabase writes.
       const saved = await onImport(trade);
       if (saved) imported += 1;
+    }
+    if (onImportComplete) {
+      await onImportComplete({
+        imported,
+        skipped: normalizedTrades.length - imported,
+      });
     }
     setImporting(false);
     setResult({ imported, skipped: normalizedTrades.length - imported });
