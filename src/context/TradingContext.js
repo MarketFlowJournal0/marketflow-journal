@@ -385,18 +385,18 @@ function calcPnl(t) {
 }
 
 function buildTradePayload(tradeData = {}, userId) {
-  const pnl = tradeData.pnl != null && tradeData.pnl !== ''
-    ? Number(tradeData.pnl)
-    : tradeData.profit_loss != null && tradeData.profit_loss !== ''
-      ? Number(tradeData.profit_loss)
-      : calcPnl(tradeData);
+  const pnl = resolveProfitLoss(tradeData);
 
   const symbol = tradeData.symbol || tradeData.pair || '';
   const direction = tradeData.direction || tradeData.type || tradeData.dir || 'Long';
-  const entryPrice = Number(tradeData.entry_price ?? tradeData.entry ?? 0);
-  const exitPrice  = Number(tradeData.exit_price  ?? tradeData.exit  ?? 0);
-  const stopLoss   = Number(tradeData.stop_loss   ?? tradeData.sl    ?? 0);
-  const qty        = Number(tradeData.quantity    ?? tradeData.size  ?? tradeData.lots ?? 0);
+  const entryPrice = nullableDatabaseNumber(tradeData.entry_price ?? tradeData.entry);
+  const exitPrice  = nullableDatabaseNumber(tradeData.exit_price  ?? tradeData.exit);
+  const stopLoss   = nullableDatabaseNumber(tradeData.stop_loss   ?? tradeData.sl);
+  const qty        = nullableDatabaseNumber(tradeData.quantity    ?? tradeData.size  ?? tradeData.lots);
+  const lots       = nullableDatabaseNumber(tradeData.lots ?? tradeData.size ?? tradeData.quantity);
+  const psychologyScore = nullableDatabaseNumber(tradeData.psychologyScore ?? tradeData.psychology_score);
+  const commission = nullableDatabaseNumber(tradeData.commission);
+  const swap = nullableDatabaseNumber(tradeData.swap);
   const openDate   = tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0];
 
   return {
@@ -405,8 +405,8 @@ function buildTradePayload(tradeData = {}, userId) {
     direction,
     entry_price:        entryPrice,
     exit_price:         exitPrice,
-    stop_loss:          stopLoss || null,
-    quantity:           qty || null,
+    stop_loss:          stopLoss,
+    quantity:           qty,
     profit_loss:        pnl,
     status:             pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
     open_date:          openDate,
@@ -419,12 +419,12 @@ function buildTradePayload(tradeData = {}, userId) {
     bias:               tradeData.bias        || null,
     setup:              tradeData.setup       || null,
     news_impact:        tradeData.newsImpact  || tradeData.news_impact || null,
-    psychology_score:   tradeData.psychologyScore ?? tradeData.psychology_score ?? null,
-    break_even:         tradeData.breakEven   ?? tradeData.break_even ?? null,
-    trailing_stop:      tradeData.trailingStop ?? tradeData.trailing_stop ?? null,
-    lots:               tradeData.lots        ?? null,
-    commission:         tradeData.commission  ?? null,
-    swap:               tradeData.swap        ?? null,
+    psychology_score:   psychologyScore,
+    break_even:         normalizeOptionalFlag(tradeData.breakEven ?? tradeData.break_even),
+    trailing_stop:      normalizeOptionalFlag(tradeData.trailingStop ?? tradeData.trailing_stop),
+    lots,
+    commission,
+    swap,
     market_type:        tradeData.marketType  || tradeData.market_type || null,
     time:               tradeData.time        || null,
     extra:              tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
@@ -493,19 +493,15 @@ function normalizeTradeRecord(trade = {}) {
 }
 
 function mapTradeUpdates(tradeData = {}) {
-  const pnl = tradeData.pnl != null && tradeData.pnl !== ''
-    ? Number(tradeData.pnl)
-    : tradeData.profit_loss != null && tradeData.profit_loss !== ''
-      ? Number(tradeData.profit_loss)
-      : calcPnl(tradeData);
+  const pnl = resolveProfitLoss(tradeData);
 
   const payload = {
     symbol:            tradeData.symbol || tradeData.pair || '',
     direction:         tradeData.direction || tradeData.type || tradeData.dir || 'Long',
-    entry_price:       nullableNumber(tradeData.entry_price ?? tradeData.entry),
-    exit_price:        nullableNumber(tradeData.exit_price ?? tradeData.exit),
-    stop_loss:         nullableNumber(tradeData.stop_loss ?? tradeData.sl),
-    quantity:          nullableNumber(tradeData.quantity ?? tradeData.size ?? tradeData.lots),
+    entry_price:       nullableDatabaseNumber(tradeData.entry_price ?? tradeData.entry),
+    exit_price:        nullableDatabaseNumber(tradeData.exit_price ?? tradeData.exit),
+    stop_loss:         nullableDatabaseNumber(tradeData.stop_loss ?? tradeData.sl),
+    quantity:          nullableDatabaseNumber(tradeData.quantity ?? tradeData.size ?? tradeData.lots),
     profit_loss:       pnl,
     status:            pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
     open_date:         tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0],
@@ -518,12 +514,12 @@ function mapTradeUpdates(tradeData = {}) {
     bias:              tradeData.bias || null,
     setup:             tradeData.setup || null,
     news_impact:       tradeData.newsImpact || tradeData.news_impact || null,
-    psychology_score:  tradeData.psychologyScore ?? tradeData.psychology_score ?? null,
-    break_even:        tradeData.breakEven ?? tradeData.break_even ?? null,
-    trailing_stop:     tradeData.trailingStop ?? tradeData.trailing_stop ?? null,
-    lots:              tradeData.lots ?? null,
-    commission:        tradeData.commission ?? null,
-    swap:              tradeData.swap ?? null,
+    psychology_score:  nullableDatabaseNumber(tradeData.psychologyScore ?? tradeData.psychology_score),
+    break_even:        normalizeOptionalFlag(tradeData.breakEven ?? tradeData.break_even),
+    trailing_stop:     normalizeOptionalFlag(tradeData.trailingStop ?? tradeData.trailing_stop),
+    lots:              nullableDatabaseNumber(tradeData.lots ?? tradeData.size ?? tradeData.quantity),
+    commission:        nullableDatabaseNumber(tradeData.commission),
+    swap:              nullableDatabaseNumber(tradeData.swap),
     market_type:       tradeData.marketType || tradeData.market_type || null,
     time:              tradeData.time || null,
     extra:             tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
@@ -536,6 +532,34 @@ function nullableNumber(value) {
   if (value === '' || value == null) return null;
   const number = Number(value);
   return Number.isFinite(number) && number !== 0 ? number : null;
+}
+
+function nullableDatabaseNumber(value) {
+  if (value === '' || value == null) return null;
+  if (typeof value === 'string' && !value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normalizeOptionalFlag(value) {
+  if (value === '' || value == null) return null;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return null;
+  if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'n', 'off'].includes(normalized)) return false;
+  return null;
+}
+
+function resolveProfitLoss(tradeData = {}) {
+  const directPnl = nullableDatabaseNumber(tradeData.pnl);
+  if (directPnl != null) return directPnl;
+
+  const existingPnl = nullableDatabaseNumber(tradeData.profit_loss);
+  if (existingPnl != null) return existingPnl;
+
+  return calcPnl(tradeData);
 }
 
 function finiteNumber(value) {
