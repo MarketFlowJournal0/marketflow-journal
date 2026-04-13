@@ -65,12 +65,20 @@ export function TradingProvider({ children }) {
       if (!rows.length) return { imported: 0, skipped: 0, trades: [] };
 
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return { imported: 0, skipped: rows.length, trades: [] };
+      if (!session?.user?.id) {
+        return {
+          imported: 0,
+          skipped: rows.length,
+          trades: [],
+          error: 'No active session found. Sign in again before importing trades.',
+        };
+      }
 
       const payloads = rows.map((tradeData) => buildTradePayload(tradeData, session.user.id));
       const insertedRows = [];
       let imported = 0;
       let skipped = 0;
+      let firstError = '';
       const chunkSize = 50;
 
       for (let index = 0; index < payloads.length; index += chunkSize) {
@@ -85,6 +93,9 @@ export function TradingProvider({ children }) {
         }
 
         console.error('importTrades batch error:', error?.message, error?.details);
+        if (!firstError) {
+          firstError = [error?.message, error?.details].filter(Boolean).join(' - ') || 'The batch import was rejected by the database.';
+        }
 
         for (const payload of chunk) {
           const { data: row, error: rowError } = await supabase
@@ -95,6 +106,9 @@ export function TradingProvider({ children }) {
 
           if (rowError) {
             console.error('importTrades row error:', rowError.message, rowError.details);
+            if (!firstError) {
+              firstError = [rowError.message, rowError.details].filter(Boolean).join(' - ') || 'A trade row could not be saved.';
+            }
             skipped += 1;
             continue;
           }
@@ -119,7 +133,7 @@ export function TradingProvider({ children }) {
         });
       }
 
-      return { imported, skipped, trades: normalizedRows };
+      return { imported, skipped, trades: normalizedRows, error: firstError || null };
     } catch (err) {
       console.error('importTrades exception:', err);
       throw err;

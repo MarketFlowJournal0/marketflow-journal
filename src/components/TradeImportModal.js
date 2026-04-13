@@ -285,11 +285,13 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
     try {
       let imported = 0;
       let skipped = 0;
+      let importError = '';
 
       if (onImportBatch) {
         const result = await onImportBatch(normalizedTrades);
         imported = Number(result?.imported ?? 0);
         skipped = Number(result?.skipped ?? Math.max(0, normalizedTrades.length - imported));
+        importError = String(result?.error || '').trim();
       } else {
         for (const trade of normalizedTrades) {
           const saved = await onImport(trade);
@@ -301,9 +303,15 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
       if (onImportComplete) {
         await onImportComplete({ imported, skipped });
       }
-      setResult({ imported, skipped });
+      setResult({ imported, skipped, error: importError || null });
       setStep(3);
-      toast.success(`${imported} trade(s) imported.`);
+      if (imported > 0) {
+        toast.success(`${imported} trade(s) imported.`);
+      } else if (importError) {
+        toast.error(importError);
+      } else {
+        toast.error('No trade could be saved.');
+      }
     } catch (error) {
       console.error('Import failed:', error);
       toast.error('Import failed. Please try again.');
@@ -404,6 +412,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                 <div style={{ marginTop: 18, fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em' }}>Import complete</div>
                 <div style={{ marginTop: 10, fontSize: 14, color: UI.sub }}>{result?.imported || 0} trade(s) added to the journal.</div>
                 {!!result?.skipped && <div style={{ marginTop: 8, fontSize: 12, color: UI.muted }}>{result.skipped} row(s) could not be saved.</div>}
+                {!!result?.error && <div style={{ marginTop: 10, fontSize: 12, color: UI.danger, lineHeight: 1.6 }}>{result.error}</div>}
                 <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => setStep(1)} style={pillStyle(false)}>Import another file</button>
                   <button type="button" onClick={onClose} style={{ ...pillStyle(true), background: UI.accentSoft }}>Close</button>
