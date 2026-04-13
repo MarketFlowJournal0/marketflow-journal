@@ -174,7 +174,7 @@ const pillStyle = (active) => ({
   cursor: 'pointer',
 });
 
-export default function TradeImportModal({ isOpen, onClose, onImport, onRegisterCustomColumns, onImportComplete }) {
+export default function TradeImportModal({ isOpen, onClose, onImport, onImportBatch, onRegisterCustomColumns, onImportComplete }) {
   const fileInputRef = useRef(null);
   const [mode, setMode] = useState('upload');
   const [file, setFile] = useState(null);
@@ -276,23 +276,40 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onRegister
       toast.error('No valid trades found after mapping.');
       return;
     }
+    if (!onImportBatch && !onImport) {
+      toast.error('Import handler is missing.');
+      return;
+    }
+
     setImporting(true);
-    let imported = 0;
-    for (const trade of normalizedTrades) {
-      // Add sequentially so the journal stays in sync with Supabase writes.
-      const saved = await onImport(trade);
-      if (saved) imported += 1;
+    try {
+      let imported = 0;
+      let skipped = 0;
+
+      if (onImportBatch) {
+        const result = await onImportBatch(normalizedTrades);
+        imported = Number(result?.imported ?? 0);
+        skipped = Number(result?.skipped ?? Math.max(0, normalizedTrades.length - imported));
+      } else {
+        for (const trade of normalizedTrades) {
+          const saved = await onImport(trade);
+          if (saved) imported += 1;
+        }
+        skipped = normalizedTrades.length - imported;
+      }
+
+      if (onImportComplete) {
+        await onImportComplete({ imported, skipped });
+      }
+      setResult({ imported, skipped });
+      setStep(3);
+      toast.success(`${imported} trade(s) imported.`);
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast.error('Import failed. Please try again.');
+    } finally {
+      setImporting(false);
     }
-    if (onImportComplete) {
-      await onImportComplete({
-        imported,
-        skipped: normalizedTrades.length - imported,
-      });
-    }
-    setImporting(false);
-    setResult({ imported, skipped: normalizedTrades.length - imported });
-    setStep(3);
-    toast.success(`${imported} trade(s) imported.`);
   };
 
   if (!isOpen) return null;

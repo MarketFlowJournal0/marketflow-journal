@@ -1368,7 +1368,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
 // 🏠 COMPOSANT PRINCIPAL - AllTrades
 // ══════════════════════════════════════════════════════════════════════════════
 export default function AllTrades(){
-  const{trades,deleteTrade,updateTrade,addTrade,fetchTrades}=useTradingContext();
+  const{trades,deleteTrade,updateTrade,addTrade,importTrades,fetchTrades}=useTradingContext();
 
   const[filters,setFilters]=useState(DEFAULT_FILTERS);
   const[sort,setSort]=useState({key:'date',dir:'desc'});
@@ -1413,6 +1413,7 @@ export default function AllTrades(){
   const handleSelectAll=useCallback(()=>{setSelected(prev=>{const ids=new Set(paginated.map(t=>t.id));const allSel=paginated.every(t=>prev.has(t.id));if(allSel){const n=new Set(prev);ids.forEach(id=>n.delete(id));return n;}return new Set([...prev,...ids]);});},[paginated]);
   const handleDeleteSelected=useCallback(()=>{if(!selected.size)return;if(!window.confirm(`Delete ${selected.size} selected trade${selected.size>1?'s':''}?`))return;const id=toast.loading('Deleting selected trades');setTimeout(()=>{selected.forEach(tid=>deleteTrade(tid));toast.dismiss(id);toast.success(`${selected.size} trade${selected.size>1?'s':''} deleted`);setSelected(new Set());},350);},[selected,deleteTrade]);
   const handleImport=useCallback((trade)=>addTrade(trade),[addTrade]);
+  const handleImportBatch=useCallback((tradeRows)=>importTrades?.(tradeRows),[importTrades]);
   const handleRegisterCustomColumns=useCallback((definitions)=>setCols(current=>upsertCustomColumns(current,definitions)),[]);
 
   const handleSave=useCallback(t=>{if(t.id&&trades.find(x=>x.id===t.id))updateTrade(t.id,t);else addTrade(t);setEditTrade(null);},[trades,updateTrade,addTrade]);
@@ -1574,7 +1575,7 @@ export default function AllTrades(){
 
       {filtered.length>0&&(<Pagination page={page} total={filtered.length} perPage={perPage} onPage={p=>setPage(Math.max(1,Math.min(p,totalPages)))} onPerPage={n=>{setPerPage(n);setPage(1);}}/>)}
 
-      <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport} onRegisterCustomColumns={handleRegisterCustomColumns} onImportComplete={handleImportComplete}/>
+      <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport} onImportBatch={handleImportBatch} onRegisterCustomColumns={handleRegisterCustomColumns} onImportComplete={handleImportComplete}/>
       <ColumnStudioModal isOpen={modalColumns} onClose={()=>setModalColumns(false)} cols={cols} onChange={setCols}/>
       <TradeFormModal isOpen={modalForm} onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade} customColumns={customColumns}/>
       <TradeDetailPanel trade={detailTrade} onClose={()=>setDetailTrade(null)} onEdit={t=>{handleEdit(t);setDetailTrade(null);}} onDelete={id=>{deleteTrade(id);setDetailTrade(null);toast.success('Trade deleted');}}/>

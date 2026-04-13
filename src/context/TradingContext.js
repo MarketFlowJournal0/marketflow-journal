@@ -35,54 +35,7 @@ export function TradingProvider({ children }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) return null;
 
-      const pnl = tradeData.pnl != null
-        ? Number(tradeData.pnl)
-        : tradeData.profit_loss != null
-          ? Number(tradeData.profit_loss)
-          : calcPnl(tradeData);
-
-      const symbol = tradeData.symbol || tradeData.pair || '';
-      const direction = tradeData.direction || tradeData.type || tradeData.dir || 'Long';
-      const entryPrice = Number(tradeData.entry_price ?? tradeData.entry ?? 0);
-      const exitPrice  = Number(tradeData.exit_price  ?? tradeData.exit  ?? 0);
-      const stopLoss   = Number(tradeData.stop_loss   ?? tradeData.sl    ?? 0);
-      const qty        = Number(tradeData.quantity    ?? tradeData.size  ?? tradeData.lots ?? 0);
-      const openDate   = tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0];
-
-      // Determine status
-      const status = pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE';
-
-      const payload = {
-        user_id:            session.user.id,
-        symbol,
-        direction,
-        entry_price:        entryPrice,
-        exit_price:         exitPrice,
-        stop_loss:          stopLoss || null,
-        quantity:           qty || null,
-        profit_loss:        pnl,
-        status,
-        open_date:          openDate,
-        notes:              tradeData.notes || '',
-        session:            tradeData.session || detectSession(),
-        emotion_before:     tradeData.emotion_before  || '',
-        emotion_during:     tradeData.emotion_during  || '',
-        emotion_after:      tradeData.emotion_after   || '',
-        psychological_tags: tradeData.psychological_tags || tradeData.tags || null,
-        // New columns
-        bias:               tradeData.bias        || null,
-        setup:              tradeData.setup       || null,
-        news_impact:        tradeData.newsImpact  || tradeData.news_impact || null,
-        psychology_score:   tradeData.psychologyScore ?? tradeData.psychology_score ?? null,
-        break_even:         tradeData.breakEven   ?? tradeData.break_even ?? null,
-        trailing_stop:      tradeData.trailingStop ?? tradeData.trailing_stop ?? null,
-        lots:               tradeData.lots        ?? null,
-        commission:         tradeData.commission  ?? null,
-        swap:               tradeData.swap        ?? null,
-        market_type:        tradeData.marketType  || tradeData.market_type || null,
-        time:               tradeData.time        || null,
-        extra:              tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
-      };
+      const payload = buildTradePayload(tradeData, session.user.id);
 
       const { data, error } = await supabase
         .from('trades')
@@ -103,6 +56,73 @@ export function TradingProvider({ children }) {
     } catch (err) {
       console.error('addTrade exception:', err);
       return null;
+    }
+  }, []);
+
+  const importTrades = useCallback(async (tradeRows = []) => {
+    try {
+      const rows = Array.isArray(tradeRows) ? tradeRows.filter(Boolean) : [];
+      if (!rows.length) return { imported: 0, skipped: 0, trades: [] };
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return { imported: 0, skipped: rows.length, trades: [] };
+
+      const payloads = rows.map((tradeData) => buildTradePayload(tradeData, session.user.id));
+      const insertedRows = [];
+      let imported = 0;
+      let skipped = 0;
+      const chunkSize = 50;
+
+      for (let index = 0; index < payloads.length; index += chunkSize) {
+        const chunk = payloads.slice(index, index + chunkSize);
+        const { data, error } = await supabase.from('trades').insert(chunk).select();
+
+        if (!error && Array.isArray(data)) {
+          insertedRows.push(...data);
+          imported += data.length;
+          skipped += Math.max(0, chunk.length - data.length);
+          continue;
+        }
+
+        console.error('importTrades batch error:', error?.message, error?.details);
+
+        for (const payload of chunk) {
+          const { data: row, error: rowError } = await supabase
+            .from('trades')
+            .insert([payload])
+            .select()
+            .single();
+
+          if (rowError) {
+            console.error('importTrades row error:', rowError.message, rowError.details);
+            skipped += 1;
+            continue;
+          }
+
+          if (row) {
+            insertedRows.push(row);
+            imported += 1;
+          } else {
+            skipped += 1;
+          }
+        }
+      }
+
+      const normalizedRows = insertedRows
+        .map(normalizeTradeRecord)
+        .sort((a, b) => new Date(b.open_date || 0) - new Date(a.open_date || 0));
+
+      if (normalizedRows.length) {
+        setTrades((prev) => {
+          const incomingIds = new Set(normalizedRows.map((trade) => trade.id));
+          return [...normalizedRows, ...prev.filter((trade) => !incomingIds.has(trade.id))];
+        });
+      }
+
+      return { imported, skipped, trades: normalizedRows };
+    } catch (err) {
+      console.error('importTrades exception:', err);
+      throw err;
     }
   }, []);
 
@@ -273,7 +293,7 @@ export function TradingProvider({ children }) {
   return (
     <TradingContext.Provider value={{
       trades, loading, stats,
-      addTrade, updateTrade, deleteTrade, fetchTrades,
+      addTrade, importTrades, updateTrade, deleteTrade, fetchTrades,
     }}>
       {children}
     </TradingContext.Provider>
@@ -281,7 +301,7 @@ export function TradingProvider({ children }) {
 }
 
 export function useTradingContext() {
-  return useContext(TradingContext) || { trades:[], loading:false, stats:emptyStats(), addTrade:()=>null, updateTrade:()=>null, deleteTrade:()=>null };
+  return useContext(TradingContext) || { trades:[], loading:false, stats:emptyStats(), addTrade:()=>null, importTrades:async()=>({ imported:0, skipped:0, trades:[] }), updateTrade:()=>null, deleteTrade:()=>null };
 }
 
 export function useTrades() {
@@ -309,6 +329,53 @@ function calcPnl(t) {
   const dir    = t.direction || t.type || t.dir || 'Long';
   const diff   = dir === 'Long' ? target - entry : entry - target;
   return Math.round(diff * size * 100000 * 100) / 100;
+}
+
+function buildTradePayload(tradeData = {}, userId) {
+  const pnl = tradeData.pnl != null && tradeData.pnl !== ''
+    ? Number(tradeData.pnl)
+    : tradeData.profit_loss != null && tradeData.profit_loss !== ''
+      ? Number(tradeData.profit_loss)
+      : calcPnl(tradeData);
+
+  const symbol = tradeData.symbol || tradeData.pair || '';
+  const direction = tradeData.direction || tradeData.type || tradeData.dir || 'Long';
+  const entryPrice = Number(tradeData.entry_price ?? tradeData.entry ?? 0);
+  const exitPrice  = Number(tradeData.exit_price  ?? tradeData.exit  ?? 0);
+  const stopLoss   = Number(tradeData.stop_loss   ?? tradeData.sl    ?? 0);
+  const qty        = Number(tradeData.quantity    ?? tradeData.size  ?? tradeData.lots ?? 0);
+  const openDate   = tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0];
+
+  return {
+    user_id:            userId,
+    symbol,
+    direction,
+    entry_price:        entryPrice,
+    exit_price:         exitPrice,
+    stop_loss:          stopLoss || null,
+    quantity:           qty || null,
+    profit_loss:        pnl,
+    status:             pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
+    open_date:          openDate,
+    notes:              tradeData.notes || '',
+    session:            tradeData.session || detectSession(),
+    emotion_before:     tradeData.emotion_before  || '',
+    emotion_during:     tradeData.emotion_during  || '',
+    emotion_after:      tradeData.emotion_after   || '',
+    psychological_tags: tradeData.psychological_tags || tradeData.tags || null,
+    bias:               tradeData.bias        || null,
+    setup:              tradeData.setup       || null,
+    news_impact:        tradeData.newsImpact  || tradeData.news_impact || null,
+    psychology_score:   tradeData.psychologyScore ?? tradeData.psychology_score ?? null,
+    break_even:         tradeData.breakEven   ?? tradeData.break_even ?? null,
+    trailing_stop:      tradeData.trailingStop ?? tradeData.trailing_stop ?? null,
+    lots:               tradeData.lots        ?? null,
+    commission:         tradeData.commission  ?? null,
+    swap:               tradeData.swap        ?? null,
+    market_type:        tradeData.marketType  || tradeData.market_type || null,
+    time:               tradeData.time        || null,
+    extra:              tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
+  };
 }
 
 function normalizeTradeRecord(trade = {}) {
