@@ -1,23 +1,36 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 const TradingContext = createContext(null);
 const IMPORT_BATCH_SIZE = 40;
 const REQUEST_TIMEOUT_MS = 12000;
 
 export function TradingProvider({ children }) {
+  const { session, user } = useAuth();
   const [trades,  setTrades]  = useState([]);
   const [loading, setLoading] = useState(true);
+  const activeUserId = session?.user?.id || user?.id || null;
+
+  const getActiveUserId = useCallback(async () => {
+    if (activeUserId) return activeUserId;
+    const { data } = await runSupabaseRequest(
+      () => supabase.auth.getSession(),
+      5000,
+      'Checking your session took too long.',
+    );
+    return data?.session?.user?.id || null;
+  }, [activeUserId]);
 
   const fetchTrades = useCallback(async ({ preserveOnError = true } = {}) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) { setTrades([]); setLoading(false); return; }
+      const userId = await getActiveUserId();
+      if (!userId) { setTrades([]); setLoading(false); return []; }
       const { data, error } = await runSupabaseRequest(
         (signal) => supabase
           .from('trades')
           .select('*')
-          .eq('user_id', session.user.id)
+          .eq('user_id', userId)
           .order('open_date', { ascending: false })
           .abortSignal(signal),
         REQUEST_TIMEOUT_MS,
@@ -38,26 +51,37 @@ export function TradingProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getActiveUserId]);
 
   useEffect(() => {
+    if (!activeUserId) {
+      setTrades([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const t = setTimeout(() => setLoading(false), 5000);
     fetchTrades({ preserveOnError: false }).finally(() => clearTimeout(t));
-  }, [fetchTrades]);
+  }, [activeUserId, fetchTrades]);
 
   // ── addTrade — maps all fields to Supabase columns ──────
   const addTrade = useCallback(async (tradeData) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return null;
+      const userId = await getActiveUserId();
+      if (!userId) return null;
 
-      const payload = buildTradePayload(tradeData, session.user.id);
+      const payload = buildTradePayload(tradeData, userId);
 
-      const { data, error } = await supabase
-        .from('trades')
-        .insert([payload])
-        .select()
-        .single();
+      const { data, error } = await runSupabaseRequest(
+        (signal) => supabase
+          .from('trades')
+          .insert([payload])
+          .select()
+          .single()
+          .abortSignal(signal),
+        REQUEST_TIMEOUT_MS,
+        'Saving the trade took too long.',
+      );
 
       if (error) {
         console.error('addTrade error:', error.message, error.details);
@@ -73,15 +97,16 @@ export function TradingProvider({ children }) {
       console.error('addTrade exception:', err);
       return null;
     }
-  }, []);
+  }, [getActiveUserId]);
 
-  const importTrades = useCallback(async (tradeRows = []) => {
+  const importTrades = useCallback(async (tradeRows = [], options = {}) => {
     try {
+      const onProgress = typeof options?.onProgress === 'function' ? options.onProgress : null;
       const rows = Array.isArray(tradeRows) ? tradeRows.filter(Boolean) : [];
       if (!rows.length) return { imported: 0, skipped: 0, trades: [] };
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) {
+      const userId = await getActiveUserId();
+      if (!userId) {
         return {
           imported: 0,
           skipped: rows.length,
@@ -90,94 +115,115 @@ export function TradingProvider({ children }) {
         };
       }
 
-      const payloads = rows.map((tradeData) => buildTradePayload(tradeData, session.user.id));
+      const payloads = rows.map((tradeData) => buildTradePayload(tradeData, userId));
       let imported = 0;
       let skipped = 0;
       let firstError = '';
-      const optimisticTrades = [];
-      let previewIndex = 0;
+      const savedTrades = [];
 
-      const insertChunk = async (chunk) => {
-        if (!chunk.length) return { imported: 0, skipped: 0, error: '' };
+      const reportProgress = (stage = 'importing') => {
+        onProgress?.({
+          stage,
+          total: payloads.length,
+          processed: imported + skipped,
+          imported,
+          skipped,
+        });
+      };
 
+      reportProgress('starting');
+
+      const saveSingleTrade = async (payload) => {
         try {
-          const { error } = await runSupabaseRequest(
-            (signal) => supabase.from('trades').insert(chunk).abortSignal(signal),
+          const { data, error } = await runSupabaseRequest(
+            (signal) => supabase
+              .from('trades')
+              .insert([payload])
+              .select()
+              .single()
+              .abortSignal(signal),
             REQUEST_TIMEOUT_MS,
-            'The import request took too long and was stopped.',
+            'A trade row took too long to save.',
           );
-
-          if (!error) {
-            optimisticTrades.push(
-              ...chunk.map((payload) => createImportedTradePreview(payload, previewIndex++)),
-            );
-            return { imported: chunk.length, skipped: 0, error: '' };
+          if (error) {
+            return { saved: null, error: formatSupabaseError(error, 'A trade row could not be saved.') };
           }
-
-          console.error('importTrades batch error:', error?.message, error?.details);
-          const errorMessage = formatSupabaseError(error, 'The batch import was rejected by the database.');
-          if (chunk.length === 1) {
-            return { imported: 0, skipped: 1, error: errorMessage };
-          }
-
-          const midpoint = Math.ceil(chunk.length / 2);
-          const [left, right] = await Promise.all([
-            insertChunk(chunk.slice(0, midpoint)),
-            insertChunk(chunk.slice(midpoint)),
-          ]);
           return {
-            imported: left.imported + right.imported,
-            skipped: left.skipped + right.skipped,
-            error: left.error || right.error || errorMessage,
+            saved: normalizeTradeRecord(data || createImportedTradePreview(payload, imported + skipped)),
+            error: '',
           };
         } catch (error) {
-          console.error('importTrades batch exception:', error);
-          const errorMessage = formatSupabaseError(error, 'The import request timed out before the database answered.');
-          if (chunk.length === 1) {
-            return { imported: 0, skipped: 1, error: errorMessage };
-          }
-
-          const midpoint = Math.ceil(chunk.length / 2);
-          const [left, right] = await Promise.all([
-            insertChunk(chunk.slice(0, midpoint)),
-            insertChunk(chunk.slice(midpoint)),
-          ]);
-          return {
-            imported: left.imported + right.imported,
-            skipped: left.skipped + right.skipped,
-            error: left.error || right.error || errorMessage,
-          };
+          return { saved: null, error: formatSupabaseError(error, 'A trade row could not be saved.') };
         }
       };
 
       for (let index = 0; index < payloads.length; index += IMPORT_BATCH_SIZE) {
         const chunk = payloads.slice(index, index + IMPORT_BATCH_SIZE);
-        const chunkResult = await insertChunk(chunk);
-        imported += chunkResult.imported;
-        skipped += chunkResult.skipped;
-        if (!firstError && chunkResult.error) {
-          firstError = chunkResult.error;
+        try {
+          const { data, error } = await runSupabaseRequest(
+            (signal) => supabase
+              .from('trades')
+              .insert(chunk)
+              .select('*')
+              .abortSignal(signal),
+            REQUEST_TIMEOUT_MS,
+            'The import batch took too long and was stopped.',
+          );
+
+          if (!error) {
+            const normalizedBatch = (data || chunk).map((row, batchIndex) =>
+              normalizeTradeRecord(row || createImportedTradePreview(chunk[batchIndex], imported + skipped + batchIndex))
+            );
+            savedTrades.push(...normalizedBatch);
+            imported += chunk.length;
+            reportProgress('batch');
+            continue;
+          }
+
+          if (!firstError) {
+            firstError = formatSupabaseError(error, 'One batch could not be saved.');
+          }
+        } catch (error) {
+          if (!firstError) {
+            firstError = formatSupabaseError(error, 'One batch could not be saved.');
+          }
+        }
+
+        for (const payload of chunk) {
+          const rowResult = await saveSingleTrade(payload);
+          if (rowResult.saved) {
+            savedTrades.push(rowResult.saved);
+            imported += 1;
+          } else {
+            skipped += 1;
+            if (!firstError && rowResult.error) {
+              firstError = rowResult.error;
+            }
+          }
+          reportProgress('row');
         }
       }
 
-      if (optimisticTrades.length) {
-        setTrades((current) => mergeOptimisticTrades(current, optimisticTrades));
+      if (savedTrades.length) {
+        setTrades((current) => mergeOptimisticTrades(current, savedTrades));
       }
 
       if (imported > 0) {
-        fetchTrades().catch((refreshError) => {
+        reportProgress('refreshing');
+        await fetchTrades().catch((refreshError) => {
           console.error('importTrades refresh error:', refreshError);
         });
       } else if (!firstError) {
         firstError = 'No trade could be saved.';
       }
 
-      return { imported, skipped, trades: optimisticTrades, error: firstError || null };
+      reportProgress('done');
+      return { imported, skipped, trades: savedTrades, error: firstError || null };
     } catch (err) {
       console.error('importTrades exception:', err);
       throw err;
     }
-  }, [fetchTrades]);
+  }, [fetchTrades, getActiveUserId]);
 
   const updateTrade = useCallback(async (id, updates) => {
     const currentTrade = trades.find(t => t.id === id);

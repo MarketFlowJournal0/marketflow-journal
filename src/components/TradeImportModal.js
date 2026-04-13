@@ -184,6 +184,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
   const [mapping, setMapping] = useState({});
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState(null);
+  const [progress, setProgress] = useState({ stage: 'idle', total: 0, processed: 0, imported: 0, skipped: 0 });
 
   useEffect(() => {
     if (!isOpen) {
@@ -195,6 +196,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
       setMapping({});
       setImporting(false);
       setResult(null);
+      setProgress({ stage: 'idle', total: 0, processed: 0, imported: 0, skipped: 0 });
     }
   }, [isOpen]);
 
@@ -282,13 +284,20 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
     }
 
     setImporting(true);
+    setProgress({ stage: 'starting', total: normalizedTrades.length, processed: 0, imported: 0, skipped: 0 });
     try {
       let imported = 0;
       let skipped = 0;
       let importError = '';
 
       if (onImportBatch) {
-        const result = await onImportBatch(normalizedTrades);
+        const result = await onImportBatch(normalizedTrades, {
+          onProgress: (next) => setProgress((current) => ({
+            ...current,
+            ...next,
+            total: next?.total ?? current.total ?? normalizedTrades.length,
+          })),
+        });
         imported = Number(result?.imported ?? 0);
         skipped = Number(result?.skipped ?? Math.max(0, normalizedTrades.length - imported));
         importError = String(result?.error || '').trim();
@@ -302,6 +311,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
 
       onImportComplete?.({ imported, skipped });
       setResult({ imported, skipped, error: importError || null });
+      setProgress({ stage: 'done', total: normalizedTrades.length, processed: normalizedTrades.length, imported, skipped });
       setStep(3);
       if (imported > 0) {
         toast.success(`${imported} trade(s) imported.`);
@@ -397,8 +407,15 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                     </table>
                   </div>
                   <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${UI.line}`, background: UI.card, color: UI.sub, fontSize: 12 }}>Mapped symbol: <span style={{ color: mapping[headers.find((header) => mapping[header] === 'symbol')] ? UI.success : UI.danger, fontWeight: 700 }}>{Object.values(mapping).includes('symbol') ? 'Ready' : 'Missing'}</span></div>
-                    <button type="button" onClick={handleImport} disabled={importing} style={{ padding: '14px 18px', borderRadius: 16, border: 'none', background: importing ? UI.card : 'linear-gradient(135deg, var(--mf-accent, #06E6FF), rgba(var(--mf-accent-rgb, 6, 230, 255), 0.82))', color: importing ? UI.sub : '#031018', fontSize: 13, fontWeight: 800, cursor: importing ? 'wait' : 'pointer' }}>{importing ? 'Importing...' : `Import ${rows.length} trade(s)`}</button>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${UI.line}`, background: UI.card, color: UI.sub, fontSize: 12 }}>Mapped symbol: <span style={{ color: mapping[headers.find((header) => mapping[header] === 'symbol')] ? UI.success : UI.danger, fontWeight: 700 }}>{Object.values(mapping).includes('symbol') ? 'Ready' : 'Missing'}</span></div>
+                      {importing && (
+                        <div style={{ fontSize: 11, color: UI.muted }}>
+                          {progress.processed > 0 ? `${progress.processed}/${progress.total} processed` : 'Preparing import...'}
+                        </div>
+                      )}
+                    </div>
+                    <button type="button" onClick={handleImport} disabled={importing} style={{ padding: '14px 18px', borderRadius: 16, border: 'none', background: importing ? UI.card : 'linear-gradient(135deg, var(--mf-accent, #06E6FF), rgba(var(--mf-accent-rgb, 6, 230, 255), 0.82))', color: importing ? UI.sub : '#031018', fontSize: 13, fontWeight: 800, cursor: importing ? 'wait' : 'pointer' }}>{importing ? `Importing ${Math.min(progress.processed, progress.total)}/${progress.total || rows.length}` : `Import ${rows.length} trade(s)`}</button>
                   </div>
                 </div>
               </div>

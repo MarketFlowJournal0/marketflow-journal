@@ -1283,6 +1283,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
   const isEdit=!!trade;
   const[form,setForm]=useState(createEmptyTradeForm(customColumns));
   const[saving,setSaving]=useState(false);const[errors,setErrors]=useState({});
+  const[showAdvanced,setShowAdvanced]=useState(false);
   useEffect(()=>{
     const base=createEmptyTradeForm(customColumns);
     if(trade){
@@ -1291,13 +1292,14 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
     }else{
       setForm(base);
     }
+    setShowAdvanced(Boolean(trade)||customColumns.length>0);
     setErrors({});
   },[trade,isOpen,customColumns]);
   const mergedCustomColumns=useMemo(()=>mergeCustomColumnsWithExtra(customColumns,form.extra),[customColumns,form.extra]);
   const calcRR=d=>{const[en,ex,sl]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.sl)];if(!en||!ex||!sl||isNaN(en)||isNaN(ex)||isNaN(sl))return'0.00';const risk=Math.abs(en-sl),reward=Math.abs(ex-en);return risk>0?(reward/risk).toFixed(2):'0.00';};
   const calcTPP=d=>{const[en,ex,tp]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.tp)];if(!en||!ex||!tp||isNaN(en)||isNaN(ex)||isNaN(tp))return'0.0';const target=Math.abs(tp-en);return target>0?((Math.abs(ex-en)/target)*100).toFixed(1):'0.0';};
-  const validate=()=>{const errs={};if(!form.symbol?.trim())errs.symbol='Required';if(!form.entry||isNaN(parseFloat(form.entry)))errs.entry='Invalid price';if(!form.exit||isNaN(parseFloat(form.exit)))errs.exit='Invalid price';if(!form.pnl||isNaN(parseFloat(form.pnl)))errs.pnl='Invalid amount';setErrors(errs);return Object.keys(errs).length===0;};
-  const handleSubmit=()=>{if(!validate()){toast.error('Check the highlighted fields');return;}setSaving(true);setTimeout(()=>{onSave({...form,extra:cleanExtraValues(form.extra),id:form.id||`manual_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,win:parseFloat(form.pnl)>0,metrics:{rrReel:calcRR(form),tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});toast.success(isEdit?'Trade updated':'Trade added');setSaving(false);setErrors({});onClose();},450);};
+  const validate=()=>{const errs={};if(!form.symbol?.trim())errs.symbol='Required';if(!form.date)errs.date='Required';if(form.entry!==''&&isNaN(parseFloat(form.entry)))errs.entry='Invalid price';if(form.exit!==''&&isNaN(parseFloat(form.exit)))errs.exit='Invalid price';if(form.pnl!==''&&isNaN(parseFloat(form.pnl)))errs.pnl='Invalid amount';if(form.pnl===''&&!form.entry&&!form.exit)errs.pnl='Add P&L or prices';setErrors(errs);return Object.keys(errs).length===0;};
+  const handleSubmit=async()=>{if(!validate()){toast.error('Check the highlighted fields');return;}setSaving(true);try{const saved=await onSave({...form,symbol:(form.symbol||'').toUpperCase().trim(),extra:cleanExtraValues(form.extra),id:form.id,win:parseFloat(form.pnl)>0,metrics:{rrReel:calcRR(form),tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});if(!saved){toast.error('Trade could not be saved');return;}toast.success(isEdit?'Trade updated':'Trade added');setErrors({});onClose();}finally{setSaving(false);}};
   if(!isOpen)return null;
   const iStyle={width:'100%',padding:'8px 11px',borderRadius:7,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit'};
   const lStyle={display:'block',fontSize:10,fontWeight:600,color:C.t3,marginBottom:5};
@@ -1305,13 +1307,15 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
   return(
     <AnimatePresence>
       <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,overflowY:'auto'}}>
-        <motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} onClick={e=>e.stopPropagation()} style={{backgroundColor:C.bgCard,borderRadius:16,border:`1px solid ${C.brd}`,maxWidth:680,width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-          <div style={{padding:'18px 22px',borderBottom:`1px solid ${C.brd}`,background:C.grad}}>
-            <h3 style={{margin:0,fontSize:17,fontWeight:700,color:'#fff'}}>{isEdit?'Edit Trade':'Add Trade'}</h3>
+        <motion.div initial={{scale:0.96,y:18}} animate={{scale:1,y:0}} exit={{scale:0.96,y:18}} onClick={e=>e.stopPropagation()} style={{background:'linear-gradient(180deg, rgba(10,17,28,0.98), rgba(8,13,22,0.98))',borderRadius:24,border:`1px solid ${C.brd}`,maxWidth:720,width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column',boxShadow:'0 28px 90px rgba(0,0,0,0.42)'}}>
+          <div style={{padding:'22px 24px 18px',borderBottom:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.06), rgba(255,255,255,0))'}}>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Manual entry</div>
+            <h3 style={{margin:'8px 0 0',fontSize:24,fontWeight:900,color:C.t1,letterSpacing:'-0.03em'}}>{isEdit?'Edit trade':'Add trade'}</h3>
+            <div style={{marginTop:8,fontSize:12.5,color:C.t2}}>Keep the essentials visible. Open advanced fields only when you need more detail.</div>
           </div>
-          <div style={{flex:1,overflowY:'auto',padding:'22px'}}>
+          <div style={{flex:1,overflowY:'auto',padding:'22px 24px 24px'}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
-              {[{k:'date',l:'Date *',t:'date'},{k:'time',l:'Time',t:'time'},{k:'symbol',l:'Symbol *',t:'text',ph:'EURUSD'},{k:'type',l:'Type',t:'select',opts:['Long','Short']},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'entry',l:'Entry *',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit *',t:'number',ph:'1.09000',step:'0.00001'},{k:'sl',l:'Stop Loss',t:'number',step:'0.00001'},{k:'tp',l:'Take Profit',t:'number',step:'0.00001'},{k:'pnl',l:'P&L ($) *',t:'number',ph:'150.00',step:'0.01'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, Pullback...'},{k:'newsImpact',l:'News Impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(
+              {[{k:'symbol',l:'Pair *',t:'text',ph:'EURUSD'},{k:'type',l:'Direction',t:'select',opts:['Long','Short']},{k:'date',l:'Date *',t:'date'},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'entry',l:'Entry',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit',t:'number',ph:'1.09000',step:'0.00001'},{k:'pnl',l:'P&L',t:'number',ph:'150.00',step:'0.01'}].map(({k,l,t,ph,step,opts})=>(
                 <div key={k}>
                   <label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>
                   {t==='select'
@@ -1321,14 +1325,35 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
                   {errors[k]&&<div style={eStyle}>{errors[k]}</div>}
                 </div>
               ))}
-              <div>
-                <label style={lStyle}>Psychology Score: <span style={{color:form.psychologyScore>=80?C.green:form.psychologyScore>=60?C.warn:C.danger,fontWeight:800}}>{form.psychologyScore}</span></label>
-                <input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/>
-              </div>
             </div>
-            {mergedCustomColumns.length>0&&(
+            <div style={{marginTop:16,padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+              <div>
+                <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase'}}>Advanced fields</div>
+                <div style={{fontSize:12,color:C.t2,marginTop:4}}>Time, setup, levels, psychology, and custom columns.</div>
+              </div>
+              <button type="button" onClick={()=>setShowAdvanced(value=>!value)} style={{padding:'9px 12px',borderRadius:12,border:`1px solid ${shade(C.cyan,'18')}`,background:showAdvanced?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)':'rgba(255,255,255,0.02)',color:showAdvanced?C.cyan:C.t2,fontSize:11,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>
+                {showAdvanced?'Hide advanced':'Show advanced'}
+              </button>
+            </div>
+            {showAdvanced&&(
               <div style={{marginTop:18}}>
-                <div style={{fontSize:10,fontWeight:800,color:C.t3,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:10}}>Custom columns</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
+                  {[{k:'time',l:'Time',t:'time'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, pullback'},{k:'sl',l:'Stop loss',t:'number',step:'0.00001'},{k:'tp',l:'Take profit',t:'number',step:'0.00001'},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'newsImpact',l:'News impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(
+                    <div key={k}>
+                      <label style={lStyle}>{l}</label>
+                      {t==='select'
+                        ? <select value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} style={{...iStyle,cursor:'pointer'}}>{opts.map(o=><option key={o} value={o}>{o}</option>)}</select>
+                        : <input type={t} placeholder={ph} step={step} value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} style={iStyle}/>
+                      }
+                    </div>
+                  ))}
+                  <div style={{gridColumn:'1 / -1'}}>
+                    <label style={lStyle}>Psychology score <span style={{color:form.psychologyScore>=80?C.green:form.psychologyScore>=60?C.warn:C.danger,fontWeight:800}}>{form.psychologyScore}</span></label>
+                    <input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/>
+                  </div>
+                </div>
+                {mergedCustomColumns.length>0&&(<>
+                <div style={{fontSize:10,fontWeight:800,color:C.t3,letterSpacing:'0.14em',textTransform:'uppercase',margin:'16px 0 10px'}}>Custom columns</div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
                   {mergedCustomColumns.map(column=>(
                     <div key={column.key||column.fieldKey}>
@@ -1336,24 +1361,24 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
                       <input type={column.dataType==='number'?'number':'text'} value={form.extra?.[column.fieldKey]??''} onChange={event=>setForm(current=>({...current,extra:{...(current.extra||{}),[column.fieldKey]:event.target.value}}))} style={iStyle}/>
                     </div>
                   ))}
-                </div>
+                </div></>)}
               </div>
             )}
             <div style={{marginTop:14}}>
               <label style={lStyle}>Notes</label>
-              <textarea placeholder="Context, emotions, observations..." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:70}}/>
+              <textarea placeholder="Keep the context short and useful." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:82}}/>
             </div>
             {form.entry&&form.exit&&form.sl&&(
-              <div style={{marginTop:16,padding:14,borderRadius:9,backgroundColor:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.05)',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.18)`}}>
-                <div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8}}>Automatic Calculations</div>
+              <div style={{marginTop:16,padding:14,borderRadius:16,backgroundColor:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.04)',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.14)`}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8,letterSpacing:'0.12em',textTransform:'uppercase'}}>Calculated from levels</div>
                 <div style={{display:'flex',gap:28}}>
-                  <div><div style={{fontSize:9,color:C.t3}}>Risk/Reward</div><div style={{fontSize:16,fontWeight:800,color:C.teal}}>1:{calcRR(form)}</div></div>
-                  <div><div style={{fontSize:9,color:C.t3}}>TP reached</div><div style={{fontSize:16,fontWeight:800,color:C.cyan}}>{calcTPP(form)}%</div></div>
+                  <div><div style={{fontSize:9,color:C.t3}}>Risk / Reward</div><div style={{fontSize:16,fontWeight:800,color:C.teal}}>1:{calcRR(form)}</div></div>
+                  <div><div style={{fontSize:9,color:C.t3}}>Target reached</div><div style={{fontSize:16,fontWeight:800,color:C.cyan}}>{calcTPP(form)}%</div></div>
                 </div>
               </div>
             )}
           </div>
-          <div style={{padding:'14px 22px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}>
+          <div style={{padding:'16px 24px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}>
             <GlassBtn onClick={onClose}>Cancel</GlassBtn>
             <GlassBtn variant="primary" onClick={handleSubmit} loading={saving}>{isEdit?'Save Trade':'Add Trade'}</GlassBtn>
           </div>
@@ -1413,10 +1438,10 @@ export default function AllTrades(){
   const handleSelectAll=useCallback(()=>{setSelected(prev=>{const ids=new Set(paginated.map(t=>t.id));const allSel=paginated.every(t=>prev.has(t.id));if(allSel){const n=new Set(prev);ids.forEach(id=>n.delete(id));return n;}return new Set([...prev,...ids]);});},[paginated]);
   const handleDeleteSelected=useCallback(()=>{if(!selected.size)return;if(!window.confirm(`Delete ${selected.size} selected trade${selected.size>1?'s':''}?`))return;const id=toast.loading('Deleting selected trades');setTimeout(()=>{selected.forEach(tid=>deleteTrade(tid));toast.dismiss(id);toast.success(`${selected.size} trade${selected.size>1?'s':''} deleted`);setSelected(new Set());},350);},[selected,deleteTrade]);
   const handleImport=useCallback((trade)=>addTrade(trade),[addTrade]);
-  const handleImportBatch=useCallback((tradeRows)=>importTrades?.(tradeRows),[importTrades]);
+  const handleImportBatch=useCallback((tradeRows,options)=>importTrades?.(tradeRows,options),[importTrades]);
   const handleRegisterCustomColumns=useCallback((definitions)=>setCols(current=>upsertCustomColumns(current,definitions)),[]);
 
-  const handleSave=useCallback(t=>{if(t.id&&trades.find(x=>x.id===t.id))updateTrade(t.id,t);else addTrade(t);setEditTrade(null);},[trades,updateTrade,addTrade]);
+  const handleSave=useCallback(async(t)=>{const saved=t.id&&trades.find(x=>x.id===t.id)?await updateTrade(t.id,t):await addTrade(t);if(saved)setEditTrade(null);return saved;},[trades,updateTrade,addTrade]);
   const handleEdit=useCallback(t=>{setEditTrade(toTradeFormData(t));setModalForm(true);},[]);
   const handleCreate=useCallback(()=>{setEditTrade(null);setModalForm(true);},[]);
   const handleReset=useCallback(()=>{setFilters(DEFAULT_FILTERS);toast.success('Filters cleared');},[]);
