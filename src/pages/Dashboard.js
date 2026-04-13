@@ -73,7 +73,7 @@ const DASHBOARD_STYLES = `
 
   .mf-dashboard-grid-secondary {
     display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.95fr);
+    grid-template-columns: minmax(0, 1.55fr) minmax(330px, 0.92fr);
     gap: 14px;
     margin-bottom: 14px;
   }
@@ -82,6 +82,16 @@ const DASHBOARD_STYLES = `
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
     gap: 14px;
+  }
+
+  .mf-dashboard-calendar-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.78fr);
+    gap: 16px;
+  }
+
+  .mf-dashboard-kpi-value {
+    font-variant-numeric: tabular-nums;
   }
 
   .mf-dashboard-side-stack {
@@ -99,7 +109,8 @@ const DASHBOARD_STYLES = `
   @media (max-width: 1160px) {
     .mf-dashboard-grid-primary,
     .mf-dashboard-grid-secondary,
-    .mf-dashboard-grid-tertiary {
+    .mf-dashboard-grid-tertiary,
+    .mf-dashboard-calendar-shell {
       grid-template-columns: 1fr;
     }
   }
@@ -205,6 +216,28 @@ function getSessionStatus() {
   return { label: 'Market closed', tone: C.text2 };
 }
 
+function clamp(value, min = 0, max = 100) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return min;
+  return Math.max(min, Math.min(max, numeric));
+}
+
+function toValidDate(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function toDateKey(value) {
+  const date = toValidDate(value);
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function percentage(total, predicate) {
   if (!total.length) return 0;
   const count = total.filter(predicate).length;
@@ -264,42 +297,43 @@ function buildBriefing(stats, context) {
     bestSession,
     topPair,
     tradeCount,
+    monthSummary,
   } = context;
 
   if (!tradeCount) {
     return {
-      eyebrow: 'Initialize the desk',
-      headline: 'The dashboard is clean, but the journal still has no executions.',
-      body: 'Import your broker or CSV data first, then standardize setup, session and psychology logging before you trust the analytics stack.',
+      eyebrow: 'Desk setup',
+      headline: 'Connect the first batch of trades.',
+      body: 'The dashboard is ready. The next move is clean data, not more widgets.',
       points: [
-        'Import the first batch of trades in All Trades.',
-        'Create consistent setup names from day one.',
-        'Log the emotional context after each trade.',
+        'Import the first executions.',
+        'Normalize setup names early.',
+        'Log session and psychology on each trade.',
       ],
     };
   }
 
   if (hygieneScore < 60) {
     return {
-      eyebrow: 'Data quality first',
-      headline: 'Your next edge comes from cleaner journaling, not more dashboards.',
-      body: 'The performance data is already usable, but setup, notes or psychology coverage is still too loose to extract the full signal.',
+      eyebrow: 'Process first',
+      headline: 'The edge is being hidden by incomplete journaling.',
+      body: 'Tighten tagging, notes and psychology before trusting the conclusions.',
       points: [
-        'Push note completion above 80 percent.',
-        'Tag every execution with a setup and a session.',
-        'Use the psychology fields systematically after each trade.',
+        'Push note coverage above 80%.',
+        'Tag every trade with setup and session.',
+        'Use psychology fields systematically.',
       ],
     };
   }
 
   if (currentStreak.type === 'loss' && currentStreak.count >= 3) {
     return {
-      eyebrow: 'Protect capital',
-      headline: 'The desk should slow down until the losing streak is understood.',
-      body: 'A run of recent losses means the dashboard must serve as a control room, not a confidence machine. Review the last trades before adding aggression.',
+      eyebrow: 'Capital protection',
+      headline: 'Slow the desk down before pressing size again.',
+      body: 'A losing run should trigger review, not speed.',
       points: [
-        'Re-read the last losing trades in All Trades.',
-        'Reduce size or frequency until the pattern is clear.',
+        'Review the last losing trades first.',
+        'Reduce aggression until the pattern is clear.',
         'Backtest the exact setup before the next session.',
       ],
     };
@@ -308,38 +342,177 @@ function buildBriefing(stats, context) {
   if ((stats.profitFactor || 0) >= 1.4 && (stats.winRate || 0) >= 50) {
     return {
       eyebrow: 'Protect the edge',
-      headline: 'The dashboard shows a healthy process. Keep it stable and repeatable.',
-      body: `The current profile is strongest in ${bestSession?.s || 'your best session'} and ${topPair?.p || 'your top pair'}. The priority is to preserve quality, not add noise.`,
+      headline: 'The desk is stable. Keep it selective.',
+      body: `Best context: ${bestSession?.s || 'your strongest session'}. Best pair: ${topPair?.p || 'your leading pair'}.`,
       points: [
-        'Keep sizing stable while the edge holds.',
-        'Concentrate on the best session and pair first.',
-        'Audit only the outlier losses, not every trade equally.',
+        'Keep size stable while the edge holds.',
+        'Concentrate on the strongest context first.',
+        'Audit only the outlier losses.',
       ],
     };
   }
 
-  if ((stats.expectancy || 0) > 0) {
+  if ((monthSummary?.totalPnl || 0) > 0) {
     return {
-      eyebrow: 'Edge present',
-      headline: 'The journal suggests positive expectancy, but selectivity can still improve.',
-      body: 'The desk has signal, yet the operational layer can be tighter. Focus on trade quality, cleaner notes and better filtering around weak contexts.',
+      eyebrow: 'Month in control',
+      headline: 'The month is green, but selectivity can still improve.',
+      body: 'Focus on repeatable executions, not more volume.',
       points: [
-        'Trade fewer but clearer setups.',
-        'Review weak sessions before repeating them.',
-        'Use Psychology to catch recurring execution drift.',
+        'Cut the weakest context first.',
+        'Use Analytics Pro only for deeper breakdowns.',
+        'Rebuild one setup at a time in Backtest.',
       ],
     };
   }
 
   return {
     eyebrow: 'Rebuild the process',
-    headline: 'The dashboard is showing mixed performance and needs a tighter operating routine.',
-    body: 'This is the moment to simplify: clearer setups, stricter review rhythm and less discretionary noise between sessions.',
+    headline: 'Simplify the desk and tighten the routine.',
+    body: 'Cleaner setups, cleaner reviews, fewer forced trades.',
     points: [
-      'Cut the weakest setup or context first.',
-      'Use Analytics Pro to isolate recurring underperformance.',
-      'Validate the preferred setup again in Backtest.',
+      'Trade fewer but clearer setups.',
+      'Review weak sessions before repeating them.',
+      'Use Psychology to catch execution drift.',
     ],
+  };
+}
+
+function buildMarketFlowRank(stats, context) {
+  const drawdown = Math.abs(Number(stats.maxDrawdown || 0));
+  const expectancy = Number(stats.expectancy || 0);
+
+  const factors = [
+    { label: 'Process', value: clamp(context.hygieneScore), tone: C.accent },
+    { label: 'Edge', value: clamp((Number(stats.profitFactor || 0) / 2.4) * 100), tone: C.green },
+    { label: 'Consistency', value: clamp((Number(stats.winRate || 0) / 60) * 100), tone: C.blue },
+    { label: 'Risk', value: clamp(100 - (drawdown / 12) * 100), tone: C.warn },
+    { label: 'Depth', value: clamp((Number(stats.totalTrades || 0) / 80) * 100), tone: C.purple },
+  ];
+
+  const weighted =
+    factors[0].value * 0.24 +
+    factors[1].value * 0.25 +
+    factors[2].value * 0.19 +
+    factors[3].value * 0.18 +
+    factors[4].value * 0.14;
+
+  const score = Math.round(weighted * 10);
+  const ladder = [
+    { min: 0, label: 'Foundation', tone: C.text2 },
+    { min: 220, label: 'Structure', tone: C.blue },
+    { min: 420, label: 'Precision', tone: C.accent },
+    { min: 620, label: 'Momentum', tone: C.green },
+    { min: 820, label: 'Command', tone: C.warn },
+    { min: 940, label: 'Apex', tone: C.purple },
+  ];
+
+  const currentTier = [...ladder].reverse().find((tier) => score >= tier.min) || ladder[0];
+  const nextTier = ladder.find((tier) => score < tier.min) || null;
+  const rangeMin = currentTier.min;
+  const rangeMax = nextTier ? nextTier.min : 1000;
+  const progress = rangeMax > rangeMin
+    ? clamp(((score - rangeMin) / (rangeMax - rangeMin)) * 100)
+    : 100;
+
+  const division = nextTier
+    ? progress >= 68 ? 'I' : progress >= 34 ? 'II' : 'III'
+    : 'I';
+
+  let focus = 'Keep the desk stable.';
+  if ((stats.totalTrades || 0) < 25) focus = 'Build more clean sample size.';
+  else if (context.hygieneScore < 75) focus = 'Raise journal discipline.';
+  else if ((stats.profitFactor || 0) < 1.25) focus = 'Sharpen entry selectivity.';
+  else if (drawdown > 8) focus = 'Reduce drawdown pressure.';
+  else if (expectancy <= 0) focus = 'Protect the positive expectancy.';
+
+  return {
+    score,
+    normalized: clamp(weighted),
+    label: currentTier.label === 'Apex' ? 'Apex' : `${currentTier.label} ${division}`,
+    tone: currentTier.tone,
+    nextLabel: nextTier ? nextTier.label : 'Apex',
+    nextGap: nextTier ? nextTier.min - score : 0,
+    progress,
+    focus,
+    note: context.bestSession
+      ? `Strongest context: ${context.bestSession.s}.${context.topPair ? ` Top pair: ${context.topPair.p}.` : ''}`
+      : 'The first ranked tier unlocks as soon as the journal has enough clean history.',
+    factors,
+  };
+}
+
+function buildCalendarMonth(trades, monthOffset = 0) {
+  const closedTrades = getClosedTrades(trades);
+  const anchorDate = toValidDate(closedTrades[0]?.open_date || closedTrades[0]?.date) || new Date();
+  const monthStart = new Date(anchorDate.getFullYear(), anchorDate.getMonth() + monthOffset, 1);
+  const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+  const startOffset = monthStart.getDay();
+  const totalCells = Math.ceil((startOffset + monthEnd.getDate()) / 7) * 7;
+  const todayKey = toDateKey(new Date());
+  const bucket = new Map();
+
+  closedTrades.forEach((trade) => {
+    const tradeDate = toValidDate(trade.open_date || trade.date);
+    if (!tradeDate) return;
+    if (tradeDate.getFullYear() !== monthStart.getFullYear()) return;
+    if (tradeDate.getMonth() !== monthStart.getMonth()) return;
+
+    const key = toDateKey(tradeDate);
+    const pnl = Number(trade.profit_loss ?? trade.pnl ?? 0) || 0;
+    const summary = bucket.get(key) || { pnl: 0, trades: 0, wins: 0, losses: 0, breakevens: 0 };
+    summary.pnl += pnl;
+    summary.trades += 1;
+    if (pnl > 0) summary.wins += 1;
+    else if (pnl < 0) summary.losses += 1;
+    else summary.breakevens += 1;
+    bucket.set(key, summary);
+  });
+
+  const days = Array.from({ length: totalCells }, (_, index) => {
+    const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), index - startOffset + 1);
+    const key = toDateKey(date);
+    const entry = bucket.get(key) || { pnl: 0, trades: 0, wins: 0, losses: 0, breakevens: 0 };
+
+    return {
+      key,
+      date,
+      day: date.getDate(),
+      inMonth: date.getMonth() === monthStart.getMonth(),
+      isToday: key === todayKey,
+      ...entry,
+    };
+  });
+
+  const weeks = [];
+  for (let index = 0; index < days.length; index += 7) {
+    const cells = days.slice(index, index + 7);
+    weeks.push({
+      cells,
+      pnl: cells.reduce((sum, cell) => sum + (cell.inMonth ? cell.pnl : 0), 0),
+      trades: cells.reduce((sum, cell) => sum + (cell.inMonth ? cell.trades : 0), 0),
+    });
+  }
+
+  const tradeDays = days.filter((day) => day.inMonth && day.trades > 0);
+  const positiveDays = tradeDays.filter((day) => day.pnl > 0).length;
+  const negativeDays = tradeDays.filter((day) => day.pnl < 0).length;
+  const flatDays = tradeDays.filter((day) => day.pnl === 0).length;
+  const totalPnl = tradeDays.reduce((sum, day) => sum + day.pnl, 0);
+  const tradeCount = tradeDays.reduce((sum, day) => sum + day.trades, 0);
+
+  return {
+    hasHistory: closedTrades.length > 0,
+    monthLabel: monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    totalPnl,
+    tradeCount,
+    positiveDays,
+    negativeDays,
+    flatDays,
+    bestDay: tradeDays.reduce((best, day) => (!best || day.pnl > best.pnl ? day : best), null),
+    worstDay: tradeDays.reduce((worst, day) => (!worst || day.pnl < worst.pnl ? day : worst), null),
+    weeks,
+    days,
+    canGoForward: monthOffset < 0,
   };
 }
 
@@ -400,13 +573,12 @@ function buildDashboardOverview(stats, trades) {
     : 0;
 
   const lastTrade = closedTrades[0] || recentTrades[0] || null;
-
-  const goals = [
-    { label: 'Journal hygiene', current: hygieneScore, target: 85, suffix: '%', tone: C.accent },
-    { label: 'Closed trades', current: stats.totalTrades || 0, target: 30, tone: C.blue },
-    { label: 'Win rate', current: stats.winRate || 0, target: 55, suffix: '%', tone: C.green },
-    { label: 'Max drawdown', current: Math.abs(stats.maxDrawdown || 0), target: 8, suffix: '%', tone: C.danger, inverse: true },
-  ];
+  const monthSummary = buildCalendarMonth(trades, 0);
+  const rank = buildMarketFlowRank(stats, {
+    hygieneScore,
+    bestSession,
+    topPair,
+  });
 
   return {
     recentTrades,
@@ -421,13 +593,15 @@ function buildDashboardOverview(stats, trades) {
     positiveDays,
     negativeDays,
     dailyAverage,
-    goals,
+    monthSummary,
+    rank,
     briefing: buildBriefing(stats, {
       hygieneScore,
       currentStreak,
       bestSession,
       topPair,
       tradeCount: stats.totalTrades || 0,
+      monthSummary,
     }),
   };
 }
@@ -556,7 +730,7 @@ function MetricCard({ label, value, caption, tone, index = 0 }) {
         </span>
         <div style={{ width: 26, height: 2, borderRadius: 999, background: tone, boxShadow: `0 0 16px ${shade(tone, 0.42)}` }} />
       </div>
-      <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, lineHeight: 1.02, marginBottom: 10 }}>
+      <div className="mf-dashboard-kpi-value" style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, lineHeight: 1.02, marginBottom: 10 }}>
         {value}
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.55, color: C.text2 }}>
@@ -727,9 +901,9 @@ function HeaderPanel({ stats, overview }) {
         </div>
         <div style={{ width: 1, height: 30, background: C.border }} />
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Hygiene</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: overview.hygieneScore >= 75 ? C.green : overview.hygieneScore >= 55 ? C.warn : C.danger }}>
-            {overview.hygieneScore}%
+          <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rank</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: overview.rank.tone }}>
+            {overview.rank.score}
           </div>
         </div>
       </div>
@@ -739,12 +913,13 @@ function HeaderPanel({ stats, overview }) {
 
 function StatusStrip({ stats, overview }) {
   const statusTone = stats.totalTrades ? C.green : C.warn;
+  const monthTone = (overview.monthSummary.totalPnl || 0) >= 0 ? C.green : C.danger;
 
   const items = [
-    { label: 'Journal status', value: stats.totalTrades ? 'Live data connected' : 'Waiting for first imports', tone: statusTone },
+    { label: 'Journal', value: stats.totalTrades ? 'Live data connected' : 'Waiting for first imports', tone: statusTone },
+    { label: 'Month P&L', value: formatCurrency(overview.monthSummary.totalPnl, true), tone: monthTone },
+    { label: 'MarketFlow rank', value: overview.rank.label, tone: overview.rank.tone },
     { label: 'Last execution', value: overview.lastTrade ? formatShortDate(overview.lastTrade.open_date || overview.lastTrade.date) : 'n/a', tone: C.accent },
-    { label: 'Current streak', value: overview.currentStreak.label, tone: overview.currentStreak.tone },
-    { label: 'Best session', value: overview.bestSession ? `${overview.bestSession.s} / ${formatCurrency(overview.bestSession.pnl, true)}` : 'n/a', tone: C.blue },
   ];
 
   return (
@@ -781,11 +956,11 @@ function StatusStrip({ stats, overview }) {
 function KpiStrip({ stats, overview }) {
   const items = [
     { label: 'Net P&L', value: formatSignedCompact(stats.pnl), caption: `${stats.pnlPct || 0}% vs 10k baseline`, tone: (stats.pnl || 0) >= 0 ? C.green : C.danger },
-    { label: 'Win rate', value: `${stats.winRate || 0}%`, caption: `${stats.wins || 0} wins / ${stats.losses || 0} losses / ${stats.breakevens || 0} BE`, tone: C.accent },
-    { label: 'Profit factor', value: formatRatio(stats.profitFactor), caption: `Avg win ${formatCurrency(stats.avgWin)} vs avg loss ${formatCurrency(stats.avgLoss)}`, tone: C.blue },
-    { label: 'Expectancy', value: formatCurrency(stats.expectancy || 0, true), caption: 'Per closed trade', tone: C.teal },
+    { label: 'Profit factor', value: formatRatio(stats.profitFactor), caption: `${formatCurrency(stats.avgWin)} avg win / ${formatCurrency(stats.avgLoss)} avg loss`, tone: C.blue },
+    { label: 'Win rate', value: `${stats.winRate || 0}%`, caption: `${stats.wins || 0}W / ${stats.losses || 0}L / ${stats.breakevens || 0}BE`, tone: C.accent },
+    { label: 'Average trade', value: formatCurrency(stats.expectancy || 0, true), caption: 'Realized expectancy', tone: C.teal },
     { label: 'Max drawdown', value: `${Math.abs(stats.maxDrawdown || 0)}%`, caption: 'Peak to trough pressure', tone: C.danger },
-    { label: 'Closed trades', value: `${stats.totalTrades || 0}`, caption: overview.lastTrade ? `Latest journaled on ${formatShortDate(overview.lastTrade.open_date || overview.lastTrade.date)}` : 'Build the sample size', tone: C.gold },
+    { label: 'Rank score', value: `${overview.rank.score}`, caption: overview.rank.label, tone: overview.rank.tone },
   ];
 
   return (
@@ -897,41 +1072,89 @@ function EquityPanel({ stats }) {
   );
 }
 
-function WeeklyPulse({ stats, overview }) {
-  const data = Array.isArray(stats.dailyPnl) ? stats.dailyPnl : [];
+function MarketFlowRankPanel({ overview }) {
+  const rank = overview.rank;
 
   return (
-    <SectionCard tone={C.blue} index={9} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow="Rhythm" title="Weekly pulse" tone={C.blue} />
+    <SectionCard tone={rank.tone} index={9} style={{ padding: '20px 20px 18px' }}>
+      <SectionTitle eyebrow="Ranking" title="MarketFlow Rank" tone={rank.tone} />
 
-      {data.length ? (
-        <>
-          <div style={{ height: 188, marginBottom: 16 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 4, right: 0, left: -22, bottom: 0 }}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="d" tick={{ fill: '#5D739B', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#5D739B', fontSize: 11 }} axisLine={false} tickLine={false} width={50} />
-                <Tooltip content={<MoneyTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
-                <Bar dataKey="v" radius={[8, 8, 0, 0]} maxBarSize={28}>
-                  {data.map((item) => (
-                    <Cell key={item.d} fill={item.v >= 0 ? 'var(--mf-green,#00FF88)' : 'var(--mf-danger,#FF3D57)'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: '132px minmax(0, 1fr)', gap: 16, alignItems: 'center', marginBottom: 18 }}>
+        <div
+          style={{
+            width: 132,
+            height: 132,
+            borderRadius: '50%',
+            background: `conic-gradient(${rank.tone} ${rank.normalized * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
+            padding: 12,
+            boxSizing: 'border-box',
+            boxShadow: `0 18px 46px ${shade(rank.tone, 0.18)}`,
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), rgba(7, 12, 22, 0.96) 62%)',
+              border: `1px solid ${shade(rank.tone, 0.18)}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.05em', color: C.text0 }}>
+              {rank.score}
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+              Score
+            </div>
           </div>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-            <MiniMetric label="Green days" value={`${overview.positiveDays}`} tone={C.green} />
-            <MiniMetric label="Red days" value={`${overview.negativeDays}`} tone={C.danger} />
-            <MiniMetric label="Best day" value={overview.bestDay ? formatCurrency(overview.bestDay.v, true) : '$0'} tone={C.accent} />
+        <div>
+          <TinyBadge tone={rank.tone}>{rank.label}</TinyBadge>
+          <div style={{ fontSize: 23, fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.04em', color: C.text0, marginTop: 12, marginBottom: 8 }}>
+            {rank.focus}
           </div>
-        </>
-      ) : (
-        <EmptyState title="No daily pulse yet" body="The weekly bar view will appear as soon as the journal has dated executions." />
-      )}
+          <div style={{ fontSize: 12.5, lineHeight: 1.7, color: C.text2 }}>
+            {rank.note}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(rank.tone, 0.14)}`, background: 'rgba(255,255,255,0.03)', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+            Next division
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: rank.tone }}>
+            {rank.nextGap > 0 ? `${rank.nextGap} pts to ${rank.nextLabel}` : 'Top division unlocked'}
+          </span>
+        </div>
+        <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 10 }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${rank.progress}%` }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              height: '100%',
+              borderRadius: 999,
+              background: `linear-gradient(90deg, ${shade(rank.tone, 0.56)}, ${rank.tone})`,
+            }}
+          />
+        </div>
+        <div style={{ fontSize: 11, color: C.text2 }}>
+          Ranked progression is driven by live performance, journal discipline and risk control.
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gap: 12 }}>
+        {rank.factors.map((factor) => (
+          <ProgressRow key={factor.label} label={factor.label} current={factor.value} target={100} tone={factor.tone} suffix="%" />
+        ))}
+      </div>
     </SectionCard>
   );
 }
@@ -941,18 +1164,18 @@ function DeskBriefing({ overview }) {
 
   return (
     <SectionCard tone={C.teal} index={10} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow={note.eyebrow} title="Desk briefing" tone={C.teal} />
-      <div style={{ fontSize: 23, fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.04em', color: C.text0, marginBottom: 12 }}>
+      <SectionTitle eyebrow={note.eyebrow} title="Desk focus" tone={C.teal} />
+      <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.04em', color: C.text0, marginBottom: 10 }}>
         {note.headline}
       </div>
-      <div style={{ fontSize: 12.5, lineHeight: 1.75, color: C.text2, marginBottom: 16 }}>
+      <div style={{ fontSize: 12.5, lineHeight: 1.72, color: C.text2, marginBottom: 16 }}>
         {note.body}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'grid', gap: 10 }}>
         {note.points.map((point) => (
           <div key={point} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 12px', borderRadius: 14, border: `1px solid ${shade(C.teal, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: C.teal, marginTop: 6, boxShadow: `0 0 12px ${shade(C.teal, 0.42)}`, flexShrink: 0 }} />
-            <div style={{ fontSize: 12, lineHeight: 1.7, color: C.text1 }}>
+            <div style={{ fontSize: 12, lineHeight: 1.68, color: C.text1 }}>
               {point}
             </div>
           </div>
@@ -1007,15 +1230,121 @@ function RecentExecutions({ trades, navigate }) {
   );
 }
 
-function OperatingTargets({ overview }) {
+function PerformanceCalendarPanel({ trades, navigate }) {
+  const [monthOffset, setMonthOffset] = useState(0);
+  const calendar = useMemo(() => buildCalendarMonth(trades, monthOffset), [trades, monthOffset]);
+
   return (
-    <SectionCard tone={C.warn} index={12} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow="Control" title="Operating targets" tone={C.warn} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {overview.goals.map((goal) => (
-          <ProgressRow key={goal.label} label={goal.label} current={goal.current} target={goal.target} tone={goal.tone} suffix={goal.suffix || ''} inverse={goal.inverse} />
-        ))}
-      </div>
+    <SectionCard tone={C.accent} index={11} style={{ padding: '22px 22px 20px', marginBottom: 14 }}>
+      <SectionTitle
+        eyebrow="Calendar"
+        title="MarketFlow Calendar"
+        tone={C.accent}
+        action={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <GhostButton onClick={() => setMonthOffset((value) => value - 1)}>Prev</GhostButton>
+            <GhostButton onClick={() => setMonthOffset((value) => Math.min(0, value + 1))} disabled={!calendar.canGoForward}>Next</GhostButton>
+            <GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>
+          </div>
+        }
+      />
+
+      {calendar.hasHistory ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 18 }}>
+            <MiniMetric label="Month P&L" value={formatCurrency(calendar.totalPnl, true)} tone={calendar.totalPnl >= 0 ? C.green : C.danger} />
+            <MiniMetric label="Trade days" value={`${calendar.positiveDays + calendar.negativeDays + calendar.flatDays}`} tone={C.accent} />
+            <MiniMetric label="Winning days" value={`${calendar.positiveDays}`} tone={C.green} />
+            <MiniMetric label="Trades" value={`${calendar.tradeCount}`} tone={C.blue} />
+          </div>
+
+          <div className="mf-dashboard-calendar-shell">
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: C.text0 }}>{calendar.monthLabel}</div>
+                <div style={{ fontSize: 11, color: C.text2 }}>Daily realized performance from the journal</div>
+              </div>
+
+              <div style={{ overflowX: 'auto', paddingBottom: 2 }}>
+                <div style={{ minWidth: 760 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <div key={day} style={{ padding: '0 4px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10 }}>
+                    {calendar.days.map((day) => {
+                      const tone = day.pnl > 0 ? C.green : day.pnl < 0 ? C.danger : C.accent;
+                      const active = day.trades > 0;
+                      return (
+                        <div
+                          key={day.key}
+                          style={{
+                            minHeight: 112,
+                            borderRadius: 18,
+                            padding: '12px 12px 11px',
+                            border: `1px solid ${day.isToday ? shade(C.accent, 0.42) : active ? shade(tone, 0.2) : shade(C.borderHi, 0.8)}`,
+                            background: active ? `linear-gradient(180deg, ${shade(tone, 0.18)} 0%, ${shade(tone, 0.06)} 100%)` : 'rgba(255,255,255,0.025)',
+                            boxShadow: day.isToday ? `0 0 0 1px ${shade(C.accent, 0.12)}` : 'none',
+                            opacity: day.inMonth ? 1 : 0.28,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: day.isToday ? C.accent : C.text0 }}>{day.day}</div>
+                            {active && <div style={{ width: 7, height: 7, borderRadius: '50%', background: tone, boxShadow: `0 0 10px ${shade(tone, 0.44)}` }} />}
+                          </div>
+
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 8 }}>
+                            <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '-0.05em', color: active ? tone : C.text3 }}>
+                              {active ? formatCurrency(day.pnl, true) : 'No trades'}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              <div style={{ fontSize: 11, color: active ? C.text1 : C.text3 }}>
+                                {active ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : 'Desk inactive'}
+                              </div>
+                              {active && <div style={{ fontSize: 10, color: C.text2 }}>{day.wins}W / {day.losses}L / {day.breakevens}BE</div>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 10, alignContent: 'start' }}>
+              <MiniMetric label="Best day" value={calendar.bestDay ? formatCurrency(calendar.bestDay.pnl, true) : '$0'} tone={C.green} caption={calendar.bestDay ? formatShortDate(calendar.bestDay.date) : 'No realized day yet'} />
+              <MiniMetric label="Worst day" value={calendar.worstDay ? formatCurrency(calendar.worstDay.pnl, true) : '$0'} tone={C.danger} caption={calendar.worstDay ? formatShortDate(calendar.worstDay.date) : 'No realized day yet'} />
+
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
+                  Weekly split
+                </div>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {calendar.weeks.map((week, index) => (
+                    <div key={`week-${index}`} style={{ padding: '10px 11px', borderRadius: 14, border: `1px solid ${shade(week.pnl >= 0 ? C.green : C.danger, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: C.text1 }}>Week {index + 1}</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: week.pnl >= 0 ? C.green : C.danger }}>{formatCurrency(week.pnl, true)}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: C.text2 }}>{week.trades} trade{week.trades > 1 ? 's' : ''}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <EmptyState title="No trading calendar yet" body="Import trades in All Trades to unlock the monthly calendar and ranked tracking." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
+      )}
     </SectionCard>
   );
 }
@@ -1080,17 +1409,27 @@ function ExecutionBoard({ stats, overview }) {
   );
 }
 
-function WorkflowPanel({ navigate }) {
+function WorkflowPanel({ navigate, overview }) {
   const items = [
-    { label: 'All Trades', body: 'Import, edit and annotate every execution with the full journal fields.', route: ROUTES.trades, tone: C.accent },
-    { label: 'Analytics Pro', body: 'Open the full performance breakdown instead of duplicating those charts here.', route: ROUTES.analytics, tone: C.blue },
-    { label: 'Psychology', body: 'Review emotional patterns, discipline drift and behavioral signals.', route: ROUTES.psychology, tone: C.purple },
-    { label: 'Backtest', body: 'Validate the setup before bringing more size back into live execution.', route: ROUTES.backtest, tone: C.warn },
+    { label: 'All Trades', body: 'Import, edit and clean every execution.', route: ROUTES.trades, tone: C.accent },
+    { label: 'Analytics Pro', body: 'Open the deeper breakdown only when needed.', route: ROUTES.analytics, tone: C.blue },
+    { label: 'Psychology', body: 'Track the behavior behind the result.', route: ROUTES.psychology, tone: C.purple },
+    { label: 'Backtest', body: 'Re-validate the exact setup before scaling.', route: ROUTES.backtest, tone: C.warn },
   ];
 
   return (
     <SectionCard tone={C.accent} index={15} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow="Workflow" title="Open the right module" tone={C.accent} />
+      <SectionTitle eyebrow="Workflow" title="Next move" tone={C.accent} />
+      <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.03)', marginBottom: 14 }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
+          Current desk note
+        </div>
+        <div style={{ fontSize: 12.5, lineHeight: 1.72, color: C.text1 }}>
+          {overview.topPair
+            ? `${overview.topPair.p} is currently the strongest pair in the journal. Keep the dashboard clean and open a dedicated module only when you need more depth.`
+            : 'Use the command center to stay oriented, then open the dedicated module only when the review needs more depth.'}
+        </div>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
         {items.map((item) => (
           <button
@@ -1152,22 +1491,19 @@ export default function Dashboard() {
         <div className="mf-dashboard-grid-primary">
           <EquityPanel stats={stats} />
           <div className="mf-dashboard-side-stack">
-            <WeeklyPulse stats={stats} overview={overview} />
+            <MarketFlowRankPanel overview={overview} />
             <DeskBriefing overview={overview} />
           </div>
         </div>
 
+        <PerformanceCalendarPanel trades={trades} navigate={navigate} />
+
         <div className="mf-dashboard-grid-secondary">
           <RecentExecutions trades={overview.recentTrades} navigate={navigate} />
           <div className="mf-dashboard-side-stack">
-            <OperatingTargets overview={overview} />
             <JournalDiscipline overview={overview} />
+            <WorkflowPanel navigate={navigate} overview={overview} />
           </div>
-        </div>
-
-        <div className="mf-dashboard-grid-tertiary">
-          <ExecutionBoard stats={stats} overview={overview} />
-          <WorkflowPanel navigate={navigate} />
         </div>
       </div>
     </div>
