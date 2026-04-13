@@ -22,6 +22,7 @@ import{
   Cell,ReferenceLine,PieChart,Pie,
 }from'recharts';
 import { shade } from '../lib/colorAlpha';
+import { CHART_AXIS_SMALL, CHART_GRID, CHART_MOTION, CHART_MOTION_SOFT, chartActiveDot, chartCursor, chartTooltipStyle } from '../lib/marketflowCharts';
 
 // ═══════════════════════════════════════════════════════════════════
 // 🎨 DESIGN SYSTEM
@@ -663,20 +664,20 @@ const ScoreEvolution=({sessions})=>{
               <stop offset="0%" stopColor={C.green} stopOpacity={0.35}/><stop offset="100%" stopColor={C.green} stopOpacity={0.02}/>
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
-          <XAxis dataKey="date" tick={{fill:C.t3,fontSize:8.5}} axisLine={false} tickLine={false} interval={3}/>
-          <YAxis yAxisId="s" domain={[0,100]} tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} width={26}/>
-          <YAxis yAxisId="p" orientation="right" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`} width={38}/>
-          <Tooltip content={<CustomTT/>}/>
+          <CartesianGrid {...CHART_GRID}/>
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" tick={{...CHART_AXIS_SMALL.tick,fontSize:8.5}} interval={3}/>
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="s" domain={[0,100]} tick={{...CHART_AXIS_SMALL.tick,fontSize:8}} width={26}/>
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="p" orientation="right" tick={{...CHART_AXIS_SMALL.tick,fontSize:8}} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`} width={38}/>
+          <Tooltip content={<CustomTT/>} cursor={chartCursor(C.purple)}/>
           <ReferenceLine yAxisId="s" y={70} stroke={`${shade(C.green,'22')}`} strokeDasharray="4 3"/>
           <ReferenceLine yAxisId="s" y={50} stroke="rgba(255,255,255,0.07)" strokeDasharray="4 3"/>
-          <Area yAxisId="p" type="monotone" dataKey="pnl" stroke={C.green} strokeWidth={2.5} fill="url(#ev-pnl)" dot={false} activeDot={{r:5,fill:C.green,stroke:'#fff',strokeWidth:2}} name="pnl"/>
+          <Area yAxisId="p" type="monotone" dataKey="pnl" stroke={C.green} strokeWidth={2.5} fill="url(#ev-pnl)" dot={false} activeDot={chartActiveDot(C.green,5,'#fff')} name="pnl" {...CHART_MOTION_SOFT}/>
           <Line yAxisId="s" type="monotone" dataKey="score" stroke={C.purple} strokeWidth={2.5}
             dot={(p)=>{
               const sc=sColor(p.value);
               return<circle key={p.index} cx={p.cx} cy={p.cy} r={4} fill={sc} stroke="rgba(255,255,255,0.8)" strokeWidth={1.5}/>;
             }}
-            activeDot={{r:7,fill:C.purple,stroke:'#fff',strokeWidth:2}} name="score"/>
+            activeDot={chartActiveDot(C.purple,7,'#fff')} name="score" {...CHART_MOTION_SOFT}/>
         </ComposedChart>
       </ResponsiveContainer>
     </GlassCard>
@@ -862,19 +863,19 @@ const EmotionImpact=({sessions})=>{
       <ST color={C.cyan}>Mood Impact / Avg P&L & Win Rate</ST>
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={data} margin={{top:16,right:20,bottom:0,left:0}}>
-          <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
-          <XAxis dataKey="mood" tick={{fill:C.t2,fontSize:9,fontWeight:700}} axisLine={false} tickLine={false}
+          <CartesianGrid {...CHART_GRID}/>
+          <XAxis {...CHART_AXIS_SMALL} dataKey="mood" tick={{fill:C.t2,fontSize:9,fontWeight:700}} 
             tickFormatter={(v)=>v}/>
-          <YAxis yAxisId="pnl" tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} width={42}/>
-          <YAxis yAxisId="wr" orientation="right" domain={[0,100]} tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={32}/>
-          <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="pnl" tick={{...CHART_AXIS_SMALL.tick,fontSize:8}} tickFormatter={v=>`$${v}`} width={42}/>
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="wr" orientation="right" domain={[0,100]} tick={{...CHART_AXIS_SMALL.tick,fontSize:8}} tickFormatter={v=>`${v}%`} width={32}/>
+          <Tooltip contentStyle={chartTooltipStyle(C.cyan)} cursor={chartCursor(C.cyan)}
              formatter={(v,n)=>n==='avgPnl'?[<span style={{color:v>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:900}}>{v>=0?'+':''}${v}</span>,'Avg P&L']:[<span style={{color:C.purple,fontFamily:'monospace',fontWeight:900}}>{v}%</span>,'Win Rate']}/>
           <ReferenceLine yAxisId="pnl" y={0} stroke="rgba(255,255,255,0.12)"/>
-          <Bar yAxisId="pnl" dataKey="avgPnl" maxBarSize={52} radius={[6,6,0,0]} label={{position:'top',fontSize:8,fontWeight:700,fill:C.t3,formatter:v=>v?`${v>=0?'+':''}$${v}`:''}}>
+          <Bar yAxisId="pnl" dataKey="avgPnl" maxBarSize={52} radius={[6,6,0,0]} label={{position:'top',fontSize:8,fontWeight:700,fill:C.t3,formatter:v=>v?`${v>=0?'+':''}$${v}`:''}} {...CHART_MOTION}>
             {data.map((d,i)=><Cell key={i} fill={d.color} fillOpacity={0.85}/>)}
           </Bar>
           <Line yAxisId="wr" type="monotone" dataKey="winRate" stroke={C.purple} strokeWidth={2.5} name="Win Rate"
-            dot={{r:5,fill:C.purple,stroke:'rgba(255,255,255,0.8)',strokeWidth:1.5}} activeDot={{r:7,fill:C.purple}}/>
+            dot={{r:5,fill:C.purple,stroke:'rgba(255,255,255,0.8)',strokeWidth:1.5}} activeDot={chartActiveDot(C.purple,7,'#fff')} {...CHART_MOTION_SOFT}/>
         </ComposedChart>
       </ResponsiveContainer>
     </GlassCard>
@@ -1002,13 +1003,13 @@ const PerfByScore=({sessions})=>{
           <ST color={C.cyan}>Avg P&L by Score Range</ST>
           <ResponsiveContainer width="100%" height={195}>
             <BarChart data={buckets} margin={{top:22,right:4,bottom:0,left:0}}>
-              <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
-              <XAxis dataKey="range" tick={{fill:C.t2,fontSize:9,fontWeight:600}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`}/>
-              <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
+              <CartesianGrid {...CHART_GRID}/>
+              <XAxis {...CHART_AXIS_SMALL} dataKey="range" tick={{fill:C.t2,fontSize:9,fontWeight:600}}/>
+              <YAxis {...CHART_AXIS_SMALL} tick={{...CHART_AXIS_SMALL.tick,fontSize:8}} tickFormatter={v=>`$${v}`}/>
+              <Tooltip contentStyle={chartTooltipStyle(C.cyan)} cursor={chartCursor(C.cyan)}
                 formatter={(v,n,{payload:p})=>[<span style={{fontFamily:'monospace',fontWeight:900,color:v>=0?C.green:C.danger}}>{v>=0?'+':''}${v} ({p.count} sess.)</span>,'Avg P&L']}/>
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)"/>
-              <Bar dataKey="avgPnl" maxBarSize={48} radius={[6,6,0,0]} label={{position:'top',fill:C.t3,fontSize:8,fontWeight:700,formatter:v=>v?`${v>=0?'+':''}$${v}`:''}}>
+              <Bar dataKey="avgPnl" maxBarSize={48} radius={[6,6,0,0]} label={{position:'top',fill:C.t3,fontSize:8,fontWeight:700,formatter:v=>v?`${v>=0?'+':''}$${v}`:''}} {...CHART_MOTION}>
                 {buckets.map((b,i)=>(<Cell key={i} fill={b.color} fillOpacity={b.count?0.85:0.15}/>))}
               </Bar>
             </BarChart>
@@ -1019,15 +1020,15 @@ const PerfByScore=({sessions})=>{
           <ST color={C.blue}>Score vs P&L / Session by Session View</ST>
           <ResponsiveContainer width="100%" height={195}>
             <ComposedChart data={[...sessions].sort((a,b)=>a.date.localeCompare(b.date)).map(s=>({score:calcPsych(s),pnl:s.pnl||0,mood:s.mood}))} margin={{top:8,right:8,bottom:0,left:0}}>
-              <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false}/>
-              <XAxis dataKey="score" type="number" domain={[20,100]} tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:C.t3,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`}/>
-              <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 12px 40px rgba(0,0,0,0.7)'}}
+              <CartesianGrid {...CHART_GRID}/>
+              <XAxis {...CHART_AXIS_SMALL} dataKey="score" type="number" domain={[20,100]} tick={{...CHART_AXIS_SMALL.tick,fontSize:8}}/>
+              <YAxis {...CHART_AXIS_SMALL} tick={{...CHART_AXIS_SMALL.tick,fontSize:8}} tickFormatter={v=>`$${v}`}/>
+              <Tooltip contentStyle={chartTooltipStyle(C.blue)} cursor={chartCursor(C.blue)}
                 formatter={(v,n,{payload:p})=>[<span style={{fontFamily:'monospace',fontWeight:900,color:v>=0?C.green:C.danger}}>{v>=0?'+':''}${v}</span>,`P&L / score ${p.score}`]}/>
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)"/>
               <ReferenceLine x={70} stroke={`${shade(C.green,'30')}`} strokeDasharray="4 3" label={{value:'70',fill:C.green,fontSize:8,position:'top'}}/>
               <ReferenceLine x={50} stroke={`${shade(C.warn,'25')}`} strokeDasharray="4 3" label={{value:'50',fill:C.warn,fontSize:8,position:'top'}}/>
-              <Bar dataKey="pnl" maxBarSize={9} radius={[3,3,0,0]}>
+              <Bar dataKey="pnl" maxBarSize={9} radius={[3,3,0,0]} {...CHART_MOTION}>
                 {[...sessions].sort((a,b)=>a.date.localeCompare(b.date)).map((s,i)=><Cell key={i} fill={(s.pnl||0)>=0?C.green:C.danger} fillOpacity={0.75}/>)}
               </Bar>
             </ComposedChart>

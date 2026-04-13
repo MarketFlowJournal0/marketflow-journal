@@ -7,6 +7,7 @@ import React,{useState,useMemo,useRef}from'react';
 import{motion,AnimatePresence}from'framer-motion';
 import{AreaChart,Area,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,Cell,ReferenceLine,ComposedChart,Line}from'recharts';
 import { shade } from '../lib/colorAlpha';
+import { CHART_AXIS_SMALL, CHART_GRID, CHART_MOTION, CHART_MOTION_SOFT, chartActiveDot, chartCursor, chartTooltipStyle } from '../lib/marketflowCharts';
 
 const C={
   bg0:'#0F1420',bgCard:'var(--mf-card,#0C1422)',bgHigh:'var(--mf-high,#121C2E)',
@@ -322,14 +323,14 @@ const EquityChart=({data})=>{
             <linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={col} stopOpacity={0.4}/><stop offset="100%" stopColor={col} stopOpacity={0.02}/></linearGradient>
             <linearGradient id="eql" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor={C.cyan}/><stop offset="50%" stopColor={C.green}/><stop offset="100%" stopColor={C.purple}/></linearGradient>
           </defs>
-          <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
-          <XAxis dataKey="i" tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} interval={Math.floor(data.length/8)}/>
-          <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}R`} width={34}/>
-          <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10,boxShadow:'0 8px 28px rgba(0,0,0,0.8)'}}
+          <CartesianGrid {...CHART_GRID}/>
+          <XAxis {...CHART_AXIS_SMALL} dataKey="i" tick={{...CHART_AXIS_SMALL.tick,fontSize:7}} interval={Math.floor(data.length/8)}/>
+          <YAxis {...CHART_AXIS_SMALL} tick={{...CHART_AXIS_SMALL.tick,fontSize:7}} tickFormatter={v=>`${v}R`} width={34}/>
+          <Tooltip contentStyle={chartTooltipStyle(col)} cursor={chartCursor(col)}
             formatter={(v,_,p)=>[<span style={{color:p.payload.rr>=0?C.green:C.danger,fontFamily:'monospace',fontWeight:900}}>{v}R</span>,'Equity']}
             labelFormatter={(_,p)=>`Trade #${p?.[0]?.payload?.i} · ${p?.[0]?.payload?.date||''} · ${p?.[0]?.payload?.res||''}`}/>
           <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeDasharray="4 3"/>
-          <Area type="monotone" dataKey="v" stroke="url(#eql)" strokeWidth={2.5} fill="url(#eqg)" dot={false} activeDot={{r:5,fill:C.green,stroke:'#fff',strokeWidth:2}}/>
+          <Area type="monotone" dataKey="v" stroke="url(#eql)" strokeWidth={2.5} fill="url(#eqg)" dot={false} activeDot={chartActiveDot(col,5,'#fff')} {...CHART_MOTION_SOFT}/>
         </AreaChart>
       </ResponsiveContainer>
     </GlassCard>
@@ -342,11 +343,11 @@ const DDChart=({data})=>(
     <ResponsiveContainer width="100%" height={138}>
       <AreaChart data={data} margin={{top:4,right:6,bottom:0,left:0}}>
         <defs><linearGradient id="ddg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.danger} stopOpacity={0.55}/><stop offset="100%" stopColor={C.danger} stopOpacity={0.03}/></linearGradient></defs>
-        <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
-        <XAxis dataKey="i" tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} interval={Math.floor(data.length/7)}/>
-        <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}R`} width={34}/>
-        <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10}} formatter={v=>[<span style={{color:C.danger,fontFamily:'monospace',fontWeight:900}}>{v}R</span>,'DD']}/>
-        <Area type="monotone" dataKey="v" stroke={C.danger} strokeWidth={1.5} fill="url(#ddg)" dot={false}/>
+        <CartesianGrid {...CHART_GRID}/>
+        <XAxis {...CHART_AXIS_SMALL} dataKey="i" tick={{...CHART_AXIS_SMALL.tick,fontSize:7}} interval={Math.floor(data.length/7)}/>
+        <YAxis {...CHART_AXIS_SMALL} tick={{...CHART_AXIS_SMALL.tick,fontSize:7}} tickFormatter={v=>`${v}R`} width={34}/>
+        <Tooltip contentStyle={chartTooltipStyle(C.danger)} cursor={chartCursor(C.danger)} formatter={v=>[<span style={{color:C.danger,fontFamily:'monospace',fontWeight:900}}>{v}R</span>,'DD']}/>
+        <Area type="monotone" dataKey="v" stroke={C.danger} strokeWidth={1.5} fill="url(#ddg)" dot={false} activeDot={chartActiveDot(C.danger,4,'#fff')} {...CHART_MOTION_SOFT}/>
       </AreaChart>
     </ResponsiveContainer>
   </GlassCard>
@@ -360,11 +361,11 @@ const RRDist=({trades})=>{
       <ST icon="📊" color={C.purple} mb={10}>R/R Distribution</ST>
       <ResponsiveContainer width="100%" height={160}>
         <BarChart data={data} margin={{top:4,right:6,bottom:0,left:0}}>
-          <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" vertical={false}/>
-          <XAxis dataKey="rr" tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}R`}/>
-          <YAxis tick={{fill:C.t3,fontSize:7}} axisLine={false} tickLine={false} width={24}/>
-          <Tooltip contentStyle={{background:C.bgHigh,border:`1px solid ${C.brdHi}`,borderRadius:10,fontSize:10}} formatter={(v,_,p)=>[v,'Trades']} labelFormatter={v=>`${v}R`}/>
-          <Bar dataKey="n" radius={[4,4,0,0]}>{data.map((d,i)=><Cell key={i} fill={d.rr>=0?C.green:C.danger}/>)}</Bar>
+          <CartesianGrid {...CHART_GRID}/>
+          <XAxis {...CHART_AXIS_SMALL} dataKey="rr" tick={{...CHART_AXIS_SMALL.tick,fontSize:7}} tickFormatter={v=>`${v}R`}/>
+          <YAxis {...CHART_AXIS_SMALL} tick={{...CHART_AXIS_SMALL.tick,fontSize:7}} width={24}/>
+          <Tooltip contentStyle={chartTooltipStyle(C.purple)} cursor={chartCursor(C.purple)} formatter={(v,_,p)=>[v,'Trades']} labelFormatter={v=>`${v}R`}/>
+          <Bar dataKey="n" radius={[6,6,0,0]} {...CHART_MOTION}>{data.map((d,i)=><Cell key={i} fill={d.rr>=0?C.green:C.danger}/>)}</Bar>
         </BarChart>
       </ResponsiveContainer>
     </GlassCard>

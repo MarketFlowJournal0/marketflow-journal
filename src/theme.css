@@ -250,6 +250,53 @@ html, body {
 [data-theme="light"] .recharts-cartesian-grid line { stroke: #D8E2F0 !important; }
 [data-theme="light"] .recharts-text tspan { fill: #4A5E80 !important; }
 
+/* ─── RECHARTS premium system ───────────────────────────────────────────────── */
+.mf-main .recharts-wrapper,
+.mf-main .recharts-surface {
+  overflow: visible;
+}
+
+.mf-main .recharts-cartesian-grid-horizontal line,
+.mf-main .recharts-cartesian-grid-vertical line {
+  stroke: rgba(var(--mf-border-rgb, 22, 32, 52), 0.72);
+  stroke-dasharray: 4 8;
+}
+
+.mf-main .recharts-reference-line line {
+  stroke-opacity: 0.82;
+}
+
+.mf-main .recharts-area-area,
+.mf-main .recharts-bar-rectangle path,
+.mf-main .recharts-sector path {
+  transition: opacity 0.18s ease, filter 0.22s ease, transform 0.22s ease;
+}
+
+.mf-main .recharts-area-area {
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.16));
+}
+
+.mf-main .recharts-line-curve,
+.mf-main .recharts-area-curve {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 14px rgba(var(--mf-accent-rgb, 6, 230, 255), 0.08));
+}
+
+.mf-main .recharts-bar-rectangle:hover path,
+.mf-main .recharts-sector:hover path {
+  filter: drop-shadow(0 0 16px rgba(var(--mf-accent-rgb, 6, 230, 255), 0.18));
+}
+
+.mf-main .recharts-tooltip-wrapper {
+  filter: drop-shadow(0 18px 38px rgba(0, 0, 0, 0.42));
+}
+
+.mf-main .recharts-active-dot,
+.mf-main .recharts-scatter-symbol {
+  filter: drop-shadow(0 0 12px rgba(var(--mf-accent-rgb, 6, 230, 255), 0.34));
+}
+
 /* ─── SCROLLBARS ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

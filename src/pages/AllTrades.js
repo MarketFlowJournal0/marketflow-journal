@@ -20,6 +20,7 @@ import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 import * as XLSX from 'xlsx';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
+import { CHART_MOTION_SOFT, chartActiveDot, chartCursor, chartTooltipStyle } from '../lib/marketflowCharts';
 import TradeImportModal from '../components/TradeImportModal';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -45,6 +46,7 @@ const DEFAULT_COLUMNS = [
   { key:'select',    label:'',        visible:true, locked:true, sortable:false, width:40  },
   { key:'date',      label:'Date',    visible:true, sortable:true, width:120 },
   { key:'symbol',    label:'Symbol', visible:true, sortable:true, width:160 },
+  { key:'account',   label:'Account', visible:true, sortable:true, width:160 },
   { key:'type',      label:'Type',    visible:true, sortable:true, width:80  },
   { key:'session',   label:'Session', visible:true, sortable:true, width:100 },
   { key:'bias',      label:'Bias',    visible:false, sortable:true, width:100 },
@@ -127,6 +129,7 @@ const createEmptyTradeForm=(customColumns=[])=>({
   date:new Date().toISOString().split('T')[0],
   time:new Date().toTimeString().slice(0,5),
   symbol:'',
+  account:'',
   type:'Long',
   entry:'',
   exit:'',
@@ -175,12 +178,13 @@ const filterTrades=(trades,filters)=>trades.filter(t=>{
   const type     = t.direction || t.type || '';
   const setup    = t.setup    || '';
   const notes    = t.notes    || '';
+  const account  = t.account  || t.extra?.account || '';
   const pnl      = t.profit_loss ?? t.pnl ?? 0;
   const session  = t.session  || '';
   const bias     = t.bias     || '';
   const date     = t.open_date?.split('T')[0] || t.date || '';
 
-  if(filters.search){const q=filters.search.toLowerCase();if(!symbol.toLowerCase().includes(q)&&!type.toLowerCase().includes(q)&&!setup.toLowerCase().includes(q)&&!notes.toLowerCase().includes(q))return false;}
+  if(filters.search){const q=filters.search.toLowerCase();if(!symbol.toLowerCase().includes(q)&&!type.toLowerCase().includes(q)&&!setup.toLowerCase().includes(q)&&!notes.toLowerCase().includes(q)&&!account.toLowerCase().includes(q))return false;}
   if(filters.result&&filters.result!=='all'){const win=parseFloat(pnl)>0;if(filters.result==='wins'&&!win)return false;if(filters.result==='losses'&&win)return false;if(filters.result==='long'&&type!=='Long')return false;if(filters.result==='short'&&type!=='Short')return false;}
   if(filters.symbol&&filters.symbol!=='all'&&symbol!==filters.symbol)return false;
   if(filters.session&&filters.session!=='all'&&session!==filters.session)return false;
@@ -203,6 +207,7 @@ const sortTrades=(trades,key,dir)=>{
       if(k==='pnl') return parseFloat(t.profit_loss??t.pnl??0)||0;
       if(k==='date') return new Date(t.open_date||t.date||'').getTime();
       if(k==='symbol') return t.symbol||'';
+      if(k==='account') return t.account||t.extra?.account||'';
       if(k==='type') return t.direction||t.type||'';
       if(k==='session') return t.session||'';
       if(k==='bias') return t.bias||'';
@@ -238,6 +243,7 @@ const toTradeFormData=(trade={})=>({
   date:trade.date||trade.open_date?.split('T')[0]||new Date().toISOString().split('T')[0],
   time:trade.time||'',
   symbol:trade.symbol||'',
+  account:trade.account||trade.extra?.account||trade.accountLabel||'',
   type:trade.type||trade.direction||'Long',
   entry:trade.entry??trade.entry_price??'',
   exit:trade.exit??trade.exit_price??'',
@@ -262,6 +268,80 @@ const GlassBtn=({children,onClick,variant='default',disabled,loading,size='md',f
   const v=V[variant]||V.default;const s=S[size]||S.md;
   const addRipple=(e)=>{if(disabled||loading)return;const r=e.currentTarget.getBoundingClientRect();const rpl={x:e.clientX-r.left,y:e.clientY-r.top,id:Date.now()};setRipples(p=>[...p,rpl]);setTimeout(()=>setRipples(p=>p.filter(x=>x.id!==rpl.id)),800);onClick?.(e);};
   return(<motion.button onClick={addRipple} disabled={disabled||loading} whileHover={!disabled&&!loading?{scale:1.02,y:-1}:{}} whileTap={!disabled&&!loading?{scale:0.97}:{}} style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,...s,borderRadius:8,background:v.bg,border:`1px solid ${v.border}`,color:v.color,fontWeight:600,cursor:disabled||loading?'not-allowed':'pointer',opacity:disabled?0.5:1,backdropFilter:'blur(10px)',boxShadow:v.shadow,overflow:'hidden',transition:'all 0.25s cubic-bezier(0.4,0,0.2,1)',fontFamily:'inherit',width:fullWidth?'100%':'auto'}}><AnimatePresence>{ripples.map(rpl=>(<motion.span key={rpl.id} initial={{scale:0,opacity:0.5}} animate={{scale:5,opacity:0}} exit={{opacity:0}} transition={{duration:0.7}} style={{position:'absolute',left:rpl.x,top:rpl.y,width:20,height:20,borderRadius:'50%',backgroundColor:variant==='primary'?'rgba(255,255,255,0.35)':C.cyan,pointerEvents:'none',transform:'translate(-50%,-50%)'}}/>))}</AnimatePresence>{variant==='primary'&&(<motion.div animate={{backgroundPosition:['200% 0','-200% 0']}} transition={{duration:6,repeat:Infinity,ease:'linear'}} style={{position:'absolute',inset:0,background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)',backgroundSize:'200% 100%',pointerEvents:'none'}}/>)}{loading&&(<motion.div animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}} style={{width:14,height:14,border:`2px solid ${variant==='primary'?C.bgDeep:C.cyan}`,borderTopColor:'transparent',borderRadius:'50%'}}/>)}{children}</motion.button>);
+};
+
+const AccountScopePills=({options=[],activeAccount='all',onChange})=>(
+  <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:2}}>
+    {(options||[]).map(option=>(
+      <button
+        key={option.id}
+        type="button"
+        onClick={()=>onChange?.(option.id)}
+        style={{
+          padding:'9px 12px',
+          borderRadius:14,
+          border:`1px solid ${activeAccount===option.id?shade(C.cyan,'28'):C.brd}`,
+          background:activeAccount===option.id?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.1)':'rgba(255,255,255,0.02)',
+          color:activeAccount===option.id?C.t1:C.t2,
+          cursor:'pointer',
+          fontFamily:'inherit',
+          display:'inline-flex',
+          alignItems:'center',
+          gap:10,
+          whiteSpace:'nowrap',
+        }}
+      >
+        <span style={{fontSize:11,fontWeight:800}}>{option.label}</span>
+        <span style={{padding:'3px 7px',borderRadius:999,border:`1px solid ${shade(activeAccount===option.id?C.cyan:C.t3,'20')}`,fontSize:10,fontWeight:800,color:activeAccount===option.id?C.cyan:C.t3,fontFamily:'monospace'}}>
+          {option.count}
+        </span>
+      </button>
+    ))}
+  </div>
+);
+
+const DangerConfirmModal=({isOpen,onClose,onConfirm,title,body,confirmLabel='Delete permanently',loading=false})=>{
+  const[step,setStep]=useState(1);
+  const[input,setInput]=useState('');
+  useEffect(()=>{if(!isOpen){setStep(1);setInput('');}},[isOpen]);
+  if(!isOpen) return null;
+  const ready=input.trim().toUpperCase()==='DELETE';
+  return(
+    <AnimatePresence>
+      <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.72)',backdropFilter:'blur(6px)',zIndex:430}} onClick={onClose}/>
+      <motion.div initial={{opacity:0,y:20,scale:0.98}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:20,scale:0.98}} transition={{duration:0.2}} style={{position:'fixed',inset:0,zIndex:431,display:'flex',alignItems:'center',justifyContent:'center',padding:22}}>
+        <div onClick={event=>event.stopPropagation()} style={{width:'min(520px,100%)',borderRadius:24,border:`1px solid ${shade(C.danger,'24')}`,background:'linear-gradient(180deg, rgba(10,17,28,0.98), rgba(8,13,22,0.98))',boxShadow:'0 36px 90px rgba(0,0,0,0.5)',overflow:'hidden'}}>
+          <div style={{padding:'22px 24px 18px',borderBottom:`1px solid ${C.brd}`}}>
+            <div style={{fontSize:10,color:C.danger,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Permanent action</div>
+            <div style={{marginTop:8,fontSize:28,fontWeight:900,color:C.t1,letterSpacing:'-0.04em'}}>{title}</div>
+            <div style={{marginTop:10,fontSize:13,color:C.t2,lineHeight:1.7}}>{body}</div>
+          </div>
+          <div style={{padding:24}}>
+            {step===1?(
+              <div style={{display:'grid',gap:12}}>
+                <div style={{padding:'12px 14px',borderRadius:16,border:`1px solid ${shade(C.danger,'20')}`,background:'rgba(var(--mf-danger-rgb, 255, 61, 87),0.06)',fontSize:12,color:C.t2,lineHeight:1.7}}>
+                  This cannot be undone. MarketFlow will remove the journal entries permanently from your account.
+                </div>
+                <div style={{display:'flex',justifyContent:'flex-end',gap:10}}>
+                  <GlassBtn onClick={onClose}>Cancel</GlassBtn>
+                  <GlassBtn variant="danger" onClick={()=>setStep(2)}>I understand</GlassBtn>
+                </div>
+              </div>
+            ):(
+              <div style={{display:'grid',gap:12}}>
+                <div style={{fontSize:11,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>Type DELETE to confirm</div>
+                <input value={input} onChange={event=>setInput(event.target.value)} placeholder="DELETE" style={{width:'100%',padding:'13px 14px',borderRadius:14,border:`1px solid ${ready?shade(C.danger,'28'):C.brd}`,background:C.bgDeep,color:C.t1,fontSize:13,outline:'none',fontFamily:'inherit'}}/>
+                <div style={{display:'flex',justifyContent:'space-between',gap:10}}>
+                  <GlassBtn onClick={()=>setStep(1)}>Back</GlassBtn>
+                  <GlassBtn variant="danger" loading={loading} disabled={!ready||loading} onClick={onConfirm}>{confirmLabel}</GlassBtn>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
 };
 
 const InfoHint=({text,align='left'})=>{
@@ -327,14 +407,8 @@ const FilterBar=({filters,setFilters,trades,onReset,compact=false})=>{
   const resultFilters=[{id:'all',label:'All'},{id:'wins',label:'Winners'},{id:'losses',label:'Losers'},{id:'long',label:'Long'},{id:'short',label:'Short'}];
   return(
     <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',border:`1px solid ${C.brd}`,borderRadius:compact?18:20,padding:compact?'12px':'16px 16px 14px',marginBottom:compact?0:14,boxShadow:compact?'none':'0 18px 34px rgba(0,0,0,0.16)'}}>
-      {(!compact || activeCount>0)&&(
+      {activeCount>0&&(
         <div style={{display:'flex',justifyContent:compact?'flex-end':'space-between',alignItems:'flex-start',gap:12,flexWrap:'wrap',marginBottom:12}}>
-          {!compact&&(
-            <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>Trade filters</div>
-              <InfoHint text="Use this bar to search, isolate winners or losers, narrow by session or bias, and review a specific date range."/>
-            </div>
-          )}
           <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
             {activeCount>0&&<div style={{padding:compact?'6px 8px':'8px 10px',borderRadius:999,border:`1px solid ${shade(C.cyan,'24')}`,background:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.cyan}}>{activeCount} active</div>}
             {activeCount>0&&(<GlassBtn size="sm" variant="danger" onClick={onReset}>Clear filters</GlassBtn>)}
@@ -389,6 +463,7 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
     switch(key){
       case 'date':return(<div><div style={{color:C.t1,fontSize:12,fontWeight:700}}>{date.substring(0,10)||'N/A'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.time||'No time'}</div></div>);
       case 'symbol':return(<div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.18), rgba(var(--mf-accent-rgb, 6, 230, 255),0.04))',border:`1px solid ${shade(C.cyan,'26')}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:900,color:C.cyan,flexShrink:0}}>{symbol.substring(0,3)||'--'}</div><div><div style={{color:C.t1,fontSize:12.5,fontWeight:800,letterSpacing:'0.01em'}}>{symbol||'N/A'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.marketType||trade.setup||'Journal entry'}</div></div></div>);
+      case 'account':return trade.account?<Tag label={trade.account} color={C.blue} bg="rgba(var(--mf-blue-rgb, 77, 124, 255),0.1)"/>:<span style={{color:C.t3,fontSize:11}}>Main journal</span>;
       case 'type':return<Tag label={type==='Long'?'Long':'Short'} color={type==='Long'?C.green:C.danger} bg={type==='Long'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)'}/>;
       case 'session':return<Tag label={trade.session||'—'} color={C.cyan} bg="rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)"/>;
       case 'bias':return<Tag label={trade.bias||'—'} color={trade.bias==='Bullish'?C.green:trade.bias==='Bearish'?C.danger:C.t2} bg={trade.bias==='Bullish'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':trade.bias==='Bearish'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)':'rgba(255,255,255,0.04)'}/>;
@@ -451,7 +526,7 @@ const MiniChart=({trade})=>{
   const exit=parseFloat(trade?.exit_price??trade?.exit??0);
   const data=useMemo(()=>{if(!entry||!exit)return[];const pts=14,diff=exit-entry;return Array.from({length:pts},(_,i)=>{const t=i/(pts-1);const noise=i>0&&i<pts-1?Math.sin(i*1.6)*Math.abs(diff)*0.12:0;return{i,price:entry+diff*t+noise};});},[entry,exit]);
   if(!entry||!exit)return null;
-  return(<div style={{padding:'14px',borderRadius:10,backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`,marginBottom:16}}><div style={{fontSize:10,color:C.t3,fontWeight:700,letterSpacing:'0.8px',marginBottom:10}}>TRADE PATH</div><div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><div><div style={{fontSize:8,color:C.t3,fontWeight:700}}>ENTRY</div><div style={{fontSize:12,fontWeight:800,color:C.cyan,fontFamily:'monospace'}}>{entry.toFixed(5)}</div></div>{(trade?.stop_loss||trade?.sl)&&parseFloat(trade.stop_loss||trade.sl)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>SL</div><div style={{fontSize:11,fontWeight:700,color:C.danger,fontFamily:'monospace'}}>{parseFloat(trade.stop_loss||trade.sl).toFixed(5)}</div></div>)}{(trade?.tp||trade?.take_profit)&&parseFloat(trade.tp||trade.take_profit)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>TP</div><div style={{fontSize:11,fontWeight:700,color:C.green,fontFamily:'monospace'}}>{parseFloat(trade.tp||trade.take_profit).toFixed(5)}</div></div>)}<div style={{textAlign:'right'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>EXIT</div><div style={{fontSize:12,fontWeight:800,color,fontFamily:'monospace'}}>{exit.toFixed(5)}</div></div></div><div style={{height:70}}><ResponsiveContainer width="100%" height="100%"><AreaChart data={data} margin={{top:4,right:0,bottom:0,left:0}}><defs><linearGradient id={`cg_${trade?.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.28}/><stop offset="95%" stopColor={color} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill={`url(#cg_${trade?.id})`} dot={false} activeDot={{r:4,fill:color,stroke:C.bgDeep,strokeWidth:2}}/><Tooltip contentStyle={{backgroundColor:C.bgCard,border:`1px solid ${C.brd}`,borderRadius:6,fontSize:10,color:C.t1}} formatter={v=>[v?.toFixed(5),'Price']} labelFormatter={()=>''}/></AreaChart></ResponsiveContainer></div><motion.div initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:0.35}} style={{marginTop:10,padding:'8px 12px',borderRadius:7,background:`linear-gradient(135deg,${shade(color,'12')},${shade(color,'04')})`,border:`1px solid ${shade(color,'28')}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Net Result</span><span style={{fontSize:18,fontWeight:900,color,fontFamily:'monospace',textShadow:`0 0 20px ${shade(color,'60')}`}}>{fmtPnl(pnl)}</span></motion.div></div>);
+  return(<div style={{padding:'14px',borderRadius:10,backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`,marginBottom:16}}><div style={{fontSize:10,color:C.t3,fontWeight:700,letterSpacing:'0.8px',marginBottom:10}}>TRADE PATH</div><div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><div><div style={{fontSize:8,color:C.t3,fontWeight:700}}>ENTRY</div><div style={{fontSize:12,fontWeight:800,color:C.cyan,fontFamily:'monospace'}}>{entry.toFixed(5)}</div></div>{(trade?.stop_loss||trade?.sl)&&parseFloat(trade.stop_loss||trade.sl)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>SL</div><div style={{fontSize:11,fontWeight:700,color:C.danger,fontFamily:'monospace'}}>{parseFloat(trade.stop_loss||trade.sl).toFixed(5)}</div></div>)}{(trade?.tp||trade?.take_profit)&&parseFloat(trade.tp||trade.take_profit)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>TP</div><div style={{fontSize:11,fontWeight:700,color:C.green,fontFamily:'monospace'}}>{parseFloat(trade.tp||trade.take_profit).toFixed(5)}</div></div>)}<div style={{textAlign:'right'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>EXIT</div><div style={{fontSize:12,fontWeight:800,color,fontFamily:'monospace'}}>{exit.toFixed(5)}</div></div></div><div style={{height:70}}><ResponsiveContainer width="100%" height="100%"><AreaChart data={data} margin={{top:4,right:0,bottom:0,left:0}}><defs><linearGradient id={`cg_${trade?.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.28}/><stop offset="95%" stopColor={color} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill={`url(#cg_${trade?.id})`} dot={false} activeDot={chartActiveDot(color,4,C.bgDeep)} {...CHART_MOTION_SOFT}/><Tooltip contentStyle={chartTooltipStyle(color)} cursor={chartCursor(color)} formatter={v=>[v?.toFixed(5),'Price']} labelFormatter={()=>''}/></AreaChart></ResponsiveContainer></div><motion.div initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:0.35}} style={{marginTop:10,padding:'8px 12px',borderRadius:7,background:`linear-gradient(135deg,${shade(color,'12')},${shade(color,'04')})`,border:`1px solid ${shade(color,'28')}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Net Result</span><span style={{fontSize:18,fontWeight:900,color,fontFamily:'monospace',textShadow:`0 0 20px ${shade(color,'60')}`}}>{fmtPnl(pnl)}</span></motion.div></div>);
 };
 
 const PsychoCard=({score})=>{
@@ -1386,14 +1461,26 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
       </motion.div>
     </AnimatePresence>
   );
-  return(<AnimatePresence><motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,overflowY:'auto'}}><motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} onClick={e=>e.stopPropagation()} style={{backgroundColor:C.bgCard,borderRadius:16,border:`1px solid ${C.brd}`,maxWidth:680,width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}}><div style={{padding:'18px 22px',borderBottom:`1px solid ${C.brd}`,background:C.grad}}><h3 style={{margin:0,fontSize:17,fontWeight:700,color:'#fff'}}>{isEdit?'✏️ Edit Trade':'✏️ Add Trade'}</h3></div><div style={{flex:1,overflowY:'auto',padding:'22px'}}><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>{[{k:'date',l:'Date *',t:'date'},{k:'time',l:'Time',t:'time'},{k:'symbol',l:'Symbol *',t:'text',ph:'EURUSD'},{k:'type',l:'Type',t:'select',opts:['Long','Short']},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'entry',l:'Entry *',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit *',t:'number',ph:'1.09000',step:'0.00001'},{k:'sl',l:'Stop Loss',t:'number',step:'0.00001'},{k:'tp',l:'Take Profit',t:'number',step:'0.00001'},{k:'pnl',l:'P&L ($) *',t:'number',ph:'150.00',step:'0.01'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, Pullback...'},{k:'newsImpact',l:'News Impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(<div key={k}><label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>{t==='select'?<select value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`,cursor:'pointer'}}>{opts.map(o=><option key={o} value={o}>{o}</option>)}</select>:<input type={t} placeholder={ph} step={step} value={form[k]||''} onChange={e=>setForm({...form,[k]:k==='symbol'?e.target.value.toUpperCase():e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`}}/>}{errors[k]&&<div style={eStyle}>{errors[k]}</div>}</div>))}<div><label style={lStyle}>Psychology Score: <span style={{color:form.psychologyScore>=80?C.green:form.psychologyScore>=60?C.warn:C.danger,fontWeight:800}}>{form.psychologyScore}</span></label><input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/></div></div><div style={{marginTop:14}}><label style={lStyle}>Notes</label><textarea placeholder="Context, emotions, observations..." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:70}}/></div>{form.entry&&form.exit&&form.sl&&(<div style={{marginTop:16,padding:14,borderRadius:9,backgroundColor:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.05)',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.18)`}}><div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8}}>📊 Automatic Calculations</div><div style={{display:'flex',gap:28}}><div><div style={{fontSize:9,color:C.t3}}>Risk/Reward</div><div style={{fontSize:16,fontWeight:800,color:C.teal}}>1:{calcRR(form)}</div></div><div><div style={{fontSize:9,color:C.t3}}>TP reached</div><div style={{fontSize:16,fontWeight:800,color:C.cyan}}>{calcTPP(form)}%</div></div></div></div>)}</div><div style={{padding:'14px 22px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}><GlassBtn onClick={onClose}>Cancel</GlassBtn><GlassBtn variant="primary" onClick={handleSubmit} loading={saving} icon="✓">{isEdit?'Save Trade':'Add Trade'}</GlassBtn></div></motion.div></motion.div></AnimatePresence>);
+  return(<AnimatePresence><motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,overflowY:'auto'}}><motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} onClick={e=>e.stopPropagation()} style={{backgroundColor:C.bgCard,borderRadius:16,border:`1px solid ${C.brd}`,maxWidth:680,width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}}><div style={{padding:'18px 22px',borderBottom:`1px solid ${C.brd}`,background:C.grad}}><h3 style={{margin:0,fontSize:17,fontWeight:700,color:'#fff'}}>{isEdit?'Edit Trade':'Add Trade'}</h3></div><div style={{flex:1,overflowY:'auto',padding:'22px'}}><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>{[{k:'date',l:'Date *',t:'date'},{k:'time',l:'Time',t:'time'},{k:'symbol',l:'Symbol *',t:'text',ph:'EURUSD'},{k:'account',l:'Account',t:'text',ph:'FTMO Challenge #1'},{k:'type',l:'Type',t:'select',opts:['Long','Short']},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'entry',l:'Entry *',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit *',t:'number',ph:'1.09000',step:'0.00001'},{k:'sl',l:'Stop Loss',t:'number',step:'0.00001'},{k:'tp',l:'Take Profit',t:'number',step:'0.00001'},{k:'pnl',l:'P&L ($) *',t:'number',ph:'150.00',step:'0.01'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, Pullback...'},{k:'newsImpact',l:'News Impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(<div key={k}><label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>{t==='select'?<select value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`,cursor:'pointer'}}>{opts.map(o=><option key={o} value={o}>{o}</option>)}</select>:<input type={t} placeholder={ph} step={step} value={form[k]||''} onChange={e=>setForm({...form,[k]:k==='symbol'?e.target.value.toUpperCase():e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`}}/>}{errors[k]&&<div style={eStyle}>{errors[k]}</div>}</div>))}<div><label style={lStyle}>Psychology Score: <span style={{color:form.psychologyScore>=80?C.green:form.psychologyScore>=60?C.warn:C.danger,fontWeight:800}}>{form.psychologyScore}</span></label><input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/></div></div><div style={{marginTop:14}}><label style={lStyle}>Notes</label><textarea placeholder="Context, emotions, observations..." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:70}}/></div>{form.entry&&form.exit&&form.sl&&(<div style={{marginTop:16,padding:14,borderRadius:9,backgroundColor:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.05)',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.18)`}}><div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8}}>Auto calculations</div><div style={{display:'flex',gap:28}}><div><div style={{fontSize:9,color:C.t3}}>Risk/Reward</div><div style={{fontSize:16,fontWeight:800,color:C.teal}}>1:{calcRR(form)}</div></div><div><div style={{fontSize:9,color:C.t3}}>TP reached</div><div style={{fontSize:16,fontWeight:800,color:C.cyan}}>{calcTPP(form)}%</div></div></div></div>)}</div><div style={{padding:'14px 22px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}><GlassBtn onClick={onClose}>Cancel</GlassBtn><GlassBtn variant="primary" onClick={handleSubmit} loading={saving}>{isEdit?'Save Trade':'Add Trade'}</GlassBtn></div></motion.div></motion.div></AnimatePresence>);
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 🏠 COMPOSANT PRINCIPAL - AllTrades
 // ══════════════════════════════════════════════════════════════════════════════
 export default function AllTrades(){
-  const{trades,deleteTrade,updateTrade,addTrade,importTrades}=useTradingContext();
+  const{
+    trades,
+    allTrades,
+    activeAccount,
+    setActiveAccount,
+    accountOptions,
+    deleteTrade,
+    deleteAllTrades,
+    updateTrade,
+    addTrade,
+    importTrades,
+    downloadBackup,
+  }=useTradingContext();
 
   const[filters,setFilters]=useState(DEFAULT_FILTERS);
   const[sort,setSort]=useState({key:'date',dir:'desc'});
@@ -1404,6 +1491,9 @@ export default function AllTrades(){
   const[modalColumns,setModalColumns]=useState(false);
   const[modalForm,setModalForm]=useState(false);const[editTrade,setEditTrade]=useState(null);
   const[detailTrade,setDetailTrade]=useState(null);
+  const[showWipeModal,setShowWipeModal]=useState(false);
+  const[wiping,setWiping]=useState(false);
+  const backupRestoreRef=useRef(null);
 
   useEffect(()=>{try{localStorage.setItem(COLUMN_STORAGE_KEY,JSON.stringify(cols));}catch{}},[cols]);
   useEffect(()=>{setPage(1);},[filters,sort]);
@@ -1451,6 +1541,45 @@ export default function AllTrades(){
     setPage(1);
     setSelected(new Set());
   },[]);
+  const handleBackup=useCallback(()=>{
+    downloadBackup?.({ columns: cols, scope: 'all' });
+    toast.success(`Backup saved with ${allTrades.length} trade${allTrades.length===1?'':'s'}`);
+  },[allTrades.length, cols, downloadBackup]);
+  const handleRestoreBackup=useCallback(async(event)=>{
+    const file=event.target.files?.[0];
+    event.target.value='';
+    if(!file) return;
+    try{
+      const snapshot=JSON.parse(await file.text());
+      const backupTrades=Array.isArray(snapshot?.trades)?snapshot.trades:[];
+      if(!backupTrades.length){toast.error('This backup does not contain any trades');return;}
+      if(allTrades.length>0&&!window.confirm('Restore will append the backup to your current journal. Continue?')) return;
+      if(Array.isArray(snapshot?.columns)&&snapshot.columns.length){
+        setCols(normalizeStoredColumns(snapshot.columns));
+      }
+      const result=await importTrades?.(backupTrades);
+      if(result?.imported){
+        toast.success(`${result.imported} trade${result.imported===1?'':'s'} restored from backup`);
+      }else{
+        toast.error(result?.error||'No trade was restored from this backup');
+      }
+    }catch(error){
+      toast.error('Backup file could not be restored');
+    }
+  },[allTrades.length, importTrades]);
+  const handleDeleteAll=useCallback(async()=>{
+    setWiping(true);
+    const result=await deleteAllTrades?.();
+    setWiping(false);
+    if(result?.success){
+      setShowWipeModal(false);
+      setSelected(new Set());
+      setFilters(DEFAULT_FILTERS);
+      toast.success(`${result.deleted||0} trade${result.deleted===1?'':'s'} deleted`);
+      return;
+    }
+    toast.error(result?.error||'The journal could not be wiped');
+  },[deleteAllTrades]);
 
   return(
     <div style={{backgroundColor:'transparent',minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'28px 24px 48px',position:'relative',overflow:'hidden'}}>
@@ -1460,25 +1589,32 @@ export default function AllTrades(){
           <div style={{padding:'22px 22px 20px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)',position:'relative',overflow:'hidden'}}>
             <div style={{position:'absolute',top:-120,right:-120,width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.12), transparent 68%)',pointerEvents:'none'}}/>
             <div style={{position:'relative',zIndex:1}}>
-              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-                <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Execution ledger</div>
-                <InfoHint text="This page is your main trade ledger. Filter fast, scan the table, open a row for detail, and double-click a row to edit it."/>
-              </div>
+              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:10}}>Execution ledger</div>
               <div style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
                 <div style={{maxWidth:760}}>
                   <h1 style={{margin:0,fontSize:34,fontWeight:900,letterSpacing:'-0.04em',lineHeight:1.02,color:C.t1}}>All Trades</h1>
                 </div>
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                   <GlassBtn onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn>
+                  <GlassBtn onClick={handleBackup}>Backup data</GlassBtn>
+                  <GlassBtn onClick={()=>backupRestoreRef.current?.click()}>Restore backup</GlassBtn>
                   <GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>
                   <GlassBtn onClick={()=>setModalColumns(true)}>Columns</GlassBtn>
+                  <GlassBtn variant="danger" onClick={()=>setShowWipeModal(true)}>Delete all trades</GlassBtn>
                   <GlassBtn variant="primary" onClick={handleCreate}>Add trade</GlassBtn>
                 </div>
               </div>
+              {accountOptions.length>1&&(
+                <div style={{marginTop:18}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:10}}>Account scope</div>
+                  <AccountScopePills options={accountOptions} activeAccount={activeAccount} onChange={setActiveAccount}/>
+                </div>
+              )}
               <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:18}}>
                 {[
-                  `${filtered.length}/${trades.length} trades`,
+                  `${filtered.length}/${allTrades.length} trades`,
                   `${symbolCount} symbols`,
+                  activeAccount!=='all'?accountOptions.find(option=>option.id===activeAccount)?.label:null,
                   customColumns.length?`${customColumns.length} custom columns`:null,
                   activeFilterCount ? `${activeFilterCount} filters` : null,
                   topSetup !== 'Unassigned' ? topSetup : null,
@@ -1506,12 +1642,8 @@ export default function AllTrades(){
               </div>
             </div>
           </div>
-
           <div style={{padding:'20px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)'}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
-              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Desk snapshot</div>
-              <InfoHint text="This block gives you the essential health metrics for the current filtered set only." align="right"/>
-            </div>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:14}}>Desk snapshot</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
               {[
                 {label:'Net P&L', value:fmtPnl(stats.totalPnL), color:stats.totalPnL>=0?C.green:C.danger},
@@ -1548,10 +1680,7 @@ export default function AllTrades(){
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={1} style={{background:'linear-gradient(180deg, rgba(10,17,28,0.95), rgba(8,13,22,0.98))',border:`1px solid ${C.brd}`,borderRadius:24,overflow:'hidden',boxShadow:'0 24px 48px rgba(0,0,0,0.18)'}}>
         <div style={{padding:'16px 18px',borderBottom:`1px solid ${C.brd}`,display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap',background:'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))'}}>
           <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Execution ledger</div>
-              <InfoHint text="Single click opens the trade detail panel. Double-click edits the trade directly."/>
-            </div>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:6}}>Execution ledger</div>
             <div style={{fontSize:20,fontWeight:900,color:C.t1,letterSpacing:'-0.03em'}}>Trade review table</div>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -1569,12 +1698,12 @@ export default function AllTrades(){
         {filtered.length===0?(
           <div style={{padding:'84px 22px',textAlign:'center'}}>
             <div style={{width:54,height:54,borderRadius:18,margin:'0 auto 18px',border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))'}}/>
-            <h3 style={{color:C.t1,fontSize:20,fontWeight:800,margin:'0 0 8px'}}>{trades.length===0?'Your ledger is empty':'No trades match the current filters'}</h3>
-            <p style={{color:C.t2,fontSize:13,lineHeight:1.7,maxWidth:520,margin:'0 auto 22px'}}>{trades.length===0?'Import data or add your first trade.':'Reset or widen the filters.'}</p>
+            <h3 style={{color:C.t1,fontSize:20,fontWeight:800,margin:'0 0 8px'}}>{allTrades.length===0?'Your ledger is empty':trades.length===0?'No trades in this account scope':'No trades match the current filters'}</h3>
+            <p style={{color:C.t2,fontSize:13,lineHeight:1.7,maxWidth:520,margin:'0 auto 22px'}}>{allTrades.length===0?'Import data or add your first trade.':trades.length===0?'Switch account scope or import data for this account.':'Reset or widen the filters.'}</p>
             <div style={{display:'flex',justifyContent:'center',gap:8,flexWrap:'wrap'}}>
-              {trades.length===0&&<GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>}
-              <GlassBtn variant="primary" onClick={handleCreate}>{trades.length===0?'Add first trade':'Add trade manually'}</GlassBtn>
-              {trades.length>0&&<GlassBtn onClick={handleReset}>Reset filters</GlassBtn>}
+              {allTrades.length===0&&<GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>}
+              <GlassBtn variant="primary" onClick={handleCreate}>{allTrades.length===0?'Add first trade':'Add trade manually'}</GlassBtn>
+              {allTrades.length>0&&<GlassBtn onClick={handleReset}>Reset filters</GlassBtn>}
             </div>
           </div>
         ):(
@@ -1600,9 +1729,18 @@ export default function AllTrades(){
       {filtered.length>0&&(<Pagination page={page} total={filtered.length} perPage={perPage} onPage={p=>setPage(Math.max(1,Math.min(p,totalPages)))} onPerPage={n=>{setPerPage(n);setPage(1);}}/>)}
 
       <TradeImportModal isOpen={modalImport} onClose={()=>setModalImport(false)} onImport={handleImport} onImportBatch={handleImportBatch} onRegisterCustomColumns={handleRegisterCustomColumns} onImportComplete={handleImportComplete}/>
+      <input ref={backupRestoreRef} type="file" accept=".json" hidden onChange={handleRestoreBackup}/>
       <ColumnStudioModal isOpen={modalColumns} onClose={()=>setModalColumns(false)} cols={cols} onChange={setCols}/>
       <TradeFormModal isOpen={modalForm} onClose={()=>{setModalForm(false);setEditTrade(null);}} onSave={handleSave} trade={editTrade} customColumns={customColumns}/>
       <TradeDetailPanel trade={detailTrade} onClose={()=>setDetailTrade(null)} onEdit={t=>{handleEdit(t);setDetailTrade(null);}} onDelete={id=>{deleteTrade(id);setDetailTrade(null);toast.success('Trade deleted');}}/>
+      <DangerConfirmModal
+        isOpen={showWipeModal}
+        onClose={()=>!wiping&&setShowWipeModal(false)}
+        onConfirm={handleDeleteAll}
+        loading={wiping}
+        title="Delete the full journal"
+        body={`You are about to permanently remove ${allTrades.length} trade${allTrades.length===1?'':'s'} from this account. Export a backup first if you want a recovery file.`}
+      />
       </div>
     </div>
   );

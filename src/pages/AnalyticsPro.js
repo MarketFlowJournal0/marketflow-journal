@@ -17,6 +17,17 @@ import {
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
+import {
+  CHART_AXIS,
+  CHART_AXIS_SMALL,
+  CHART_GRID,
+  CHART_GRID_FULL,
+  CHART_MOTION,
+  CHART_MOTION_SOFT,
+  chartActiveDot,
+  chartCursor,
+  chartTooltipStyle,
+} from '../lib/marketflowCharts';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🎨 PALETTE
@@ -109,9 +120,8 @@ const ChartTip = ({ active, payload, label, render: renderFn }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      backgroundColor: C.bgHigh, border: `1px solid ${C.brd}`,
-      borderRadius: 8, padding: '10px 13px', fontSize: 11,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+      ...chartTooltipStyle(payload[0]?.color || C.cyan),
+      padding: '10px 13px',
     }}>
       {renderFn ? renderFn(payload, label) : (
         <>
@@ -298,10 +308,10 @@ const EquityDrawdown = ({ trades }) => {
               <stop offset="95%" stopColor={C.danger} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis yAxisId="eq" tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-          <YAxis yAxisId="dd" orientation="right" tick={{ fill: C.danger, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => `${v.toFixed(0)}%`} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="eq" tickFormatter={v => `$${v}`} />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="dd" orientation="right" tick={{ ...CHART_AXIS_SMALL.tick, fill: C.danger }} tickFormatter={v => `${v.toFixed(0)}%`} />
           <Tooltip content={
             <ChartTip render={(payload, label) => (
               <>
@@ -314,9 +324,9 @@ const EquityDrawdown = ({ trades }) => {
               </>
             )} />
           } />
-          <ReferenceLine yAxisId="eq" y={0} stroke={C.brdBright} strokeDasharray="4 4" />
-          <Area yAxisId="eq" type="monotone" dataKey="equity"   stroke={C.green}  strokeWidth={2.5} fill="url(#eqGrad)" dot={false} />
-          <Area yAxisId="dd" type="monotone" dataKey="drawdown" stroke={C.danger} strokeWidth={1.5} fill="url(#ddGrad)" dot={false} strokeDasharray="5 3" />
+          <ReferenceLine yAxisId="eq" y={0} stroke={shade(C.brdBright, 0.8)} strokeDasharray="4 6" />
+          <Area yAxisId="eq" type="monotone" dataKey="equity" stroke={C.green} strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={chartActiveDot(C.green, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
+          <Area yAxisId="dd" type="monotone" dataKey="drawdown" stroke={C.danger} strokeWidth={1.6} fill="url(#ddGrad)" dot={false} strokeDasharray="6 4" activeDot={chartActiveDot(C.danger, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
         </ComposedChart>
       </ResponsiveContainer>
       <div style={{ display: 'flex', gap: 20, marginTop: 10 }}>
@@ -364,10 +374,10 @@ const MonthlyPnl = ({ trades }) => {
       </div>
       <ResponsiveContainer width="100%" height={190}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-          <ReferenceLine y={0} stroke={C.brdBright} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
+          <YAxis {...CHART_AXIS_SMALL} tickFormatter={v => `$${v}`} />
+          <ReferenceLine y={0} stroke={shade(C.brdBright, 0.82)} strokeDasharray="4 6" />
           <Tooltip content={
             <ChartTip render={(payload, label) => {
               const d = data.find(x => x.label === label);
@@ -380,7 +390,7 @@ const MonthlyPnl = ({ trades }) => {
               );
             }} />
           } />
-          <Bar dataKey="pnl" radius={[5, 5, 0, 0]} maxBarSize={38}>
+          <Bar dataKey="pnl" radius={[7, 7, 0, 0]} maxBarSize={38} {...CHART_MOTION}>
             {data.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? C.green : C.danger} fillOpacity={0.76} />)}
           </Bar>
         </BarChart>
@@ -421,9 +431,9 @@ const CumulativeWinRate = ({ trades }) => {
               <stop offset="95%" stopColor={C.cyan} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: C.t3, fontSize: 8 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis domain={[0, 100]} tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={v => `${v}%`} />
           <ReferenceLine y={50} stroke={C.warn} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: '50%', fill: C.warn, fontSize: 9, position: 'right' }} />
           <Tooltip content={
             <ChartTip render={(payload, label) => (
@@ -432,8 +442,8 @@ const CumulativeWinRate = ({ trades }) => {
                 <div style={{ color: C.cyan, fontWeight: 800 }}>WR: {payload[0]?.value}%</div>
               </>
             )} />
-          } />
-          <Area type="monotone" dataKey="wr" stroke={C.cyan} strokeWidth={2.5} fill="url(#wrGrad)" dot={false} />
+          } cursor={chartCursor(C.cyan)} />
+          <Area type="monotone" dataKey="wr" stroke={C.cyan} strokeWidth={2.5} fill="url(#wrGrad)" dot={false} activeDot={chartActiveDot(C.cyan, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
         </AreaChart>
       </ResponsiveContainer>
     </Card>
@@ -554,10 +564,10 @@ const WeekdayPerf = ({ trades }) => {
       <STitle icon="📅" title="By Weekday" sub="Win rate & P&L by day" color={C.purple} />
       <ResponsiveContainer width="100%" height={170}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="d" tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => v.substring(0, 3)} />
-          <YAxis tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-          <ReferenceLine y={0} stroke={C.brdBright} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="d" tickFormatter={v => v.substring(0, 3)} />
+          <YAxis {...CHART_AXIS_SMALL} tickFormatter={v => `$${v}`} />
+          <ReferenceLine y={0} stroke={shade(C.brdBright, 0.82)} strokeDasharray="4 6" />
           <Tooltip content={
             <ChartTip render={(payload, label) => {
               const d = data.find(x => x.d === label || x.d.startsWith(label));
@@ -570,7 +580,7 @@ const WeekdayPerf = ({ trades }) => {
               );
             }} />
           } />
-          <Bar dataKey="pnl" radius={[5, 5, 0, 0]} maxBarSize={44}>
+          <Bar dataKey="pnl" radius={[7, 7, 0, 0]} maxBarSize={44} {...CHART_MOTION}>
             {data.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? C.green : C.danger} fillOpacity={0.72} />)}
           </Bar>
         </BarChart>
@@ -621,6 +631,7 @@ const SetupDonut = ({ trades }) => {
                 dataKey="count" labelLine={false}
                 onMouseEnter={(_, i) => setActive(i)}
                 onMouseLeave={() => setActive(null)}
+                {...CHART_MOTION_SOFT}
               >
                 {data.map((d, i) => (
                   <Cell key={i} fill={d.color}
@@ -747,7 +758,7 @@ const LongVsShort = ({ trades }) => {
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
         <ResponsiveContainer width={90} height={90}>
           <PieChart>
-            <Pie data={data} cx={43} cy={43} innerRadius={24} outerRadius={40} dataKey="count" paddingAngle={4}>
+            <Pie data={data} cx={43} cy={43} innerRadius={24} outerRadius={40} dataKey="count" paddingAngle={4} {...CHART_MOTION}>
               {data.map((d, i) => <Cell key={i} fill={colors[d.type]} fillOpacity={0.82} />)}
             </Pie>
           </PieChart>
@@ -828,9 +839,9 @@ const PnlDistribution = ({ trades }) => {
       <STitle icon="📊" title="P&L Distribution" sub="Result frequency by range" color={C.warn} />
       <ResponsiveContainer width="100%" height={195}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 22, left: 0 }}>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: C.t3, fontSize: 8 }} axisLine={false} tickLine={false} interval={1} angle={-35} textAnchor="end" />
-          <YAxis tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="label" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval={1} angle={-35} textAnchor="end" />
+          <YAxis {...CHART_AXIS_SMALL} />
           <Tooltip content={
             <ChartTip render={(payload, label) => {
               const d = data.find(x => x.label === label);
@@ -842,7 +853,7 @@ const PnlDistribution = ({ trades }) => {
               );
             }} />
           } />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={30}>
+          <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={30} {...CHART_MOTION}>
             {data.map((d, i) => <Cell key={i} fill={d.from >= 0 ? C.green : C.danger} fillOpacity={0.7} />)}
           </Bar>
         </BarChart>
@@ -875,9 +886,9 @@ const PsychoTimeline = ({ trades }) => {
       </div>
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: C.t3, fontSize: 8 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis domain={[0, 100]} tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} />
           <ReferenceLine y={70} stroke={C.green}  strokeDasharray="4 4" strokeOpacity={0.35} />
           <ReferenceLine y={50} stroke={C.warn}   strokeDasharray="4 4" strokeOpacity={0.35} />
           <ReferenceLine y={30} stroke={C.danger} strokeDasharray="4 4" strokeOpacity={0.35} />
@@ -899,7 +910,8 @@ const PsychoTimeline = ({ trades }) => {
               const c = payload.score >= 70 ? C.green : payload.score >= 50 ? C.warn : C.danger;
               return <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={3.5} fill={c} stroke={C.bgCard} strokeWidth={1.5} />;
             }}
-            activeDot={{ r: 5, fill: C.purple, stroke: C.bgCard, strokeWidth: 2 }}
+            activeDot={chartActiveDot(C.purple, 5, C.bgCard)}
+            {...CHART_MOTION_SOFT}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -933,9 +945,9 @@ const DurationAnalysis = ({ trades }) => {
       <STitle icon="⏱️" title="Trade Duration" sub="Performance by holding duration" color={C.warn} />
       <ResponsiveContainer width="100%" height={155}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
+          <YAxis {...CHART_AXIS_SMALL} />
           <Tooltip content={
             <ChartTip render={(payload, label) => {
               const d = data.find(x => x.label === label);
@@ -949,7 +961,7 @@ const DurationAnalysis = ({ trades }) => {
               );
             }} />
           } />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
+          <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={40} {...CHART_MOTION}>
             {data.map((d, i) => <Cell key={i} fill={d.wr >= 50 ? C.teal : C.warn} fillOpacity={0.75} />)}
           </Bar>
         </BarChart>
@@ -989,9 +1001,9 @@ const MaeMfeScatter = ({ trades }) => {
       </div>
       <ResponsiveContainer width="100%" height={185}>
         <ScatterChart margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-          <CartesianGrid stroke={C.brd} strokeDasharray="3 3" />
-          <XAxis dataKey="mae" name="MAE" tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} />
-          <YAxis dataKey="mfe" name="MFE" tick={{ fill: C.t3, fontSize: 9 }} axisLine={false} tickLine={false} />
+          <CartesianGrid {...CHART_GRID_FULL} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="mae" name="MAE" />
+          <YAxis {...CHART_AXIS_SMALL} dataKey="mfe" name="MFE" />
           <Tooltip content={
             <ChartTip render={(payload) => {
               const d = payload[0]?.payload;
@@ -1005,7 +1017,7 @@ const MaeMfeScatter = ({ trades }) => {
               );
             }} />
           } />
-          <Scatter data={data} shape={(props) => {
+          <Scatter data={data} {...CHART_MOTION} shape={(props) => {
             const { cx, cy, payload } = props;
             return <circle cx={cx} cy={cy} r={5} fill={payload.pnl >= 0 ? C.green : C.danger} fillOpacity={0.65} stroke={C.bgCard} strokeWidth={1} />;
           }} />

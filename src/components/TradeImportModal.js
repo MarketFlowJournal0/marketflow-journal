@@ -339,7 +339,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
             <div>
               <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: UI.muted, fontWeight: 800 }}>Import trades</div>
               <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginTop: 6 }}>Bring data into MarketFlow</div>
-              <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>CSV, Excel, copied tables, broker exports, Notion, or JSON.</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>CSV, Excel, tables, or JSON.</div>
             </div>
             <button type="button" onClick={onClose} style={{ width: 36, height: 36, borderRadius: 12, border: `1px solid ${UI.line}`, background: UI.card, color: UI.sub, cursor: 'pointer', fontSize: 16 }}>×</button>
           </div>
@@ -356,8 +356,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                   {mode === 'upload' ? (
                     <button type="button" onClick={() => fileInputRef.current?.click()} style={{ width: '100%', minHeight: 220, borderRadius: 24, border: `1px dashed ${UI.lineHi}`, background: 'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.06), rgba(255,255,255,0.01))', color: UI.text, cursor: 'pointer', padding: 24, textAlign: 'left' }}>
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{file ? file.name : 'Select an import file'}</div>
-                      <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>Accepted formats: .csv .tsv .txt .xlsx .xls .json</div>
-                      <div style={{ marginTop: 16, fontSize: 12, color: UI.muted }}>Drop a broker export, TradeZella-style sheet, copied Notion table saved as CSV, or your own journal extract.</div>
+                      <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>Accepted: .csv .tsv .txt .xlsx .xls .json</div>
                     </button>
                   ) : (
                     <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Paste a CSV, TSV, copied table, or JSON payload here." style={{ width: '100%', minHeight: 220, resize: 'vertical', borderRadius: 20, border: `1px solid ${UI.line}`, background: UI.card, color: UI.text, padding: 16, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
@@ -366,11 +365,9 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                 </div>
 
                 <div style={{ padding: 18, borderRadius: 22, border: `1px solid ${UI.line}`, background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ fontSize: 12, color: UI.muted, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 800 }}>What this importer handles</div>
-                  <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
-                    {['Auto-detect headers and map key fields.', 'Review a clean preview before anything is written.', 'Import one file or a copied table without leaving the journal.'].map((line) => (
-                      <div key={line} style={{ padding: '12px 14px', borderRadius: 16, border: `1px solid ${UI.line}`, background: UI.card, color: UI.sub, fontSize: 13 }}>{line}</div>
-                    ))}
+                  <div style={{ fontSize: 12, color: UI.muted, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 800 }}>Import flow</div>
+                  <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 16, border: `1px solid ${UI.line}`, background: UI.card, color: UI.sub, fontSize: 13 }}>
+                    Review the mapping, then import.
                   </div>
                   <button type="button" onClick={loadRows} disabled={mode === 'upload' ? !file : !text.trim()} style={{ marginTop: 18, width: '100%', padding: '14px 16px', borderRadius: 16, border: 'none', background: 'linear-gradient(135deg, var(--mf-accent, #06E6FF), rgba(var(--mf-accent-rgb, 6, 230, 255), 0.82))', color: '#031018', fontSize: 13, fontWeight: 800, cursor: mode === 'upload' ? (!file ? 'not-allowed' : 'pointer') : (!text.trim() ? 'not-allowed' : 'pointer'), opacity: mode === 'upload' ? (file ? 1 : 0.55) : (text.trim() ? 1 : 0.55) }}>Review import</button>
                 </div>

@@ -16,6 +16,13 @@ import {
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
+import {
+  CHART_AXIS,
+  CHART_GRID,
+  CHART_MOTION_SOFT,
+  chartActiveDot,
+  chartCursor,
+} from '../lib/marketflowCharts';
 
 const C = {
   accent: 'var(--mf-accent,#06E6FF)',
@@ -721,6 +728,59 @@ function TinyBadge({ children, tone }) {
   );
 }
 
+function AccountScopeStrip({ options = [], activeAccount = 'all', onChange }) {
+  if (!options || options.length <= 1) return null;
+
+  return (
+    <motion.div
+      {...panelMotion(1)}
+      style={{
+        marginBottom: 14,
+        padding: '12px 14px',
+        borderRadius: 18,
+        border: `1px solid ${shade(C.accent, 0.16)}`,
+        background: 'linear-gradient(180deg, rgba(10,17,28,0.88), rgba(8,13,22,0.94))',
+        boxShadow: '0 16px 38px rgba(0,0,0,0.18)',
+      }}
+    >
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
+        Account scope
+      </div>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+        {options.map((option) => {
+          const active = option.id === activeAccount;
+          return (
+            <button
+              key={option.id}
+              onClick={() => onChange?.(option.id)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 10,
+                whiteSpace: 'nowrap',
+                padding: '9px 12px',
+                borderRadius: 12,
+                border: `1px solid ${active ? shade(C.accent, 0.28) : C.border}`,
+                background: active ? shade(C.accent, 0.1) : 'rgba(255,255,255,0.02)',
+                color: active ? C.text0 : C.text2,
+                fontSize: 11,
+                fontWeight: 800,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              <span>{option.label}</span>
+              <span style={{ padding: '3px 7px', borderRadius: 999, border: `1px solid ${active ? shade(C.accent, 0.22) : shade(C.text3, 0.18)}`, color: active ? C.accent : C.text3, fontSize: 10, fontFamily: 'monospace' }}>
+                {option.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
 function MetricCard({ label, value, caption, tone, index = 0 }) {
   return (
     <SectionCard tone={tone} index={index} hover style={{ padding: '16px 16px 15px', minHeight: 118 }}>
@@ -1048,10 +1108,10 @@ function EquityPanel({ stats }) {
                   <stop offset="100%" stopColor="rgba(var(--mf-accent-rgb, 6, 230, 255),0.02)" />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="d" tick={{ fill: '#5D739B', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#5D739B', fontSize: 11 }} axisLine={false} tickLine={false} width={56} />
-              <Tooltip content={<MoneyTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
+              <CartesianGrid {...CHART_GRID} />
+              <XAxis {...CHART_AXIS} dataKey="d" tick={{ ...CHART_AXIS.tick, fontSize: 11 }} />
+              <YAxis {...CHART_AXIS} tick={{ ...CHART_AXIS.tick, fontSize: 11 }} width={56} />
+              <Tooltip content={<MoneyTooltip />} cursor={chartCursor(C.accent)} />
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
               <Area
                 type="monotone"
@@ -1060,7 +1120,8 @@ function EquityPanel({ stats }) {
                 fill="url(#mfDashboardEquityFill)"
                 strokeWidth={2.5}
                 dot={false}
-                activeDot={{ r: 4, fill: 'var(--mf-accent,#06E6FF)', stroke: '#06101E', strokeWidth: 2 }}
+                activeDot={chartActiveDot(C.accent, 5, '#06101E')}
+                {...CHART_MOTION_SOFT}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -1472,6 +1533,9 @@ export default function Dashboard() {
   const ctx = useTradingContext();
   const stats = ctx?.stats || emptyStats();
   const trades = ctx?.trades || [];
+  const accountOptions = ctx?.accountOptions || [{ id: 'all', label: 'All Accounts', count: 0, pnl: 0 }];
+  const activeAccount = ctx?.activeAccount || 'all';
+  const setActiveAccount = ctx?.setActiveAccount || (() => null);
   const overview = useMemo(() => buildDashboardOverview(stats, trades), [stats, trades]);
 
   return (
@@ -1485,6 +1549,7 @@ export default function Dashboard() {
 
       <div style={{ position: 'relative', zIndex: 1, padding: '30px 30px 54px', width: '100%', boxSizing: 'border-box' }}>
         <HeaderPanel stats={stats} overview={overview} />
+        <AccountScopeStrip options={accountOptions} activeAccount={activeAccount} onChange={setActiveAccount} />
         <StatusStrip stats={stats} overview={overview} />
         <KpiStrip stats={stats} overview={overview} />
 

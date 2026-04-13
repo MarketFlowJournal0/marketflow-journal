@@ -19,6 +19,15 @@ import {
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
+import {
+  CHART_AXIS_SMALL,
+  CHART_GRID,
+  CHART_MOTION,
+  CHART_MOTION_SOFT,
+  chartActiveDot,
+  chartCursor,
+  chartTooltipStyle,
+} from '../lib/marketflowCharts';
 
 // ══════════════════════════════════════════════════════
 // 🎨 DESIGN SYSTEM — same MarketFlow DA
@@ -359,11 +368,12 @@ const EquityCurve = ({ s }) => {
               <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
           </defs>
-          <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="5 5" vertical={false} />
-          <XAxis dataKey="i" tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} interval={Math.floor(data.length / 10)} />
-          <YAxis tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} tickFormatter={v => `${v >= 0 ? '+' : ''}${v}`} width={42} domain={[minV * 1.05, maxV * 1.05]} />
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="i" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} interval={Math.floor(data.length / 10)} />
+          <YAxis {...CHART_AXIS_SMALL} tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} tickFormatter={v => `${v >= 0 ? '+' : ''}${v}`} width={42} domain={[minV * 1.05, maxV * 1.05]} />
           <Tooltip
-            contentStyle={{ background: C.bgHigh, border: `1px solid ${C.brdHi}`, borderRadius: 12, fontSize: 10, boxShadow: '0 8px 30px rgba(0,0,0,0.85)' }}
+            contentStyle={chartTooltipStyle(col)}
+            cursor={chartCursor(col)}
             formatter={(v, _, p) => [<span style={{ color: p.payload.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontWeight: 900 }}>{v >= 0 ? '+' : ''}{v}</span>, 'Equity']}
             labelFormatter={(_, p) => {
               const d = p?.[0]?.payload;
@@ -371,7 +381,7 @@ const EquityCurve = ({ s }) => {
             }}
           />
           <ReferenceLine y={0} stroke="rgba(255,255,255,0.18)" strokeDasharray="5 4" strokeWidth={1.5} />
-          <Area type="monotone" dataKey="v" stroke="url(#eqLine)" strokeWidth={2.5} fill="url(#eqFill)" dot={false} activeDot={{ r: 6, fill: col, stroke: '#fff', strokeWidth: 2, filter: 'url(#glow)' }} />
+          <Area type="monotone" dataKey="v" stroke="url(#eqLine)" strokeWidth={2.5} fill="url(#eqFill)" dot={false} activeDot={chartActiveDot(col, 6, '#fff')} {...CHART_MOTION_SOFT} />
         </ComposedChart>
       </ResponsiveContainer>
 
@@ -419,13 +429,13 @@ const DrawdownChart = ({ s }) => (
             <stop offset="100%" stopColor={C.danger} stopOpacity={0.03} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="5 5" vertical={false} />
-        <XAxis dataKey="i" tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} interval={Math.floor(s.n / 8)} />
-        <YAxis tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}`} width={38} />
-        <Tooltip contentStyle={{ background: C.bgHigh, border: `1px solid ${C.brdHi}`, borderRadius: 10, fontSize: 10 }}
+        <CartesianGrid {...CHART_GRID} />
+        <XAxis {...CHART_AXIS_SMALL} dataKey="i" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} interval={Math.floor(s.n / 8)} />
+        <YAxis {...CHART_AXIS_SMALL} tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} tickFormatter={v => `${v}`} width={38} />
+        <Tooltip contentStyle={chartTooltipStyle(C.danger)} cursor={chartCursor(C.danger)}
           formatter={v => [<span style={{ color: C.danger, fontFamily: 'monospace', fontWeight: 900 }}>{v}</span>, 'Drawdown']} />
         <ReferenceLine y={-s.maxDD} stroke={C.danger} strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `Max -${s.maxDD.toFixed(2)}`, fill: C.danger, fontSize: 8, position: 'insideTopRight' }} />
-        <Area type="monotone" dataKey="v" stroke={C.danger} strokeWidth={2} fill="url(#ddFill)" dot={false} />
+        <Area type="monotone" dataKey="v" stroke={C.danger} strokeWidth={2} fill="url(#ddFill)" dot={false} activeDot={chartActiveDot(C.danger, 5, '#fff')} {...CHART_MOTION_SOFT} />
       </AreaChart>
     </ResponsiveContainer>
 
@@ -541,14 +551,14 @@ const YearBreakdown = ({ s }) => {
         <div style={{ fontSize: 8.5, color: C.t3, fontWeight: 700, marginBottom: 8 }}>Global monthly P&L (all years)</div>
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={barData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="5 5" vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} interval={1} />
-            <YAxis tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} tickFormatter={v => `${v >= 0 ? '+' : ''}${v}`} width={36} />
-            <Tooltip contentStyle={{ background: C.bgHigh, border: `1px solid ${C.brdHi}`, borderRadius: 10, fontSize: 10 }}
+            <CartesianGrid {...CHART_GRID} />
+            <XAxis {...CHART_AXIS_SMALL} dataKey="label" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} interval={1} />
+            <YAxis {...CHART_AXIS_SMALL} tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} tickFormatter={v => `${v >= 0 ? '+' : ''}${v}`} width={36} />
+            <Tooltip contentStyle={chartTooltipStyle(C.purple)} cursor={chartCursor(C.purple)}
               formatter={(v, _, p) => [<span style={{ fontFamily: 'monospace', fontWeight: 900, color: v >= 0 ? C.green : C.danger }}>{v >= 0 ? '+' : ''}{v}</span>, p.payload.month]}
               labelFormatter={(_, p) => `${p?.[0]?.payload?.n} trades · WR ${p?.[0]?.payload?.wr}%`} />
             <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeDasharray="4 3" />
-            <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={32}>
+            <Bar dataKey="pnl" radius={[6, 6, 0, 0]} maxBarSize={32} {...CHART_MOTION}>
               {barData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? C.green : C.danger} opacity={0.82} />)}
             </Bar>
           </BarChart>
@@ -588,7 +598,7 @@ const YearBreakdown = ({ s }) => {
                 <ResponsiveContainer width="100%" height={30}>
                   <AreaChart data={y.mCurve} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                     <defs><linearGradient id={`yg${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={col} stopOpacity={0.5} /><stop offset="100%" stopColor={col} stopOpacity={0.02} /></linearGradient></defs>
-                    <Area type="monotone" dataKey="v" stroke={col} strokeWidth={1.5} fill={`url(#yg${i})`} dot={false} />
+                    <Area type="monotone" dataKey="v" stroke={col} strokeWidth={1.5} fill={`url(#yg${i})`} dot={false} {...CHART_MOTION_SOFT} />
                     <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -778,25 +788,25 @@ const MonteCarlo = ({ s }) => {
                   <linearGradient id="mc95" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.blue} stopOpacity={0.18} /><stop offset="100%" stopColor={C.blue} stopOpacity={0.02} /></linearGradient>
                   <linearGradient id="mc75" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.cyan} stopOpacity={0.22} /><stop offset="100%" stopColor={C.cyan} stopOpacity={0.03} /></linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="5 5" vertical={false} />
-                <XAxis dataKey="i" tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} interval={Math.floor(result.mcCurve.length / 9)} />
-                <YAxis tick={{ fill: C.t3, fontSize: 7 }} axisLine={false} tickLine={false} tickFormatter={v => `${v >= 0 ? '+' : ''}${v}`} width={42} />
-                <Tooltip contentStyle={{ background: C.bgHigh, border: `1px solid ${C.brdHi}`, borderRadius: 11, fontSize: 9.5 }}
+                <CartesianGrid {...CHART_GRID} />
+                <XAxis {...CHART_AXIS_SMALL} dataKey="i" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} interval={Math.floor(result.mcCurve.length / 9)} />
+                <YAxis {...CHART_AXIS_SMALL} tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 7 }} tickFormatter={v => `${v >= 0 ? '+' : ''}${v}`} width={42} />
+                <Tooltip contentStyle={chartTooltipStyle(C.gold)} cursor={chartCursor(C.gold)}
                   formatter={(v, name) => [<span style={{ fontFamily: 'monospace', fontWeight: 800, color: C.t1 }}>{v >= 0 ? '+' : ''}{v}</span>, name]} />
                 <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeDasharray="5 4" />
 
                 {/* P5-P95 Bands */}
-                <Area type="monotone" dataKey="p95" stroke="none" fill="url(#mc95)" dot={false} legendType="none" />
-                <Area type="monotone" dataKey="p75" stroke="none" fill="url(#mc75)" dot={false} legendType="none" />
+                <Area type="monotone" dataKey="p95" stroke="none" fill="url(#mc95)" dot={false} legendType="none" {...CHART_MOTION_SOFT} />
+                <Area type="monotone" dataKey="p75" stroke="none" fill="url(#mc75)" dot={false} legendType="none" {...CHART_MOTION_SOFT} />
 
                 {/* Percentile lines */}
-                <Line type="monotone" dataKey="p95"    stroke={PCT_COLORS.p95}  strokeWidth={1}   dot={false} strokeDasharray="6 3" name="P95 (Optimistic)" />
-                <Line type="monotone" dataKey="p75"    stroke={PCT_COLORS.p75}  strokeWidth={1.5} dot={false} name="P75" />
-                <Line type="monotone" dataKey="p50"    stroke={PCT_COLORS.p50}  strokeWidth={2.5} dot={false} name="Median P50" />
-                <Line type="monotone" dataKey="p25"    stroke={PCT_COLORS.p25}  strokeWidth={1.5} dot={false} name="P25" />
-                <Line type="monotone" dataKey="p5"     stroke={PCT_COLORS.p5}   strokeWidth={1}   dot={false} strokeDasharray="6 3" name="P5 (Pessimistic)" />
+                <Line type="monotone" dataKey="p95" stroke={PCT_COLORS.p95} strokeWidth={1} dot={false} strokeDasharray="6 3" name="P95 (Optimistic)" {...CHART_MOTION} />
+                <Line type="monotone" dataKey="p75" stroke={PCT_COLORS.p75} strokeWidth={1.5} dot={false} name="P75" {...CHART_MOTION} />
+                <Line type="monotone" dataKey="p50" stroke={PCT_COLORS.p50} strokeWidth={2.5} dot={false} name="Median P50" activeDot={chartActiveDot(PCT_COLORS.p50, 4, C.bgDeep)} {...CHART_MOTION_SOFT} />
+                <Line type="monotone" dataKey="p25" stroke={PCT_COLORS.p25} strokeWidth={1.5} dot={false} name="P25" {...CHART_MOTION} />
+                <Line type="monotone" dataKey="p5" stroke={PCT_COLORS.p5} strokeWidth={1} dot={false} strokeDasharray="6 3" name="P5 (Pessimistic)" {...CHART_MOTION} />
                 {/* Actual curve */}
-                <Line type="monotone" dataKey="actual" stroke={C.green}         strokeWidth={3}   dot={false} name="Actual" />
+                <Line type="monotone" dataKey="actual" stroke={C.green} strokeWidth={3} dot={false} name="Actual" activeDot={chartActiveDot(C.green, 5, C.bgDeep)} {...CHART_MOTION_SOFT} />
               </ComposedChart>
             </ResponsiveContainer>
 

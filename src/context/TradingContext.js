@@ -5,11 +5,19 @@ import { useAuth } from './AuthContext';
 const TradingContext = createContext(null);
 const IMPORT_BATCH_SIZE = 40;
 const REQUEST_TIMEOUT_MS = 12000;
+const ACTIVE_ACCOUNT_STORAGE_KEY = 'mf_active_account_v1';
 
 export function TradingProvider({ children }) {
   const { session, user } = useAuth();
   const [trades,  setTrades]  = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeAccount, setActiveAccountState] = useState(() => {
+    try {
+      return window.localStorage.getItem(ACTIVE_ACCOUNT_STORAGE_KEY) || 'all';
+    } catch {
+      return 'all';
+    }
+  });
   const activeUserId = session?.user?.id || user?.id || null;
 
   const getActiveUserId = useCallback(async () => {
@@ -245,9 +253,75 @@ export function TradingProvider({ children }) {
     return !error;
   }, []);
 
+  const accountOptions = useMemo(() => buildAccountOptions(trades), [trades]);
+  const scopedTrades = useMemo(() => filterTradesByAccount(trades, activeAccount), [trades, activeAccount]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(ACTIVE_ACCOUNT_STORAGE_KEY, activeAccount || 'all');
+    } catch {}
+  }, [activeAccount]);
+
+  useEffect(() => {
+    if (activeAccount === 'all') return;
+    if (!accountOptions.some((account) => account.id === activeAccount)) {
+      setActiveAccountState('all');
+    }
+  }, [activeAccount, accountOptions]);
+
+  const setActiveAccount = useCallback((accountId) => {
+    setActiveAccountState(accountId || 'all');
+  }, []);
+
+  const deleteAllTrades = useCallback(async () => {
+    try {
+      const userId = await getActiveUserId();
+      if (!userId) {
+        return { success: false, deleted: 0, error: 'No active session found.' };
+      }
+
+      const deletedCount = trades.length;
+      const { error } = await runSupabaseRequest(
+        (signal) => supabase
+          .from('trades')
+          .delete()
+          .eq('user_id', userId)
+          .abortSignal(signal),
+        REQUEST_TIMEOUT_MS,
+        'Deleting trades timed out.',
+      );
+
+      if (error) {
+        return { success: false, deleted: 0, error: formatSupabaseError(error, 'All trades could not be deleted.') };
+      }
+
+      setTrades([]);
+      setActiveAccountState('all');
+      return { success: true, deleted: deletedCount, error: null };
+    } catch (error) {
+      console.error('deleteAllTrades error:', error);
+      return { success: false, deleted: 0, error: formatSupabaseError(error, 'All trades could not be deleted.') };
+    }
+  }, [getActiveUserId, trades.length]);
+
+  const downloadBackup = useCallback(({ columns = [], scope = 'all' } = {}) => {
+    const backupTrades = scope === 'active' ? scopedTrades : trades;
+    const snapshot = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      scope,
+      activeAccount,
+      accounts: accountOptions,
+      columns,
+      trades: backupTrades,
+    };
+    downloadJsonFile(snapshot, `marketflow-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    return snapshot;
+  }, [accountOptions, activeAccount, scopedTrades, trades]);
+
   const stats = useMemo(() => {
-    if (!trades.length) return emptyStats();
-    const closed = trades.filter(t => t.status === 'TP' || t.status === 'SL' || t.status === 'BE');
+    if (!scopedTrades.length) return emptyStats();
+    const closed = scopedTrades.filter(t => t.status === 'TP' || t.status === 'SL' || t.status === 'BE');
     const wins   = closed.filter(t => (t.profit_loss || 0) > 0);
     const losses = closed.filter(t => (t.profit_loss || 0) < 0);
     const bes    = closed.filter(t => (t.profit_loss || 0) === 0);
@@ -376,7 +450,7 @@ export function TradingProvider({ children }) {
       biaisData,
       radarData,
       heatmap,
-      recentTrades: trades.slice(0, 6).map(t => ({
+      recentTrades: scopedTrades.slice(0, 6).map(t => ({
         id:      t.id,
         pair:    t.symbol,
         dir:     t.direction || 'Long',
@@ -387,12 +461,24 @@ export function TradingProvider({ children }) {
         session: t.session || '—',
       })),
     };
-  }, [trades]);
+  }, [scopedTrades]);
 
   return (
     <TradingContext.Provider value={{
-      trades, loading, stats,
-      addTrade, importTrades, updateTrade, deleteTrade, fetchTrades,
+      trades: scopedTrades,
+      allTrades: trades,
+      loading,
+      stats,
+      activeAccount,
+      setActiveAccount,
+      accountOptions,
+      addTrade,
+      importTrades,
+      updateTrade,
+      deleteTrade,
+      deleteAllTrades,
+      downloadBackup,
+      fetchTrades,
     }}>
       {children}
     </TradingContext.Provider>
@@ -400,7 +486,22 @@ export function TradingProvider({ children }) {
 }
 
 export function useTradingContext() {
-  return useContext(TradingContext) || { trades:[], loading:false, stats:emptyStats(), addTrade:()=>null, importTrades:async()=>({ imported:0, skipped:0, trades:[] }), updateTrade:()=>null, deleteTrade:()=>null };
+  return useContext(TradingContext) || {
+    trades: [],
+    allTrades: [],
+    loading: false,
+    stats: emptyStats(),
+    activeAccount: 'all',
+    setActiveAccount: () => null,
+    accountOptions: [{ id: 'all', label: 'All Accounts', count: 0, pnl: 0 }],
+    addTrade: () => null,
+    importTrades: async () => ({ imported: 0, skipped: 0, trades: [] }),
+    updateTrade: () => null,
+    deleteTrade: () => null,
+    deleteAllTrades: async () => ({ success: false, deleted: 0 }),
+    downloadBackup: () => null,
+    fetchTrades: async () => [],
+  };
 }
 
 export function useTrades() {
@@ -444,6 +545,13 @@ function buildTradePayload(tradeData = {}, userId) {
   const commission = nullableDatabaseNumber(tradeData.commission);
   const swap = nullableDatabaseNumber(tradeData.swap);
   const openDate   = tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0];
+  const extra = normalizeJournalExtra(tradeData.extra, {
+    account: tradeData.account,
+    accountName: tradeData.account_name,
+    accountNumber: tradeData.account_number,
+    exchange: tradeData.exchange,
+    broker: tradeData.broker,
+  });
 
   return {
     user_id:            userId,
@@ -473,7 +581,7 @@ function buildTradePayload(tradeData = {}, userId) {
     swap,
     market_type:        tradeData.marketType  || tradeData.market_type || null,
     time:               tradeData.time        || null,
-    extra:              tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
+    extra:              Object.keys(extra).length ? extra : null,
   };
 }
 
@@ -491,6 +599,9 @@ function normalizeTradeRecord(trade = {}) {
   const trailingStop = trade.trailing_stop ?? trade.trailingStop ?? null;
   const marketType = trade.market_type || trade.marketType || '';
   const extra = trade.extra && typeof trade.extra === 'object' ? trade.extra : {};
+  const account = trade.account || trade.account_name || extra.account || extra.account_name || extra.account_number || '';
+  const exchange = trade.exchange || trade.broker || extra.exchange || extra.broker || '';
+  const accountMeta = getTradeAccountMeta({ ...trade, extra, account, exchange });
   const risk = entry && stopLoss ? Math.abs(entry - stopLoss) : 0;
   const reward = entry && exit ? Math.abs(exit - entry) : 0;
   const rr = risk > 0 ? reward / risk : 0;
@@ -526,6 +637,11 @@ function normalizeTradeRecord(trade = {}) {
     breakEven,
     trailing_stop: trailingStop,
     trailingStop,
+    account,
+    exchange,
+    broker: exchange,
+    accountKey: accountMeta.id,
+    accountLabel: accountMeta.label,
     durationMinutes: trade.duration_minutes ?? trade.durationMinutes ?? null,
     emotionBefore: trade.emotion_before || trade.emotionBefore || '',
     emotionDuring: trade.emotion_during || trade.emotionDuring || '',
@@ -540,6 +656,13 @@ function normalizeTradeRecord(trade = {}) {
 
 function mapTradeUpdates(tradeData = {}) {
   const pnl = resolveProfitLoss(tradeData);
+  const extra = normalizeJournalExtra(tradeData.extra, {
+    account: tradeData.account,
+    accountName: tradeData.account_name,
+    accountNumber: tradeData.account_number,
+    exchange: tradeData.exchange,
+    broker: tradeData.broker,
+  });
 
   const payload = {
     symbol:            tradeData.symbol || tradeData.pair || '',
@@ -568,7 +691,7 @@ function mapTradeUpdates(tradeData = {}) {
     swap:              nullableDatabaseNumber(tradeData.swap),
     market_type:       tradeData.marketType || tradeData.market_type || null,
     time:              tradeData.time || null,
-    extra:             tradeData.extra && Object.keys(tradeData.extra).length ? tradeData.extra : null,
+    extra:             Object.keys(extra).length ? extra : null,
   };
 
   return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
@@ -650,6 +773,80 @@ function mergeOptimisticTrades(currentTrades = [], optimisticTrades = []) {
   const existingIds = new Set((currentTrades || []).map((trade) => String(trade.id)));
   const nextOptimistic = optimisticTrades.filter((trade) => !existingIds.has(String(trade.id)));
   return [...nextOptimistic, ...(currentTrades || [])];
+}
+
+function normalizeJournalExtra(extra = {}, fallback = {}) {
+  const next = extra && typeof extra === 'object' ? { ...extra } : {};
+  if (fallback.account) next.account = fallback.account;
+  if (fallback.accountName) next.account_name = fallback.accountName;
+  if (fallback.accountNumber) next.account_number = fallback.accountNumber;
+  if (fallback.exchange || fallback.broker) next.exchange = fallback.exchange || fallback.broker;
+  return Object.fromEntries(Object.entries(next).filter(([, value]) => value != null && value !== ''));
+}
+
+function normalizeAccountId(value = '') {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'manual';
+}
+
+function getTradeAccountMeta(trade = {}) {
+  const label = String(
+    trade.account
+    || trade.account_name
+    || trade.extra?.account
+    || trade.extra?.account_name
+    || trade.extra?.account_number
+    || trade.account_number
+    || trade.exchange
+    || trade.broker
+    || trade.extra?.exchange
+    || trade.extra?.broker
+    || 'Main journal'
+  ).trim() || 'Main journal';
+
+  return {
+    id: `account:${normalizeAccountId(label)}`,
+    label,
+  };
+}
+
+function filterTradesByAccount(trades = [], activeAccount = 'all') {
+  if (!activeAccount || activeAccount === 'all') return trades;
+  return (trades || []).filter((trade) => getTradeAccountMeta(trade).id === activeAccount);
+}
+
+function buildAccountOptions(trades = []) {
+  const scoped = Array.isArray(trades) ? trades : [];
+  const items = scoped.reduce((map, trade) => {
+    const account = getTradeAccountMeta(trade);
+    if (!map.has(account.id)) {
+      map.set(account.id, { id: account.id, label: account.label, count: 0, pnl: 0 });
+    }
+    const current = map.get(account.id);
+    current.count += 1;
+    current.pnl += finiteNumber(trade.profit_loss ?? trade.pnl ?? 0);
+    return map;
+  }, new Map());
+
+  return [
+    {
+      id: 'all',
+      label: 'All Accounts',
+      count: scoped.length,
+      pnl: scoped.reduce((sum, trade) => sum + finiteNumber(trade.profit_loss ?? trade.pnl ?? 0), 0),
+    },
+    ...Array.from(items.values()).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label)),
+  ];
+}
+
+function downloadJsonFile(payload, filename = 'marketflow-backup.json') {
+  if (typeof window === 'undefined' || !payload) return;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  window.URL.revokeObjectURL(url);
 }
 
 async function runSupabaseRequest(requestFactory, timeoutMs = REQUEST_TIMEOUT_MS, timeoutMessage = 'The request timed out.') {
