@@ -2,23 +2,39 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase } from '../lib/supabase';
 
 const TradingContext = createContext(null);
+const IMPORT_BATCH_SIZE = 40;
+const REQUEST_TIMEOUT_MS = 12000;
 
 export function TradingProvider({ children }) {
   const [trades,  setTrades]  = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTrades = useCallback(async () => {
+  const fetchTrades = useCallback(async ({ preserveOnError = true } = {}) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) { setTrades([]); setLoading(false); return; }
-      const { data, error } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('open_date', { ascending: false });
-      if (!error) setTrades((data || []).map(normalizeTradeRecord));
-    } catch(_) {
-      setTrades([]);
+      const { data, error } = await runSupabaseRequest(
+        (signal) => supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('open_date', { ascending: false })
+          .abortSignal(signal),
+        REQUEST_TIMEOUT_MS,
+        'Fetching trades timed out.',
+      );
+      if (error) {
+        console.error('fetchTrades error:', error.message, error.details);
+        if (!preserveOnError) setTrades([]);
+        return [];
+      }
+      const normalized = (data || []).map(normalizeTradeRecord);
+      setTrades(normalized);
+      return normalized;
+    } catch(error) {
+      console.error('fetchTrades exception:', error);
+      if (!preserveOnError) setTrades([]);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -26,7 +42,7 @@ export function TradingProvider({ children }) {
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 5000);
-    fetchTrades().finally(() => clearTimeout(t));
+    fetchTrades({ preserveOnError: false }).finally(() => clearTimeout(t));
   }, [fetchTrades]);
 
   // ── addTrade — maps all fields to Supabase columns ──────
@@ -78,36 +94,74 @@ export function TradingProvider({ children }) {
       let imported = 0;
       let skipped = 0;
       let firstError = '';
-      const chunkSize = 50;
+      const optimisticTrades = [];
+      let previewIndex = 0;
 
-      for (let index = 0; index < payloads.length; index += chunkSize) {
-        const chunk = payloads.slice(index, index + chunkSize);
-        const { error } = await supabase.from('trades').insert(chunk);
+      const insertChunk = async (chunk) => {
+        if (!chunk.length) return { imported: 0, skipped: 0, error: '' };
 
-        if (!error) {
-          imported += chunk.length;
-          continue;
-        }
+        try {
+          const { error } = await runSupabaseRequest(
+            (signal) => supabase.from('trades').insert(chunk).abortSignal(signal),
+            REQUEST_TIMEOUT_MS,
+            'The import request took too long and was stopped.',
+          );
 
-        console.error('importTrades batch error:', error?.message, error?.details);
-        if (!firstError) {
-          firstError = [error?.message, error?.details].filter(Boolean).join(' - ') || 'The batch import was rejected by the database.';
-        }
-
-        for (const payload of chunk) {
-          const { error: rowError } = await supabase.from('trades').insert([payload]);
-
-          if (rowError) {
-            console.error('importTrades row error:', rowError.message, rowError.details);
-            if (!firstError) {
-              firstError = [rowError.message, rowError.details].filter(Boolean).join(' - ') || 'A trade row could not be saved.';
-            }
-            skipped += 1;
-            continue;
+          if (!error) {
+            optimisticTrades.push(
+              ...chunk.map((payload) => createImportedTradePreview(payload, previewIndex++)),
+            );
+            return { imported: chunk.length, skipped: 0, error: '' };
           }
 
-          imported += 1;
+          console.error('importTrades batch error:', error?.message, error?.details);
+          const errorMessage = formatSupabaseError(error, 'The batch import was rejected by the database.');
+          if (chunk.length === 1) {
+            return { imported: 0, skipped: 1, error: errorMessage };
+          }
+
+          const midpoint = Math.ceil(chunk.length / 2);
+          const [left, right] = await Promise.all([
+            insertChunk(chunk.slice(0, midpoint)),
+            insertChunk(chunk.slice(midpoint)),
+          ]);
+          return {
+            imported: left.imported + right.imported,
+            skipped: left.skipped + right.skipped,
+            error: left.error || right.error || errorMessage,
+          };
+        } catch (error) {
+          console.error('importTrades batch exception:', error);
+          const errorMessage = formatSupabaseError(error, 'The import request timed out before the database answered.');
+          if (chunk.length === 1) {
+            return { imported: 0, skipped: 1, error: errorMessage };
+          }
+
+          const midpoint = Math.ceil(chunk.length / 2);
+          const [left, right] = await Promise.all([
+            insertChunk(chunk.slice(0, midpoint)),
+            insertChunk(chunk.slice(midpoint)),
+          ]);
+          return {
+            imported: left.imported + right.imported,
+            skipped: left.skipped + right.skipped,
+            error: left.error || right.error || errorMessage,
+          };
         }
+      };
+
+      for (let index = 0; index < payloads.length; index += IMPORT_BATCH_SIZE) {
+        const chunk = payloads.slice(index, index + IMPORT_BATCH_SIZE);
+        const chunkResult = await insertChunk(chunk);
+        imported += chunkResult.imported;
+        skipped += chunkResult.skipped;
+        if (!firstError && chunkResult.error) {
+          firstError = chunkResult.error;
+        }
+      }
+
+      if (optimisticTrades.length) {
+        setTrades((current) => mergeOptimisticTrades(current, optimisticTrades));
       }
 
       if (imported > 0) {
@@ -118,7 +172,7 @@ export function TradingProvider({ children }) {
         firstError = 'No trade could be saved.';
       }
 
-      return { imported, skipped, trades: [], error: firstError || null };
+      return { imported, skipped, trades: optimisticTrades, error: firstError || null };
     } catch (err) {
       console.error('importTrades exception:', err);
       throw err;
@@ -505,4 +559,41 @@ function fmtDate(d) {
 
 function fmt(n) {
   return (n >= 0 ? '+' : '') + '$' + Math.abs(Math.round(n)).toLocaleString();
+}
+
+function formatSupabaseError(error, fallback = 'A trade row could not be saved.') {
+  if (!error) return fallback;
+  const message = [error.message, error.details, error.hint].filter(Boolean).join(' - ').trim();
+  return message || fallback;
+}
+
+function createImportedTradePreview(payload = {}, index = 0) {
+  return normalizeTradeRecord({
+    id: `import-${Date.now()}-${index}`,
+    created_at: new Date().toISOString(),
+    ...payload,
+  });
+}
+
+function mergeOptimisticTrades(currentTrades = [], optimisticTrades = []) {
+  if (!optimisticTrades.length) return currentTrades;
+  const existingIds = new Set((currentTrades || []).map((trade) => String(trade.id)));
+  const nextOptimistic = optimisticTrades.filter((trade) => !existingIds.has(String(trade.id)));
+  return [...nextOptimistic, ...(currentTrades || [])];
+}
+
+async function runSupabaseRequest(requestFactory, timeoutMs = REQUEST_TIMEOUT_MS, timeoutMessage = 'The request timed out.') {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(() => controller?.abort(), timeoutMs);
+
+  try {
+    return await requestFactory(controller?.signal);
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(timeoutMessage);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
