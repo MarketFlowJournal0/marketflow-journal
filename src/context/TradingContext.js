@@ -75,7 +75,6 @@ export function TradingProvider({ children }) {
       }
 
       const payloads = rows.map((tradeData) => buildTradePayload(tradeData, session.user.id));
-      const insertedRows = [];
       let imported = 0;
       let skipped = 0;
       let firstError = '';
@@ -83,12 +82,10 @@ export function TradingProvider({ children }) {
 
       for (let index = 0; index < payloads.length; index += chunkSize) {
         const chunk = payloads.slice(index, index + chunkSize);
-        const { data, error } = await supabase.from('trades').insert(chunk).select();
+        const { error } = await supabase.from('trades').insert(chunk);
 
-        if (!error && Array.isArray(data)) {
-          insertedRows.push(...data);
-          imported += data.length;
-          skipped += Math.max(0, chunk.length - data.length);
+        if (!error) {
+          imported += chunk.length;
           continue;
         }
 
@@ -98,11 +95,7 @@ export function TradingProvider({ children }) {
         }
 
         for (const payload of chunk) {
-          const { data: row, error: rowError } = await supabase
-            .from('trades')
-            .insert([payload])
-            .select()
-            .single();
+          const { error: rowError } = await supabase.from('trades').insert([payload]);
 
           if (rowError) {
             console.error('importTrades row error:', rowError.message, rowError.details);
@@ -113,32 +106,24 @@ export function TradingProvider({ children }) {
             continue;
           }
 
-          if (row) {
-            insertedRows.push(row);
-            imported += 1;
-          } else {
-            skipped += 1;
-          }
+          imported += 1;
         }
       }
 
-      const normalizedRows = insertedRows
-        .map(normalizeTradeRecord)
-        .sort((a, b) => new Date(b.open_date || 0) - new Date(a.open_date || 0));
-
-      if (normalizedRows.length) {
-        setTrades((prev) => {
-          const incomingIds = new Set(normalizedRows.map((trade) => trade.id));
-          return [...normalizedRows, ...prev.filter((trade) => !incomingIds.has(trade.id))];
+      if (imported > 0) {
+        fetchTrades().catch((refreshError) => {
+          console.error('importTrades refresh error:', refreshError);
         });
+      } else if (!firstError) {
+        firstError = 'No trade could be saved.';
       }
 
-      return { imported, skipped, trades: normalizedRows, error: firstError || null };
+      return { imported, skipped, trades: [], error: firstError || null };
     } catch (err) {
       console.error('importTrades exception:', err);
       throw err;
     }
-  }, []);
+  }, [fetchTrades]);
 
   const updateTrade = useCallback(async (id, updates) => {
     const currentTrade = trades.find(t => t.id === id);

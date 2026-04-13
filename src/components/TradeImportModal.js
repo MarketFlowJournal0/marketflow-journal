@@ -300,9 +300,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
         skipped = normalizedTrades.length - imported;
       }
 
-      if (onImportComplete) {
-        await onImportComplete({ imported, skipped });
-      }
+      onImportComplete?.({ imported, skipped });
       setResult({ imported, skipped, error: importError || null });
       setStep(3);
       if (imported > 0) {

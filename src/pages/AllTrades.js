@@ -1368,7 +1368,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
 // 🏠 COMPOSANT PRINCIPAL - AllTrades
 // ══════════════════════════════════════════════════════════════════════════════
 export default function AllTrades(){
-  const{trades,deleteTrade,updateTrade,addTrade,importTrades,fetchTrades}=useTradingContext();
+  const{trades,deleteTrade,updateTrade,addTrade,importTrades}=useTradingContext();
 
   const[filters,setFilters]=useState(DEFAULT_FILTERS);
   const[sort,setSort]=useState({key:'date',dir:'desc'});
@@ -1420,13 +1420,12 @@ export default function AllTrades(){
   const handleEdit=useCallback(t=>{setEditTrade(toTradeFormData(t));setModalForm(true);},[]);
   const handleCreate=useCallback(()=>{setEditTrade(null);setModalForm(true);},[]);
   const handleReset=useCallback(()=>{setFilters(DEFAULT_FILTERS);toast.success('Filters cleared');},[]);
-  const handleImportComplete=useCallback(async ()=>{
+  const handleImportComplete=useCallback(()=>{
     setFilters(DEFAULT_FILTERS);
     setSort({key:'date',dir:'desc'});
     setPage(1);
     setSelected(new Set());
-    await fetchTrades?.();
-  },[fetchTrades]);
+  },[]);
 
   return(
     <div style={{backgroundColor:'transparent',minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'28px 24px 48px',position:'relative',overflow:'hidden'}}>
