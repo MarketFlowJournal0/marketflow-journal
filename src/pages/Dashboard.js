@@ -76,21 +76,21 @@ const DASHBOARD_STYLES = `
 
   .mf-dashboard-grid-kpi {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
     margin-bottom: 16px;
   }
 
   .mf-dashboard-grid-primary {
     display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(350px, 0.9fr);
+    grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.78fr);
     gap: 14px;
     margin-bottom: 14px;
   }
 
   .mf-dashboard-grid-secondary {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.82fr);
+    grid-template-columns: minmax(0, 1.18fr) minmax(300px, 0.82fr);
     gap: 14px;
     margin-bottom: 14px;
   }
@@ -104,12 +104,12 @@ const DASHBOARD_STYLES = `
   .mf-dashboard-side-stack {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
   }
 
   @media (max-width: 1380px) {
     .mf-dashboard-grid-kpi {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
@@ -122,12 +122,6 @@ const DASHBOARD_STYLES = `
   }
 
   @media (max-width: 900px) {
-    .mf-dashboard-grid-kpi {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 640px) {
     .mf-dashboard-grid-kpi {
       grid-template-columns: 1fr;
     }
@@ -911,8 +905,6 @@ function AccountScopeDropdown({ options = [], activeAccount = 'all', onChange, s
             <span style={{ fontSize: 11, color: C.text2 }}>{activeOption.count} trades</span>
             <span style={{ width: 4, height: 4, borderRadius: '50%', background: C.text3 }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: (stats.pnl || 0) >= 0 ? C.green : C.danger }}>{formatSignedCompact(stats.pnl)}</span>
-            <span style={{ width: 4, height: 4, borderRadius: '50%', background: C.text3 }} />
-            <span style={{ fontSize: 11, color: toneColor(rank.tone) }}>MF {rank.score}</span>
           </div>
         </div>
         {options.length > 1 && (
@@ -984,7 +976,6 @@ function HeaderPanel({ stats, overview, accountOptions, activeAccount, onAccount
   const session = getSessionStatus();
   const greeting = getGreeting();
   const weekNumber = getWeekNumber(now);
-  const rankTone = toneColor(overview.rank.tone);
 
   return (
     <motion.div
@@ -1000,7 +991,7 @@ function HeaderPanel({ stats, overview, accountOptions, activeAccount, onAccount
     >
       <div>
         <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: shade(C.accent, 0.85), marginBottom: 8 }}>
-          MarketFlow command center
+          Dashboard
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           <div style={{ width: 34, height: 3, borderRadius: 999, background: C.accent, boxShadow: `0 0 18px ${shade(C.accent, 0.55)}` }} />
@@ -1023,10 +1014,9 @@ function HeaderPanel({ stats, overview, accountOptions, activeAccount, onAccount
               {session.window}
             </span>
           </div>
-          <div style={{ width: 4, height: 4, borderRadius: '50%', background: C.text3 }} />
-          <span style={{ fontSize: 12, color: rankTone, fontWeight: 700 }}>
-            {overview.rank.label}
-          </span>
+        </div>
+        <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6, maxWidth: 560, marginTop: 10 }}>
+          Live overview of realized performance across the active account scope.
         </div>
       </div>
 
@@ -1048,10 +1038,10 @@ function DailyRoutinePanel({ items, onToggle, onTitleChange, navigate, overview 
   const progressTone = progress >= 100 ? C.green : progress >= 50 ? C.accent : C.warn;
 
   return (
-    <SectionCard tone={progressTone} index={1} style={{ padding: '22px 22px 20px', marginBottom: 16 }}>
+    <SectionCard tone={progressTone} index={1} style={{ padding: '18px 18px 16px', marginBottom: 16 }}>
       <SectionTitle
-        eyebrow="Daily routine"
-        title="Open this before every session"
+        eyebrow="Workflow"
+        title="Today's workflow"
         tone={progressTone}
         icon={<Ic.Checklist />}
         action={(
@@ -1061,32 +1051,31 @@ function DailyRoutinePanel({ items, onToggle, onTitleChange, navigate, overview 
         )}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 0.72fr) minmax(0, 1fr)', gap: 16 }}>
-        <div style={{ padding: '16px 16px 14px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-            <TinyBadge tone={progressTone}>{completed}/{items.length} complete</TinyBadge>
-            <span style={{ fontSize: 11, color: C.text2 }}>Feeds the MF score</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.62fr) minmax(0, 1fr)', gap: 14 }}>
+        <div style={{ padding: '15px 15px 13px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+            <TinyBadge tone={progressTone}>{completed}/{items.length} done</TinyBadge>
+            <span style={{ fontSize: 11, color: C.text2 }}>MF score</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.05em', color: progressTone }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: progressTone }}>
               {progress}%
             </div>
             <div style={{ fontSize: 12, color: C.text2 }}>
-              routine completion today
+              completed today
             </div>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 12 }}>
             <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(progressTone, 0.58)}, ${progressTone})` }} />
           </div>
           <div style={{ display: 'grid', gap: 8 }}>
-            <MiniMetric label="Routine boost" value={`+${Math.round(progress * 0.28)} pts`} tone={progressTone} caption="Direct contribution inside Process." />
             <MiniMetric label="Current focus" value={overview.rank.focus} tone={toneColor(overview.rank.tone)} caption={overview.rank.note} />
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           {items.map((item) => (
-            <div key={item.id} style={{ padding: '13px 14px', borderRadius: 16, border: `1px solid ${item.done ? shade(C.green, 0.18) : shade(C.accent, 0.12)}`, background: item.done ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.07)' : 'rgba(255,255,255,0.03)' }}>
+            <div key={item.id} style={{ padding: '12px 13px', borderRadius: 16, border: `1px solid ${item.done ? shade(C.green, 0.18) : shade(C.accent, 0.12)}`, background: item.done ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.07)' : 'rgba(255,255,255,0.03)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <button
                   onClick={() => onToggle(item.id)}
@@ -1187,12 +1176,10 @@ function StatusStrip({ overview }) {
 
 function KpiStrip({ stats, overview }) {
   const items = [
-    { label: 'Net P&L', value: formatSignedCompact(stats.pnl), caption: `${stats.pnlPct || 0}% vs 10k baseline`, tone: (stats.pnl || 0) >= 0 ? C.green : C.danger },
+    { label: 'Risk / reward', value: stats.avgRR || 'n/a', caption: `${stats.totalTrades || 0} realized trades`, tone: C.accent },
+    { label: 'Total P&L', value: formatSignedCompact(stats.pnl), caption: `${stats.wins || 0}W / ${stats.losses || 0}L / ${stats.breakevens || 0}BE`, tone: (stats.pnl || 0) >= 0 ? C.green : C.danger },
     { label: 'Profit factor', value: formatRatio(stats.profitFactor), caption: `${formatCurrency(stats.avgWin)} avg win / ${formatCurrency(stats.avgLoss)} avg loss`, tone: C.blue },
-    { label: 'Win rate', value: `${stats.winRate || 0}%`, caption: `${stats.wins || 0}W / ${stats.losses || 0}L / ${stats.breakevens || 0}BE`, tone: C.accent },
-    { label: 'Average trade', value: formatCurrency(stats.expectancy || 0, true), caption: 'Live realized expectancy', tone: C.teal },
-    { label: 'Max drawdown', value: `${Math.abs(stats.maxDrawdown || 0)}%`, caption: 'Peak-to-trough pressure', tone: C.danger },
-    { label: 'Routine score', value: `${overview.routineScore}%`, caption: 'Daily operating consistency', tone: overview.routineScore >= 70 ? C.green : C.warn },
+    { label: 'MF score', value: `${overview.rank.score}`, caption: overview.rank.label, tone: toneColor(overview.rank.tone) },
   ];
 
   return (
@@ -1224,7 +1211,7 @@ function EquityPanel({ stats }) {
     <SectionCard tone={C.accent} index={9} style={{ padding: '22px 22px 18px' }}>
       <SectionTitle
         eyebrow="Performance"
-        title="Equity overview"
+        title="Performance curve"
         tone={C.accent}
         icon={<Ic.Pulse />}
         action={(
@@ -1256,7 +1243,7 @@ function EquityPanel({ stats }) {
           {formatCurrency(lastValue, true)}
         </div>
         <div style={{ fontSize: 12, color: C.text2 }}>
-          cumulative performance for the active account scope
+          active account scope
         </div>
       </div>
 
@@ -1264,7 +1251,7 @@ function EquityPanel({ stats }) {
         <MiniMetric label="Best trade" value={formatCurrency(stats.bestTrade || 0, true)} tone={C.green} />
         <MiniMetric label="Worst trade" value={formatCurrency(stats.worstTrade || 0, true)} tone={C.danger} />
         <MiniMetric label="Max drawdown" value={`${Math.abs(stats.maxDrawdown || 0)}%`} tone={C.orange} />
-        <MiniMetric label="5-day average" value={formatCurrency(averageDaily, true)} tone={averageDaily >= 0 ? C.accent : C.warn} />
+        <MiniMetric label="Daily average" value={formatCurrency(averageDaily, true)} tone={averageDaily >= 0 ? C.accent : C.warn} />
       </div>
 
       {data.length ? (
@@ -1669,6 +1656,384 @@ function CompetitionPreviewPanel({ overview, navigate }) {
   );
 }
 
+function CompactRoutinePanel({ items, onToggle, onTitleChange, navigate, overview }) {
+  const [editing, setEditing] = useState(false);
+  const completed = items.filter((item) => item.done).length;
+  const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
+  const progressTone = progress >= 100 ? C.green : progress >= 50 ? C.accent : C.warn;
+
+  return (
+    <SectionCard tone={progressTone} index={1} style={{ padding: '18px 18px 16px', marginBottom: 16 }}>
+      <SectionTitle
+        eyebrow="Workflow"
+        title="Today's workflow"
+        tone={progressTone}
+        icon={<Ic.Checklist />}
+        action={(
+          <GhostButton onClick={() => setEditing((value) => !value)} icon={editing ? <Ic.Save /> : <Ic.Edit />}>
+            {editing ? 'Done editing' : 'Customize'}
+          </GhostButton>
+        )}
+      />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.62fr) minmax(0, 1fr)', gap: 14 }}>
+        <div style={{ padding: '15px 15px 13px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+            <TinyBadge tone={progressTone}>{completed}/{items.length} done</TinyBadge>
+            <span style={{ fontSize: 11, color: C.text2 }}>MF score</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: progressTone }}>
+              {progress}%
+            </div>
+            <div style={{ fontSize: 12, color: C.text2 }}>
+              completed today
+            </div>
+          </div>
+          <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 12 }}>
+            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(progressTone, 0.58)}, ${progressTone})` }} />
+          </div>
+          <MiniMetric label="Current focus" value={overview.rank.focus} tone={toneColor(overview.rank.tone)} caption={overview.rank.note} />
+        </div>
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          {items.map((item) => (
+            <div key={item.id} style={{ padding: '12px 13px', borderRadius: 16, border: `1px solid ${item.done ? shade(C.green, 0.18) : shade(C.accent, 0.12)}`, background: item.done ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.07)' : 'rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  onClick={() => onToggle(item.id)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 8,
+                    border: `1px solid ${item.done ? shade(C.green, 0.22) : C.border}`,
+                    background: item.done ? shade(C.green, 0.16) : 'rgba(255,255,255,0.02)',
+                    color: item.done ? C.green : C.text3,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    fontWeight: 900,
+                    fontSize: 12,
+                  }}
+                >
+                  {item.done ? '✓' : ''}
+                </button>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {editing ? (
+                    <input
+                      value={item.title}
+                      onChange={(event) => onTitleChange(item.id, event.target.value)}
+                      style={{
+                        width: '100%',
+                        borderRadius: 10,
+                        border: `1px solid ${C.border}`,
+                        background: 'rgba(255,255,255,0.02)',
+                        color: C.text1,
+                        fontSize: 12.5,
+                        padding: '8px 10px',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  ) : (
+                    <div style={{ fontSize: 12.5, lineHeight: 1.55, color: item.done ? C.text1 : C.text2, textDecoration: item.done ? 'line-through' : 'none' }}>
+                      {item.title}
+                    </div>
+                  )}
+                </div>
+
+                <GhostButton onClick={() => navigate(item.route)} icon={<Ic.ArrowRight />}>
+                  Open
+                </GhostButton>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+function CompactRankPanel({ overview, navigate }) {
+  const rank = overview.rank;
+  const rankTone = toneColor(rank.tone);
+  const topLine = [
+    { label: 'Score', value: rank.score, tone: rankTone },
+    { label: 'Position', value: `#${rank.position.toLocaleString()}`, tone: C.text1 },
+    { label: 'Weekly', value: `${rank.weeklyDelta >= 0 ? '+' : ''}${rank.weeklyDelta}`, tone: rank.weeklyDelta >= 0 ? C.green : C.danger },
+  ];
+
+  return (
+    <SectionCard tone={rankTone} index={10} style={{ padding: '18px 18px 16px' }}>
+      <SectionTitle
+        eyebrow="Competition"
+        title="MarketFlow Rank"
+        tone={rankTone}
+        icon={<Ic.Trophy />}
+        action={<GhostButton onClick={() => navigate(ROUTES.competition)}>Open</GhostButton>}
+      />
+
+      <TinyBadge tone={rankTone}>{rank.label}</TinyBadge>
+      <div style={{ fontSize: 14, lineHeight: 1.65, color: C.text2, marginTop: 10, marginBottom: 14 }}>
+        {rank.focus}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 14 }}>
+        {topLine.map((item) => (
+          <div key={item.label} style={{ padding: '12px 12px 10px', borderRadius: 14, border: `1px solid ${shade(item.tone, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>
+              {item.label}
+            </div>
+            <div style={{ fontSize: 19, fontWeight: 900, color: item.tone, letterSpacing: '-0.04em' }}>
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>Division progress</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: rankTone }}>{rank.progress}%</span>
+        </div>
+        <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+          <motion.div initial={{ width: 0 }} animate={{ width: `${rank.progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(rankTone, 0.56)}, ${rankTone})` }} />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gap: 10 }}>
+        {rank.factors.slice(0, 3).map((factor) => (
+          <ProgressRow key={factor.label} label={factor.label} current={factor.value} target={100} tone={toneColor(factor.tone)} suffix="%" />
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+function CompactCalendarPanel({ trades, navigate }) {
+  const [monthOffset, setMonthOffset] = useState(0);
+  const calendar = useMemo(() => buildCalendarMonth(trades, monthOffset), [trades, monthOffset]);
+  const [selectedKey, setSelectedKey] = useState(null);
+
+  useEffect(() => {
+    const available = calendar.days.find((day) => day.key === selectedKey && day.trades > 0);
+    if (available) return;
+    const fallback = calendar.days.find((day) => day.inMonth && day.trades > 0);
+    setSelectedKey(fallback ? fallback.key : null);
+  }, [calendar.days, selectedKey]);
+
+  const selectedDay = calendar.days.find((day) => day.key === selectedKey) || null;
+
+  return (
+    <SectionCard tone={C.accent} index={11} style={{ padding: '18px 18px 16px', marginBottom: 14 }}>
+      <SectionTitle
+        eyebrow="Calendar"
+        title="Trading calendar"
+        tone={C.accent}
+        icon={<Ic.Clock />}
+        action={(
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <GhostButton onClick={() => setMonthOffset((value) => value - 1)}>Prev</GhostButton>
+            <GhostButton onClick={() => setMonthOffset((value) => Math.min(0, value + 1))} disabled={!calendar.canGoForward}>Next</GhostButton>
+          </div>
+        )}
+      />
+
+      {calendar.hasHistory ? (
+        <div className="mf-dashboard-calendar-shell">
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: C.text0 }}>{calendar.monthLabel}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <TinyBadge tone={calendar.totalPnl >= 0 ? C.green : C.danger}>{formatCurrency(calendar.totalPnl, true)}</TinyBadge>
+                <TinyBadge tone={C.accent}>{calendar.tradeCount} trades</TinyBadge>
+                <TinyBadge tone={C.green}>{calendar.positiveDays} green days</TinyBadge>
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto', paddingBottom: 2 }}>
+              <div style={{ minWidth: 720 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8, marginBottom: 8 }}>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                    <div key={day} style={{ padding: '0 4px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
+                  {calendar.days.map((day) => {
+                    const tone = day.pnl > 0 ? C.green : day.pnl < 0 ? C.danger : C.accent;
+                    const active = day.trades > 0;
+                    const selected = selectedKey === day.key;
+                    return (
+                      <button
+                        key={day.key}
+                        onClick={() => active && setSelectedKey(day.key)}
+                        style={{
+                          minHeight: 104,
+                          borderRadius: 16,
+                          padding: '11px 11px 10px',
+                          border: `1px solid ${selected ? shade(C.accent, 0.38) : active ? shade(tone, 0.18) : shade(C.borderHi, 0.82)}`,
+                          background: active ? `linear-gradient(180deg, ${shade(tone, 0.14)} 0%, ${shade(tone, 0.04)} 100%)` : 'rgba(255,255,255,0.02)',
+                          boxShadow: selected ? `0 0 0 1px ${shade(C.accent, 0.16)}` : 'none',
+                          opacity: day.inMonth ? 1 : 0.28,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: 8,
+                          cursor: active ? 'pointer' : 'default',
+                          textAlign: 'left',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: day.isToday ? C.accent : C.text0 }}>{day.day}</span>
+                          {active && <span style={{ width: 7, height: 7, borderRadius: '50%', background: tone, boxShadow: `0 0 10px ${shade(tone, 0.44)}` }} />}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: '-0.04em', color: active ? tone : C.text3, marginBottom: 4 }}>
+                            {active ? formatCurrency(day.pnl, true) : '—'}
+                          </div>
+                          <div style={{ fontSize: 10.5, color: active ? C.text2 : C.text3 }}>
+                            {active ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : 'No trades'}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: 10, alignContent: 'start' }}>
+            <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
+                Day detail
+              </div>
+
+              {selectedDay ? (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: C.text0, marginBottom: 4 }}>{formatLongDate(selectedDay.date)}</div>
+                    <div style={{ fontSize: 12, color: C.text2 }}>
+                      {selectedDay.trades} trade{selectedDay.trades > 1 ? 's' : ''} / {selectedDay.winRate}% win rate
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                    <MiniMetric label="Daily P&L" value={formatCurrency(selectedDay.pnl, true)} tone={selectedDay.pnl >= 0 ? C.green : C.danger} />
+                    <MiniMetric label="Average trade" value={formatCurrency(selectedDay.avgTrade, true)} tone={selectedDay.avgTrade >= 0 ? C.accent : C.warn} />
+                    <MiniMetric label="Lead session" value={selectedDay.sessionLeader ? selectedDay.sessionLeader.label : 'n/a'} tone={C.teal} caption={selectedDay.sessionLeader ? `${selectedDay.sessionLeader.count} trade${selectedDay.sessionLeader.count > 1 ? 's' : ''}` : 'No dominant session'} />
+                    <MiniMetric label="Lead pair" value={selectedDay.pairLeader ? selectedDay.pairLeader.label : 'n/a'} tone={C.blue} caption={selectedDay.pairLeader ? formatCurrency(selectedDay.pairLeader.pnl, true) : 'No pair lead'} />
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {selectedDay.records.slice(0, 5).map((record) => {
+                      const pnlTone = record.pnl >= 0 ? C.green : C.danger;
+                      return (
+                        <div key={record.id} style={{ padding: '10px 11px', borderRadius: 14, border: `1px solid ${shade(pnlTone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: C.text1 }}>{record.symbol}</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: pnlTone }}>{formatCurrency(record.pnl, true)}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.55 }}>
+                            {record.direction} / {record.session} / {record.setup}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.7 }}>
+                  Select a trading day to open the detail.
+                </div>
+              )}
+            </div>
+
+            <GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>
+          </div>
+        </div>
+      ) : (
+        <EmptyState title="No trading calendar yet" body="Import trades in All Trades to unlock the monthly view." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
+      )}
+    </SectionCard>
+  );
+}
+
+function CompactRecentExecutions({ trades, navigate }) {
+  return (
+    <SectionCard tone={C.accent} index={12} style={{ padding: '18px 18px 12px' }}>
+      <SectionTitle eyebrow="Execution" title="Latest trades" tone={C.accent} icon={<Ic.Session />} action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open</GhostButton>} />
+
+      {trades.length ? (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
+            <thead>
+              <tr>
+                {['Date', 'Pair', 'Side', 'P&L'].map((header) => (
+                  <th key={header} style={{ padding: '0 8px 12px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: C.text3, textAlign: header === 'P&L' ? 'right' : 'left', borderBottom: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {trades.slice(0, 5).map((trade) => {
+                const pnlTone = Number(trade.pnl || 0) >= 0 ? C.green : C.danger;
+                return (
+                  <tr key={trade.id}>
+                    <td style={{ padding: '14px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12, color: C.text2, whiteSpace: 'nowrap' }}>{formatShortDate(trade.open_date || trade.date)}</td>
+                    <td style={{ padding: '14px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12.5, fontWeight: 700, color: C.text0, whiteSpace: 'nowrap' }}>{trade.symbol || trade.pair || 'Unknown'}</td>
+                    <td style={{ padding: '14px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12, color: C.text2, whiteSpace: 'nowrap' }}>{trade.direction || trade.dir || 'n/a'}</td>
+                    <td style={{ padding: '14px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, textAlign: 'right', fontSize: 12.5, fontWeight: 800, color: pnlTone, whiteSpace: 'nowrap' }}>{formatCurrency(trade.pnl, true)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyState title="No closed trades yet" body="Import or log trades to build the daily review." />
+      )}
+    </SectionCard>
+  );
+}
+
+function CompactCompetitionPanel({ overview, navigate }) {
+  const rankTone = toneColor(overview.rank.tone);
+  const board = useMemo(() => buildCompetitionBoard(overview.rank, 'You'), [overview.rank]);
+
+  return (
+    <SectionCard tone={rankTone} index={13} style={{ padding: '18px 18px 16px' }}>
+      <SectionTitle eyebrow="Competition" title="Leaderboard" tone={rankTone} icon={<Ic.Trophy />} action={<GhostButton onClick={() => navigate(ROUTES.competition)}>Open</GhostButton>} />
+      <div style={{ display: 'grid', gap: 8 }}>
+        {board.slice(0, 4).map((row) => {
+          const rowTone = row.isUser ? rankTone : C.text2;
+          return (
+            <div key={row.id} style={{ padding: '11px 12px', borderRadius: 14, border: `1px solid ${shade(rowTone, row.isUser ? 0.22 : 0.12)}`, background: row.isUser ? shade(rankTone, 0.1) : 'rgba(255,255,255,0.025)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: rowTone, minWidth: 36 }}>#{row.position}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: row.isUser ? C.text0 : C.text1 }}>{row.name}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: rowTone }}>{row.score}</span>
+              </div>
+              <div style={{ fontSize: 10.5, color: row.isUser ? C.text2 : C.text3 }}>
+                Top {row.percentile}% / {row.delta >= 0 ? '+' : ''}{row.delta} this week
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const ctx = useTradingContext();
@@ -1726,7 +2091,7 @@ export default function Dashboard() {
           onAccountChange={setActiveAccount}
         />
 
-        <DailyRoutinePanel
+        <CompactRoutinePanel
           items={routineItems}
           onToggle={toggleRoutineItem}
           onTitleChange={changeRoutineTitle}
@@ -1734,21 +2099,19 @@ export default function Dashboard() {
           overview={overview}
         />
 
-        <StatusStrip overview={overview} />
         <KpiStrip stats={stats} overview={overview} />
 
         <div className="mf-dashboard-grid-primary">
           <EquityPanel stats={stats} />
-          <MarketFlowRankPanel overview={overview} />
+          <CompactRankPanel overview={overview} navigate={navigate} />
         </div>
 
-        <PerformanceCalendarPanel trades={trades} navigate={navigate} />
+        <CompactCalendarPanel trades={trades} navigate={navigate} />
 
         <div className="mf-dashboard-grid-secondary">
-          <RecentExecutions trades={overview.recentTrades} navigate={navigate} />
+          <CompactRecentExecutions trades={overview.recentTrades} navigate={navigate} />
           <div className="mf-dashboard-side-stack">
-            <JournalDiscipline overview={overview} />
-            <CompetitionPreviewPanel overview={overview} navigate={navigate} />
+            <CompactCompetitionPanel overview={overview} navigate={navigate} />
           </div>
         </div>
       </div>

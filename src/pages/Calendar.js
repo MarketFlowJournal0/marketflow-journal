@@ -1,463 +1,451 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useTradingContext } from '../context/TradingContext';
+import { shade } from '../lib/colorAlpha';
 
-function Calendar() {
-  const { trades } = useTradingContext();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
+const C = {
+  accent: 'var(--mf-accent,#06E6FF)',
+  green: 'var(--mf-green,#00FF88)',
+  blue: 'var(--mf-blue,#4D7CFF)',
+  teal: 'var(--mf-teal,#00F5D4)',
+  warn: 'var(--mf-warn,#FFB31A)',
+  danger: 'var(--mf-danger,#FF3D57)',
+  text0: 'var(--mf-text-0,#FFFFFF)',
+  text1: 'var(--mf-text-1,#E8EEFF)',
+  text2: 'var(--mf-text-2,#7A90B8)',
+  text3: 'var(--mf-text-3,#334566)',
+  border: 'var(--mf-border,#162034)',
+  borderHi: 'var(--mf-border-hi,#1E2E48)',
+};
 
-  // Get current month and year
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+const PAGE_STYLES = `
+  .mf-calendar-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.82fr);
+    gap: 16px;
+  }
 
-  // Calculate days of the month
+  .mf-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mf-calendar-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 1180px) {
+    .mf-calendar-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .mf-calendar-kpis {
+      grid-template-columns: 1fr;
+    }
+  }
+`;
+
+function panelMotion(index = 0) {
+  return {
+    initial: { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: {
+      duration: 0.42,
+      delay: index * 0.05,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  };
+}
+
+function toValidDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatCurrency(value = 0, signed = false) {
+  const amount = Number(value) || 0;
+  const absolute = Math.abs(amount).toLocaleString();
+  if (signed) {
+    if (amount > 0) return `+$${absolute}`;
+    if (amount < 0) return `-$${absolute}`;
+  }
+  return `$${absolute}`;
+}
+
+function formatLongDate(value) {
+  const date = toValidDate(value);
+  if (!date) return 'No date';
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function toDateKey(value) {
+  const date = toValidDate(value);
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getClosedTrades(trades) {
+  return [...(trades || [])]
+    .filter((trade) => ['TP', 'SL', 'BE'].includes(trade.status))
+    .sort((left, right) => new Date(right.open_date || right.date || 0) - new Date(left.open_date || left.date || 0));
+}
+
+function buildCalendarMonth(trades, monthOffset = 0) {
+  const closedTrades = getClosedTrades(trades);
+  const anchorDate = toValidDate(closedTrades[0]?.open_date || closedTrades[0]?.date) || new Date();
+  const monthDate = new Date(anchorDate.getFullYear(), anchorDate.getMonth() + monthOffset, 1);
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const monthLabel = monthDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
-  const startingDayOfWeek = firstDay.getDay();
+  const start = new Date(firstDay);
+  start.setDate(start.getDate() - start.getDay());
+  const end = new Date(lastDay);
+  end.setDate(end.getDate() + (6 - end.getDay()));
 
-  // Previous month
-  const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
-
-  // Next month
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  // Group trades by date
-  const tradesByDate = useMemo(() => {
-    const grouped = {};
-    trades.forEach(trade => {
-      if (!grouped[trade.date]) {
-        grouped[trade.date] = [];
-      }
-      grouped[trade.date].push(trade);
+  const dayMap = {};
+  closedTrades.forEach((trade) => {
+    const key = toDateKey(trade.open_date || trade.date);
+    if (!key) return;
+    const pnl = Number(trade.profit_loss || trade.pnl || 0);
+    if (!dayMap[key]) {
+      dayMap[key] = {
+        key,
+        date: toValidDate(trade.open_date || trade.date) || new Date(),
+        pnl: 0,
+        trades: 0,
+        wins: 0,
+        losses: 0,
+        breakevens: 0,
+        records: [],
+        sessions: {},
+        pairs: {},
+      };
+    }
+    const summary = dayMap[key];
+    const sessionLabel = trade.session || 'Unassigned';
+    const pairLabel = trade.symbol || trade.pair || 'Unknown';
+    summary.pnl += pnl;
+    summary.trades += 1;
+    if (pnl > 0) summary.wins += 1;
+    else if (pnl < 0) summary.losses += 1;
+    else summary.breakevens += 1;
+    summary.sessions[sessionLabel] = (summary.sessions[sessionLabel] || 0) + 1;
+    summary.pairs[pairLabel] = (summary.pairs[pairLabel] || 0) + pnl;
+    summary.records.push({
+      id: trade.id,
+      symbol: pairLabel,
+      direction: trade.direction || 'n/a',
+      session: sessionLabel,
+      setup: trade.setup || 'Unlabeled',
+      pnl,
+      notes: trade.notes || '',
     });
-    return grouped;
-  }, [trades]);
+  });
 
-  // Stats by date
-  const getDateStats = (dateString) => {
-    const dateTrades = tradesByDate[dateString] || [];
-    if (dateTrades.length === 0) return null;
-
-    const wins = dateTrades.filter(t => t.win).length;
-    const totalPnL = dateTrades.reduce((sum, t) => sum + parseFloat(t.pnl || 0), 0);
-    const winRate = (wins / dateTrades.length) * 100;
-
-    return {
-      count: dateTrades.length,
-      wins,
-      losses: dateTrades.length - wins,
-      totalPnL: totalPnL.toFixed(2),
-      winRate: winRate.toFixed(0),
-      trades: dateTrades,
-    };
-  };
-
-  // Selected day trades
-  const selectedDayTrades = selectedDate ? (tradesByDate[selectedDate] || []) : [];
-
-  // Month names
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  // Days of the week
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  // Monthly stats
-  const monthStats = useMemo(() => {
-    const monthTrades = trades.filter(trade => {
-      const tradeDate = new Date(trade.date);
-      return tradeDate.getMonth() === month && tradeDate.getFullYear() === year;
+  const monthDays = [];
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const key = toDateKey(cursor);
+    const entry = dayMap[key];
+    const sessionLeader = entry ? Object.entries(entry.sessions).sort((left, right) => right[1] - left[1])[0] || null : null;
+    const pairLeader = entry ? Object.entries(entry.pairs).sort((left, right) => right[1] - left[1])[0] || null : null;
+    monthDays.push({
+      key,
+      date: new Date(cursor),
+      day: cursor.getDate(),
+      inMonth: cursor.getMonth() === month,
+      isToday: toDateKey(cursor) === toDateKey(new Date()),
+      pnl: entry?.pnl || 0,
+      trades: entry?.trades || 0,
+      wins: entry?.wins || 0,
+      losses: entry?.losses || 0,
+      breakevens: entry?.breakevens || 0,
+      winRate: entry?.trades ? Math.round((entry.wins / entry.trades) * 100) : 0,
+      avgTrade: entry?.trades ? Math.round(entry.pnl / entry.trades) : 0,
+      sessionLeader: sessionLeader ? { label: sessionLeader[0], count: sessionLeader[1] } : null,
+      pairLeader: pairLeader ? { label: pairLeader[0], pnl: pairLeader[1] } : null,
+      records: entry?.records || [],
     });
+    cursor.setDate(cursor.getDate() + 1);
+  }
 
-    const wins = monthTrades.filter(t => t.win).length;
-    const totalPnL = monthTrades.reduce((sum, t) => sum + parseFloat(t.pnl || 0), 0);
-    const winRate = monthTrades.length > 0 ? (wins / monthTrades.length) * 100 : 0;
+  const inMonthDays = monthDays.filter((day) => day.inMonth && day.trades > 0);
+  const totalPnl = inMonthDays.reduce((sum, day) => sum + day.pnl, 0);
+  const tradeCount = inMonthDays.reduce((sum, day) => sum + day.trades, 0);
+  const winDays = inMonthDays.filter((day) => day.pnl > 0).length;
+  const tradeDays = inMonthDays.length;
 
-    return {
-      totalTrades: monthTrades.length,
-      wins,
-      losses: monthTrades.length - wins,
-      totalPnL: totalPnL.toFixed(2),
-      winRate: winRate.toFixed(1),
-    };
-  }, [trades, month, year]);
+  return {
+    monthLabel,
+    days: monthDays,
+    totalPnl,
+    tradeCount,
+    tradeDays,
+    winDays,
+    hasHistory: inMonthDays.length > 0,
+    canGoForward: monthOffset < 0,
+  };
+}
 
+function Card({ children, tone = C.accent, style, index = 0 }) {
   return (
-    <div className="p-8 min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Header Hero */}
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, type: "spring" }}
-        className="mb-10"
-      >
-        <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-4">
-          Trading Calendar
-        </h1>
-        <p className="text-[#A0AEC0] text-xl">Track your daily performance and identify patterns</p>
-      </motion.div>
+    <motion.section
+      {...panelMotion(index)}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 24,
+        border: `1px solid ${shade(tone, 0.16)}`,
+        background: 'linear-gradient(180deg, rgba(10,17,28,0.9), rgba(8,13,24,0.94))',
+        boxShadow: '0 18px 52px rgba(0,0,0,0.24)',
+        ...style,
+      }}
+    >
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(circle at top right, ${shade(tone, 0.12)} 0%, transparent 42%)` }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+    </motion.section>
+  );
+}
 
-      {/* Month Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-5 gap-6 mb-10"
-      >
-        {[
-          {
-            label: 'Trades This Month',
-            value: monthStats.totalTrades,
-            icon: '📊',
-            gradient: 'from-blue-500 to-cyan-500',
-            bgGradient: 'from-blue-500/10 to-cyan-500/10',
-          },
-          {
-            label: 'Wins',
-            value: monthStats.wins,
-            icon: '✅',
-            gradient: 'from-green-500 to-emerald-500',
-            bgGradient: 'from-green-500/10 to-emerald-500/10',
-          },
-          {
-            label: 'Losses',
-            value: monthStats.losses,
-            icon: '❌',
-            gradient: 'from-red-500 to-rose-500',
-            bgGradient: 'from-red-500/10 to-rose-500/10',
-          },
-          {
-            label: 'Win Rate',
-            value: `${monthStats.winRate}%`,
-            icon: '🎯',
-            gradient: 'from-purple-500 to-pink-500',
-            bgGradient: 'from-purple-500/10 to-pink-500/10',
-          },
-          {
-            label: 'Monthly P&L',
-            value: `${parseFloat(monthStats.totalPnL) >= 0 ? '+' : ''}$${monthStats.totalPnL}`,
-            icon: '💰',
-            gradient: parseFloat(monthStats.totalPnL) >= 0 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-rose-500',
-            bgGradient: parseFloat(monthStats.totalPnL) >= 0 ? 'from-green-500/10 to-emerald-500/10' : 'from-red-500/10 to-rose-500/10',
-          },
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 * index }}
-            whileHover={{
-              scale: 1.05,
-              y: -10,
-              boxShadow: "0 25px 50px rgba(0,0,0,0.4)"
-            }}
-            className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-xl rounded-2xl p-5 border border-[#2D3548] shadow-2xl`}
-          >
-            <motion.div
-              animate={{
-                rotate: [0, 10, -10, 0],
-                scale: [1, 1.1, 1]
-              }}
-              transition={{ repeat: Infinity, duration: 5 }}
-              className="absolute top-0 right-0 text-6xl opacity-10"
-            >
-              <span className="block w-16 h-1 rounded-full bg-white opacity-70" />
-            </motion.div>
-            <div className="relative z-10">
-              <div className="text-[#A0AEC0] text-xs font-bold mb-2 uppercase tracking-wider">{stat.label}</div>
-              <div className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${stat.gradient}`}>
-                {stat.value}
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      <div className="grid grid-cols-3 gap-8">
-        {/* Calendar */}
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="col-span-2 bg-[#1E2536] bg-opacity-50 backdrop-blur-xl rounded-2xl p-8 border border-[#2D3548] shadow-2xl"
-        >
-          {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-8">
-            <motion.button
-              whileHover={{ scale: 1.1, x: -5 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={prevMonth}
-              className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-xl hover:shadow-2xl transition-all"
-            >
-              Prev
-            </motion.button>
-            
-            <div className="text-center">
-              <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                {monthNames[month]} {year}
-              </h2>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.1, x: 5 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={nextMonth}
-              className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-xl hover:shadow-2xl transition-all"
-            >
-              Next
-            </motion.button>
-          </div>
-
-          {/* Day Names */}
-          <div className="grid grid-cols-7 gap-3 mb-4">
-            {dayNames.map((day) => (
-              <div key={day} className="text-center text-[#A0AEC0] font-bold text-sm uppercase tracking-wider">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-3">
-            {/* Empty cells before the 1st day */}
-            {[...Array(startingDayOfWeek)].map((_, index) => (
-              <div key={`empty-${index}`} className="aspect-square" />
-            ))}
-
-            {/* Days of the month */}
-            {[...Array(daysInMonth)].map((_, index) => {
-              const day = index + 1;
-              const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              const stats = getDateStats(dateString);
-              const isSelected = selectedDate === dateString;
-              const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
-
-              return (
-                <motion.div
-                  key={day}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.01 * day }}
-                  whileHover={{ scale: 1.1, zIndex: 10 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedDate(dateString)}
-                  className={`aspect-square relative cursor-pointer rounded-xl p-2 transition-all ${
-                    isSelected
-                      ? 'bg-gradient-to-br from-blue-600 to-purple-600 shadow-2xl border-2 border-blue-400'
-                      : isToday
-                      ? 'bg-gradient-to-br from-yellow-600 to-orange-600 shadow-xl border-2 border-yellow-400'
-                      : stats
-                      ? parseFloat(stats.totalPnL) >= 0
-                        ? 'bg-gradient-to-br from-green-900 to-emerald-900 bg-opacity-50 border border-[#059669] hover:border-green-400'
-                        : 'bg-gradient-to-br from-red-900 to-rose-900 bg-opacity-50 border border-[#DC2626] hover:border-red-400'
-                      : 'bg-[#1A1F2E] bg-opacity-50 border border-[#2D3548] hover:border-gray-500'
-                  }`}
-                >
-                  <div className="flex flex-col h-full justify-between">
-                    <div className={`text-sm font-bold ${isSelected || isToday ? 'text-white' : stats ? 'text-white' : 'text-[#718096]'}`}>
-                      {day}
-                    </div>
-                    
-                    {stats && (
-                      <div className="flex flex-col items-center">
-                        <motion.div
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ repeat: Infinity, duration: 2 }}
-                          className="text-lg mb-1"
-                        >
-                          {parseFloat(stats.totalPnL) >= 0 ? '' : 'Loss'}
-                        </motion.div>
-                        <div className={`text-xs font-black ${parseFloat(stats.totalPnL) >= 0 ? 'text-[#34D399]' : 'text-[#F87171]'}`}>
-                          ${Math.abs(parseFloat(stats.totalPnL))}
-                        </div>
-                        <div className="text-xs text-[#A0AEC0] font-bold">{stats.count} trades</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {isToday && (
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                      className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg"
-                    />
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Selected Day Details */}
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="bg-[#1E2536] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 border border-[#2D3548] shadow-2xl"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                Day Details
-              </h3>
-              <p className="text-[#718096] text-sm">
-                {selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
-              </p>
-            </div>
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-              className="text-4xl"
-            >
-              
-            </motion.div>
-          </div>
-
-          {selectedDate && selectedDayTrades.length > 0 ? (
-            <div className="space-y-4">
-              {/* Day Stats */}
-              <div className="bg-[#1A1F2E] bg-opacity-50 rounded-xl p-4 border border-[#2D3548]">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-[#A0AEC0] text-xs mb-1">Trades</div>
-                    <div className="text-white font-bold text-xl">{selectedDayTrades.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-[#A0AEC0] text-xs mb-1">Win Rate</div>
-                    <div className="text-white font-bold text-xl">
-                      {((selectedDayTrades.filter(t => t.win).length / selectedDayTrades.length) * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="text-[#A0AEC0] text-xs mb-1">Daily P&L</div>
-                    <div className={`font-black text-2xl ${
-                      selectedDayTrades.reduce((sum, t) => sum + parseFloat(t.pnl || 0), 0) >= 0
-                        ? 'text-[#34D399]'
-                        : 'text-[#F87171]'
-                    }`}>
-                      {selectedDayTrades.reduce((sum, t) => sum + parseFloat(t.pnl || 0), 0) >= 0 ? '+' : ''}
-                      ${selectedDayTrades.reduce((sum, t) => sum + parseFloat(t.pnl || 0), 0).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Trades List */}
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                <AnimatePresence>
-                  {selectedDayTrades.map((trade, index) => (
-                    <motion.div
-                      key={trade.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ delay: 0.05 * index }}
-                      whileHover={{
-                        scale: 1.03,
-                        boxShadow: trade.pnl >= 0 ? "0 10px 30px rgba(16, 185, 129, 0.3)" : "0 10px 30px rgba(239, 68, 68, 0.3)"
-                      }}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        trade.pnl >= 0
-                          ? 'bg-green-900 bg-opacity-20 border-[#059669] hover:border-green-400'
-                          : 'bg-[#7F1D1D]/20 border-[#DC2626] hover:border-red-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <motion.div
-                            whileHover={{ rotate: 360, scale: 1.2 }}
-                            transition={{ duration: 0.5 }}
-                            className="w-10 h-10 bg-gradient-to-br from-[#3B82F6] to-[#7C3AED] rounded-lg flex items-center justify-center shadow-lg"
-                          >
-                            <span className="text-white font-bold text-sm">{trade.symbol?.substring(0, 2)}</span>
-                          </motion.div>
-                          <div>
-                            <div className="text-white font-bold">{trade.symbol}</div>
-                            <div className="text-[#718096] text-xs">{trade.time}</div>
-                          </div>
-                        </div>
-                        <motion.span
-                          whileHover={{ scale: 1.1 }}
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            trade.type === 'Long'
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                              : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
-                          }`}
-                        >
-                          {trade.type}
-                        </motion.span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex space-x-4 text-xs">
-                          <div>
-                            <div className="text-[#A0AEC0]">Entry</div>
-                            <div className="text-white font-mono font-bold">{parseFloat(trade.entry).toFixed(5)}</div>
-                          </div>
-                          <div>
-                            <div className="text-[#A0AEC0]">Exit</div>
-                            <div className="text-white font-mono font-bold">{parseFloat(trade.exit).toFixed(5)}</div>
-                          </div>
-                          <div>
-                            <div className="text-[#A0AEC0]">RR</div>
-                            <div className="text-[#A78BFA] font-bold">1:{trade.metrics?.rrReel}</div>
-                          </div>
-                        </div>
-                        <motion.div
-                          whileHover={{ scale: 1.1, rotate: 5 }}
-                          className={`px-4 py-2 rounded-lg font-black text-lg shadow-lg ${
-                            trade.pnl >= 0
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                              : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
-                          }`}
-                        >
-                          {trade.pnl >= 0 ? '+' : '-'}${Math.abs(parseFloat(trade.pnl || 0)).toFixed(2)}
-                        </motion.div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </div>
-          ) : selectedDate ? (
-            <div className="h-96 flex items-center justify-center">
-              <div className="text-center">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 3 }}
-                  className="text-8xl mb-4"
-                >
-                  No data
-                </motion.div>
-                <p className="text-[#718096] text-lg">No trades on this day</p>
-              </div>
-            </div>
-          ) : (
-            <div className="h-96 flex items-center justify-center">
-              <div className="text-center">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="text-8xl mb-4"
-                >
-                  Calendar
-                </motion.div>
-                <p className="text-[#718096] text-lg">Select a date to view trades</p>
-              </div>
-            </div>
-          )}
-        </motion.div>
+function MiniCard({ label, value, caption, tone = C.accent }) {
+  return (
+    <div style={{ padding: '14px 14px 12px', borderRadius: 18, border: `1px solid ${shade(tone, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 7 }}>
+        {label}
       </div>
+      <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.05em', color: tone, marginBottom: 5 }}>
+        {value}
+      </div>
+      {caption && (
+        <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.55 }}>
+          {caption}
+        </div>
+      )}
     </div>
   );
 }
 
-export default Calendar;
+function GhostButton({ children, onClick, disabled = false }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        borderRadius: 12,
+        border: `1px solid ${disabled ? shade(C.border, 0.8) : C.border}`,
+        background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.03)',
+        color: disabled ? C.text3 : C.text1,
+        padding: '9px 12px',
+        fontSize: 11,
+        fontWeight: 700,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontFamily: 'inherit',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default function Calendar() {
+  const { trades, accountOptions = [], activeAccount = 'all' } = useTradingContext();
+  const [monthOffset, setMonthOffset] = useState(0);
+  const calendar = useMemo(() => buildCalendarMonth(trades, monthOffset), [trades, monthOffset]);
+  const [selectedKey, setSelectedKey] = useState(null);
+
+  useEffect(() => {
+    const available = calendar.days.find((day) => day.key === selectedKey && day.trades > 0);
+    if (available) return;
+    const fallback = calendar.days.find((day) => day.inMonth && day.trades > 0);
+    setSelectedKey(fallback ? fallback.key : null);
+  }, [calendar.days, selectedKey]);
+
+  const selectedDay = calendar.days.find((day) => day.key === selectedKey) || null;
+  const activeScope = accountOptions.find((account) => account.id === activeAccount)?.label || 'All Accounts';
+  const totalWins = calendar.days.reduce((sum, day) => sum + day.wins, 0);
+  const monthlyWinRate = calendar.tradeCount ? Math.round((totalWins / calendar.tradeCount) * 100) : 0;
+
+  return (
+    <div style={{ padding: '30px 30px 54px', width: '100%', boxSizing: 'border-box', color: C.text1 }}>
+      <style>{PAGE_STYLES}</style>
+
+      <motion.div
+        {...panelMotion(0)}
+        style={{
+          marginBottom: 18,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 14,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: shade(C.accent, 0.85), marginBottom: 8 }}>
+            Calendar
+          </div>
+          <h1 style={{ margin: 0, fontSize: 31, lineHeight: 1, letterSpacing: '-0.05em', color: C.text0 }}>
+            Trading calendar
+          </h1>
+          <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6, maxWidth: 560, marginTop: 10 }}>
+            Monthly review for {activeScope}. Click a day to open the breakdown.
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <GhostButton onClick={() => setMonthOffset((value) => value - 1)}>Prev</GhostButton>
+          <GhostButton onClick={() => setMonthOffset((value) => Math.min(0, value + 1))} disabled={!calendar.canGoForward}>Next</GhostButton>
+        </div>
+      </motion.div>
+
+      {calendar.hasHistory ? (
+        <>
+          <motion.div {...panelMotion(1)} className="mf-calendar-kpis">
+            <MiniCard label="Month P&L" value={formatCurrency(calendar.totalPnl, true)} tone={calendar.totalPnl >= 0 ? C.green : C.danger} caption={calendar.monthLabel} />
+            <MiniCard label="Trade days" value={`${calendar.tradeDays}`} tone={C.accent} caption={`${calendar.tradeCount} trades logged`} />
+            <MiniCard label="Win rate" value={`${monthlyWinRate}%`} tone={monthlyWinRate >= 50 ? C.green : C.warn} caption={`${totalWins} winning trades`} />
+          </motion.div>
+
+          <div className="mf-calendar-layout">
+            <Card tone={C.accent} index={2} style={{ padding: '18px 18px 16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: C.text0 }}>{calendar.monthLabel}</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ padding: '5px 9px', borderRadius: 999, background: shade(calendar.totalPnl >= 0 ? C.green : C.danger, 0.12), border: `1px solid ${shade(calendar.totalPnl >= 0 ? C.green : C.danger, 0.18)}`, fontSize: 10, fontWeight: 800, color: calendar.totalPnl >= 0 ? C.green : C.danger }}>
+                    {formatCurrency(calendar.totalPnl, true)}
+                  </div>
+                  <div style={{ padding: '5px 9px', borderRadius: 999, background: shade(C.accent, 0.12), border: `1px solid ${shade(C.accent, 0.18)}`, fontSize: 10, fontWeight: 800, color: C.accent }}>
+                    {calendar.tradeCount} trades
+                  </div>
+                </div>
+              </div>
+
+              <div className="mf-calendar-grid" style={{ marginBottom: 8 }}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                  <div key={day} style={{ padding: '0 4px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mf-calendar-grid">
+                {calendar.days.map((day) => {
+                  const tone = day.pnl > 0 ? C.green : day.pnl < 0 ? C.danger : C.accent;
+                  const active = day.trades > 0;
+                  const selected = selectedKey === day.key;
+
+                  return (
+                    <button
+                      key={day.key}
+                      onClick={() => active && setSelectedKey(day.key)}
+                      style={{
+                        minHeight: 108,
+                        borderRadius: 16,
+                        padding: '11px 11px 10px',
+                        border: `1px solid ${selected ? shade(C.accent, 0.38) : active ? shade(tone, 0.18) : shade(C.borderHi, 0.82)}`,
+                        background: active ? `linear-gradient(180deg, ${shade(tone, 0.14)} 0%, ${shade(tone, 0.04)} 100%)` : 'rgba(255,255,255,0.02)',
+                        boxShadow: selected ? `0 0 0 1px ${shade(C.accent, 0.16)}` : 'none',
+                        opacity: day.inMonth ? 1 : 0.28,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        cursor: active ? 'pointer' : 'default',
+                        textAlign: 'left',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: day.isToday ? C.accent : C.text0 }}>{day.day}</span>
+                        {active && <span style={{ width: 7, height: 7, borderRadius: '50%', background: tone, boxShadow: `0 0 10px ${shade(tone, 0.44)}` }} />}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: '-0.04em', color: active ? tone : C.text3, marginBottom: 4 }}>
+                          {active ? formatCurrency(day.pnl, true) : '—'}
+                        </div>
+                        <div style={{ fontSize: 10.5, color: active ? C.text2 : C.text3 }}>
+                          {active ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : 'No trades'}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+
+            <Card tone={C.accent} index={3} style={{ padding: '18px 18px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
+                Day detail
+              </div>
+
+              {selectedDay ? (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: C.text0, marginBottom: 4 }}>{formatLongDate(selectedDay.date)}</div>
+                    <div style={{ fontSize: 12, color: C.text2 }}>
+                      {selectedDay.trades} trade{selectedDay.trades > 1 ? 's' : ''} / {selectedDay.winRate}% win rate
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                    <MiniCard label="Daily P&L" value={formatCurrency(selectedDay.pnl, true)} tone={selectedDay.pnl >= 0 ? C.green : C.danger} />
+                    <MiniCard label="Average trade" value={formatCurrency(selectedDay.avgTrade, true)} tone={selectedDay.avgTrade >= 0 ? C.accent : C.warn} />
+                    <MiniCard label="Lead session" value={selectedDay.sessionLeader ? selectedDay.sessionLeader.label : 'n/a'} tone={C.teal} caption={selectedDay.sessionLeader ? `${selectedDay.sessionLeader.count} trade${selectedDay.sessionLeader.count > 1 ? 's' : ''}` : 'No dominant session'} />
+                    <MiniCard label="Lead pair" value={selectedDay.pairLeader ? selectedDay.pairLeader.label : 'n/a'} tone={C.blue} caption={selectedDay.pairLeader ? formatCurrency(selectedDay.pairLeader.pnl, true) : 'No pair lead'} />
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {selectedDay.records.slice(0, 5).map((record) => {
+                      const pnlTone = record.pnl >= 0 ? C.green : C.danger;
+                      return (
+                        <div key={record.id} style={{ padding: '10px 11px', borderRadius: 14, border: `1px solid ${shade(pnlTone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: C.text1 }}>{record.symbol}</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: pnlTone }}>{formatCurrency(record.pnl, true)}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.55 }}>
+                            {record.direction} / {record.session} / {record.setup}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.7 }}>
+                  Select a trading day to open the detail.
+                </div>
+              )}
+            </Card>
+          </div>
+        </>
+      ) : (
+        <Card tone={C.accent} index={1} style={{ padding: '26px 24px' }}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: C.text0, marginBottom: 8 }}>
+            No trading calendar yet
+          </div>
+          <div style={{ fontSize: 12.5, color: C.text2, lineHeight: 1.7 }}>
+            Import trades in All Trades to unlock the monthly view and the day-by-day review.
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
