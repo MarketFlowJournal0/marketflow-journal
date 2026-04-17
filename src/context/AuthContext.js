@@ -3,6 +3,16 @@ import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
+function shouldSyncSubscription(profile) {
+  if (!profile) return true;
+  if (!profile.stripe_customer_id || !profile.stripe_subscription_id || !profile.subscription_status) return true;
+  if (!profile.plan) return true;
+  if (profile.subscription_status === 'trialing' && profile.trial_end) {
+    return new Date(profile.trial_end) <= new Date();
+  }
+  return false;
+}
+
 export function AuthProvider({ children }) {
   const [user,          setUser]          = useState(null);
   const [session,       setSession]       = useState(null);
@@ -14,15 +24,38 @@ export function AuthProvider({ children }) {
   const initDone     = useRef(false);
   const loggingOut   = useRef(false);
 
-  const fetchProfile = useCallback(async (userId) => {
+  const fetchProfile = useCallback(async (userId, userEmail = null) => {
     if (!userId) { setProfile(null); setProfileLoaded(true); return; }
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end')
+        .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end, email')
         .eq('id', userId)
         .maybeSingle();
-      setProfile(data || null);
+
+      let nextProfile = data || null;
+
+      if (shouldSyncSubscription(nextProfile)) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const response = await fetch('/api/sync-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({ userId, email: userEmail || nextProfile?.email || null }),
+          });
+          if (response.ok) {
+            const payload = await response.json();
+            if (payload?.profile) {
+              nextProfile = payload.profile;
+            }
+          }
+        } catch (_) {}
+      }
+
+      setProfile(nextProfile);
     } catch (_) { setProfile(null); }
     finally { setProfileLoaded(true); }
   }, []);
@@ -56,7 +89,7 @@ export function AuthProvider({ children }) {
         }
         setSession(session);
         setUser(session.user);
-        await fetchProfile(session.user.id);
+        await fetchProfile(session.user.id, session.user.email || null);
         if (mounted) setLoading(false);
       } catch (err) {
         clearTimeout(t);
@@ -89,7 +122,7 @@ export function AuthProvider({ children }) {
         }
         setSession(session);
         setUser(session.user);
-        await fetchProfile(session.user.id);
+        await fetchProfile(session.user.id, session.user.email || null);
         if (mounted) setLoading(false);
       }
     );
@@ -170,7 +203,7 @@ export function AuthProvider({ children }) {
 
   const refreshProfile = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) await fetchProfile(session.user.id);
+    if (session?.user?.id) await fetchProfile(session.user.id, session.user.email || null);
   }, [fetchProfile]);
 
   const clearError = useCallback(() => setError(null), []);

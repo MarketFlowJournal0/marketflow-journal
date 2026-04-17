@@ -112,7 +112,7 @@ function SnapshotCard({ title, value, accent }) {
 }
 
 export default function WelcomePage() {
-  const { user, refreshProfile } = useAuth();
+  const { user, session, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [hasSessionId, setHasSessionId] = useState(false);
   const [syncHint, setSyncHint] = useState(false);
@@ -133,6 +133,10 @@ export default function WelcomePage() {
   const email = user?.email || '';
   const isActivated = Boolean(user?.stripeSubscriptionId && ['active', 'trialing'].includes(user?.subStatus));
   const featureList = useMemo(() => plan.features.slice(0, 6), [plan.features]);
+  const sessionId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('session_id') || null;
+  }, []);
 
   const unlockJournalNow = useCallback(() => {
     sessionStorage.setItem(POST_WELCOME_ACCESS_KEY, '1');
@@ -188,6 +192,20 @@ export default function WelcomePage() {
     const runSync = async () => {
       attempts += 1;
       try {
+        if (sessionId && user?.id) {
+          await fetch('/api/sync-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({
+              userId: user.id,
+              email: user.email || '',
+              sessionId,
+            }),
+          });
+        }
         await refreshProfile?.();
       } catch (_) {}
       if (!cancelled && attempts >= 4 && !isActivated) {
@@ -202,7 +220,7 @@ export default function WelcomePage() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [hasSessionId, isActivated, refreshProfile]);
+  }, [hasSessionId, isActivated, refreshProfile, session, sessionId, user]);
 
   return (
     <div

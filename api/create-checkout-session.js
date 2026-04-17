@@ -59,6 +59,29 @@ module.exports = async (req, res) => {
       }
     }
 
+    if (!customerId && email) {
+      try {
+        const existingCustomers = await stripe.customers.list({ email, limit: 10 });
+        const matchedCustomer = existingCustomers.data.find((customer) => customer.metadata?.supabase_user_id === userId)
+          || existingCustomers.data[0]
+          || null;
+        if (matchedCustomer) {
+          customerId = matchedCustomer.id;
+          if (userId) {
+            await stripe.customers.update(customerId, {
+              metadata: {
+                ...(matchedCustomer.metadata || {}),
+                supabase_user_id: userId,
+              },
+            });
+            await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', userId);
+          }
+        }
+      } catch (customerLookupError) {
+        console.error('Stripe customer lookup error:', customerLookupError.message);
+      }
+    }
+
     if (!customerId && (email || userId)) {
       const customer = await stripe.customers.create({
         ...(email ? { email } : {}),
@@ -84,6 +107,21 @@ module.exports = async (req, res) => {
           // Trial already used and expired — no more trial
           trialDays = 0;
         }
+      }
+    }
+
+    if (customerId) {
+      try {
+        const existingSubscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: 'all',
+          limit: 20,
+        });
+        if (existingSubscriptions.data.length > 0) {
+          trialDays = 0;
+        }
+      } catch (subscriptionLookupError) {
+        console.error('Stripe subscription lookup error:', subscriptionLookupError.message);
       }
     }
 

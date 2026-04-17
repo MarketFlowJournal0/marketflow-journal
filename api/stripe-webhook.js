@@ -12,6 +12,15 @@ const supabase = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const PRICE_PLAN_MAP = {
+  price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
+  price_1TDQ7w2Ouddv7ueno5CuaNTH: 'starter',
+  price_1T9t9U2Ouddv7uenfg38PRZ2: 'pro',
+  price_1T9t9U2Ouddv7uenK6oT1O13: 'pro',
+  price_1T9t9L2Ouddv7uen4DXuOatj: 'elite',
+  price_1T9t9K2Ouddv7uennnWOJ44p: 'elite',
+};
+
 async function getRawBody(req) {
   if (req.rawBody) {
     return Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.from(req.rawBody);
@@ -29,6 +38,39 @@ async function getRawBody(req) {
   if (Buffer.isBuffer(req.body)) return req.body;
   if (typeof req.body === 'string') return Buffer.from(req.body);
   return Buffer.from(JSON.stringify(req.body || {}));
+}
+
+function getPlanIdFromSubscription(subscription) {
+  return (
+    subscription?.metadata?.plan_id
+    || subscription?.items?.data?.[0]?.price?.metadata?.plan_id
+    || PRICE_PLAN_MAP[subscription?.items?.data?.[0]?.price?.id]
+    || null
+  );
+}
+
+async function findProfileUserId({ userId, customerId, email }) {
+  if (userId) return userId;
+
+  if (customerId) {
+    const { data: profileByCustomer } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', customerId)
+      .maybeSingle();
+    if (profileByCustomer?.id) return profileByCustomer.id;
+  }
+
+  if (email) {
+    const { data: profileByEmail } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (profileByEmail?.id) return profileByEmail.id;
+  }
+
+  return null;
 }
 
 module.exports = async (req, res) => {
@@ -65,22 +107,32 @@ module.exports = async (req, res) => {
           try {
             const subscription = await stripe.subscriptions.retrieve(subscriptionId);
             userId = userId || subscription.metadata?.supabase_user_id || null;
-            planId = planId || subscription.metadata?.plan_id || subscription.items?.data?.[0]?.price?.metadata?.plan_id || null;
+            planId = planId || getPlanIdFromSubscription(subscription);
           } catch (subErr) {
             console.error('Failed to retrieve subscription metadata:', subErr);
           }
         }
 
-        if (userId && subscriptionId) {
+        const targetUserId = await findProfileUserId({
+          userId,
+          customerId,
+          email: customerEmail || null,
+        });
+
+        if (targetUserId && subscriptionId) {
+          const trialEnd = session.subscription?.trial_end
+            ? new Date(session.subscription.trial_end * 1000).toISOString()
+            : new Date(Date.now() + 14 * 86400000).toISOString();
+
           await supabase
             .from('profiles')
             .upsert({
-              id: userId,
+              id: targetUserId,
               email: customerEmail || null,
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
               subscription_status: 'trialing',
-              trial_end: new Date(Date.now() + 14 * 86400000).toISOString(),
+              trial_end: trialEnd,
               plan: planId || null,
             }, { onConflict: 'id' });
 
@@ -181,17 +233,13 @@ module.exports = async (req, res) => {
         const sub = event.data.object;
         const userId = sub.metadata?.supabase_user_id;
         const customerId = sub.customer;
-        const planId = sub.items?.data?.[0]?.price?.metadata?.plan_id;
-
-        let targetUserId = userId;
-        if (!targetUserId) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('stripe_customer_id', customerId)
-            .single();
-          if (profile) targetUserId = profile.id;
-        }
+        const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
+        const planId = getPlanIdFromSubscription(sub);
+        const targetUserId = await findProfileUserId({
+          userId,
+          customerId,
+          email: customer?.email || null,
+        });
 
         if (targetUserId) {
           await supabase
@@ -202,6 +250,7 @@ module.exports = async (req, res) => {
               stripe_subscription_id: sub.id,
               stripe_customer_id: customerId,
               plan: planId || sub.metadata?.plan_id || null,
+              trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
             }, { onConflict: 'id' });
         }
         break;
@@ -211,16 +260,12 @@ module.exports = async (req, res) => {
         const sub = event.data.object;
         const userId = sub.metadata?.supabase_user_id;
         const customerId = sub.customer;
-
-        let targetUserId = userId;
-        if (!targetUserId) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('stripe_customer_id', customerId)
-            .single();
-          if (profile) targetUserId = profile.id;
-        }
+        const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
+        const targetUserId = await findProfileUserId({
+          userId,
+          customerId,
+          email: customer?.email || null,
+        });
 
         if (targetUserId) {
           await supabase
@@ -229,6 +274,7 @@ module.exports = async (req, res) => {
               id: targetUserId,
               subscription_status: 'canceled',
               stripe_subscription_id: null,
+              trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
             }, { onConflict: 'id' });
         }
         break;
@@ -240,11 +286,19 @@ module.exports = async (req, res) => {
         const amount = (invoice.amount_due / 100).toFixed(2);
         const currency = (invoice.currency || 'usd').toUpperCase();
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, email, plan')
-          .eq('stripe_customer_id', customerId)
-          .single();
+        const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
+        const targetUserId = await findProfileUserId({
+          customerId,
+          email: customer?.email || null,
+        });
+
+        const { data: profile } = targetUserId
+          ? await supabase
+            .from('profiles')
+            .select('id, email, plan')
+            .eq('id', targetUserId)
+            .maybeSingle()
+          : { data: null };
 
         if (profile) {
           await supabase
@@ -299,16 +353,12 @@ module.exports = async (req, res) => {
           try {
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
             const userId = sub?.metadata?.supabase_user_id;
-
-            let targetUserId = userId;
-            if (!targetUserId) {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('stripe_customer_id', customerId)
-                .single();
-              if (profile) targetUserId = profile.id;
-            }
+            const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
+            const targetUserId = await findProfileUserId({
+              userId,
+              customerId,
+              email: customer?.email || null,
+            });
 
             if (targetUserId) {
               await supabase
@@ -316,6 +366,9 @@ module.exports = async (req, res) => {
                 .upsert({
                   id: targetUserId,
                   subscription_status: 'active',
+                  stripe_customer_id: customerId,
+                  stripe_subscription_id: sub.id,
+                  plan: getPlanIdFromSubscription(sub),
                   trial_end: null,
                 }, { onConflict: 'id' });
             }

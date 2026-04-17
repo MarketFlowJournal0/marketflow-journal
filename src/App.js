@@ -362,7 +362,14 @@ function AppInner() {
   }
 
   // ── Pas d'abonnement → /plan ──
-  const hasValidSub = user.stripeSubscriptionId && ['active', 'trialing'].includes(user.subStatus);
+  const trialStillValid = !user?.trialEnd || new Date(user.trialEnd) > new Date();
+  const hasValidSub = Boolean(
+    user?.stripeSubscriptionId
+    && (
+      user.subStatus === 'active'
+      || (user.subStatus === 'trialing' && trialStillValid)
+    )
+  );
   const postWelcomeAccess = sessionStorage.getItem(POST_WELCOME_ACCESS_KEY) === '1';
   const forceJournalAccess = Boolean(
     user?.id && localStorage.getItem(FORCE_JOURNAL_ACCESS_PREFIX + user.id) === '1'
