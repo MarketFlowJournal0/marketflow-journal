@@ -161,6 +161,109 @@ const fadeInUp = {
 const fmt = (n,d=2) => { const num=parseFloat(n); if(isNaN(num)) return '—'; return num.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 const fmtPnl = (n,showSign=true) => { const num=parseFloat(n); if(isNaN(num)) return '—'; const abs=Math.abs(num).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); if(!showSign) return `$${abs}`; return num>=0?`+$${abs}`:`-$${abs}`; };
 
+const mfToNumber = (value) => {
+  const numeric = typeof value === 'number' ? value : parseFloat(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const mfToStrictNumber = (value) => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.includes(':')) return null;
+
+  let normalized = trimmed.replace(/\s+/g, '').replace(/[$€£¥%]/g, '');
+  if (!normalized) return null;
+
+  const commaCount = (normalized.match(/,/g) || []).length;
+  const dotCount = (normalized.match(/\./g) || []).length;
+
+  if (commaCount && dotCount) {
+    if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+      normalized = normalized.replace(/\./g, '').replace(',', '.');
+    } else {
+      normalized = normalized.replace(/,/g, '');
+    }
+  } else if (commaCount === 1 && dotCount === 0) {
+    normalized = normalized.replace(',', '.');
+  } else if (commaCount > 1 && dotCount === 0) {
+    normalized = normalized.replace(/,/g, '');
+  }
+
+  if (!/^[-+]?\d*\.?\d+$/.test(normalized)) return null;
+
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const mfFormatNumber = (value, digits = 2) => {
+  const numeric = mfToNumber(value);
+  if (numeric == null) return '--';
+  return numeric.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+};
+
+const mfFormatPrice = (value, digits = 5) => {
+  const numeric = mfToNumber(value);
+  if (numeric == null) return '--';
+  return numeric.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+};
+
+const mfFormatMoney = (value, signed = true, digits = 2) => {
+  const numeric = mfToNumber(value);
+  if (numeric == null) return '--';
+  const absolute = Math.abs(numeric).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  if (!signed) return `$${absolute}`;
+  if (numeric > 0) return `+$${absolute}`;
+  if (numeric < 0) return `-$${absolute}`;
+  return `$${absolute}`;
+};
+
+const mfFormatPercent = (value, digits = 1) => {
+  const numeric = mfToStrictNumber(value);
+  if (numeric == null) return '--';
+  return `${numeric.toFixed(digits)}%`;
+};
+
+const mfFormatFactor = (value) => {
+  const numeric = typeof value === 'number' ? value : mfToStrictNumber(value);
+  if (numeric == null) return '--';
+  if (!Number.isFinite(numeric)) return '∞';
+  return `${numeric.toFixed(2)}x`;
+};
+
+const mfFormatRR = (value) => {
+  const numeric = mfToStrictNumber(value);
+  if (numeric == null) return '--';
+  return `1:${numeric.toFixed(2)}`;
+};
+
+const mfFormatDate = (value) => {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const mfFormatTime = (value) => {
+  if (!value) return '--';
+  const raw = String(value).trim();
+  const hhmm = raw.match(/^(\d{1,2}):(\d{2})/);
+  if (hhmm) return `${hhmm[1].padStart(2, '0')}:${hhmm[2]}`;
+  const date = new Date(`1970-01-01T${raw}`);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+};
+
+const mfAccountLabel = (trade = {}) => trade.account || trade.accountLabel || trade.extra?.account || '';
+
+const mfSessionLabel = (value = '') => {
+  if (value === 'NY') return 'New York';
+  if (value === 'Asia') return 'Tokyo / Asia';
+  if (value === 'London') return 'London';
+  return value || '--';
+};
+
 const exportToCSV = (data,filename='trades.csv') => {
   if(!data?.length){toast.error('No data to export');return;}
   try{
@@ -201,8 +304,8 @@ const sortTrades=(trades,key,dir)=>{
     const getVal=(t,k)=>{
       if(isCustomColumnKey(k)){
         const raw=getTradeExtraValue(t,getCustomFieldKey(k));
-        const numeric=parseFloat(raw);
-        return raw!==''&&raw!=null&&Number.isFinite(numeric)?numeric:String(raw||'');
+        const numeric=mfToStrictNumber(raw);
+        return raw!==''&&raw!=null&&numeric!=null?numeric:String(raw||'');
       }
       if(k==='pnl') return parseFloat(t.profit_loss??t.pnl??0)||0;
       if(k==='date') return new Date(t.open_date||t.date||'').getTime();
@@ -211,11 +314,11 @@ const sortTrades=(trades,key,dir)=>{
       if(k==='type') return t.direction||t.type||'';
       if(k==='session') return t.session||'';
       if(k==='bias') return t.bias||'';
-      if(k==='entry') return parseFloat(t.entry_price??t.entry??0)||0;
-      if(k==='exit') return parseFloat(t.exit_price??t.exit??0)||0;
-      if(k==='tpPercent') return parseFloat(t.metrics?.tpPercent||0);
-      if(k==='rr') return parseFloat(t.metrics?.rrReel||0);
-      if(k==='psychology') return t.psychologyScore||0;
+      if(k==='entry') return mfToNumber(t.entry_price??t.entry) ?? Number.NEGATIVE_INFINITY;
+      if(k==='exit') return mfToNumber(t.exit_price??t.exit) ?? Number.NEGATIVE_INFINITY;
+      if(k==='tpPercent') return mfToStrictNumber(t.metrics?.tpPercent) ?? Number.NEGATIVE_INFINITY;
+      if(k==='rr') return mfToStrictNumber(t.metrics?.rrReel) ?? Number.NEGATIVE_INFINITY;
+      if(k==='psychology') return mfToNumber(t.psychologyScore) ?? Number.NEGATIVE_INFINITY;
       return t[k]||'';
     };
     let av=getVal(a,key),bv=getVal(b,key);
@@ -236,6 +339,40 @@ const calcStats=(trades)=>{
   let peak=0,eq=0,dd=0;
   [...trades].sort((a,b)=>(a.open_date||a.date||'').localeCompare(b.open_date||b.date||'')).forEach(t=>{eq+=getPnl(t);if(eq>peak)peak=eq;const d=peak>0?((peak-eq)/peak)*100:0;if(d>dd)dd=d;});
   return{total:trades.length,wins:wins.length,losses:trades.length-wins.length,winRate:trades.length?(wins.length/trades.length)*100:0,totalPnL,avgRR,pf,maxDD:dd};
+};
+
+const calcLedgerStats=(trades=[])=>{
+  if(!trades?.length)return{total:0,wins:0,losses:0,breakeven:0,winRate:0,totalPnL:0,avgRR:null,pf:null,maxDD:0};
+  const getPnl=trade=>mfToNumber(trade.profit_loss??trade.pnl)??0;
+  const wins=trades.filter(trade=>getPnl(trade)>0);
+  const losses=trades.filter(trade=>getPnl(trade)<0);
+  const breakeven=trades.filter(trade=>getPnl(trade)===0);
+  const totalPnL=trades.reduce((sum,trade)=>sum+getPnl(trade),0);
+  const rrs=trades.map(trade=>mfToStrictNumber(trade.metrics?.rrReel)).filter(value=>value!=null&&value>0);
+  const avgRR=rrs.length?rrs.reduce((sum,value)=>sum+value,0)/rrs.length:null;
+  const grossW=wins.reduce((sum,trade)=>sum+getPnl(trade),0);
+  const grossL=Math.abs(losses.reduce((sum,trade)=>sum+getPnl(trade),0));
+  const pf=grossL>0?(grossW/grossL):grossW>0?Number.POSITIVE_INFINITY:0;
+  let peak=0;
+  let equity=0;
+  let dd=0;
+  [...trades].sort((a,b)=>(a.open_date||a.date||'').localeCompare(b.open_date||b.date||'')).forEach(trade=>{
+    equity += getPnl(trade);
+    if(equity>peak) peak=equity;
+    const drawdown=peak>0?((peak-equity)/peak)*100:0;
+    if(drawdown>dd) dd=drawdown;
+  });
+  return{
+    total:trades.length,
+    wins:wins.length,
+    losses:losses.length,
+    breakeven:breakeven.length,
+    winRate:trades.length?(wins.length/trades.length)*100:0,
+    totalPnL,
+    avgRR,
+    pf,
+    maxDD:dd,
+  };
 };
 
 const toTradeFormData=(trade={})=>({
@@ -503,40 +640,44 @@ const FilterBar=({filters,setFilters,trades,onReset,compact=false})=>{
 
 const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClickEdit,cols,cumulativePnl})=>{
   const[hov,setHov]=useState(false);
-  const pnl    = parseFloat(trade.profit_loss??trade.pnl??0);
+  const pnl    = mfToNumber(trade.profit_loss??trade.pnl)??0;
   const isWin  = pnl>=0;
   const symbol = trade.symbol||'';
   const type   = trade.direction||trade.type||'Long';
-  const entry  = parseFloat(trade.entry_price??trade.entry??0);
-  const exit   = parseFloat(trade.exit_price??trade.exit??0);
+  const entry  = mfToNumber(trade.entry_price??trade.entry);
+  const exit   = mfToNumber(trade.exit_price??trade.exit);
   const date   = trade.open_date?.split('T')[0]||trade.date||'';
-  const psychology = trade.psychologyScore ?? trade.psychology_score;
+  const psychology = mfToNumber(trade.psychologyScore ?? trade.psychology_score);
+  const accountLabel = mfAccountLabel(trade);
+  const rrValue = mfToStrictNumber(trade.metrics?.rrReel);
+  const tpProgress = mfToStrictNumber(trade.metrics?.tpPercent);
+  const runningPnl = cumulativePnl!=null ? mfFormatMoney(cumulativePnl) : '--';
   const rowBg  = isSelected?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.09)':hov?'rgba(255,255,255,0.026)':isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.018)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.018)';
 
   const cell=(key)=>{
     switch(key){
-      case 'date':return(<div><div style={{color:C.t1,fontSize:12,fontWeight:700}}>{date.substring(0,10)||'N/A'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.time||'No time'}</div></div>);
-      case 'symbol':return(<div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.18), rgba(var(--mf-accent-rgb, 6, 230, 255),0.04))',border:`1px solid ${shade(C.cyan,'26')}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:900,color:C.cyan,flexShrink:0}}>{symbol.substring(0,3)||'--'}</div><div><div style={{color:C.t1,fontSize:12.5,fontWeight:800,letterSpacing:'0.01em'}}>{symbol||'N/A'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.marketType||trade.setup||'Journal entry'}</div></div></div>);
-      case 'account':return trade.account?<Tag label={trade.account} color={C.blue} bg="rgba(var(--mf-blue-rgb, 77, 124, 255),0.1)"/>:<span style={{color:C.t3,fontSize:11}}>Main journal</span>;
+      case 'date':return(<div><div style={{color:C.t1,fontSize:12,fontWeight:700}}>{mfFormatDate(date)}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{mfFormatTime(trade.time)}</div></div>);
+      case 'symbol':return(<div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.18), rgba(var(--mf-accent-rgb, 6, 230, 255),0.04))',border:`1px solid ${shade(C.cyan,'26')}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:900,color:C.cyan,flexShrink:0}}>{symbol.substring(0,3)||'--'}</div><div><div style={{color:C.t1,fontSize:12.5,fontWeight:800,letterSpacing:'0.01em'}}>{symbol||'--'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.setup||accountLabel||trade.marketType||'Execution'}</div></div></div>);
+      case 'account':return accountLabel?<Tag label={accountLabel} color={C.blue} bg="rgba(var(--mf-blue-rgb, 77, 124, 255),0.1)"/>:<span style={{color:C.t3,fontSize:11}}>--</span>;
       case 'type':return<Tag label={type==='Long'?'Long':'Short'} color={type==='Long'?C.green:C.danger} bg={type==='Long'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)'}/>;
-      case 'session':return<Tag label={trade.session||'—'} color={C.cyan} bg="rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)"/>;
-      case 'bias':return<Tag label={trade.bias||'—'} color={trade.bias==='Bullish'?C.green:trade.bias==='Bearish'?C.danger:C.t2} bg={trade.bias==='Bullish'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':trade.bias==='Bearish'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)':'rgba(255,255,255,0.04)'}/>;
-      case 'news':return<Tag label={trade.newsImpact||'—'} color={trade.newsImpact==='High'?C.danger:trade.newsImpact==='Medium'?C.warn:C.teal} bg={trade.newsImpact==='High'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)':trade.newsImpact==='Medium'?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.1)':'rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)'}/>;
-      case 'entry':return<span style={{color:C.t1,fontSize:12,fontFamily:'monospace'}}>{entry.toFixed(5)}</span>;
-      case 'exit':return<span style={{color:C.t1,fontSize:12,fontFamily:'monospace'}}>{exit.toFixed(5)}</span>;
-      case 'tpPercent':{const v=parseFloat(trade.metrics?.tpPercent||0);return<Tag label={`${v>=0?'+':''}${v.toFixed(1)}%`} color={v>=0?C.green:C.danger} bg={v>=0?'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)'}/>;}
-      case 'rr':return<Tag label={`1:${trade.metrics?.rrReel||0}`} color={C.teal} bg="rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)"/>;
-      case 'setup':return trade.setup?<Tag label={trade.setup} color={C.purple} bg="rgba(167,139,250,0.1)"/>:<span style={{color:C.t3}}>—</span>;
-      case 'psychology':{const s=psychology;if(s==null)return<span style={{color:C.t3}}>—</span>;return<Tag label={s} color={s>=80?C.green:s>=60?C.warn:C.danger} bg={s>=80?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':s>=60?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)'}/>;}
-      case 'pnl':return(<div><div style={{color:isWin?C.green:C.danger,fontSize:13,fontWeight:900,fontFamily:'monospace',letterSpacing:'-0.02em'}}>{fmtPnl(pnl)}</div>{cumulativePnl!=null&&(<div style={{color:C.t3,fontSize:9.5,fontWeight:700,marginTop:3}}>Running {fmtPnl(cumulativePnl)}</div>)}</div>);
+      case 'session':return<Tag label={mfSessionLabel(trade.session)} color={C.cyan} bg="rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)"/>;
+      case 'bias':return<Tag label={trade.bias||'--'} color={trade.bias==='Bullish'?C.green:trade.bias==='Bearish'?C.danger:C.t2} bg={trade.bias==='Bullish'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':trade.bias==='Bearish'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)':'rgba(255,255,255,0.04)'}/>;
+      case 'news':return<Tag label={trade.newsImpact||'--'} color={trade.newsImpact==='High'?C.danger:trade.newsImpact==='Medium'?C.warn:C.teal} bg={trade.newsImpact==='High'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)':trade.newsImpact==='Medium'?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.1)':'rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)'}/>;
+      case 'entry':return<span style={{color:C.t1,fontSize:12,fontFamily:'monospace'}}>{mfFormatPrice(entry)}</span>;
+      case 'exit':return<span style={{color:C.t1,fontSize:12,fontFamily:'monospace'}}>{mfFormatPrice(exit)}</span>;
+      case 'tpPercent':{if(tpProgress==null)return<span style={{color:C.t3}}>--</span>;return<Tag label={mfFormatPercent(tpProgress,1)} color={tpProgress>=80?C.green:tpProgress>=50?C.warn:C.danger} bg={tpProgress>=80?'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)':tpProgress>=50?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.1)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)'}/>;}
+      case 'rr':return rrValue==null?<span style={{color:C.t3}}>--</span>:<Tag label={mfFormatRR(rrValue)} color={C.teal} bg="rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)"/>;
+      case 'setup':return trade.setup?<Tag label={trade.setup} color={C.purple} bg="rgba(167,139,250,0.1)"/>:<span style={{color:C.t3}}>--</span>;
+      case 'psychology':{const s=psychology;if(s==null)return<span style={{color:C.t3}}>--</span>;return<Tag label={Math.round(s)} color={s>=80?C.green:s>=60?C.warn:C.danger} bg={s>=80?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':s>=60?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)'}/>;}
+      case 'pnl':return(<div><div style={{color:isWin?C.green:C.danger,fontSize:13,fontWeight:900,fontFamily:'monospace',letterSpacing:'-0.02em'}}>{mfFormatMoney(pnl)}</div>{cumulativePnl!=null&&(<div style={{color:C.t3,fontSize:9.5,fontWeight:700,marginTop:3}}>Running {runningPnl}</div>)}</div>);
       default:
         if(isCustomColumnKey(key)){
           const value=getTradeExtraValue(trade,getCustomFieldKey(key));
-          if(value==null||value==='') return<span style={{color:C.t3,fontSize:11}}>—</span>;
-          const numeric=parseFloat(value);
-          return <span style={{color:C.t1,fontSize:12,fontFamily:Number.isFinite(numeric)?'monospace':'inherit'}}>{String(value)}</span>;
+          if(value==null||value==='') return<span style={{color:C.t3,fontSize:11}}>--</span>;
+          const numeric=mfToStrictNumber(value);
+          return <span style={{color:C.t1,fontSize:12,fontFamily:numeric!=null?'monospace':'inherit'}}>{numeric!=null?mfFormatNumber(numeric,2):String(value)}</span>;
         }
-        return<span style={{color:C.t3,fontSize:11}}>—</span>;
+        return<span style={{color:C.t3,fontSize:11}}>--</span>;
     }
   };
   return(<motion.tr initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.15}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClickDetail} onDoubleClick={()=>onDoubleClickEdit(trade)} style={{backgroundColor:rowBg,borderLeft:`2px solid ${isSelected?C.cyan:isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.14)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.14)'}`,cursor:'pointer',transition:'all 0.12s ease'}}>{cols.map(col=>(<td key={col.key} onClick={col.key==='select'?(e)=>{e.stopPropagation();onSelect(trade.id);}:undefined} style={{padding:'12px 14px',whiteSpace:'nowrap',borderBottom:'1px solid rgba(255,255,255,0.05)',verticalAlign:'middle'}}>{col.key==='select'?<input type="checkbox" checked={isSelected} onChange={()=>onSelect(trade.id)} onClick={e=>e.stopPropagation()} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:cell(col.key)}</td>))}</motion.tr>);
@@ -580,7 +721,7 @@ const MiniChart=({trade})=>{
   const exit=parseFloat(trade?.exit_price??trade?.exit??0);
   const data=useMemo(()=>{if(!entry||!exit)return[];const pts=14,diff=exit-entry;return Array.from({length:pts},(_,i)=>{const t=i/(pts-1);const noise=i>0&&i<pts-1?Math.sin(i*1.6)*Math.abs(diff)*0.12:0;return{i,price:entry+diff*t+noise};});},[entry,exit]);
   if(!entry||!exit)return null;
-  return(<div style={{padding:'14px',borderRadius:10,backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`,marginBottom:16}}><div style={{fontSize:10,color:C.t3,fontWeight:700,letterSpacing:'0.8px',marginBottom:10}}>TRADE PATH</div><div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><div><div style={{fontSize:8,color:C.t3,fontWeight:700}}>ENTRY</div><div style={{fontSize:12,fontWeight:800,color:C.cyan,fontFamily:'monospace'}}>{entry.toFixed(5)}</div></div>{(trade?.stop_loss||trade?.sl)&&parseFloat(trade.stop_loss||trade.sl)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>SL</div><div style={{fontSize:11,fontWeight:700,color:C.danger,fontFamily:'monospace'}}>{parseFloat(trade.stop_loss||trade.sl).toFixed(5)}</div></div>)}{(trade?.tp||trade?.take_profit)&&parseFloat(trade.tp||trade.take_profit)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>TP</div><div style={{fontSize:11,fontWeight:700,color:C.green,fontFamily:'monospace'}}>{parseFloat(trade.tp||trade.take_profit).toFixed(5)}</div></div>)}<div style={{textAlign:'right'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>EXIT</div><div style={{fontSize:12,fontWeight:800,color,fontFamily:'monospace'}}>{exit.toFixed(5)}</div></div></div><div style={{height:70}}><ResponsiveContainer width="100%" height="100%"><AreaChart data={data} margin={{top:4,right:0,bottom:0,left:0}}><defs><linearGradient id={`cg_${trade?.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.28}/><stop offset="95%" stopColor={color} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill={`url(#cg_${trade?.id})`} dot={false} activeDot={chartActiveDot(color,4,C.bgDeep)} {...CHART_MOTION_SOFT}/><Tooltip contentStyle={chartTooltipStyle(color)} cursor={chartCursor(color)} formatter={v=>[v?.toFixed(5),'Price']} labelFormatter={()=>''}/></AreaChart></ResponsiveContainer></div><motion.div initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:0.35}} style={{marginTop:10,padding:'8px 12px',borderRadius:7,background:`linear-gradient(135deg,${shade(color,'12')},${shade(color,'04')})`,border:`1px solid ${shade(color,'28')}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Net Result</span><span style={{fontSize:18,fontWeight:900,color,fontFamily:'monospace',textShadow:`0 0 20px ${shade(color,'60')}`}}>{fmtPnl(pnl)}</span></motion.div></div>);
+  return(<div style={{padding:'14px',borderRadius:10,backgroundColor:C.bgDeep,border:`1px solid ${C.brd}`,marginBottom:16}}><div style={{fontSize:10,color:C.t3,fontWeight:700,letterSpacing:'0.8px',marginBottom:10}}>TRADE PATH</div><div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><div><div style={{fontSize:8,color:C.t3,fontWeight:700}}>ENTRY</div><div style={{fontSize:12,fontWeight:800,color:C.cyan,fontFamily:'monospace'}}>{mfFormatPrice(entry)}</div></div>{(trade?.stop_loss||trade?.sl)&&parseFloat(trade.stop_loss||trade.sl)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>SL</div><div style={{fontSize:11,fontWeight:700,color:C.danger,fontFamily:'monospace'}}>{mfFormatPrice(parseFloat(trade.stop_loss||trade.sl))}</div></div>)}{(trade?.tp||trade?.take_profit)&&parseFloat(trade.tp||trade.take_profit)>0&&(<div style={{textAlign:'center'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>TP</div><div style={{fontSize:11,fontWeight:700,color:C.green,fontFamily:'monospace'}}>{mfFormatPrice(parseFloat(trade.tp||trade.take_profit))}</div></div>)}<div style={{textAlign:'right'}}><div style={{fontSize:8,color:C.t3,fontWeight:700}}>EXIT</div><div style={{fontSize:12,fontWeight:800,color,fontFamily:'monospace'}}>{mfFormatPrice(exit)}</div></div></div><div style={{height:70}}><ResponsiveContainer width="100%" height="100%"><AreaChart data={data} margin={{top:4,right:0,bottom:0,left:0}}><defs><linearGradient id={`cg_${trade?.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.28}/><stop offset="95%" stopColor={color} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill={`url(#cg_${trade?.id})`} dot={false} activeDot={chartActiveDot(color,4,C.bgDeep)} {...CHART_MOTION_SOFT}/><Tooltip contentStyle={chartTooltipStyle(color)} cursor={chartCursor(color)} formatter={v=>[v?.toFixed(5),'Price']} labelFormatter={()=>''}/></AreaChart></ResponsiveContainer></div><motion.div initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:0.35}} style={{marginTop:10,padding:'8px 12px',borderRadius:7,background:`linear-gradient(135deg,${shade(color,'12')},${shade(color,'04')})`,border:`1px solid ${shade(color,'28')}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Net Result</span><span style={{fontSize:18,fontWeight:900,color,fontFamily:'monospace',textShadow:`0 0 20px ${shade(color,'60')}`}}>{mfFormatMoney(pnl)}</span></motion.div></div>);
 };
 
 const PsychoCard=({score})=>{
@@ -609,12 +750,13 @@ const TradeDetailPanel=({trade,onClose,onEdit,onDelete})=>{
   const slP    = parseFloat(trade.stop_loss??trade.sl??0);
   const tpP    = parseFloat(trade.tp??trade.take_profit??0);
   const contextCards=[
-    {label:'Session',value:trade.session||'-',color:C.cyan},
+    {label:'Session',value:mfSessionLabel(trade.session),color:C.cyan},
+    {label:'Account',value:mfAccountLabel(trade)||'-',color:C.blue},
     {label:'Bias',value:trade.bias||'-',color:biasC},
     {label:'News',value:trade.newsImpact||'-',color:newsC},
     {label:'Setup',value:trade.setup||'-',color:C.purple},
     {label:'Type',value:type||'-',color:typeC},
-    {label:'Date',value:(trade.open_date||trade.date||'-').substring(0,10),color:C.t2},
+    {label:'Date',value:mfFormatDate(trade.open_date||trade.date||''),color:C.t2},
   ];
   return(
     <AnimatePresence>
@@ -629,14 +771,14 @@ const TradeDetailPanel=({trade,onClose,onEdit,onDelete})=>{
               </motion.div>
               <div>
                 <div style={{fontSize:19,fontWeight:900,color:C.t1,letterSpacing:'-0.5px',lineHeight:1.1}}>{trade.symbol||'-'}</div>
-                <div style={{fontSize:11,color:C.t3,marginTop:2}}>{(trade.open_date||trade.date||'-').substring(0,10)} / {trade.time||'-'}</div>
+                <div style={{fontSize:11,color:C.t3,marginTop:2}}>{mfFormatDate(trade.open_date||trade.date||'')} / {mfFormatTime(trade.time)}</div>
               </div>
             </div>
             <motion.button onClick={onClose} whileHover={{scale:1.06}} whileTap={{scale:0.94}} style={{height:30,padding:'0 10px',borderRadius:7,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t3,cursor:'pointer',fontSize:11,fontWeight:800,letterSpacing:'0.8px',textTransform:'uppercase'}}>Close</motion.button>
           </div>
           <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:12}}>
             <Tag label={type==='Long'?'Long':'Short'} color={typeC} bg={`${shade(typeC,'14')}`}/>
-            <Tag label={trade.session||'-'} color={C.cyan} bg="rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)"/>
+            <Tag label={mfSessionLabel(trade.session)} color={C.cyan} bg="rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)"/>
             {trade.bias&&<Tag label={trade.bias} color={biasC} bg={`${shade(biasC,'12')}`}/>}
             {trade.newsImpact&&<Tag label={trade.newsImpact} color={newsC} bg={`${shade(newsC,'12')}`}/>}
             {trade.setup&&<Tag label={trade.setup} color={C.purple} bg="rgba(167,139,250,0.1)"/>}
@@ -644,11 +786,11 @@ const TradeDetailPanel=({trade,onClose,onEdit,onDelete})=>{
           <div style={{padding:'12px 14px',borderRadius:10,background:`linear-gradient(135deg,${shade(pColor,'14')},${shade(pColor,'04')})`,border:`1px solid ${shade(pColor,'28')}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
             <div>
               <div style={{fontSize:9,color:C.t3,fontWeight:700,letterSpacing:'1px',marginBottom:4}}>NET RESULT</div>
-              <div style={{fontSize:30,fontWeight:900,color:pColor,fontFamily:'monospace',letterSpacing:'-0.5px',textShadow:`0 0 28px ${pGlow}`}}>{fmtPnl(pnl)}</div>
+              <div style={{fontSize:30,fontWeight:900,color:pColor,fontFamily:'monospace',letterSpacing:'-0.5px',textShadow:`0 0 28px ${pGlow}`}}>{mfFormatMoney(pnl)}</div>
             </div>
             <div style={{textAlign:'right'}}>
               <div style={{fontSize:13,color:pColor,fontWeight:900,letterSpacing:'1px'}}>{isWin?'WIN':'LOSS'}</div>
-              <div style={{fontSize:10,color:C.t3,marginTop:4}}>RR: <span style={{color:C.teal,fontWeight:800}}>1:{rr}</span></div>
+              <div style={{fontSize:10,color:C.t3,marginTop:4}}>RR: <span style={{color:C.teal,fontWeight:800}}>{mfFormatRR(rr)}</span></div>
             </div>
           </div>
           <div style={{display:'flex',gap:7,marginTop:11}}>
@@ -662,17 +804,17 @@ const TradeDetailPanel=({trade,onClose,onEdit,onDelete})=>{
           <MiniChart trade={trade}/>
           <SecTitle title="Metrics" color={C.cyan}/>
           <div style={{backgroundColor:C.bgDeep,borderRadius:10,padding:'2px 14px',border:`1px solid ${C.brd}`,marginBottom:16}}>
-            <MRow label="P&L Net" value={fmtPnl(pnl)} color={pColor}/>
-            <MRow label="Risk / Reward" value={`1 : ${rr}`} color={parseFloat(rr)>=2?C.green:parseFloat(rr)>=1?C.warn:C.danger} sub="Actual achieved"/>
-            <MRow label="TP reached" value={`${tpPct}%`} color={parseFloat(tpPct)>=100?C.green:parseFloat(tpPct)>=50?C.warn:C.danger} sub="Target progress"/>
-            <MRow label="Entry price" value={fmt(entryP,5)}/>
-            <MRow label="Exit price" value={fmt(exitP,5)}/>
-            {slP>0&&<MRow label="Stop Loss" value={fmt(slP,5)} color={C.danger}/>}
-            {tpP>0&&<MRow label="Take Profit" value={fmt(tpP,5)} color={C.green}/>}
-            {trade.breakEven&&<MRow label="Break Even" value={fmt(trade.breakEven,5)} color={C.teal}/>}
-            {trade.trailingStop&&<MRow label="Trailing Stop" value={fmt(trade.trailingStop,5)} color={C.warn}/>}
+            <MRow label="P&L Net" value={mfFormatMoney(pnl)} color={pColor}/>
+            <MRow label="Risk / Reward" value={mfFormatRR(rr)} color={mfToStrictNumber(rr)>=2?C.green:mfToStrictNumber(rr)>=1?C.warn:C.danger} sub="Actual achieved"/>
+            <MRow label="TP reached" value={mfFormatPercent(tpPct,1)} color={mfToStrictNumber(tpPct)>=100?C.green:mfToStrictNumber(tpPct)>=50?C.warn:C.danger} sub="Target progress"/>
+            <MRow label="Entry price" value={mfFormatPrice(entryP)}/>
+            <MRow label="Exit price" value={mfFormatPrice(exitP)}/>
+            {slP>0&&<MRow label="Stop Loss" value={mfFormatPrice(slP)} color={C.danger}/>}
+            {tpP>0&&<MRow label="Take Profit" value={mfFormatPrice(tpP)} color={C.green}/>}
+            {trade.breakEven&&<MRow label="Break Even" value={mfFormatPrice(trade.breakEven)} color={C.teal}/>}
+            {trade.trailingStop&&<MRow label="Trailing Stop" value={mfFormatPrice(trade.trailingStop)} color={C.warn}/>}
             {trade.lots&&<MRow label="Volume / Lots" value={trade.lots}/>}
-            {(trade.commission||trade.quantity!=null)&&<MRow label="Commission" value={`$${parseFloat(trade.commission||0).toFixed(2)}`} color={C.warn}/>}
+            {(trade.commission||trade.quantity!=null)&&<MRow label="Commission" value={mfFormatMoney(trade.commission||0,false)} color={C.warn}/>}
           </div>
           <SecTitle title="Context" color={C.blue}/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16}}>
@@ -1444,7 +1586,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
           </div>
           <div style={{flex:1,overflowY:'auto',padding:'22px 24px 24px'}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
-              {[{k:'symbol',l:'Pair *',t:'text',ph:'EURUSD'},{k:'type',l:'Direction',t:'select',opts:['Long','Short']},{k:'date',l:'Date *',t:'date'},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'entry',l:'Entry',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit',t:'number',ph:'1.09000',step:'0.00001'},{k:'pnl',l:'P&L',t:'number',ph:'150.00',step:'0.01'}].map(({k,l,t,ph,step,opts})=>(
+              {[{k:'symbol',l:'Pair *',t:'text',ph:'EURUSD'},{k:'account',l:'Account',t:'text',ph:'FTMO Challenge'},{k:'type',l:'Direction',t:'select',opts:['Long','Short']},{k:'date',l:'Date *',t:'date'},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'pnl',l:'P&L',t:'number',ph:'150.00',step:'0.01'},{k:'entry',l:'Entry',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit',t:'number',ph:'1.09000',step:'0.00001'}].map(({k,l,t,ph,step,opts})=>(
                 <div key={k}>
                   <label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>
                   {t==='select'
@@ -1458,7 +1600,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
             <div style={{marginTop:16,padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
               <div>
                 <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase'}}>Advanced fields</div>
-                <div style={{fontSize:12,color:C.t2,marginTop:4}}>Time, setup, levels, psychology, and custom columns.</div>
+                <div style={{fontSize:12,color:C.t2,marginTop:4}}>Time, setup, levels, psychology, and custom fields.</div>
               </div>
               <button type="button" onClick={()=>setShowAdvanced(value=>!value)} style={{padding:'9px 12px',borderRadius:12,border:`1px solid ${shade(C.cyan,'18')}`,background:showAdvanced?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)':'rgba(255,255,255,0.02)',color:showAdvanced?C.cyan:C.t2,fontSize:11,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>
                 {showAdvanced?'Hide advanced':'Show advanced'}
@@ -1467,7 +1609,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
             {showAdvanced&&(
               <div style={{marginTop:18}}>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
-                  {[{k:'time',l:'Time',t:'time'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, pullback'},{k:'sl',l:'Stop loss',t:'number',step:'0.00001'},{k:'tp',l:'Take profit',t:'number',step:'0.00001'},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'newsImpact',l:'News impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(
+                  {[{k:'time',l:'Time',t:'time'},{k:'setup',l:'Setup',t:'text',ph:'Opening range reclaim'},{k:'sl',l:'Stop loss',t:'number',step:'0.00001'},{k:'tp',l:'Take profit',t:'number',step:'0.00001'},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'newsImpact',l:'News impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(
                     <div key={k}>
                       <label style={lStyle}>{l}</label>
                       {t==='select'
@@ -1559,11 +1701,15 @@ export default function AllTrades(){
   const totalPages=Math.max(1,Math.ceil(sorted.length/perPage));
   const paginated=useMemo(()=>sorted.slice((page-1)*perPage,page*perPage),[sorted,page,perPage]);
   const cumulMap=useMemo(()=>{let r=0;const m={};[...sorted].reverse().forEach(t=>{r+=parseFloat(t.profit_loss??t.pnl??0);m[t.id]=r;});return m;},[sorted]);
-  const stats=useMemo(()=>calcStats(filtered),[filtered]);
+  const stats=useMemo(()=>calcLedgerStats(filtered),[filtered]);
   const activeFilterCount=useMemo(()=>[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length,[filters]);
   const symbolCount=useMemo(()=>new Set(filtered.map(t=>t.symbol).filter(Boolean)).size,[filtered]);
   const averageTrade=stats.total?stats.totalPnL/stats.total:0;
   const latestTrade=sorted[0]||null;
+  const activeScopeLabel=useMemo(()=>{
+    if(activeAccount==='all') return 'All accounts';
+    return accountOptions.find(option=>option.id===activeAccount)?.label || 'Current account';
+  },[accountOptions,activeAccount]);
   const topSetup=useMemo(()=>{
     const setups=filtered.reduce((acc,trade)=>{
       const key=String(trade.setup||'').trim();
@@ -1639,23 +1785,28 @@ export default function AllTrades(){
     <div style={{backgroundColor:'transparent',minHeight:'100vh',fontFamily:'system-ui,-apple-system,sans-serif',color:C.t1,padding:'28px 24px 48px',position:'relative',overflow:'hidden'}}>
       <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 10% 0%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.065), transparent 24%), radial-gradient(circle at 88% 10%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.03), transparent 20%), linear-gradient(135deg, rgba(255,255,255,0.015), transparent 36%, transparent 64%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.02) 100%)',pointerEvents:'none'}}/>
       <div style={{position:'relative',zIndex:1,maxWidth:1520,margin:'0 auto'}}>
-        <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'grid',gridTemplateColumns:'minmax(0,1.4fr) minmax(320px,0.8fr)',gap:16,marginBottom:18}}>
-          <div style={{padding:'22px 22px 20px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)',position:'relative',overflow:'hidden'}}>
-            <div style={{position:'absolute',top:-120,right:-120,width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.12), transparent 68%)',pointerEvents:'none'}}/>
+        <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{display:'grid',gridTemplateColumns:'minmax(0,1.45fr) minmax(320px,0.82fr)',gap:16,marginBottom:18}}>
+          <div style={{padding:'24px 24px 22px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)',position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',top:-120,right:-120,width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.11), transparent 68%)',pointerEvents:'none'}}/>
             <div style={{position:'relative',zIndex:1}}>
-              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:10}}>Execution ledger</div>
-              <div style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
-                <div style={{maxWidth:760}}>
+              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:10}}>Execution center</div>
+              <div style={{display:'flex',justifyContent:'space-between',gap:18,alignItems:'flex-start',flexWrap:'wrap'}}>
+                <div style={{maxWidth:720}}>
                   <h1 style={{margin:0,fontSize:34,fontWeight:900,letterSpacing:'-0.04em',lineHeight:1.02,color:C.t1}}>All Trades</h1>
+                  <div style={{marginTop:10,fontSize:13,color:C.t2,lineHeight:1.7,maxWidth:560}}>Review every execution from one clean ledger. Import fast, edit only what matters, and keep the table easy to scan.</div>
                 </div>
-                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                  <GlassBtn onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn>
-                  <GlassBtn onClick={handleBackup}>Backup data</GlassBtn>
-                  <GlassBtn onClick={()=>backupRestoreRef.current?.click()}>Restore backup</GlassBtn>
-                  <GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>
-                  <GlassBtn onClick={()=>setModalColumns(true)}>Columns</GlassBtn>
-                  <GlassBtn variant="danger" onClick={()=>setShowWipeModal(true)}>Delete all trades</GlassBtn>
-                  <GlassBtn variant="primary" onClick={handleCreate}>Add trade</GlassBtn>
+                <div style={{display:'grid',gap:8,justifyItems:'end'}}>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}>
+                    <GlassBtn size="sm" onClick={()=>setModalImport(true)}>Import trades</GlassBtn>
+                    <GlassBtn size="sm" variant="primary" onClick={handleCreate}>Add trade</GlassBtn>
+                  </div>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}>
+                    <GlassBtn size="sm" onClick={()=>setModalColumns(true)}>Columns</GlassBtn>
+                    <GlassBtn size="sm" onClick={()=>exportToCSV(filtered,`trades_${Date.now()}.csv`)}>Export CSV</GlassBtn>
+                    <GlassBtn size="sm" onClick={handleBackup}>Backup</GlassBtn>
+                    <GlassBtn size="sm" onClick={()=>backupRestoreRef.current?.click()}>Restore</GlassBtn>
+                    <GlassBtn size="sm" variant="danger" onClick={()=>setShowWipeModal(true)}>Delete all</GlassBtn>
+                  </div>
                 </div>
               </div>
               {accountOptions.length>1&&(
@@ -1664,56 +1815,56 @@ export default function AllTrades(){
                   <AccountScopePills options={accountOptions} activeAccount={activeAccount} onChange={setActiveAccount}/>
                 </div>
               )}
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:18}}>
-                {[
-                  `${filtered.length}/${allTrades.length} trades`,
-                  `${symbolCount} symbols`,
-                  activeAccount!=='all'?accountOptions.find(option=>option.id===activeAccount)?.label:null,
-                  customColumns.length?`${customColumns.length} custom columns`:null,
-                  activeFilterCount ? `${activeFilterCount} filters` : null,
-                  topSetup !== 'Unassigned' ? topSetup : null,
-                ].filter(Boolean).map(item=>(
-                  <div key={item} style={{padding:'9px 12px',borderRadius:999,border:`1px solid ${shade(C.cyan,'18')}`,background:'rgba(255,255,255,0.03)',fontSize:11,fontWeight:700,color:C.t2}}>
-                    {item}
-                  </div>
-                ))}
-              </div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginTop:18}}>
-                <div style={{padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Scope</div>
+                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{activeScopeLabel}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{filtered.length} of {allTrades.length} trades</div>
+                </div>
+                <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
                   <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Latest execution</div>
-                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{latestTrade?.symbol || 'No trades yet'}</div>
-                  {latestTrade&&<div style={{fontSize:11,color:C.t2,marginTop:4}}>{(latestTrade.open_date || latestTrade.date || '').substring(0,10)}</div>}
+                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{latestTrade?.symbol || 'No executions yet'}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{latestTrade ? mfFormatDate(latestTrade.open_date || latestTrade.date) : 'Import or add your first trade'}</div>
                 </div>
-                <div style={{padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Average trade</div>
-                  <div style={{fontSize:14,fontWeight:900,color:averageTrade>=0?C.green:C.danger,fontFamily:'monospace'}}>{fmtPnl(averageTrade)}</div>
+                <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Tagged setup</div>
+                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{topSetup !== 'Unassigned' ? topSetup : 'No setup tagged'}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{customColumns.length ? `${customColumns.length} custom columns active` : `${symbolCount} symbols in scope`}</div>
                 </div>
-                <div style={{padding:'12px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Active sort</div>
+                <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Review state</div>
                   <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{activeSortLabel}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{sort.dir==='asc'?'Ascending':'Descending'}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{activeFilterCount ? `${activeFilterCount} active filters` : 'No active filters'}</div>
                 </div>
               </div>
             </div>
           </div>
           <div style={{padding:'20px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)'}}>
-            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:14}}>Desk snapshot</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:14}}>Review snapshot</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               {[
-                {label:'Net P&L', value:fmtPnl(stats.totalPnL), color:stats.totalPnL>=0?C.green:C.danger},
-                {label:'Win rate', value:`${stats.winRate.toFixed(1)}%`, color:stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger},
-                {label:'Profit factor', value:stats.pf, color:parseFloat(stats.pf)>=2?C.green:parseFloat(stats.pf)>=1.5?C.warn:C.danger},
-                {label:'Max drawdown', value:`-${stats.maxDD.toFixed(1)}%`, color:C.danger},
+                {label:'Net P&L', value:mfFormatMoney(stats.totalPnL), color:stats.totalPnL>=0?C.green:C.danger},
+                {label:'Average trade', value:mfFormatMoney(averageTrade), color:averageTrade>=0?C.green:C.danger},
+                {label:'Win rate', value:mfFormatPercent(stats.winRate,1), color:stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger},
+                {label:'Profit factor', value:mfFormatFactor(stats.pf), color:stats.pf===Infinity||stats.pf>=2?C.green:stats.pf>=1.2?C.warn:C.danger},
               ].map(card=>(
                 <div key={card.label} style={{padding:'12px 13px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
                   <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:8}}>{card.label}</div>
-                  <div style={{fontSize:19,fontWeight:900,color:card.color,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{card.value}</div>
+                  <div style={{fontSize:18,fontWeight:900,color:card.color,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{card.value}</div>
                 </div>
               ))}
             </div>
-            <div style={{padding:'12px 14px',borderRadius:18,border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>Lead setup</div>
-              <div style={{fontSize:13,fontWeight:800,color:C.t1}}>{topSetup}</div>
+            <div style={{marginTop:12,padding:'14px 15px',borderRadius:18,border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))',display:'grid',gap:10}}>
+              {[
+                {label:'Average R:R', value:stats.avgRR!=null?mfFormatRR(stats.avgRR):'--', color:C.teal},
+                {label:'Max drawdown', value:stats.maxDD>0?`-${mfFormatPercent(stats.maxDD,1)}`:'0.0%', color:C.danger},
+                {label:'Break-even trades', value:String(stats.breakeven||0), color:C.t2},
+              ].map(item=>(
+                <div key={item.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}>
+                  <div style={{fontSize:11,color:C.t2}}>{item.label}</div>
+                  <div style={{fontSize:12,fontWeight:800,color:item.color,fontFamily:'monospace'}}>{item.value}</div>
+                </div>
+              ))}
             </div>
           </div>
         </motion.div>
@@ -1721,7 +1872,7 @@ export default function AllTrades(){
       <AnimatePresence>
         {selected.size>0&&(
           <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} style={{background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.2)`,borderRadius:18,padding:'12px 14px',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
-            <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><span style={{color:C.t1,fontSize:13,fontWeight:800}}>{selected.size} trade{selected.size>1?'s':''} selected</span><span style={{padding:'7px 10px',borderRadius:999,border:`1px solid ${shade(selectedPnl>=0?C.green:C.danger,'26')}`,background:selectedPnl>=0?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)',fontSize:11,fontWeight:800,color:selectedPnl>=0?C.green:C.danger}}>Selection P&L {fmtPnl(selectedPnl)}</span></div>
+            <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><span style={{color:C.t1,fontSize:13,fontWeight:800}}>{selected.size} trade{selected.size>1?'s':''} selected</span><span style={{padding:'7px 10px',borderRadius:999,border:`1px solid ${shade(selectedPnl>=0?C.green:C.danger,'26')}`,background:selectedPnl>=0?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)',fontSize:11,fontWeight:800,color:selectedPnl>=0?C.green:C.danger}}>Selection P&L {mfFormatMoney(selectedPnl)}</span></div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               <GlassBtn size="sm" variant="cyan" onClick={()=>exportToCSV(selectedTrades,`selection_${Date.now()}.csv`)}>Export selection</GlassBtn>
               <GlassBtn size="sm" variant="danger" onClick={handleDeleteSelected}>Delete selected</GlassBtn>
@@ -1736,10 +1887,11 @@ export default function AllTrades(){
           <div>
             <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:6}}>Execution ledger</div>
             <div style={{fontSize:20,fontWeight:900,color:C.t1,letterSpacing:'-0.03em'}}>Trade review table</div>
+            <div style={{marginTop:4,fontSize:12,color:C.t2}}>Keep the ledger lean. Open a row for the deep review only when you need it.</div>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             <div style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2}}>
-              Sorted by <span style={{color:C.t1,fontWeight:800}}>{activeSortLabel}</span> / {sort.dir==='asc'?'ASC':'DESC'}
+              {filtered.length} rows / <span style={{color:C.t1,fontWeight:800}}>{activeSortLabel}</span> {sort.dir==='asc'?'ASC':'DESC'}
             </div>
             <button type="button" onClick={()=>setModalColumns(true)} style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2,cursor:'pointer',fontFamily:'inherit'}}>
               {visibleCols.length} visible columns
@@ -1752,8 +1904,8 @@ export default function AllTrades(){
         {filtered.length===0?(
           <div style={{padding:'84px 22px',textAlign:'center'}}>
             <div style={{width:54,height:54,borderRadius:18,margin:'0 auto 18px',border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))'}}/>
-            <h3 style={{color:C.t1,fontSize:20,fontWeight:800,margin:'0 0 8px'}}>{allTrades.length===0?'Your ledger is empty':trades.length===0?'No trades in this account scope':'No trades match the current filters'}</h3>
-            <p style={{color:C.t2,fontSize:13,lineHeight:1.7,maxWidth:520,margin:'0 auto 22px'}}>{allTrades.length===0?'Import data or add your first trade.':trades.length===0?'Switch account scope or import data for this account.':'Reset or widen the filters.'}</p>
+            <h3 style={{color:C.t1,fontSize:20,fontWeight:800,margin:'0 0 8px'}}>{allTrades.length===0?'No trades yet':trades.length===0?'No trades in this scope':'No trades match the filters'}</h3>
+            <p style={{color:C.t2,fontSize:13,lineHeight:1.7,maxWidth:520,margin:'0 auto 22px'}}>{allTrades.length===0?'Import a file or log the first execution manually.':trades.length===0?'Switch account scope or import trades for this account.':'Clear the filters or widen the date range.'}</p>
             <div style={{display:'flex',justifyContent:'center',gap:8,flexWrap:'wrap'}}>
               {allTrades.length===0&&<GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>}
               <GlassBtn variant="primary" onClick={handleCreate}>{allTrades.length===0?'Add first trade':'Add trade manually'}</GlassBtn>
