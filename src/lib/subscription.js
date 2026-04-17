@@ -64,9 +64,10 @@ export const PLAN_DETAILS = {
 
 const ROUTES_BY_PLAN = {
   trial: [...BASE_ROUTES, ...ACCOUNT_ROUTES],
-  starter: [...BASE_ROUTES, ...ACCOUNT_ROUTES],
+  starter: [...BASE_ROUTES, 'competition', ...ACCOUNT_ROUTES],
   pro: [
     ...BASE_ROUTES,
+    'competition',
     'analytics',
     'analytics-pro',
     'equity',
@@ -78,6 +79,7 @@ const ROUTES_BY_PLAN = {
   ],
   elite: [
     ...BASE_ROUTES,
+    'competition',
     'analytics',
     'analytics-pro',
     'equity',

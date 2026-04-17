@@ -28,6 +28,7 @@ import JournalAmbientBackground from './components/JournalAmbientBackground';
 import ReportsPage from './pages/Reports';
 import AlertsPage from './pages/Alerts';
 import ApiAccessPage from './pages/ApiAccess';
+import Competition from './pages/Competition';
 import WelcomePage from './pages/WelcomePage';
 import { getEntryRoute, hasRouteAccess, normalizePlan } from './lib/subscription';
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
@@ -196,6 +197,7 @@ function AppLayout({ user, onLogout }) {
               <Route path="/reports" element={renderProtectedRoute('reports', <ReportsPage />)} />
               <Route path="/alerts" element={renderProtectedRoute('alerts', <AlertsPage />)} />
               <Route path="/api-access" element={renderProtectedRoute('api-access', <ApiAccessPage />)} />
+              <Route path="/competition" element={renderProtectedRoute('competition', <Competition />)} />
               <Route path="*" element={<Navigate to={fallbackRoute} replace />} />
             </Routes>
           </div>

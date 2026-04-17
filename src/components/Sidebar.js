@@ -95,6 +95,16 @@ const Ic = {
       <path d="M8.75 2.5L7.25 13.5" />
     </svg>
   ),
+  Competition: () => (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 2.25h7v1.8A3.5 3.5 0 018 7.55a3.5 3.5 0 01-3.5-3.5z" />
+      <path d="M3.7 3.1H2.4a1.4 1.4 0 000 2.8h1.1" />
+      <path d="M12.3 3.1h1.3a1.4 1.4 0 010 2.8h-1.1" />
+      <path d="M8 7.55V10" />
+      <path d="M5.4 13.75h5.2" />
+      <path d="M6 10h4v1.9H6z" />
+    </svg>
+  ),
   Admin: () => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 1.5l1.8 4.5H15l-4 2.7 1.5 4.3L8 10.5 3.5 13l1.5-4.3L1 6h5.2z" />
@@ -157,6 +167,13 @@ const NAV = (isAdmin, plan) => [
       { id: 'psychology', label: 'Psychology', Icon: Ic.Psychology },
       { id: 'broker-connect', label: 'Brokers', Icon: Ic.Broker },
       { id: 'ai-chat', label: 'AI Coach', Icon: Ic.Chat },
+    ].filter((item) => hasRouteAccess(plan, item.id)),
+  },
+  {
+    id: 'competition',
+    label: 'Competition',
+    items: [
+      { id: 'competition', label: 'Leaderboard', Icon: Ic.Competition },
     ].filter((item) => hasRouteAccess(plan, item.id)),
   },
   {

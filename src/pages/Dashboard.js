@@ -1,18 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  AreaChart,
   Area,
-  BarChart,
-  Bar,
+  AreaChart,
+  CartesianGrid,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  ReferenceLine,
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
@@ -23,6 +20,10 @@ import {
   chartActiveDot,
   chartCursor,
 } from '../lib/marketflowCharts';
+import {
+  buildCompetitionBoard,
+  buildMarketFlowRank,
+} from '../lib/marketflowCompetition';
 
 const C = {
   accent: 'var(--mf-accent,#06E6FF)',
@@ -41,19 +42,28 @@ const C = {
   text3: 'var(--mf-text-3,#334566)',
   border: 'var(--mf-border,#162034)',
   borderHi: 'var(--mf-border-hi,#1E2E48)',
-  panel: 'rgba(10, 16, 28, 0.82)',
-  panelStrong: 'rgba(8, 13, 24, 0.92)',
 };
+
+const ROUTES = {
+  trades: '/all-trades',
+  analytics: '/analytics-pro',
+  psychology: '/psychology',
+  backtest: '/backtest',
+  competition: '/competition',
+};
+
+const ROUTINE_TEMPLATE_PREFIX = 'mf_dashboard_routine_template_v1_';
+const ROUTINE_DAY_PREFIX = 'mf_dashboard_routine_day_v1_';
 
 const DASHBOARD_STYLES = `
   @keyframes mfDashboardGlowA {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.12; }
-    50% { transform: translate3d(26px, 18px, 0) scale(1.04); opacity: 0.18; }
+    50% { transform: translate3d(24px, 18px, 0) scale(1.04); opacity: 0.18; }
   }
 
   @keyframes mfDashboardGlowB {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.08; }
-    50% { transform: translate3d(-24px, -16px, 0) scale(1.03); opacity: 0.12; }
+    50% { transform: translate3d(-22px, -14px, 0) scale(1.03); opacity: 0.12; }
   }
 
   .mf-dashboard-shell {
@@ -73,32 +83,22 @@ const DASHBOARD_STYLES = `
 
   .mf-dashboard-grid-primary {
     display: grid;
-    grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(350px, 0.9fr);
     gap: 14px;
     margin-bottom: 14px;
   }
 
   .mf-dashboard-grid-secondary {
     display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(330px, 0.92fr);
+    grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.82fr);
     gap: 14px;
     margin-bottom: 14px;
   }
 
-  .mf-dashboard-grid-tertiary {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-    gap: 14px;
-  }
-
   .mf-dashboard-calendar-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.78fr);
+    grid-template-columns: minmax(0, 1.7fr) minmax(340px, 0.92fr);
     gap: 16px;
-  }
-
-  .mf-dashboard-kpi-value {
-    font-variant-numeric: tabular-nums;
   }
 
   .mf-dashboard-side-stack {
@@ -116,7 +116,6 @@ const DASHBOARD_STYLES = `
   @media (max-width: 1160px) {
     .mf-dashboard-grid-primary,
     .mf-dashboard-grid-secondary,
-    .mf-dashboard-grid-tertiary,
     .mf-dashboard-calendar-shell {
       grid-template-columns: 1fr;
     }
@@ -135,11 +134,80 @@ const DASHBOARD_STYLES = `
   }
 `;
 
-const ROUTES = {
-  trades: '/all-trades',
-  analytics: '/analytics-pro',
-  psychology: '/psychology',
-  backtest: '/backtest',
+const Ic = {
+  Clock: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="7" r="5.25" />
+      <path d="M7 4.1v3.2l2.15 1.35" />
+    </svg>
+  ),
+  Session: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 9.5c1.1-2.8 3-4.8 5.7-6" />
+      <path d="M7.7 3.5h3v3" />
+      <path d="M3 11.5h8" />
+    </svg>
+  ),
+  Checklist: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5.3 4.25h6.2" />
+      <path d="M5.3 7.5h6.2" />
+      <path d="M5.3 10.75h6.2" />
+      <path d="M2.4 4.25l.9.9 1.4-1.55" />
+      <path d="M2.4 7.5l.9.9 1.4-1.55" />
+      <path d="M2.4 10.75l.9.9 1.4-1.55" />
+    </svg>
+  ),
+  Edit: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.1 11.9l2.45-.55 6-6.05-1.9-1.9-6 6.05-.55 2.45z" />
+      <path d="M7.95 3.45l1.9 1.9" />
+    </svg>
+  ),
+  Save: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.2 2.2h7.8l1.8 1.8v7.8H2.2z" />
+      <path d="M4.3 2.2v3h4.2v-3" />
+      <path d="M4.4 11.1h5.2" />
+    </svg>
+  ),
+  ChevronDown: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3.5,5.5 7,9 10.5,5.5" />
+    </svg>
+  ),
+  ChevronUp: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3.5,8.5 7,5 10.5,8.5" />
+    </svg>
+  ),
+  Trophy: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.2 2.1h6.6v1.6A3.3 3.3 0 017.5 7 3.3 3.3 0 014.2 3.7z" />
+      <path d="M3.4 2.9H2.2a1.4 1.4 0 000 2.8h1.1" />
+      <path d="M11.6 2.9h1.2a1.4 1.4 0 010 2.8h-1.1" />
+      <path d="M7.5 7v2.1" />
+      <path d="M5.1 13h4.8" />
+      <path d="M5.8 9.1h3.4v1.6H5.8z" />
+    </svg>
+  ),
+  Shield: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7.5 1.8l4.45 1.6v3.15c0 2.65-1.6 4.95-4.45 6.65C4.65 11.5 3.05 9.2 3.05 6.55V3.4z" />
+      <path d="M5.7 7.3l1.25 1.25 2.35-2.6" />
+    </svg>
+  ),
+  Pulse: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.7 7h2.1l1.1-2.2 2.2 4.3 1.6-3 1 1.9h2.6" />
+    </svg>
+  ),
+  ArrowRight: () => (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 6.5h8.2" />
+      <path d="M6.8 3.2l3.4 3.3-3.4 3.3" />
+    </svg>
+  ),
 };
 
 function panelMotion(index = 0) {
@@ -154,15 +222,24 @@ function panelMotion(index = 0) {
   };
 }
 
+function toneColor(tone = 'accent') {
+  if (tone === 'green') return C.green;
+  if (tone === 'blue') return C.blue;
+  if (tone === 'teal') return C.teal;
+  if (tone === 'purple') return C.purple;
+  if (tone === 'warn') return C.warn;
+  if (tone === 'danger') return C.danger;
+  if (tone === 'text') return C.text2;
+  return C.accent;
+}
+
 function formatCurrency(value = 0, signed = false) {
   const amount = Number(value) || 0;
   const absolute = Math.abs(amount).toLocaleString();
-
   if (signed) {
     if (amount > 0) return `+$${absolute}`;
     if (amount < 0) return `-$${absolute}`;
   }
-
   return `$${absolute}`;
 }
 
@@ -215,12 +292,17 @@ function getGreeting() {
 }
 
 function getSessionStatus() {
-  const hour = new Date().getUTCHours();
-  if (hour >= 0 && hour < 7) return { label: 'Sydney session active', tone: C.accent };
-  if (hour >= 2 && hour < 9) return { label: 'Tokyo session active', tone: C.blue };
-  if (hour >= 7 && hour < 16) return { label: 'London session active', tone: C.green };
-  if (hour >= 13 && hour < 22) return { label: 'New York session active', tone: C.warn };
-  return { label: 'Market closed', tone: C.text2 };
+  const hour = new Date().getHours();
+  if (hour >= 0 && hour < 6) {
+    return { label: 'Tokyo session active', window: '00:00 - 06:00 Paris', tone: C.blue };
+  }
+  if (hour >= 8 && hour < 11) {
+    return { label: 'London session active', window: '08:00 - 11:00 Paris', tone: C.green };
+  }
+  if (hour >= 13 && hour < 22) {
+    return { label: 'New York session active', window: '13:00 - 22:00 Paris', tone: C.warn };
+  }
+  return { label: 'Between sessions', window: 'Tokyo 00:00 - 06:00 / London 08:00 - 11:00 / New York 13:00 - 22:00', tone: C.text2 };
 }
 
 function clamp(value, min = 0, max = 100) {
@@ -269,7 +351,6 @@ function getCurrentStreak(closedTrades) {
 
   const firstValue = Number(closedTrades[0].profit_loss || 0);
   const firstSign = Math.sign(firstValue);
-
   if (firstSign === 0) {
     return {
       count: 1,
@@ -282,11 +363,8 @@ function getCurrentStreak(closedTrades) {
   let count = 0;
   for (const trade of closedTrades) {
     const sign = Math.sign(Number(trade.profit_loss || 0));
-    if (sign === firstSign) {
-      count += 1;
-    } else {
-      break;
-    }
+    if (sign === firstSign) count += 1;
+    else break;
   }
 
   return {
@@ -294,157 +372,6 @@ function getCurrentStreak(closedTrades) {
     type: firstSign > 0 ? 'win' : 'loss',
     label: firstSign > 0 ? `${count} winning trade${count > 1 ? 's' : ''}` : `${count} losing trade${count > 1 ? 's' : ''}`,
     tone: firstSign > 0 ? C.green : C.danger,
-  };
-}
-
-function buildBriefing(stats, context) {
-  const {
-    hygieneScore,
-    currentStreak,
-    bestSession,
-    topPair,
-    tradeCount,
-    monthSummary,
-  } = context;
-
-  if (!tradeCount) {
-    return {
-      eyebrow: 'Desk setup',
-      headline: 'Connect the first batch of trades.',
-      body: 'The dashboard is ready. The next move is clean data, not more widgets.',
-      points: [
-        'Import the first executions.',
-        'Normalize setup names early.',
-        'Log session and psychology on each trade.',
-      ],
-    };
-  }
-
-  if (hygieneScore < 60) {
-    return {
-      eyebrow: 'Process first',
-      headline: 'The edge is being hidden by incomplete journaling.',
-      body: 'Tighten tagging, notes and psychology before trusting the conclusions.',
-      points: [
-        'Push note coverage above 80%.',
-        'Tag every trade with setup and session.',
-        'Use psychology fields systematically.',
-      ],
-    };
-  }
-
-  if (currentStreak.type === 'loss' && currentStreak.count >= 3) {
-    return {
-      eyebrow: 'Capital protection',
-      headline: 'Slow the desk down before pressing size again.',
-      body: 'A losing run should trigger review, not speed.',
-      points: [
-        'Review the last losing trades first.',
-        'Reduce aggression until the pattern is clear.',
-        'Backtest the exact setup before the next session.',
-      ],
-    };
-  }
-
-  if ((stats.profitFactor || 0) >= 1.4 && (stats.winRate || 0) >= 50) {
-    return {
-      eyebrow: 'Protect the edge',
-      headline: 'The desk is stable. Keep it selective.',
-      body: `Best context: ${bestSession?.s || 'your strongest session'}. Best pair: ${topPair?.p || 'your leading pair'}.`,
-      points: [
-        'Keep size stable while the edge holds.',
-        'Concentrate on the strongest context first.',
-        'Audit only the outlier losses.',
-      ],
-    };
-  }
-
-  if ((monthSummary?.totalPnl || 0) > 0) {
-    return {
-      eyebrow: 'Month in control',
-      headline: 'The month is green, but selectivity can still improve.',
-      body: 'Focus on repeatable executions, not more volume.',
-      points: [
-        'Cut the weakest context first.',
-        'Use Analytics Pro only for deeper breakdowns.',
-        'Rebuild one setup at a time in Backtest.',
-      ],
-    };
-  }
-
-  return {
-    eyebrow: 'Rebuild the process',
-    headline: 'Simplify the desk and tighten the routine.',
-    body: 'Cleaner setups, cleaner reviews, fewer forced trades.',
-    points: [
-      'Trade fewer but clearer setups.',
-      'Review weak sessions before repeating them.',
-      'Use Psychology to catch execution drift.',
-    ],
-  };
-}
-
-function buildMarketFlowRank(stats, context) {
-  const drawdown = Math.abs(Number(stats.maxDrawdown || 0));
-  const expectancy = Number(stats.expectancy || 0);
-
-  const factors = [
-    { label: 'Process', value: clamp(context.hygieneScore), tone: C.accent },
-    { label: 'Edge', value: clamp((Number(stats.profitFactor || 0) / 2.4) * 100), tone: C.green },
-    { label: 'Consistency', value: clamp((Number(stats.winRate || 0) / 60) * 100), tone: C.blue },
-    { label: 'Risk', value: clamp(100 - (drawdown / 12) * 100), tone: C.warn },
-    { label: 'Depth', value: clamp((Number(stats.totalTrades || 0) / 80) * 100), tone: C.purple },
-  ];
-
-  const weighted =
-    factors[0].value * 0.24 +
-    factors[1].value * 0.25 +
-    factors[2].value * 0.19 +
-    factors[3].value * 0.18 +
-    factors[4].value * 0.14;
-
-  const score = Math.round(weighted * 10);
-  const ladder = [
-    { min: 0, label: 'Foundation', tone: C.text2 },
-    { min: 220, label: 'Structure', tone: C.blue },
-    { min: 420, label: 'Precision', tone: C.accent },
-    { min: 620, label: 'Momentum', tone: C.green },
-    { min: 820, label: 'Command', tone: C.warn },
-    { min: 940, label: 'Apex', tone: C.purple },
-  ];
-
-  const currentTier = [...ladder].reverse().find((tier) => score >= tier.min) || ladder[0];
-  const nextTier = ladder.find((tier) => score < tier.min) || null;
-  const rangeMin = currentTier.min;
-  const rangeMax = nextTier ? nextTier.min : 1000;
-  const progress = rangeMax > rangeMin
-    ? clamp(((score - rangeMin) / (rangeMax - rangeMin)) * 100)
-    : 100;
-
-  const division = nextTier
-    ? progress >= 68 ? 'I' : progress >= 34 ? 'II' : 'III'
-    : 'I';
-
-  let focus = 'Keep the desk stable.';
-  if ((stats.totalTrades || 0) < 25) focus = 'Build more clean sample size.';
-  else if (context.hygieneScore < 75) focus = 'Raise journal discipline.';
-  else if ((stats.profitFactor || 0) < 1.25) focus = 'Sharpen entry selectivity.';
-  else if (drawdown > 8) focus = 'Reduce drawdown pressure.';
-  else if (expectancy <= 0) focus = 'Protect the positive expectancy.';
-
-  return {
-    score,
-    normalized: clamp(weighted),
-    label: currentTier.label === 'Apex' ? 'Apex' : `${currentTier.label} ${division}`,
-    tone: currentTier.tone,
-    nextLabel: nextTier ? nextTier.label : 'Apex',
-    nextGap: nextTier ? nextTier.min - score : 0,
-    progress,
-    focus,
-    note: context.bestSession
-      ? `Strongest context: ${context.bestSession.s}.${context.topPair ? ` Top pair: ${context.topPair.p}.` : ''}`
-      : 'The first ranked tier unlocks as soon as the journal has enough clean history.',
-    factors,
   };
 }
 
@@ -466,19 +393,63 @@ function buildCalendarMonth(trades, monthOffset = 0) {
 
     const key = toDateKey(tradeDate);
     const pnl = Number(trade.profit_loss ?? trade.pnl ?? 0) || 0;
-    const summary = bucket.get(key) || { pnl: 0, trades: 0, wins: 0, losses: 0, breakevens: 0 };
+    const summary = bucket.get(key) || {
+      pnl: 0,
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      breakevens: 0,
+      records: [],
+      sessions: {},
+      pairs: {},
+    };
+
     summary.pnl += pnl;
     summary.trades += 1;
     if (pnl > 0) summary.wins += 1;
     else if (pnl < 0) summary.losses += 1;
     else summary.breakevens += 1;
+
+    const sessionLabel = trade.session || 'Unassigned';
+    const pairLabel = trade.symbol || trade.pair || 'Unknown';
+    summary.sessions[sessionLabel] = (summary.sessions[sessionLabel] || 0) + 1;
+    summary.pairs[pairLabel] = (summary.pairs[pairLabel] || 0) + pnl;
+    summary.records.push({
+      id: trade.id,
+      date: tradeDate,
+      symbol: pairLabel,
+      direction: trade.direction || trade.type || 'Long',
+      session: sessionLabel,
+      setup: trade.setup || 'Unlabeled',
+      pnl,
+      status: trade.status || (pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE'),
+      notes: trade.notes || '',
+      time: trade.time || '',
+    });
+
     bucket.set(key, summary);
   });
 
   const days = Array.from({ length: totalCells }, (_, index) => {
     const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), index - startOffset + 1);
     const key = toDateKey(date);
-    const entry = bucket.get(key) || { pnl: 0, trades: 0, wins: 0, losses: 0, breakevens: 0 };
+    const entry = bucket.get(key) || {
+      pnl: 0,
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      breakevens: 0,
+      records: [],
+      sessions: {},
+      pairs: {},
+    };
+
+    const sessionLeader = Object.entries(entry.sessions).sort((left, right) => right[1] - left[1])[0] || null;
+    const pairLeader = Object.entries(entry.pairs).sort((left, right) => right[1] - left[1])[0] || null;
+    const bestTrade = [...entry.records].sort((left, right) => right.pnl - left.pnl)[0] || null;
+    const worstTrade = [...entry.records].sort((left, right) => left.pnl - right.pnl)[0] || null;
+    const winRate = entry.trades ? Math.round((entry.wins / entry.trades) * 100) : 0;
+    const avgTrade = entry.trades ? Math.round(entry.pnl / entry.trades) : 0;
 
     return {
       key,
@@ -487,6 +458,12 @@ function buildCalendarMonth(trades, monthOffset = 0) {
       inMonth: date.getMonth() === monthStart.getMonth(),
       isToday: key === todayKey,
       ...entry,
+      bestTrade,
+      worstTrade,
+      avgTrade,
+      winRate,
+      sessionLeader: sessionLeader ? { label: sessionLeader[0], count: sessionLeader[1] } : null,
+      pairLeader: pairLeader ? { label: pairLeader[0], pnl: pairLeader[1] } : null,
     };
   });
 
@@ -523,7 +500,7 @@ function buildCalendarMonth(trades, monthOffset = 0) {
   };
 }
 
-function buildDashboardOverview(stats, trades) {
+function buildDashboardOverview(stats, trades, routineScore = 0) {
   const closedTrades = getClosedTrades(trades);
   const recentTrades = [...(trades || [])]
     .sort((left, right) => new Date(right.open_date || right.date || 0) - new Date(left.open_date || left.date || 0))
@@ -555,36 +532,27 @@ function buildDashboardOverview(stats, trades) {
   const sessionData = Array.isArray(stats.sessionData) ? stats.sessionData : [];
   const pairData = Array.isArray(stats.pairData) ? stats.pairData : [];
   const dailySeries = Array.isArray(stats.dailyPnl) ? stats.dailyPnl : [];
-
-  const bestSession = sessionData.length
-    ? [...sessionData].sort((left, right) => right.pnl - left.pnl)[0]
-    : null;
-
-  const weakestSession = sessionData.length
-    ? [...sessionData].sort((left, right) => left.pnl - right.pnl)[0]
-    : null;
-
-  const topPair = pairData.length
-    ? [...pairData].sort((left, right) => right.pnl - left.pnl)[0]
-    : null;
-
-  const bestDay = dailySeries.reduce((best, item) => {
-    if (!best || item.v > best.v) return item;
-    return best;
-  }, null);
-
+  const bestSession = sessionData.length ? [...sessionData].sort((left, right) => right.pnl - left.pnl)[0] : null;
+  const weakestSession = sessionData.length ? [...sessionData].sort((left, right) => left.pnl - right.pnl)[0] : null;
+  const topPair = pairData.length ? [...pairData].sort((left, right) => right.pnl - left.pnl)[0] : null;
+  const bestDay = dailySeries.reduce((best, item) => (!best || item.v > best.v ? item : best), null);
   const positiveDays = dailySeries.filter((item) => item.v > 0).length;
   const negativeDays = dailySeries.filter((item) => item.v < 0).length;
   const dailyAverage = dailySeries.length
     ? Math.round(dailySeries.reduce((sum, item) => sum + (item.v || 0), 0) / dailySeries.length)
     : 0;
-
   const lastTrade = closedTrades[0] || recentTrades[0] || null;
   const monthSummary = buildCalendarMonth(trades, 0);
   const rank = buildMarketFlowRank(stats, {
     hygieneScore,
+    routineScore,
     bestSession,
     topPair,
+    positiveDays: monthSummary.positiveDays,
+    negativeDays: monthSummary.negativeDays,
+    flatDays: monthSummary.flatDays,
+    monthPnl: monthSummary.totalPnl,
+    currentStreak,
   });
 
   return {
@@ -602,73 +570,138 @@ function buildDashboardOverview(stats, trades) {
     dailyAverage,
     monthSummary,
     rank,
-    briefing: buildBriefing(stats, {
-      hygieneScore,
-      currentStreak,
-      bestSession,
-      topPair,
-      tradeCount: stats.totalTrades || 0,
-      monthSummary,
-    }),
+    routineScore,
+    tradeCount: stats.totalTrades || 0,
   };
+}
+
+function buildRoutineBlueprint(overview) {
+  if (!overview.tradeCount) {
+    return [
+      { id: 'import', title: 'Import your first clean batch of trades.', route: ROUTES.trades },
+      { id: 'account', title: 'Choose the account scope you want to review today.', route: ROUTES.trades },
+      { id: 'notes', title: 'Define your setup labels before the next execution.', route: ROUTES.trades },
+      { id: 'psychology', title: 'Prepare the daily psychology check before the session.', route: ROUTES.psychology },
+    ];
+  }
+
+  return [
+    {
+      id: 'review',
+      title: overview.currentStreak.type === 'loss'
+        ? 'Review the latest losing trade before you open a new position.'
+        : 'Review the latest closed trade before the next session.',
+      route: ROUTES.trades,
+    },
+    {
+      id: 'session',
+      title: overview.weakestSession
+        ? `Protect ${overview.weakestSession.s} or skip it unless the setup is A-grade.`
+        : 'Decide the session you want to trade before the open.',
+      route: ROUTES.analytics,
+    },
+    {
+      id: 'journal',
+      title: overview.hygieneScore < 80
+        ? 'Log setup, session, and notes on every execution today.'
+        : 'Keep every execution fully tagged and documented today.',
+      route: ROUTES.trades,
+    },
+    {
+      id: 'mindset',
+      title: 'Close the day with the psychology review and score update.',
+      route: ROUTES.psychology,
+    },
+  ];
+}
+
+function routineTemplateKey(accountId = 'all') {
+  return `${ROUTINE_TEMPLATE_PREFIX}${accountId || 'all'}`;
+}
+
+function routineDayKey(accountId = 'all') {
+  return `${ROUTINE_DAY_PREFIX}${accountId || 'all'}`;
+}
+
+function loadRoutineState(accountId, blueprint) {
+  const todayKey = toDateKey(new Date());
+  try {
+    const storedTemplate = JSON.parse(window.localStorage.getItem(routineTemplateKey(accountId)) || 'null');
+    const storedDay = JSON.parse(window.localStorage.getItem(routineDayKey(accountId)) || 'null');
+    const templateTitles = Object.fromEntries((storedTemplate?.items || []).map((item) => [item.id, item.title]));
+    const doneState = storedDay?.date === todayKey
+      ? Object.fromEntries((storedDay?.items || []).map((item) => [item.id, Boolean(item.done)]))
+      : {};
+
+    return blueprint.map((item) => ({
+      ...item,
+      title: templateTitles[item.id] || item.title,
+      done: Boolean(doneState[item.id]),
+    }));
+  } catch {
+    return blueprint.map((item) => ({ ...item, done: false }));
+  }
+}
+
+function persistRoutineState(accountId, items) {
+  if (typeof window === 'undefined') return;
+  const todayKey = toDateKey(new Date());
+  const cleanItems = (items || []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    route: item.route,
+    done: Boolean(item.done),
+  }));
+
+  window.localStorage.setItem(
+    routineTemplateKey(accountId),
+    JSON.stringify({ items: cleanItems.map((item) => ({ id: item.id, title: item.title, route: item.route })) }),
+  );
+  window.localStorage.setItem(
+    routineDayKey(accountId),
+    JSON.stringify({ date: todayKey, items: cleanItems.map((item) => ({ id: item.id, done: item.done })) }),
+  );
 }
 
 function SectionCard({ children, tone = C.accent, style, index = 0, hover = false }) {
   return (
     <motion.section
       {...panelMotion(index)}
-      whileHover={hover ? { y: -2, boxShadow: `0 18px 60px ${shade(tone, 0.12)}` } : undefined}
+      whileHover={hover ? { y: -2 } : undefined}
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 22,
+        borderRadius: 24,
         border: `1px solid ${shade(tone, 0.16)}`,
-        background: `linear-gradient(160deg, ${C.panel} 0%, ${C.panelStrong} 100%)`,
-        boxShadow: '0 22px 56px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.04)',
-        backdropFilter: 'blur(16px)',
+        background: 'linear-gradient(180deg, rgba(10,17,28,0.9), rgba(8,13,24,0.94))',
+        boxShadow: `0 18px 52px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.03)`,
         ...style,
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `linear-gradient(135deg, ${shade(C.text0, 0.04)} 0%, transparent 26%, transparent 70%, ${shade(tone, 0.04)} 100%)`,
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 1,
-          background: `linear-gradient(90deg, transparent, ${shade(tone, 0.7)}, transparent)`,
-          pointerEvents: 'none',
-        }}
-      />
-      <div style={{ position: 'relative', zIndex: 1, height: '100%' }}>
-        {children}
-      </div>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(circle at top right, ${shade(tone, 0.12)} 0%, transparent 42%)` }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
     </motion.section>
   );
 }
 
-function SectionTitle({ eyebrow, title, tone = C.accent, action }) {
+function SectionTitle({ eyebrow, title, tone = C.accent, action, icon }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 18 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
       <div>
-        {eyebrow && (
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: shade(tone, 0.86), marginBottom: 8 }}>
-            {eyebrow}
-          </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 3, height: 14, borderRadius: 999, background: tone, boxShadow: `0 0 16px ${shade(tone, 0.48)}` }} />
-          <h2 style={{ margin: 0, fontSize: 18, lineHeight: 1.05, letterSpacing: '-0.03em', color: C.text0 }}>
-            {title}
-          </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          {icon && (
+            <div style={{ width: 28, height: 28, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: shade(tone, 0.12), color: tone, border: `1px solid ${shade(tone, 0.2)}` }}>
+              {icon}
+            </div>
+          )}
+          {eyebrow && (
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.text3 }}>
+              {eyebrow}
+            </div>
+          )}
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.05em', color: C.text0 }}>
+          {title}
         </div>
       </div>
       {action}
@@ -676,30 +709,37 @@ function SectionTitle({ eyebrow, title, tone = C.accent, action }) {
   );
 }
 
-function GhostButton({ children, onClick }) {
+function GhostButton({ children, onClick, icon, disabled = false }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       style={{
-        border: `1px solid ${shade(C.accent, 0.18)}`,
-        background: shade(C.accent, 0.06),
-        color: C.text1,
+        border: `1px solid ${disabled ? shade(C.borderHi, 0.8) : shade(C.accent, 0.16)}`,
+        background: disabled ? 'rgba(255,255,255,0.015)' : shade(C.accent, 0.06),
+        color: disabled ? C.text3 : C.text1,
         borderRadius: 12,
-        padding: '9px 14px',
+        padding: '9px 13px',
         fontSize: 12,
         fontWeight: 700,
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'all 0.16s ease',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
       }}
       onMouseEnter={(event) => {
+        if (disabled) return;
         event.currentTarget.style.background = shade(C.accent, 0.12);
-        event.currentTarget.style.borderColor = shade(C.accent, 0.3);
+        event.currentTarget.style.borderColor = shade(C.accent, 0.28);
       }}
       onMouseLeave={(event) => {
+        if (disabled) return;
         event.currentTarget.style.background = shade(C.accent, 0.06);
-        event.currentTarget.style.borderColor = shade(C.accent, 0.18);
+        event.currentTarget.style.borderColor = shade(C.accent, 0.16);
       }}
     >
+      {icon}
       {children}
     </button>
   );
@@ -728,59 +768,6 @@ function TinyBadge({ children, tone }) {
   );
 }
 
-function AccountScopeStrip({ options = [], activeAccount = 'all', onChange }) {
-  if (!options || options.length <= 1) return null;
-
-  return (
-    <motion.div
-      {...panelMotion(1)}
-      style={{
-        marginBottom: 14,
-        padding: '12px 14px',
-        borderRadius: 18,
-        border: `1px solid ${shade(C.accent, 0.16)}`,
-        background: 'linear-gradient(180deg, rgba(10,17,28,0.88), rgba(8,13,22,0.94))',
-        boxShadow: '0 16px 38px rgba(0,0,0,0.18)',
-      }}
-    >
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
-        Account scope
-      </div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
-        {options.map((option) => {
-          const active = option.id === activeAccount;
-          return (
-            <button
-              key={option.id}
-              onClick={() => onChange?.(option.id)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 10,
-                whiteSpace: 'nowrap',
-                padding: '9px 12px',
-                borderRadius: 12,
-                border: `1px solid ${active ? shade(C.accent, 0.28) : C.border}`,
-                background: active ? shade(C.accent, 0.1) : 'rgba(255,255,255,0.02)',
-                color: active ? C.text0 : C.text2,
-                fontSize: 11,
-                fontWeight: 800,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              <span>{option.label}</span>
-              <span style={{ padding: '3px 7px', borderRadius: 999, border: `1px solid ${active ? shade(C.accent, 0.22) : shade(C.text3, 0.18)}`, color: active ? C.accent : C.text3, fontSize: 10, fontFamily: 'monospace' }}>
-                {option.count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </motion.div>
-  );
-}
-
 function MetricCard({ label, value, caption, tone, index = 0 }) {
   return (
     <SectionCard tone={tone} index={index} hover style={{ padding: '16px 16px 15px', minHeight: 118 }}>
@@ -790,7 +777,7 @@ function MetricCard({ label, value, caption, tone, index = 0 }) {
         </span>
         <div style={{ width: 26, height: 2, borderRadius: 999, background: tone, boxShadow: `0 0 16px ${shade(tone, 0.42)}` }} />
       </div>
-      <div className="mf-dashboard-kpi-value" style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, lineHeight: 1.02, marginBottom: 10 }}>
+      <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, lineHeight: 1.02, marginBottom: 10 }}>
         {value}
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.55, color: C.text2 }}>
@@ -800,15 +787,9 @@ function MetricCard({ label, value, caption, tone, index = 0 }) {
   );
 }
 
-function ProgressRow({ label, current, target, tone, suffix = '', inverse = false }) {
-  const rawRatio = target > 0 ? (current / target) * 100 : 0;
-  const progress = inverse
-    ? Math.max(0, Math.min(100, 100 - rawRatio))
-    : Math.max(0, Math.min(100, rawRatio));
-  const statusTone = inverse
-    ? current <= target ? C.green : C.danger
-    : progress >= 100 ? C.green : progress >= 70 ? tone : C.warn;
-
+function ProgressRow({ label, current, target, tone, suffix = '' }) {
+  const progress = target > 0 ? clamp((current / target) * 100) : 0;
+  const color = progress >= 88 ? C.green : progress >= 60 ? tone : C.warn;
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 7 }}>
@@ -816,7 +797,7 @@ function ProgressRow({ label, current, target, tone, suffix = '', inverse = fals
           {label}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: statusTone, fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color, fontFamily: 'monospace' }}>
             {current.toLocaleString()}{suffix}
           </span>
           <span style={{ fontSize: 10, color: C.text3 }}>
@@ -832,7 +813,7 @@ function ProgressRow({ label, current, target, tone, suffix = '', inverse = fals
           style={{
             height: '100%',
             borderRadius: 999,
-            background: `linear-gradient(90deg, ${shade(statusTone, 0.58)}, ${statusTone})`,
+            background: `linear-gradient(90deg, ${shade(color, 0.58)}, ${color})`,
           }}
         />
       </div>
@@ -896,11 +877,114 @@ function MoneyTooltip({ active, payload, label }) {
   );
 }
 
-function HeaderPanel({ stats, overview }) {
+function AccountScopeDropdown({ options = [], activeAccount = 'all', onChange, stats, rank }) {
+  const [open, setOpen] = useState(false);
+  const activeOption = options.find((option) => option.id === activeAccount) || options[0] || { label: 'All Accounts', count: 0, pnl: 0 };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => options.length > 1 && setOpen((value) => !value)}
+        style={{
+          minWidth: 250,
+          padding: '12px 14px',
+          borderRadius: 20,
+          border: `1px solid ${shade(C.accent, 0.14)}`,
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 14,
+          boxShadow: '0 18px 42px rgba(0,0,0,0.2)',
+          cursor: options.length > 1 ? 'pointer' : 'default',
+          color: C.text1,
+        }}
+      >
+        <div style={{ textAlign: 'left' }}>
+          <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
+            Account scope
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.text0, marginBottom: 6 }}>
+            {activeOption.label}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: C.text2 }}>{activeOption.count} trades</span>
+            <span style={{ width: 4, height: 4, borderRadius: '50%', background: C.text3 }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: (stats.pnl || 0) >= 0 ? C.green : C.danger }}>{formatSignedCompact(stats.pnl)}</span>
+            <span style={{ width: 4, height: 4, borderRadius: '50%', background: C.text3 }} />
+            <span style={{ fontSize: 11, color: toneColor(rank.tone) }}>MF {rank.score}</span>
+          </div>
+        </div>
+        {options.length > 1 && (
+          <div style={{ width: 28, height: 28, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.border}` }}>
+            {open ? <Ic.ChevronUp /> : <Ic.ChevronDown />}
+          </div>
+        )}
+      </button>
+
+      <AnimatePresence>
+        {open && options.length > 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.16 }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              right: 0,
+              minWidth: 310,
+              padding: 10,
+              borderRadius: 18,
+              background: 'rgba(8,13,24,0.96)',
+              border: `1px solid ${shade(C.accent, 0.16)}`,
+              boxShadow: '0 22px 54px rgba(0,0,0,0.36)',
+              zIndex: 40,
+              display: 'grid',
+              gap: 8,
+            }}
+          >
+            {options.map((option) => {
+              const active = option.id === activeAccount;
+              const pnlTone = (option.pnl || 0) >= 0 ? C.green : C.danger;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => {
+                    onChange?.(option.id);
+                    setOpen(false);
+                  }}
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 13px',
+                    borderRadius: 14,
+                    border: `1px solid ${active ? shade(C.accent, 0.24) : C.border}`,
+                    background: active ? shade(C.accent, 0.1) : 'rgba(255,255,255,0.02)',
+                    color: active ? C.text0 : C.text1,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 800 }}>{option.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: pnlTone }}>{formatSignedCompact(option.pnl || 0)}</span>
+                  </div>
+                  <div style={{ fontSize: 10.5, color: active ? C.text2 : C.text3 }}>{option.count} trade{option.count > 1 ? 's' : ''}</div>
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function HeaderPanel({ stats, overview, accountOptions, activeAccount, onAccountChange }) {
   const now = new Date();
   const session = getSessionStatus();
   const greeting = getGreeting();
   const weekNumber = getWeekNumber(now);
+  const rankTone = toneColor(overview.rank.tone);
 
   return (
     <motion.div
@@ -916,75 +1000,163 @@ function HeaderPanel({ stats, overview }) {
     >
       <div>
         <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: shade(C.accent, 0.85), marginBottom: 8 }}>
-          Trading desk
+          MarketFlow command center
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           <div style={{ width: 34, height: 3, borderRadius: 999, background: C.accent, boxShadow: `0 0 18px ${shade(C.accent, 0.55)}` }} />
           <h1 style={{ margin: 0, fontSize: 31, lineHeight: 1, letterSpacing: '-0.05em', color: C.text0 }}>
-            {getGreeting()}, <span style={{ background: `linear-gradient(90deg, ${C.text0} 0%, ${C.accent} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Trader</span>
+            {greeting}, <span style={{ background: `linear-gradient(90deg, ${C.text0} 0%, ${C.accent} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Trader</span>
           </h1>
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, color: C.text2 }}>
             {formatLongDate(now)} / Week {weekNumber}
           </span>
           <div style={{ width: 4, height: 4, borderRadius: '50%', background: C.text3 }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: session.tone, boxShadow: `0 0 10px ${shade(session.tone, 0.55)}` }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: session.tone }}>
               {session.label}
             </span>
+            <span style={{ fontSize: 11, color: C.text2 }}>
+              {session.window}
+            </span>
           </div>
+          <div style={{ width: 4, height: 4, borderRadius: '50%', background: C.text3 }} />
+          <span style={{ fontSize: 12, color: rankTone, fontWeight: 700 }}>
+            {overview.rank.label}
+          </span>
         </div>
       </div>
 
-      <div
-        style={{
-          padding: '12px 16px',
-          borderRadius: 18,
-          border: `1px solid ${C.borderHi}`,
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          boxShadow: '0 18px 42px rgba(0,0,0,0.2)',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Trades</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: C.text0 }}>{stats.totalTrades || 0}</div>
-        </div>
-        <div style={{ width: 1, height: 30, background: C.border }} />
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>P&L</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: (stats.pnl || 0) >= 0 ? C.green : C.danger }}>{formatSignedCompact(stats.pnl)}</div>
-        </div>
-        <div style={{ width: 1, height: 30, background: C.border }} />
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rank</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: overview.rank.tone }}>
-            {overview.rank.score}
-          </div>
-        </div>
-      </div>
+      <AccountScopeDropdown
+        options={accountOptions}
+        activeAccount={activeAccount}
+        onChange={onAccountChange}
+        stats={stats}
+        rank={overview.rank}
+      />
     </motion.div>
   );
 }
 
-function StatusStrip({ stats, overview }) {
-  const statusTone = stats.totalTrades ? C.green : C.warn;
-  const monthTone = (overview.monthSummary.totalPnl || 0) >= 0 ? C.green : C.danger;
+function DailyRoutinePanel({ items, onToggle, onTitleChange, navigate, overview }) {
+  const [editing, setEditing] = useState(false);
+  const completed = items.filter((item) => item.done).length;
+  const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
+  const progressTone = progress >= 100 ? C.green : progress >= 50 ? C.accent : C.warn;
 
+  return (
+    <SectionCard tone={progressTone} index={1} style={{ padding: '22px 22px 20px', marginBottom: 16 }}>
+      <SectionTitle
+        eyebrow="Daily routine"
+        title="Open this before every session"
+        tone={progressTone}
+        icon={<Ic.Checklist />}
+        action={(
+          <GhostButton onClick={() => setEditing((value) => !value)} icon={editing ? <Ic.Save /> : <Ic.Edit />}>
+            {editing ? 'Done editing' : 'Customize'}
+          </GhostButton>
+        )}
+      />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 0.72fr) minmax(0, 1fr)', gap: 16 }}>
+        <div style={{ padding: '16px 16px 14px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+            <TinyBadge tone={progressTone}>{completed}/{items.length} complete</TinyBadge>
+            <span style={{ fontSize: 11, color: C.text2 }}>Feeds the MF score</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.05em', color: progressTone }}>
+              {progress}%
+            </div>
+            <div style={{ fontSize: 12, color: C.text2 }}>
+              routine completion today
+            </div>
+          </div>
+          <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 12 }}>
+            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(progressTone, 0.58)}, ${progressTone})` }} />
+          </div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <MiniMetric label="Routine boost" value={`+${Math.round(progress * 0.28)} pts`} tone={progressTone} caption="Direct contribution inside Process." />
+            <MiniMetric label="Current focus" value={overview.rank.focus} tone={toneColor(overview.rank.tone)} caption={overview.rank.note} />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          {items.map((item) => (
+            <div key={item.id} style={{ padding: '13px 14px', borderRadius: 16, border: `1px solid ${item.done ? shade(C.green, 0.18) : shade(C.accent, 0.12)}`, background: item.done ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.07)' : 'rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  onClick={() => onToggle(item.id)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 8,
+                    border: `1px solid ${item.done ? shade(C.green, 0.22) : C.border}`,
+                    background: item.done ? shade(C.green, 0.16) : 'rgba(255,255,255,0.02)',
+                    color: item.done ? C.green : C.text3,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    fontWeight: 900,
+                    fontSize: 12,
+                  }}
+                >
+                  {item.done ? '✓' : ''}
+                </button>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {editing ? (
+                    <input
+                      value={item.title}
+                      onChange={(event) => onTitleChange(item.id, event.target.value)}
+                      style={{
+                        width: '100%',
+                        borderRadius: 10,
+                        border: `1px solid ${C.border}`,
+                        background: 'rgba(255,255,255,0.02)',
+                        color: C.text1,
+                        fontSize: 12.5,
+                        padding: '8px 10px',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  ) : (
+                    <div style={{ fontSize: 12.5, lineHeight: 1.65, color: item.done ? C.text1 : C.text2, textDecoration: item.done ? 'line-through' : 'none' }}>
+                      {item.title}
+                    </div>
+                  )}
+                </div>
+
+                <GhostButton onClick={() => navigate(item.route)} icon={<Ic.ArrowRight />}>
+                  Open
+                </GhostButton>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+function StatusStrip({ overview }) {
+  const rankTone = toneColor(overview.rank.tone);
+  const monthTone = (overview.monthSummary.totalPnl || 0) >= 0 ? C.green : C.danger;
   const items = [
-    { label: 'Journal', value: stats.totalTrades ? 'Live data connected' : 'Waiting for first imports', tone: statusTone },
+    { label: 'MF division', value: overview.rank.label, tone: rankTone },
+    { label: 'Global position', value: `#${overview.rank.position.toLocaleString()}`, tone: rankTone },
     { label: 'Month P&L', value: formatCurrency(overview.monthSummary.totalPnl, true), tone: monthTone },
-    { label: 'MarketFlow rank', value: overview.rank.label, tone: overview.rank.tone },
-    { label: 'Last execution', value: overview.lastTrade ? formatShortDate(overview.lastTrade.open_date || overview.lastTrade.date) : 'n/a', tone: C.accent },
+    { label: 'Best context', value: overview.bestSession ? overview.bestSession.s : 'Waiting for session data', tone: overview.bestSession ? C.accent : C.text2 },
   ];
 
   return (
     <motion.div
-      {...panelMotion(1)}
+      {...panelMotion(2)}
       style={{
         marginBottom: 16,
         padding: '13px 16px',
@@ -1018,15 +1190,15 @@ function KpiStrip({ stats, overview }) {
     { label: 'Net P&L', value: formatSignedCompact(stats.pnl), caption: `${stats.pnlPct || 0}% vs 10k baseline`, tone: (stats.pnl || 0) >= 0 ? C.green : C.danger },
     { label: 'Profit factor', value: formatRatio(stats.profitFactor), caption: `${formatCurrency(stats.avgWin)} avg win / ${formatCurrency(stats.avgLoss)} avg loss`, tone: C.blue },
     { label: 'Win rate', value: `${stats.winRate || 0}%`, caption: `${stats.wins || 0}W / ${stats.losses || 0}L / ${stats.breakevens || 0}BE`, tone: C.accent },
-    { label: 'Average trade', value: formatCurrency(stats.expectancy || 0, true), caption: 'Realized expectancy', tone: C.teal },
-    { label: 'Max drawdown', value: `${Math.abs(stats.maxDrawdown || 0)}%`, caption: 'Peak to trough pressure', tone: C.danger },
-    { label: 'Rank score', value: `${overview.rank.score}`, caption: overview.rank.label, tone: overview.rank.tone },
+    { label: 'Average trade', value: formatCurrency(stats.expectancy || 0, true), caption: 'Live realized expectancy', tone: C.teal },
+    { label: 'Max drawdown', value: `${Math.abs(stats.maxDrawdown || 0)}%`, caption: 'Peak-to-trough pressure', tone: C.danger },
+    { label: 'Routine score', value: `${overview.routineScore}%`, caption: 'Daily operating consistency', tone: overview.routineScore >= 70 ? C.green : C.warn },
   ];
 
   return (
     <div className="mf-dashboard-grid-kpi">
       {items.map((item, index) => (
-        <MetricCard key={item.label} index={index + 2} label={item.label} value={item.value} caption={item.caption} tone={item.tone} />
+        <MetricCard key={item.label} index={index + 3} label={item.label} value={item.value} caption={item.caption} tone={item.tone} />
       ))}
     </div>
   );
@@ -1049,12 +1221,13 @@ function EquityPanel({ stats }) {
     : 0;
 
   return (
-    <SectionCard tone={C.accent} index={8} style={{ padding: '22px 22px 18px' }}>
+    <SectionCard tone={C.accent} index={9} style={{ padding: '22px 22px 18px' }}>
       <SectionTitle
         eyebrow="Performance"
         title="Equity overview"
         tone={C.accent}
-        action={
+        icon={<Ic.Pulse />}
+        action={(
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {ranges.map((item) => (
               <button
@@ -1075,7 +1248,7 @@ function EquityPanel({ stats }) {
               </button>
             ))}
           </div>
-        }
+        )}
       />
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -1083,7 +1256,7 @@ function EquityPanel({ stats }) {
           {formatCurrency(lastValue, true)}
         </div>
         <div style={{ fontSize: 12, color: C.text2 }}>
-          cumulative journaled performance
+          cumulative performance for the active account scope
         </div>
       </div>
 
@@ -1127,7 +1300,7 @@ function EquityPanel({ stats }) {
           </ResponsiveContainer>
         </div>
       ) : (
-        <EmptyState title="No equity history yet" body="Import your trades to unlock the equity curve and the rest of the operating metrics." />
+        <EmptyState title="No equity history yet" body="Import trades to unlock the equity curve and the live MF score." />
       )}
     </SectionCard>
   );
@@ -1135,10 +1308,11 @@ function EquityPanel({ stats }) {
 
 function MarketFlowRankPanel({ overview }) {
   const rank = overview.rank;
+  const rankTone = toneColor(rank.tone);
 
   return (
-    <SectionCard tone={rank.tone} index={9} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow="Ranking" title="MarketFlow Rank" tone={rank.tone} />
+    <SectionCard tone={rankTone} index={10} style={{ padding: '20px 20px 18px' }}>
+      <SectionTitle eyebrow="Competition" title="MarketFlow Rank" tone={rankTone} icon={<Ic.Trophy />} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '132px minmax(0, 1fr)', gap: 16, alignItems: 'center', marginBottom: 18 }}>
         <div
@@ -1146,10 +1320,10 @@ function MarketFlowRankPanel({ overview }) {
             width: 132,
             height: 132,
             borderRadius: '50%',
-            background: `conic-gradient(${rank.tone} ${rank.normalized * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
+            background: `conic-gradient(${rankTone} ${rank.normalized * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
             padding: 12,
             boxSizing: 'border-box',
-            boxShadow: `0 18px 46px ${shade(rank.tone, 0.18)}`,
+            boxShadow: `0 18px 46px ${shade(rankTone, 0.18)}`,
           }}
         >
           <div
@@ -1158,7 +1332,7 @@ function MarketFlowRankPanel({ overview }) {
               height: '100%',
               borderRadius: '50%',
               background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), rgba(7, 12, 22, 0.96) 62%)',
-              border: `1px solid ${shade(rank.tone, 0.18)}`,
+              border: `1px solid ${shade(rankTone, 0.18)}`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -1175,81 +1349,222 @@ function MarketFlowRankPanel({ overview }) {
         </div>
 
         <div>
-          <TinyBadge tone={rank.tone}>{rank.label}</TinyBadge>
-          <div style={{ fontSize: 23, fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.04em', color: C.text0, marginTop: 12, marginBottom: 8 }}>
+          <TinyBadge tone={rankTone}>{rank.label}</TinyBadge>
+          <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.04em', color: C.text0, marginTop: 12, marginBottom: 8 }}>
+            #{rank.position.toLocaleString()} / Top {rank.percentile}%
+          </div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.7, color: C.text2, marginBottom: 12 }}>
             {rank.focus}
           </div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.7, color: C.text2 }}>
-            {rank.note}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+            <MiniMetric label="Weekly move" value={`${rank.weeklyDelta >= 0 ? '+' : ''}${rank.weeklyDelta}`} tone={rank.weeklyDelta >= 0 ? C.green : C.danger} />
+            <MiniMetric label="Next tier" value={rank.nextGap > 0 ? `${rank.nextGap} pts` : 'Unlocked'} tone={rankTone} caption={rank.nextGap > 0 ? rank.nextLabel : 'Apex'} />
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(rank.tone, 0.14)}`, background: 'rgba(255,255,255,0.03)', marginBottom: 16 }}>
+      <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(rankTone, 0.14)}`, background: 'rgba(255,255,255,0.03)', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
-            Next division
+            Division progress
           </span>
-          <span style={{ fontSize: 12, fontWeight: 800, color: rank.tone }}>
-            {rank.nextGap > 0 ? `${rank.nextGap} pts to ${rank.nextLabel}` : 'Top division unlocked'}
+          <span style={{ fontSize: 12, fontWeight: 800, color: rankTone }}>
+            {rank.nextGap > 0 ? `${rank.nextGap} pts to ${rank.nextLabel}` : 'Top tier unlocked'}
           </span>
         </div>
         <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 10 }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${rank.progress}%` }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              height: '100%',
-              borderRadius: 999,
-              background: `linear-gradient(90deg, ${shade(rank.tone, 0.56)}, ${rank.tone})`,
-            }}
-          />
+          <motion.div initial={{ width: 0 }} animate={{ width: `${rank.progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(rankTone, 0.56)}, ${rankTone})` }} />
         </div>
         <div style={{ fontSize: 11, color: C.text2 }}>
-          Ranked progression is driven by live performance, journal discipline and risk control.
+          {rank.note}
         </div>
       </div>
 
       <div style={{ display: 'grid', gap: 12 }}>
         {rank.factors.map((factor) => (
-          <ProgressRow key={factor.label} label={factor.label} current={factor.value} target={100} tone={factor.tone} suffix="%" />
+          <ProgressRow key={factor.label} label={factor.label} current={factor.value} target={100} tone={toneColor(factor.tone)} suffix="%" />
         ))}
       </div>
     </SectionCard>
   );
 }
 
-function DeskBriefing({ overview }) {
-  const note = overview.briefing;
+function PerformanceCalendarPanel({ trades, navigate }) {
+  const [monthOffset, setMonthOffset] = useState(0);
+  const calendar = useMemo(() => buildCalendarMonth(trades, monthOffset), [trades, monthOffset]);
+  const [selectedKey, setSelectedKey] = useState(null);
+
+  useEffect(() => {
+    const available = calendar.days.find((day) => day.key === selectedKey && day.trades > 0);
+    if (available) return;
+    const fallback = calendar.days.find((day) => day.inMonth && day.trades > 0);
+    setSelectedKey(fallback ? fallback.key : null);
+  }, [calendar.days, selectedKey]);
+
+  const selectedDay = calendar.days.find((day) => day.key === selectedKey) || null;
 
   return (
-    <SectionCard tone={C.teal} index={10} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow={note.eyebrow} title="Desk focus" tone={C.teal} />
-      <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.04em', color: C.text0, marginBottom: 10 }}>
-        {note.headline}
-      </div>
-      <div style={{ fontSize: 12.5, lineHeight: 1.72, color: C.text2, marginBottom: 16 }}>
-        {note.body}
-      </div>
-      <div style={{ display: 'grid', gap: 10 }}>
-        {note.points.map((point) => (
-          <div key={point} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 12px', borderRadius: 14, border: `1px solid ${shade(C.teal, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: C.teal, marginTop: 6, boxShadow: `0 0 12px ${shade(C.teal, 0.42)}`, flexShrink: 0 }} />
-            <div style={{ fontSize: 12, lineHeight: 1.68, color: C.text1 }}>
-              {point}
+    <SectionCard tone={C.accent} index={11} style={{ padding: '22px 22px 20px', marginBottom: 14 }}>
+      <SectionTitle
+        eyebrow="Calendar"
+        title="MarketFlow Calendar"
+        tone={C.accent}
+        icon={<Ic.Clock />}
+        action={(
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <GhostButton onClick={() => setMonthOffset((value) => value - 1)}>Prev</GhostButton>
+            <GhostButton onClick={() => setMonthOffset((value) => Math.min(0, value + 1))} disabled={!calendar.canGoForward}>Next</GhostButton>
+            <GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>
+          </div>
+        )}
+      />
+
+      {calendar.hasHistory ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 18 }}>
+            <MiniMetric label="Month P&L" value={formatCurrency(calendar.totalPnl, true)} tone={calendar.totalPnl >= 0 ? C.green : C.danger} />
+            <MiniMetric label="Trade days" value={`${calendar.positiveDays + calendar.negativeDays + calendar.flatDays}`} tone={C.accent} />
+            <MiniMetric label="Winning days" value={`${calendar.positiveDays}`} tone={C.green} />
+            <MiniMetric label="Trades" value={`${calendar.tradeCount}`} tone={C.blue} />
+          </div>
+
+          <div className="mf-dashboard-calendar-shell">
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: C.text0 }}>{calendar.monthLabel}</div>
+                <div style={{ fontSize: 11, color: C.text2 }}>Click a trading day to open the full daily breakdown.</div>
+              </div>
+
+              <div style={{ overflowX: 'auto', paddingBottom: 2 }}>
+                <div style={{ minWidth: 760 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <div key={day} style={{ padding: '0 4px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10 }}>
+                    {calendar.days.map((day) => {
+                      const tone = day.pnl > 0 ? C.green : day.pnl < 0 ? C.danger : C.accent;
+                      const active = day.trades > 0;
+                      const selected = selectedKey === day.key;
+                      return (
+                        <button
+                          key={day.key}
+                          onClick={() => active && setSelectedKey(day.key)}
+                          style={{
+                            minHeight: 118,
+                            borderRadius: 18,
+                            padding: '12px 12px 11px',
+                            border: `1px solid ${selected ? shade(C.accent, 0.42) : day.isToday ? shade(C.accent, 0.28) : active ? shade(tone, 0.2) : shade(C.borderHi, 0.8)}`,
+                            background: active ? `linear-gradient(180deg, ${shade(tone, 0.18)} 0%, ${shade(tone, 0.06)} 100%)` : 'rgba(255,255,255,0.025)',
+                            boxShadow: selected ? `0 0 0 1px ${shade(C.accent, 0.18)}` : day.isToday ? `0 0 0 1px ${shade(C.accent, 0.12)}` : 'none',
+                            opacity: day.inMonth ? 1 : 0.28,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
+                            cursor: active ? 'pointer' : 'default',
+                            textAlign: 'left',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: day.isToday ? C.accent : C.text0 }}>{day.day}</div>
+                            {active && <div style={{ width: 7, height: 7, borderRadius: '50%', background: tone, boxShadow: `0 0 10px ${shade(tone, 0.44)}` }} />}
+                          </div>
+
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 8 }}>
+                            <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: '-0.05em', color: active ? tone : C.text3 }}>
+                              {active ? formatCurrency(day.pnl, true) : 'No trades'}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              <div style={{ fontSize: 11, color: active ? C.text1 : C.text3 }}>
+                                {active ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : 'Desk inactive'}
+                              </div>
+                              {active && <div style={{ fontSize: 10, color: C.text2 }}>{day.wins}W / {day.losses}L / {day.breakevens}BE</div>}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 10, alignContent: 'start' }}>
+              <MiniMetric label="Best day" value={calendar.bestDay ? formatCurrency(calendar.bestDay.pnl, true) : '$0'} tone={C.green} caption={calendar.bestDay ? formatShortDate(calendar.bestDay.date) : 'No realized day yet'} />
+              <MiniMetric label="Worst day" value={calendar.worstDay ? formatCurrency(calendar.worstDay.pnl, true) : '$0'} tone={C.danger} caption={calendar.worstDay ? formatShortDate(calendar.worstDay.date) : 'No realized day yet'} />
+
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
+                  Daily detail
+                </div>
+
+                {selectedDay ? (
+                  <>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: C.text0, marginBottom: 6 }}>{formatLongDate(selectedDay.date)}</div>
+                      <div style={{ fontSize: 12, color: C.text2 }}>
+                        {selectedDay.trades} trade{selectedDay.trades > 1 ? 's' : ''} / {selectedDay.winRate}% win rate
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
+                      <MiniMetric label="Daily P&L" value={formatCurrency(selectedDay.pnl, true)} tone={selectedDay.pnl >= 0 ? C.green : C.danger} />
+                      <MiniMetric label="Average trade" value={formatCurrency(selectedDay.avgTrade, true)} tone={selectedDay.avgTrade >= 0 ? C.accent : C.warn} />
+                      <MiniMetric label="Lead session" value={selectedDay.sessionLeader ? selectedDay.sessionLeader.label : 'n/a'} tone={C.teal} caption={selectedDay.sessionLeader ? `${selectedDay.sessionLeader.count} trade${selectedDay.sessionLeader.count > 1 ? 's' : ''}` : 'No dominant session'} />
+                      <MiniMetric label="Lead pair" value={selectedDay.pairLeader ? selectedDay.pairLeader.label : 'n/a'} tone={C.blue} caption={selectedDay.pairLeader ? formatCurrency(selectedDay.pairLeader.pnl, true) : 'No pair lead'} />
+                    </div>
+
+                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
+                      Executions
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {selectedDay.records.slice(0, 6).map((record) => {
+                        const pnlTone = record.pnl >= 0 ? C.green : C.danger;
+                        return (
+                          <div key={record.id} style={{ padding: '10px 11px', borderRadius: 14, border: `1px solid ${shade(pnlTone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: C.text1 }}>{record.symbol}</span>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: pnlTone }}>{formatCurrency(record.pnl, true)}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.55 }}>
+                              {record.direction} / {record.session} / {record.setup}
+                            </div>
+                            {record.notes && (
+                              <div style={{ marginTop: 6, fontSize: 10.5, lineHeight: 1.55, color: C.text3 }}>
+                                {record.notes.slice(0, 86)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.7 }}>
+                    Select a trading day to open the full breakdown for that session.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        ))}
-      </div>
+        </>
+      ) : (
+        <EmptyState title="No trading calendar yet" body="Import trades in All Trades to unlock the monthly calendar and daily drill-down." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
+      )}
     </SectionCard>
   );
 }
 
 function RecentExecutions({ trades, navigate }) {
   return (
-    <SectionCard tone={C.accent} index={11} style={{ padding: '20px 20px 10px' }}>
-      <SectionTitle eyebrow="Execution" title="Recent executions" tone={C.accent} action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
+    <SectionCard tone={C.accent} index={12} style={{ padding: '20px 20px 10px' }}>
+      <SectionTitle eyebrow="Execution" title="Recent executions" tone={C.accent} icon={<Ic.Session />} action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
 
       {trades.length ? (
         <div style={{ overflowX: 'auto' }}>
@@ -1285,126 +1600,7 @@ function RecentExecutions({ trades, navigate }) {
           </table>
         </div>
       ) : (
-        <EmptyState title="No recent executions" body="Once the journal receives trades, this table becomes the fastest place to review the latest flow." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Import or add trades</GhostButton>} />
-      )}
-    </SectionCard>
-  );
-}
-
-function PerformanceCalendarPanel({ trades, navigate }) {
-  const [monthOffset, setMonthOffset] = useState(0);
-  const calendar = useMemo(() => buildCalendarMonth(trades, monthOffset), [trades, monthOffset]);
-
-  return (
-    <SectionCard tone={C.accent} index={11} style={{ padding: '22px 22px 20px', marginBottom: 14 }}>
-      <SectionTitle
-        eyebrow="Calendar"
-        title="MarketFlow Calendar"
-        tone={C.accent}
-        action={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <GhostButton onClick={() => setMonthOffset((value) => value - 1)}>Prev</GhostButton>
-            <GhostButton onClick={() => setMonthOffset((value) => Math.min(0, value + 1))} disabled={!calendar.canGoForward}>Next</GhostButton>
-            <GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>
-          </div>
-        }
-      />
-
-      {calendar.hasHistory ? (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 18 }}>
-            <MiniMetric label="Month P&L" value={formatCurrency(calendar.totalPnl, true)} tone={calendar.totalPnl >= 0 ? C.green : C.danger} />
-            <MiniMetric label="Trade days" value={`${calendar.positiveDays + calendar.negativeDays + calendar.flatDays}`} tone={C.accent} />
-            <MiniMetric label="Winning days" value={`${calendar.positiveDays}`} tone={C.green} />
-            <MiniMetric label="Trades" value={`${calendar.tradeCount}`} tone={C.blue} />
-          </div>
-
-          <div className="mf-dashboard-calendar-shell">
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: C.text0 }}>{calendar.monthLabel}</div>
-                <div style={{ fontSize: 11, color: C.text2 }}>Daily realized performance from the journal</div>
-              </div>
-
-              <div style={{ overflowX: 'auto', paddingBottom: 2 }}>
-                <div style={{ minWidth: 760 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                      <div key={day} style={{ padding: '0 4px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
-                        {day}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10 }}>
-                    {calendar.days.map((day) => {
-                      const tone = day.pnl > 0 ? C.green : day.pnl < 0 ? C.danger : C.accent;
-                      const active = day.trades > 0;
-                      return (
-                        <div
-                          key={day.key}
-                          style={{
-                            minHeight: 112,
-                            borderRadius: 18,
-                            padding: '12px 12px 11px',
-                            border: `1px solid ${day.isToday ? shade(C.accent, 0.42) : active ? shade(tone, 0.2) : shade(C.borderHi, 0.8)}`,
-                            background: active ? `linear-gradient(180deg, ${shade(tone, 0.18)} 0%, ${shade(tone, 0.06)} 100%)` : 'rgba(255,255,255,0.025)',
-                            boxShadow: day.isToday ? `0 0 0 1px ${shade(C.accent, 0.12)}` : 'none',
-                            opacity: day.inMonth ? 1 : 0.28,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 8,
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: day.isToday ? C.accent : C.text0 }}>{day.day}</div>
-                            {active && <div style={{ width: 7, height: 7, borderRadius: '50%', background: tone, boxShadow: `0 0 10px ${shade(tone, 0.44)}` }} />}
-                          </div>
-
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 8 }}>
-                            <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '-0.05em', color: active ? tone : C.text3 }}>
-                              {active ? formatCurrency(day.pnl, true) : 'No trades'}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                              <div style={{ fontSize: 11, color: active ? C.text1 : C.text3 }}>
-                                {active ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : 'Desk inactive'}
-                              </div>
-                              {active && <div style={{ fontSize: 10, color: C.text2 }}>{day.wins}W / {day.losses}L / {day.breakevens}BE</div>}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gap: 10, alignContent: 'start' }}>
-              <MiniMetric label="Best day" value={calendar.bestDay ? formatCurrency(calendar.bestDay.pnl, true) : '$0'} tone={C.green} caption={calendar.bestDay ? formatShortDate(calendar.bestDay.date) : 'No realized day yet'} />
-              <MiniMetric label="Worst day" value={calendar.worstDay ? formatCurrency(calendar.worstDay.pnl, true) : '$0'} tone={C.danger} caption={calendar.worstDay ? formatShortDate(calendar.worstDay.date) : 'No realized day yet'} />
-
-              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
-                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
-                  Weekly split
-                </div>
-                <div style={{ display: 'grid', gap: 10 }}>
-                  {calendar.weeks.map((week, index) => (
-                    <div key={`week-${index}`} style={{ padding: '10px 11px', borderRadius: 14, border: `1px solid ${shade(week.pnl >= 0 ? C.green : C.danger, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: C.text1 }}>Week {index + 1}</span>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: week.pnl >= 0 ? C.green : C.danger }}>{formatCurrency(week.pnl, true)}</span>
-                      </div>
-                      <div style={{ fontSize: 10, color: C.text2 }}>{week.trades} trade{week.trades > 1 ? 's' : ''}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <EmptyState title="No trading calendar yet" body="Import trades in All Trades to unlock the monthly calendar and ranked tracking." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
+        <EmptyState title="No recent executions" body="Import or add trades to make this your daily review table." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
       )}
     </SectionCard>
   );
@@ -1415,13 +1611,13 @@ function JournalDiscipline({ overview }) {
 
   return (
     <SectionCard tone={tone} index={13} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow="Quality" title="Journal discipline" tone={tone} />
+      <SectionTitle eyebrow="Quality" title="Journal discipline" tone={tone} icon={<Ic.Shield />} />
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: tone }}>
           {overview.hygieneScore}%
         </div>
         <div style={{ fontSize: 12, color: C.text2 }}>
-          average completion across the journal inputs
+          completion quality across the active journal scope
         </div>
       </div>
 
@@ -1442,87 +1638,32 @@ function JournalDiscipline({ overview }) {
   );
 }
 
-function ExecutionBoard({ stats, overview }) {
-  const bestSession = overview.bestSession;
-  const weakestSession = overview.weakestSession;
-  const topPair = overview.topPair;
+function CompetitionPreviewPanel({ overview, navigate }) {
+  const rankTone = toneColor(overview.rank.tone);
+  const board = useMemo(() => buildCompetitionBoard(overview.rank, 'You'), [overview.rank]);
 
   return (
-    <SectionCard tone={C.purple} index={14} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow="Execution map" title="Execution board" tone={C.purple} />
+    <SectionCard tone={rankTone} index={14} style={{ padding: '20px 20px 18px' }}>
+      <SectionTitle eyebrow="Competition" title="Leaderboard preview" tone={rankTone} icon={<Ic.Trophy />} action={<GhostButton onClick={() => navigate(ROUTES.competition)}>Open Competition</GhostButton>} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10, marginBottom: 14 }}>
-        <MiniMetric label="Best session" value={bestSession ? bestSession.s : 'n/a'} tone={C.accent} caption={bestSession ? `${formatCurrency(bestSession.pnl, true)} / ${bestSession.tp}W ${bestSession.sl}L` : 'No session history yet'} />
-        <MiniMetric label="Top pair" value={topPair ? topPair.p : 'n/a'} tone={C.green} caption={topPair ? `${formatCurrency(topPair.pnl, true)} / ${topPair.wr}% win rate` : 'No pair ranking yet'} />
-        <MiniMetric label="Current streak" value={overview.currentStreak.label} tone={overview.currentStreak.tone} caption={overview.currentStreak.type === 'loss' ? 'Slow the desk down if quality is drifting.' : 'Use the streak as signal, not as permission to force trades.'} />
-        <MiniMetric label="Risk frame" value={`${formatCurrency(stats.avgWin)} / ${formatCurrency(stats.avgLoss)}`} tone={C.warn} caption="Average win versus average loss" />
-      </div>
-
-      <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(C.purple, 0.14)}`, background: 'rgba(255,255,255,0.03)' }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
-          Desk note
-        </div>
-        <div style={{ fontSize: 12.5, lineHeight: 1.72, color: C.text1 }}>
-          {weakestSession ? `The weakest pressure point right now is ${weakestSession.s}, with ${formatCurrency(weakestSession.pnl, true)}. Use Analytics Pro for a deeper breakdown before repeating that context.` : 'As more executions are logged, this board will isolate the strongest and weakest operational contexts.'}
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-function WorkflowPanel({ navigate, overview }) {
-  const items = [
-    { label: 'All Trades', body: 'Import, edit and clean every execution.', route: ROUTES.trades, tone: C.accent },
-    { label: 'Analytics Pro', body: 'Open the deeper breakdown only when needed.', route: ROUTES.analytics, tone: C.blue },
-    { label: 'Psychology', body: 'Track the behavior behind the result.', route: ROUTES.psychology, tone: C.purple },
-    { label: 'Backtest', body: 'Re-validate the exact setup before scaling.', route: ROUTES.backtest, tone: C.warn },
-  ];
-
-  return (
-    <SectionCard tone={C.accent} index={15} style={{ padding: '20px 20px 18px' }}>
-      <SectionTitle eyebrow="Workflow" title="Next move" tone={C.accent} />
-      <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.03)', marginBottom: 14 }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
-          Current desk note
-        </div>
-        <div style={{ fontSize: 12.5, lineHeight: 1.72, color: C.text1 }}>
-          {overview.topPair
-            ? `${overview.topPair.p} is currently the strongest pair in the journal. Keep the dashboard clean and open a dedicated module only when you need more depth.`
-            : 'Use the command center to stay oriented, then open the dedicated module only when the review needs more depth.'}
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
-        {items.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => navigate(item.route)}
-            style={{
-              textAlign: 'left',
-              padding: '14px 15px',
-              borderRadius: 16,
-              border: `1px solid ${shade(item.tone, 0.16)}`,
-              background: 'rgba(255,255,255,0.03)',
-              cursor: 'pointer',
-              transition: 'all 0.16s ease',
-            }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.transform = 'translateY(-1px)';
-              event.currentTarget.style.background = shade(item.tone, 0.08);
-              event.currentTarget.style.borderColor = shade(item.tone, 0.28);
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.transform = 'translateY(0)';
-              event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-              event.currentTarget.style.borderColor = shade(item.tone, 0.16);
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: C.text0 }}>{item.label}</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: item.tone }}>Open</span>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {board.slice(0, 5).map((row) => {
+          const rowTone = row.isUser ? rankTone : C.text2;
+          return (
+            <div key={row.id} style={{ padding: '11px 12px', borderRadius: 14, border: `1px solid ${shade(rowTone, row.isUser ? 0.22 : 0.12)}`, background: row.isUser ? shade(rankTone, 0.1) : 'rgba(255,255,255,0.025)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: rowTone, minWidth: 36 }}>#{row.position}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: row.isUser ? C.text0 : C.text1 }}>{row.name}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: rowTone }}>{row.score}</span>
+              </div>
+              <div style={{ fontSize: 10.5, color: row.isUser ? C.text2 : C.text3 }}>
+                Top {row.percentile}% / {row.delta >= 0 ? '+' : ''}{row.delta} this week
+              </div>
             </div>
-            <div style={{ fontSize: 12, lineHeight: 1.65, color: C.text2 }}>{item.body}</div>
-          </button>
-        ))}
+          );
+        })}
       </div>
     </SectionCard>
   );
@@ -1536,7 +1677,36 @@ export default function Dashboard() {
   const accountOptions = ctx?.accountOptions || [{ id: 'all', label: 'All Accounts', count: 0, pnl: 0 }];
   const activeAccount = ctx?.activeAccount || 'all';
   const setActiveAccount = ctx?.setActiveAccount || (() => null);
-  const overview = useMemo(() => buildDashboardOverview(stats, trades), [stats, trades]);
+
+  const baseOverview = useMemo(() => buildDashboardOverview(stats, trades, 0), [stats, trades]);
+  const routineBlueprint = useMemo(() => buildRoutineBlueprint(baseOverview), [baseOverview]);
+  const [routineItems, setRoutineItems] = useState(() => loadRoutineState(activeAccount, routineBlueprint));
+
+  useEffect(() => {
+    setRoutineItems(loadRoutineState(activeAccount, routineBlueprint));
+  }, [activeAccount, routineBlueprint]);
+
+  useEffect(() => {
+    persistRoutineState(activeAccount, routineItems);
+  }, [activeAccount, routineItems]);
+
+  const routineScore = useMemo(() => (
+    routineItems.length ? Math.round((routineItems.filter((item) => item.done).length / routineItems.length) * 100) : 0
+  ), [routineItems]);
+
+  const overview = useMemo(() => buildDashboardOverview(stats, trades, routineScore), [stats, trades, routineScore]);
+
+  const toggleRoutineItem = (id) => {
+    setRoutineItems((current) => current.map((item) => (
+      item.id === id ? { ...item, done: !item.done } : item
+    )));
+  };
+
+  const changeRoutineTitle = (id, title) => {
+    setRoutineItems((current) => current.map((item) => (
+      item.id === id ? { ...item, title } : item
+    )));
+  };
 
   return (
     <div className="mf-dashboard-shell">
@@ -1548,17 +1718,28 @@ export default function Dashboard() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 1, padding: '30px 30px 54px', width: '100%', boxSizing: 'border-box' }}>
-        <HeaderPanel stats={stats} overview={overview} />
-        <AccountScopeStrip options={accountOptions} activeAccount={activeAccount} onChange={setActiveAccount} />
-        <StatusStrip stats={stats} overview={overview} />
+        <HeaderPanel
+          stats={stats}
+          overview={overview}
+          accountOptions={accountOptions}
+          activeAccount={activeAccount}
+          onAccountChange={setActiveAccount}
+        />
+
+        <DailyRoutinePanel
+          items={routineItems}
+          onToggle={toggleRoutineItem}
+          onTitleChange={changeRoutineTitle}
+          navigate={navigate}
+          overview={overview}
+        />
+
+        <StatusStrip overview={overview} />
         <KpiStrip stats={stats} overview={overview} />
 
         <div className="mf-dashboard-grid-primary">
           <EquityPanel stats={stats} />
-          <div className="mf-dashboard-side-stack">
-            <MarketFlowRankPanel overview={overview} />
-            <DeskBriefing overview={overview} />
-          </div>
+          <MarketFlowRankPanel overview={overview} />
         </div>
 
         <PerformanceCalendarPanel trades={trades} navigate={navigate} />
@@ -1567,7 +1748,7 @@ export default function Dashboard() {
           <RecentExecutions trades={overview.recentTrades} navigate={navigate} />
           <div className="mf-dashboard-side-stack">
             <JournalDiscipline overview={overview} />
-            <WorkflowPanel navigate={navigate} overview={overview} />
+            <CompetitionPreviewPanel overview={overview} navigate={navigate} />
           </div>
         </div>
       </div>
