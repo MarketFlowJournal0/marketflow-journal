@@ -28,6 +28,20 @@ import {
   chartCursor,
   chartTooltipStyle,
 } from '../lib/marketflowCharts';
+import {
+  buildEquityDrawdownSeries,
+  buildHourWinRateSeries,
+  buildRollingWinRateSeries,
+  buildSessionWinRateSeries,
+  buildWinRateInsights,
+  formatAnalyticsFactor,
+  formatAnalyticsMoney,
+  formatAnalyticsPercent,
+  formatAnalyticsRR,
+  getTradePnl,
+  summarizeTradeSet,
+  toAnalyticsNumber,
+} from '../lib/marketflowAnalytics';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🎨 PALETTE
@@ -67,13 +81,32 @@ const fadeUp = {
 // ─────────────────────────────────────────────────────────────────────────────
 // 🔧 HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-const fmtPnl = (n) => {
-  const v = parseFloat(n);
-  if (isNaN(v)) return '$0.00';
-  const s = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return v >= 0 ? `+$${s}` : `-$${s}`;
-};
+const fmtPnl = (n) => formatAnalyticsMoney(n);
 const avg = (arr) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+
+const IconGlyph = ({ color = C.cyan }) => (
+  <span style={{
+    width: 18,
+    height: 18,
+    borderRadius: 6,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: `linear-gradient(135deg, ${shade(color,'28')}, ${shade(color,'08')})`,
+    border: `1px solid ${shade(color,'24')}`,
+    boxShadow: `0 0 18px ${shade(color,'12')}`,
+  }}>
+    <span style={{
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+      background: color,
+      boxShadow: `0 0 10px ${shade(color,'55')}`,
+    }} />
+  </span>
+);
+
+const renderIcon = (icon, color) => (React.isValidElement(icon) ? icon : <IconGlyph color={color} />);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🧩 ATOMS
@@ -99,7 +132,7 @@ const STitle = ({ icon, title, sub, badge, color = C.cyan }) => (
         background: `linear-gradient(135deg,${shade(color,'30')},${shade(color,'10')})`,
         border: `1px solid ${shade(color,'30')}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-      }}>{icon}</div>
+      }}>{renderIcon(icon, color)}</div>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: C.t1, letterSpacing: '-0.2px' }}>{title}</span>
@@ -177,7 +210,7 @@ const KpiCard = ({ label, value, color, icon, sub, index }) => {
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: C.t3, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</span>
-          <span style={{ fontSize: 17 }}>{icon}</span>
+          <span style={{ display: 'inline-flex' }}>{renderIcon(icon, color)}</span>
         </div>
         <div style={{
           fontSize: 21, fontWeight: 900, color, fontFamily: 'monospace',
@@ -203,6 +236,7 @@ const KpiCard = ({ label, value, color, icon, sub, index }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const KpiCards = ({ trades }) => {
   const metrics = useMemo(() => {
+    const summary = summarizeTradeSet(trades);
     const wins   = trades.filter(t => parseFloat(t.pnl) > 0);
     const losses = trades.filter(t => parseFloat(t.pnl) <= 0);
     const totalPnL  = trades.reduce((s, t) => s + parseFloat(t.pnl || 0), 0);
@@ -248,6 +282,19 @@ const KpiCards = ({ trades }) => {
     }
 
     return [
+      { label: 'Total P&L', value: fmtPnl(summary.totalPnL), color: summary.totalPnL >= 0 ? C.green : C.danger, icon: null, sub: `${summary.totalTrades} trades` },
+      { label: 'Win Rate', value: formatAnalyticsPercent(summary.winRate, 1), color: summary.winRate >= 55 ? C.green : summary.winRate >= 45 ? C.warn : C.danger, icon: null, sub: `${summary.wins}W / ${summary.losses}L / ${summary.breakeven}BE` },
+      { label: 'Profit Factor', value: formatAnalyticsFactor(summary.profitFactor), color: summary.profitFactor === Infinity || summary.profitFactor >= 2 ? C.green : summary.profitFactor >= 1.2 ? C.warn : C.danger, icon: null, sub: 'Gross win / gross loss' },
+      { label: 'Average Win', value: fmtPnl(summary.avgWin), color: C.green, icon: null, sub: `Avg loss ${fmtPnl(-summary.avgLoss)}` },
+      { label: 'Average R:R', value: formatAnalyticsRR(summary.avgRR), color: (summary.avgRR ?? 0) >= 2 ? C.green : (summary.avgRR ?? 0) >= 1 ? C.warn : C.danger, icon: null, sub: 'Executed risk/reward' },
+      { label: 'Expectancy', value: fmtPnl(summary.expectancy), color: summary.expectancy >= 0 ? C.green : C.danger, icon: null, sub: 'Per trade' },
+      { label: 'Max Drawdown', value: fmtPnl(summary.maxDrawdownCash), color: C.danger, icon: null, sub: summary.maxDrawdownPct < 0 ? `${formatAnalyticsPercent(summary.maxDrawdownPct, 1)} from peak` : 'Peak to trough' },
+      { label: 'Consistency', value: formatAnalyticsPercent(consistency, 0), color: consistency >= 60 ? C.green : consistency >= 40 ? C.warn : C.danger, icon: null, sub: `${summary.activeDays} active days` },
+      { label: 'Current Streak', value: summary.currentStreak > 0 ? `+${summary.currentStreak}W` : summary.currentStreak < 0 ? `${Math.abs(summary.currentStreak)}L` : '--', color: summary.currentStreak > 0 ? C.green : summary.currentStreak < 0 ? C.danger : C.t2, icon: null, sub: `Best ${summary.bestWinStreak}W / ${summary.bestLossStreak}L` },
+      { label: 'Trades / Day', value: summary.tradesPerDay.toFixed(1), color: C.cyan, icon: null, sub: `${summary.activeDays} active days` },
+    ];
+
+    return [
       { label: 'Total P&L',    value: fmtPnl(totalPnL),          color: totalPnL >= 0 ? C.green : C.danger, icon: '💰', sub: `${trades.length} trades` },
       { label: 'Win Rate',     value: `${winRate.toFixed(1)}%`,   color: winRate >= 55 ? C.green : winRate >= 45 ? C.warn : C.danger, icon: '🎯', sub: `${wins.length}W / ${losses.length}L` },
       { label: 'Profit Factor',value: pf.toFixed(2),              color: pf >= 2 ? C.green : pf >= 1.5 ? C.warn : C.danger, icon: '📈', sub: 'Gross W / Gross L' },
@@ -274,18 +321,74 @@ const KpiCards = ({ trades }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const EquityDrawdown = ({ trades }) => {
   const data = useMemo(() => {
-    const sorted = [...trades].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-    let equity = 0, peak = 0;
-    return sorted.map((t, i) => {
-      equity += parseFloat(t.pnl || 0);
-      if (equity > peak) peak = equity;
-      const dd = peak > 0 ? -((peak - equity) / peak) * 100 : 0;
-      return { i: i + 1, date: t.date?.substring(0, 10), equity: +equity.toFixed(2), drawdown: +dd.toFixed(2) };
-    });
+    return buildEquityDrawdownSeries(trades).map((row) => ({
+      i: row.index,
+      date: row.dateLabel,
+      equity: row.equity,
+      drawdownCash: row.drawdownCash,
+      drawdownPct: row.drawdownPct,
+    }));
   }, [trades]);
 
-  const maxDD   = data.length ? Math.min(...data.map(d => d.drawdown)) : 0;
+  const maxDD   = data.length ? Math.min(...data.map(d => d.drawdownCash)) : 0;
+  const maxDDPct = data.length ? Math.min(...data.map(d => d.drawdownPct)) : 0;
   const finalEq = data.length ? data[data.length - 1].equity : 0;
+
+  return (
+    <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon={null} title="Equity Curve + Drawdown" sub="Equity and drawdown are now reading from the exact same execution stream." color={C.green} />
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: finalEq >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(finalEq)}</div>
+          <div style={{ fontSize: 10, color: C.danger, marginTop: 2 }}>Max DD: {fmtPnl(maxDD)}{maxDDPct < 0 ? ` / ${formatAnalyticsPercent(maxDDPct, 1)}` : ''}</div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={230}>
+        <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={C.green} stopOpacity={0.28} />
+              <stop offset="95%" stopColor={C.green} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="ddGrad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="5%" stopColor={C.danger} stopOpacity={0.35} />
+              <stop offset="95%" stopColor={C.danger} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="eq" tickFormatter={(value) => `$${value}`} />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="dd" orientation="right" tick={{ ...CHART_AXIS_SMALL.tick, fill: C.danger }} tickFormatter={(value) => `$${value}`} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => (
+              <>
+                <div style={{ color: C.t2, fontWeight: 700, marginBottom: 5, fontSize: 10 }}>{label}</div>
+                {payload.map((point, index) => (
+                  <div key={index} style={{ color: point.dataKey === 'equity' ? C.green : C.danger, fontWeight: 700, fontSize: 11 }}>
+                    {point.dataKey === 'equity' ? `Equity: ${fmtPnl(point.value)}` : `Drawdown: ${fmtPnl(point.value)}`}
+                  </div>
+                ))}
+                {payload[1]?.payload?.drawdownPct < 0 && (
+                  <div style={{ color: C.t3, fontSize: 10, marginTop: 4 }}>Relative DD: {formatAnalyticsPercent(payload[1].payload.drawdownPct, 1)}</div>
+                )}
+              </>
+            )} />
+          } />
+          <ReferenceLine yAxisId="eq" y={0} stroke={shade(C.brdBright, 0.8)} strokeDasharray="4 6" />
+          <Area yAxisId="eq" type="monotone" dataKey="equity" stroke={C.green} strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={chartActiveDot(C.green, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
+          <Area yAxisId="dd" type="monotone" dataKey="drawdownCash" stroke={C.danger} strokeWidth={1.85} fill="url(#ddGrad)" dot={false} strokeDasharray="6 4" activeDot={chartActiveDot(C.danger, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div style={{ display: 'flex', gap: 20, marginTop: 10 }}>
+        {[{ color: C.green, label: 'Equity', dash: false }, { color: C.danger, label: 'Drawdown cash', dash: true }].map((item) => (
+          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 18, height: 2, backgroundColor: item.color, borderRadius: 1, borderTopStyle: item.dash ? 'dashed' : 'none' }} />
+            <span style={{ fontSize: 10, color: C.t3 }}>{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
 
   return (
     <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
@@ -404,15 +507,52 @@ const MonthlyPnl = ({ trades }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const CumulativeWinRate = ({ trades }) => {
   const data = useMemo(() => {
-    const sorted = [...trades].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-    let wins = 0;
-    return sorted.map((t, i) => {
-      if (parseFloat(t.pnl) > 0) wins++;
-      return { i: i + 1, date: t.date?.substring(0, 10), wr: +((wins / (i + 1)) * 100).toFixed(2) };
-    });
+    return buildRollingWinRateSeries(trades, 12).map((row) => ({
+      i: row.index,
+      date: row.dateLabel,
+      wr: row.cumulativeWinRate,
+      rolling: row.rollingWinRate,
+    }));
   }, [trades]);
 
   const final = data.length ? data[data.length - 1].wr : 0;
+
+  return (
+    <Card index={2}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon={null} title="Cumulative Win Rate" sub="Cumulative accuracy compared with the rolling 12-trade win rate." color={C.cyan} />
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: final >= 50 ? C.green : C.danger, fontFamily: 'monospace' }}>{formatAnalyticsPercent(final, 1)}</div>
+          <div style={{ fontSize: 9, color: C.t3 }}>Final win rate</div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={170}>
+        <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="wrGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={C.cyan} stopOpacity={0.25} />
+              <stop offset="95%" stopColor={C.cyan} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+          <ReferenceLine y={50} stroke={C.warn} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: '50%', fill: C.warn, fontSize: 9, position: 'right' }} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => (
+              <>
+                <div style={{ color: C.t2, fontSize: 10, marginBottom: 4 }}>{label}</div>
+                <div style={{ color: C.cyan, fontWeight: 800 }}>Cumulative: {formatAnalyticsPercent(payload[0]?.value, 1)}</div>
+                <div style={{ color: C.green, fontWeight: 700, marginTop: 2 }}>Rolling 12-trade: {formatAnalyticsPercent(payload[1]?.value, 1)}</div>
+              </>
+            )} />
+          } cursor={chartCursor(C.cyan)} />
+          <Area type="monotone" dataKey="wr" stroke={C.cyan} strokeWidth={2.5} fill="url(#wrGrad)" dot={false} activeDot={chartActiveDot(C.cyan, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
+          <Line type="monotone" dataKey="rolling" stroke={C.green} strokeWidth={1.8} dot={false} strokeDasharray="5 5" activeDot={chartActiveDot(C.green, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  );
 
   return (
     <Card index={2}>
@@ -453,6 +593,109 @@ const CumulativeWinRate = ({ trades }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 🕐 BLOCK 5 — HOURLY HEATMAP
 // ─────────────────────────────────────────────────────────────────────────────
+const WinRateIntelligence = ({ trades }) => {
+  const sessionData = useMemo(
+    () => buildSessionWinRateSeries(trades).map((row) => ({ ...row, label: row.key === 'Tokyo / Asia' ? 'Tokyo' : row.key })),
+    [trades],
+  );
+  const hourData = useMemo(() => buildHourWinRateSeries(trades).filter((row) => row.trades > 0), [trades]);
+  const insights = useMemo(() => buildWinRateInsights(trades), [trades]);
+
+  return (
+    <Card index={3}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
+        <STitle icon={null} title="Win Rate Intelligence" sub="Read the hit rate in context, then adjust size, schedule, and setups from the same data stream." color={C.blue} />
+        <div style={{ display: 'grid', gap: 6, minWidth: 180 }}>
+          {sessionData.slice(0, 2).map((item) => (
+            <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10 }}>
+              <span style={{ color: C.t3 }}>{item.label}</span>
+              <span style={{ color: item.winRate >= 50 ? C.green : C.danger, fontWeight: 800 }}>{formatAnalyticsPercent(item.winRate, 1)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <div style={{ padding: '14px 14px 10px', borderRadius: 14, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 10 }}>By session</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={sessionData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid {...CHART_GRID} />
+              <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
+              <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+              <Tooltip content={
+                <ChartTip render={(payload, label) => {
+                  const item = sessionData.find((entry) => entry.label === label);
+                  return (
+                    <>
+                      <div style={{ color: C.t2, fontSize: 10, marginBottom: 4 }}>{item?.key}</div>
+                      <div style={{ color: C.cyan, fontWeight: 800 }}>Win rate: {formatAnalyticsPercent(item?.winRate, 1)}</div>
+                      <div style={{ color: item?.pnl >= 0 ? C.green : C.danger, marginTop: 2, fontWeight: 700 }}>P&L: {fmtPnl(item?.pnl)}</div>
+                      <div style={{ color: C.t3, marginTop: 2 }}>Trades: {item?.trades || 0}</div>
+                    </>
+                  );
+                }} />
+              } />
+              <Bar dataKey="winRate" radius={[8, 8, 0, 0]} maxBarSize={54} {...CHART_MOTION}>
+                {sessionData.map((item) => (
+                  <Cell key={item.key} fill={item.winRate >= 55 ? C.green : item.winRate >= 45 ? C.warn : C.danger} fillOpacity={0.82} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div style={{ padding: '14px 14px 10px', borderRadius: 14, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 10 }}>By trading hour</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={hourData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid {...CHART_GRID} />
+              <XAxis {...CHART_AXIS_SMALL} dataKey="key" interval="preserveStartEnd" />
+              <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+              <Tooltip content={
+                <ChartTip render={(payload, label) => {
+                  const item = hourData.find((entry) => entry.key === label);
+                  return (
+                    <>
+                      <div style={{ color: C.t2, fontSize: 10, marginBottom: 4 }}>{label}</div>
+                      <div style={{ color: C.blue, fontWeight: 800 }}>Win rate: {formatAnalyticsPercent(item?.winRate, 1)}</div>
+                      <div style={{ color: item?.pnl >= 0 ? C.green : C.danger, marginTop: 2, fontWeight: 700 }}>P&L: {fmtPnl(item?.pnl)}</div>
+                      <div style={{ color: C.t3, marginTop: 2 }}>Trades: {item?.trades || 0}</div>
+                    </>
+                  );
+                }} />
+              } cursor={chartCursor(C.blue)} />
+              <ReferenceLine y={50} stroke={shade(C.warn,'65')} strokeDasharray="4 6" />
+              <Line type="monotone" dataKey="winRate" stroke={C.blue} strokeWidth={2.2} dot={false} activeDot={chartActiveDot(C.blue, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10 }}>
+        {insights.map((item) => (
+          <div key={item.id} style={{
+            padding: '14px 14px 13px',
+            borderRadius: 14,
+            border: `1px solid ${item.tone === 'positive' ? shade(C.green,'24') : item.tone === 'risk' ? shade(C.danger,'24') : shade(C.blue,'24')}`,
+            background: item.tone === 'positive'
+              ? 'linear-gradient(180deg, rgba(var(--mf-green-rgb, 0, 255, 136),0.09), rgba(255,255,255,0.015))'
+              : item.tone === 'risk'
+                ? 'linear-gradient(180deg, rgba(var(--mf-danger-rgb, 255, 61, 87),0.08), rgba(255,255,255,0.015))'
+                : 'linear-gradient(180deg, rgba(var(--mf-blue-rgb, 77, 124, 255),0.08), rgba(255,255,255,0.015))',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 8 }}>
+              {item.tone === 'positive' ? 'Keep leaning in' : item.tone === 'risk' ? 'Needs attention' : 'Refine'}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.t1, lineHeight: 1.35, marginBottom: 6 }}>{item.title}</div>
+            <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.65 }}>{item.body}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
 const HourHeatmap = ({ trades }) => {
   const [hov, setHov] = useState(null); // ✅ legal: React component
 
@@ -1194,14 +1437,14 @@ export default function AnalyticsPro() {
             </h1>
             <span style={{ padding: '3px 9px', borderRadius: 4, fontSize: 8, fontWeight: 800, background: C.grad, color: C.bgDeep, letterSpacing: '1px' }}>PRO</span>
           </div>
-          <p style={{ margin: 0, color: C.t2, fontSize: 12 }}>{filtered.length} trades analyzed · Complete market intelligence</p>
+          <p style={{ margin: 0, color: C.t2, fontSize: 12 }}>{filtered.length} trades analyzed · precision view of performance, risk, and edge</p>
         </div>
         <PeriodFilter value={period} onChange={setPeriod} />
       </motion.div>
 
       {filtered.length === 0 ? (
         <motion.div variants={fadeUp} initial="hidden" animate="visible" style={{ textAlign: 'center', padding: '80px 20px' }}>
-          <div style={{ fontSize: 64, marginBottom: 16 }}>📊</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><IconGlyph color={C.cyan} /></div>
           <h2 style={{ color: C.t1, marginBottom: 8 }}>No data available</h2>
           <p style={{ color: C.t3 }}>Add trades to see your analytics</p>
         </motion.div>
@@ -1219,6 +1462,10 @@ export default function AnalyticsPro() {
           <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 16, marginBottom: 16 }}>
             <MonthlyPnl        trades={filtered} />
             <CumulativeWinRate trades={filtered} />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <WinRateIntelligence trades={filtered} />
           </div>
 
           {/* ROW 3 — Hourly heatmap + Weekday */}
