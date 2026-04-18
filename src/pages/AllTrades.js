@@ -1735,12 +1735,15 @@ export default function AllTrades(){
   const handleEdit=useCallback(t=>{setEditTrade(toTradeFormData(t));setModalForm(true);},[]);
   const handleCreate=useCallback(()=>{setEditTrade(null);setModalForm(true);},[]);
   const handleReset=useCallback(()=>{setFilters(DEFAULT_FILTERS);toast.success('Filters cleared');},[]);
-  const handleImportComplete=useCallback(()=>{
+  const handleImportComplete=useCallback((result={})=>{
     setFilters(DEFAULT_FILTERS);
     setSort({key:'date',dir:'desc'});
     setPage(1);
     setSelected(new Set());
-  },[]);
+    if((result?.imported||0)>0){
+      setActiveAccount('all');
+    }
+  },[setActiveAccount]);
   const handleBackup=useCallback(()=>{
     downloadBackup?.({ columns: cols, scope: 'all' });
     toast.success(`Backup saved with ${allTrades.length} trade${allTrades.length===1?'':'s'}`);
