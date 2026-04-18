@@ -146,11 +146,10 @@ export function TradingProvider({ children }) {
 
       const insertChunk = async (chunk) => {
         try {
-          const { data, error } = await runSupabaseRequest(
+          const { error } = await runSupabaseRequest(
             (signal) => supabase
               .from('trades')
               .insert(chunk)
-              .select('*')
               .abortSignal(signal),
             REQUEST_TIMEOUT_MS,
             chunk.length === 1 ? 'A trade row took too long to save.' : 'The import batch took too long and was stopped.',
@@ -164,8 +163,8 @@ export function TradingProvider({ children }) {
             return { saved: null, error: message, timedOut: isTimeoutLike(message) };
           }
 
-          const normalizedBatch = (data || chunk).map((row, batchIndex) =>
-            normalizeTradeRecord(row || createImportedTradePreview(chunk[batchIndex], imported + skipped + batchIndex))
+          const normalizedBatch = chunk.map((payload, batchIndex) =>
+            createImportedTradePreview(payload, imported + skipped + batchIndex)
           );
           return {
             saved: normalizedBatch,
@@ -894,16 +893,32 @@ function downloadJsonFile(payload, filename = 'marketflow-backup.json') {
 
 async function runSupabaseRequest(requestFactory, timeoutMs = REQUEST_TIMEOUT_MS, timeoutMessage = 'The request timed out.') {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => controller?.abort(), timeoutMs);
+  let settled = false;
+  let timeoutRejectTimer = null;
+  const timer = setTimeout(() => {
+    if (settled) return;
+    controller?.abort();
+  }, timeoutMs);
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutRejectTimer = setTimeout(() => {
+      if (settled) return;
+      reject(new Error(timeoutMessage));
+    }, timeoutMs + 40);
+  });
 
   try {
-    return await requestFactory(controller?.signal);
+    const requestPromise = Promise.resolve().then(() => requestFactory(controller?.signal));
+    const response = await Promise.race([requestPromise, timeoutPromise]);
+    settled = true;
+    return response;
   } catch (error) {
+    settled = true;
     if (error?.name === 'AbortError') {
       throw new Error(timeoutMessage);
     }
     throw error;
   } finally {
     clearTimeout(timer);
+    clearTimeout(timeoutRejectTimer);
   }
 }
