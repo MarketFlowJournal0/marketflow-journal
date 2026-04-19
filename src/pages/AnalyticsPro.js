@@ -78,6 +78,62 @@ const fadeUp = {
   }),
 };
 
+const ANALYTICS_STYLES = `
+  @keyframes mfAnalyticsFloatA {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.12; }
+    50% { transform: translate3d(24px, 18px, 0) scale(1.04); opacity: 0.18; }
+  }
+
+  @keyframes mfAnalyticsFloatB {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.08; }
+    50% { transform: translate3d(-22px, -14px, 0) scale(1.03); opacity: 0.13; }
+  }
+
+  .mf-analytics-shell {
+    position: relative;
+    min-height: 100%;
+    width: 100%;
+    color: ${C.t1};
+  }
+
+  .mf-analytics-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .mf-analytics-grid-pairs {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .mf-analytics-grid-triple {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .mf-analytics-grid-equal {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 1160px) {
+    .mf-analytics-hero-grid,
+    .mf-analytics-grid-pairs,
+    .mf-analytics-grid-triple,
+    .mf-analytics-grid-equal {
+      grid-template-columns: 1fr;
+    }
+  }
+`;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 🔧 HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,14 +170,22 @@ const renderIcon = (icon, color) => (React.isValidElement(icon) ? icon : <IconGl
 const Card = ({ children, style = {}, index = 0, glow }) => (
   <motion.div
     variants={fadeUp} initial="hidden" animate="visible" custom={index}
-    whileHover={{ y: -3 }}
+    whileHover={{ y: -4 }}
     style={{
-      backgroundColor: C.bgCard, border: `1px solid ${C.brd}`,
-      borderRadius: 14, padding: '20px 22px', position: 'relative', overflow: 'hidden',
-      boxShadow: glow ? `0 8px 32px ${glow}` : '0 2px 12px rgba(0,0,0,0.25)',
+      background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',
+      border: `1px solid ${C.brd}`,
+      borderRadius: 24,
+      padding: '22px 24px',
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: glow ? `0 24px 54px rgba(0,0,0,0.22), 0 0 0 1px ${shade(glow,'14')}` : '0 24px 48px rgba(0,0,0,0.18)',
       transition: 'box-shadow 0.3s', ...style,
     }}
-  >{children}</motion.div>
+  >
+    <div style={{ position: 'absolute', top: -120, right: -100, width: 240, height: 240, borderRadius: '50%', background: glow ? `radial-gradient(circle, ${shade(glow,'18')}, transparent 68%)` : 'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), transparent 70%)', pointerEvents: 'none' }} />
+    <div style={{ position: 'absolute', inset: 0, borderRadius: 24, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)', pointerEvents: 'none' }} />
+    <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+  </motion.div>
 );
 
 const STitle = ({ icon, title, sub, badge, color = C.cyan }) => (
@@ -169,18 +233,27 @@ const ChartTip = ({ active, payload, label, render: renderFn }) => {
 };
 
 const PeriodFilter = ({ value, onChange }) => (
-  <div style={{ display: 'flex', gap: 3, padding: '3px', backgroundColor: C.bgDeep, borderRadius: 8, border: `1px solid ${C.brd}` }}>
+  <div style={{ display: 'flex', gap: 4, padding: '4px', background: 'rgba(7,12,20,0.82)', borderRadius: 12, border: `1px solid ${C.brd}`, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)' }}>
     {['7D', '1M', '3M', '6M', 'ALL'].map(p => (
       <motion.button key={p} onClick={() => onChange(p)}
         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
         style={{
-          padding: '5px 12px', borderRadius: 5, fontSize: 11, fontWeight: 700,
+          padding: '6px 13px', borderRadius: 9, fontSize: 11, fontWeight: 800,
           border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-          backgroundColor: value === p ? C.cyan : 'transparent',
+          background: value === p ? 'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.94), rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.9))' : 'transparent',
           color: value === p ? C.bgDeep : C.t3,
+          boxShadow: value === p ? `0 10px 22px ${shade(C.cyanGlow,'34')}` : 'none',
           transition: 'all 0.2s',
         }}>{p}</motion.button>
     ))}
+  </div>
+);
+
+const HeroMetric = ({ label, value, tone = C.cyan, sub }) => (
+  <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(tone,'18')}`, background: 'rgba(255,255,255,0.02)' }}>
+    <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
+    <div style={{ fontSize: 18, fontWeight: 900, color: tone, letterSpacing: '-0.04em' }}>{value}</div>
+    {sub && <div style={{ fontSize: 11, color: C.t2, marginTop: 5 }}>{sub}</div>}
   </div>
 );
 
@@ -1338,7 +1411,6 @@ const NewsImpact = ({ trades }) => {
   }), [trades]);
 
   const newsColors = { High: C.danger, Medium: C.warn, Low: C.teal };
-  const newsEmojis = { High: '🔴', Medium: '🟡', Low: '🟢' };
 
   return (
     <Card index={14}>
@@ -1348,7 +1420,7 @@ const NewsImpact = ({ trades }) => {
           <div key={d.level}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 16 }}>{newsEmojis[d.level]}</span>
+                <IconGlyph color={newsColors[d.level] || C.cyan} />
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: newsColors[d.level] }}>{d.level} Impact</div>
                   <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · WR {d.wr}%</div>
@@ -1380,7 +1452,6 @@ const BiasAnalysis = ({ trades }) => {
   }), [trades]);
 
   const colors = { Bullish: C.green, Bearish: C.danger, Neutral: C.t2 };
-  const emojis = { Bullish: '🐂', Bearish: '🐻', Neutral: '⚖️' };
 
   return (
     <Card index={15}>
@@ -1390,7 +1461,7 @@ const BiasAnalysis = ({ trades }) => {
           <div key={d.bias}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 20 }}>{emojis[d.bias]}</span>
+                <IconGlyph color={colors[d.bias] || C.cyan} />
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: colors[d.bias] }}>{d.bias}</div>
                   <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · WR {d.wr}%</div>
@@ -1424,12 +1495,83 @@ export default function AnalyticsPro() {
     return trades.filter(t => (t.date || '') >= from);
   }, [trades, period]);
 
+  const summary = useMemo(() => summarizeTradeSet(filtered), [filtered]);
+  const sessionSeries = useMemo(() => buildSessionWinRateSeries(filtered), [filtered]);
+  const strongestSession = sessionSeries.length ? [...sessionSeries].sort((left, right) => right.winRate - left.winRate)[0] : null;
+  const weakestSession = sessionSeries.length ? [...sessionSeries].sort((left, right) => left.winRate - right.winRate)[0] : null;
+  const intelligence = useMemo(() => buildWinRateInsights(filtered), [filtered]);
+
   return (
-    <div style={{ backgroundColor: 'transparent', minHeight: '100vh', fontFamily: 'system-ui,-apple-system,sans-serif', color: C.t1, padding: '24px' }}>
+    <div style={{ backgroundColor: 'transparent', minHeight: '100vh', fontFamily: 'system-ui,-apple-system,sans-serif', color: C.t1, padding: '28px 24px 48px', position: 'relative', overflow: 'hidden' }}>
+      <style>{ANALYTICS_STYLES}</style>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 8% 2%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), transparent 24%), radial-gradient(circle at 88% 12%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.04), transparent 20%), linear-gradient(135deg, rgba(255,255,255,0.015), transparent 36%, transparent 64%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.02) 100%)', pointerEvents: 'none' }} />
+      <motion.div animate={{ opacity: [0.12, 0.2, 0.12], scale: [1, 1.04, 1] }} transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }} style={{ position: 'absolute', top: -160, right: -120, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.16), transparent 72%)', pointerEvents: 'none' }} />
+      <motion.div animate={{ opacity: [0.08, 0.14, 0.08], scale: [1, 1.03, 1] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 1.4 }} style={{ position: 'absolute', bottom: -180, left: -120, width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(var(--mf-green-rgb, 0, 255, 136),0.12), transparent 74%)', pointerEvents: 'none' }} />
+      <div className="mf-analytics-shell" style={{ position: 'relative', zIndex: 1, maxWidth: 1520, margin: '0 auto' }}>
+        <motion.div variants={fadeUp} initial="hidden" animate="visible" className="mf-analytics-hero-grid" style={{ marginBottom: 18 }}>
+          <div style={{ padding: '24px 24px 22px', borderRadius: 24, border: `1px solid ${C.brd}`, background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))', boxShadow: '0 24px 48px rgba(0,0,0,0.18)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.12), transparent 68%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>Performance command center</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <div style={{ maxWidth: 760 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 3.6vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.06em', color: C.t1 }}>
+                      Analytics <span style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, var(--mf-accent,#06E6FF) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pro</span>
+                    </h1>
+                    <span style={{ padding: '5px 10px', borderRadius: 999, border: `1px solid ${shade(C.cyan,'24')}`, background: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)', color: C.cyan, fontSize: 10, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Live journal intelligence</span>
+                  </div>
+                  <p style={{ margin: 0, color: C.t2, fontSize: 13, lineHeight: 1.8, maxWidth: 720 }}>
+                    Clean read of edge, drawdown, and execution quality. Every chart below is tied to the same real trade stream, with a calmer shell and stronger visual rhythm to match the dashboard.
+                  </p>
+                </div>
+                <PeriodFilter value={period} onChange={setPeriod} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 18 }}>
+                <HeroMetric label="Analyzed trades" value={filtered.length.toLocaleString()} tone={C.cyan} sub={`${summary.activeDays} active day${summary.activeDays === 1 ? '' : 's'}`} />
+                <HeroMetric label="Net performance" value={formatAnalyticsMoney(summary.totalPnL)} tone={summary.totalPnL >= 0 ? C.green : C.danger} sub={`Win rate ${formatAnalyticsPercent(summary.winRate, 1)}`} />
+                <HeroMetric label="Profit factor" value={formatAnalyticsFactor(summary.profitFactor)} tone={summary.profitFactor >= 1.5 ? C.green : summary.profitFactor >= 1 ? C.warn : C.danger} sub={`Expectancy ${formatAnalyticsMoney(summary.expectancy)}`} />
+                <HeroMetric label="Max drawdown" value={formatAnalyticsMoney(summary.maxDrawdownCash)} tone={C.danger} sub={summary.maxDrawdownPct < 0 ? `${formatAnalyticsPercent(summary.maxDrawdownPct, 1)} from peak` : 'Peak to trough'} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: '20px', borderRadius: 24, border: `1px solid ${C.brd}`, background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))', boxShadow: '0 24px 48px rgba(0,0,0,0.18)' }}>
+            <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 14 }}>Execution readout</div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Best session</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: strongestSession ? C.green : C.t2 }}>{strongestSession?.key || 'No session yet'}</div>
+                <div style={{ fontSize: 11, color: C.t2, marginTop: 4 }}>{strongestSession ? `${formatAnalyticsPercent(strongestSession.winRate, 1)} win rate • ${formatAnalyticsMoney(strongestSession.pnl)}` : 'Import more closed trades to unlock the read.'}</div>
+              </div>
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Pressure point</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: weakestSession ? C.warn : C.t2 }}>{weakestSession?.key || 'No weak area yet'}</div>
+                <div style={{ fontSize: 11, color: C.t2, marginTop: 4 }}>{weakestSession ? `${formatAnalyticsPercent(weakestSession.winRate, 1)} win rate • ${formatAnalyticsMoney(weakestSession.pnl)}` : 'The weakest zone appears once enough trades are logged.'}</div>
+              </div>
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Priority focus</div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {intelligence.slice(0, 2).map((item) => (
+                    <div key={item.id} style={{ padding: '11px 12px', borderRadius: 14, border: `1px solid ${item.tone === 'risk' ? shade(C.danger,'18') : item.tone === 'positive' ? shade(C.green,'18') : shade(C.cyan,'18')}`, background: 'rgba(255,255,255,0.02)' }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: item.tone === 'risk' ? C.danger : item.tone === 'positive' ? C.green : C.cyan }}>{item.title}</div>
+                      <div style={{ fontSize: 11, color: C.t2, marginTop: 4, lineHeight: 1.7 }}>{item.body}</div>
+                    </div>
+                  ))}
+                  {!intelligence.length && (
+                    <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.7 }}>
+                      The insights panel populates automatically once the journal has enough trades, sessions, and setups to compare.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
       {/* ── HEADER ── */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible"
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
+        style={{ display: 'none' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, background: C.grad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>
@@ -1459,7 +1601,7 @@ export default function AnalyticsPro() {
           </div>
 
           {/* ROW 2 — Monthly P&L + Cumulative WR */}
-          <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 16, marginBottom: 16 }}>
+          <div className="mf-analytics-grid-pairs">
             <MonthlyPnl        trades={filtered} />
             <CumulativeWinRate trades={filtered} />
           </div>
@@ -1469,43 +1611,44 @@ export default function AnalyticsPro() {
           </div>
 
           {/* ROW 3 — Hourly heatmap + Weekday */}
-          <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 16, marginBottom: 16 }}>
+          <div className="mf-analytics-grid-pairs">
             <HourHeatmap trades={filtered} />
             <WeekdayPerf trades={filtered} />
           </div>
 
           {/* ROW 4 — Setup + Sessions + Long/Short */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div className="mf-analytics-grid-triple">
             <SetupDonut       trades={filtered} />
             <SessionBreakdown trades={filtered} />
             <LongVsShort      trades={filtered} />
           </div>
 
           {/* ROW 5 — Symbols + P&L Distribution */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div className="mf-analytics-grid-equal">
             <SymbolWinRate   trades={filtered} />
             <PnlDistribution trades={filtered} />
           </div>
 
           {/* ROW 6 — Psycho + Duration */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div className="mf-analytics-grid-equal">
             <PsychoTimeline   trades={filtered} />
             <DurationAnalysis trades={filtered} />
           </div>
 
           {/* ROW 7 — MAE/MFE + Streak */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div className="mf-analytics-grid-equal">
             <MaeMfeScatter trades={filtered} />
             <StreakTracker  trades={filtered} />
           </div>
 
           {/* ROW 8 — News + Bias */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 8 }}>
+          <div className="mf-analytics-grid-equal" style={{ marginBottom: 8 }}>
             <NewsImpact   trades={filtered} />
             <BiasAnalysis trades={filtered} />
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

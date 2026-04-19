@@ -2,16 +2,16 @@ import { shade } from './colorAlpha';
 
 export const CHART_MOTION = {
   isAnimationActive: true,
-  animationBegin: 70,
-  animationDuration: 1100,
-  animationEasing: 'ease-in-out',
+  animationBegin: 110,
+  animationDuration: 1380,
+  animationEasing: 'ease-out',
 };
 
 export const CHART_MOTION_SOFT = {
   isAnimationActive: true,
-  animationBegin: 90,
-  animationDuration: 1450,
-  animationEasing: 'ease-in-out',
+  animationBegin: 140,
+  animationDuration: 1820,
+  animationEasing: 'ease-out',
 };
 
 export const CHART_GRID = {
