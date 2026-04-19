@@ -166,7 +166,6 @@ const NAV = (isAdmin, plan) => [
     items: [
       { id: 'psychology', label: 'Psychology', Icon: Ic.Psychology },
       { id: 'broker-connect', label: 'Brokers', Icon: Ic.Broker },
-      { id: 'ai-chat', label: 'AI Coach', Icon: Ic.Chat },
     ].filter((item) => hasRouteAccess(plan, item.id)),
   },
   {

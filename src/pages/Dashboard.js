@@ -107,6 +107,22 @@ const DASHBOARD_STYLES = `
     gap: 12px;
   }
 
+  .mf-dashboard-workflow-anchor {
+    position: fixed;
+    top: 138px;
+    right: 24px;
+    z-index: 14;
+    pointer-events: none;
+  }
+
+  .mf-dashboard-workflow-inner {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    gap: 12px;
+    pointer-events: auto;
+  }
+
   @media (max-width: 1380px) {
     .mf-dashboard-grid-kpi {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -124,6 +140,12 @@ const DASHBOARD_STYLES = `
   @media (max-width: 900px) {
     .mf-dashboard-grid-kpi {
       grid-template-columns: 1fr;
+    }
+
+    .mf-dashboard-workflow-anchor {
+      top: auto;
+      right: 16px;
+      bottom: 94px;
     }
   }
 `;
@@ -200,6 +222,11 @@ const Ic = {
     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 6.5h8.2" />
       <path d="M6.8 3.2l3.4 3.3-3.4 3.3" />
+    </svg>
+  ),
+  Check: () => (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.25 6.2 4.7 8.55 9.75 3.6" />
     </svg>
   ),
 };
@@ -1016,7 +1043,7 @@ function HeaderPanel({ stats, overview, accountOptions, activeAccount, onAccount
           </div>
         </div>
         <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6, maxWidth: 560, marginTop: 10 }}>
-          Live overview of realized performance across the active account scope.
+          Realized performance across the active account scope.
         </div>
       </div>
 
@@ -1756,6 +1783,161 @@ function CompactRoutinePanel({ items, onToggle, onTitleChange, navigate, overvie
   );
 }
 
+function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview }) {
+  const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
+  const completed = items.filter((item) => item.done).length;
+  const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
+  const progressTone = progress >= 100 ? C.green : progress >= 50 ? C.accent : C.warn;
+
+  return (
+    <div className="mf-dashboard-workflow-anchor">
+      <div className="mf-dashboard-workflow-inner">
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.98 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.98 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                width: 308,
+                maxWidth: 'calc(100vw - 96px)',
+                maxHeight: 'calc(100vh - 190px)',
+                overflowY: 'auto',
+                padding: '14px 14px 12px',
+                borderRadius: 22,
+                background: 'linear-gradient(180deg, rgba(8,13,22,0.98), rgba(7,11,20,0.98))',
+                border: `1px solid ${shade(progressTone, 0.16)}`,
+                boxShadow: `0 28px 60px rgba(0,0,0,0.42), 0 0 0 1px ${shade(progressTone, 0.08)}`,
+                backdropFilter: 'blur(20px)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>
+                    Today
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '-0.04em', color: C.text0 }}>
+                    Workflow
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <GhostButton onClick={() => setEditing((value) => !value)} icon={editing ? <Ic.Save /> : <Ic.Edit />}>
+                    {editing ? 'Save' : 'Edit'}
+                  </GhostButton>
+                  <GhostButton onClick={() => setOpen(false)} icon={<Ic.ChevronUp />}>
+                    Hide
+                  </GhostButton>
+                </div>
+              </div>
+
+              <div style={{ padding: '12px 12px 11px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}`, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                  <TinyBadge tone={progressTone}>{completed}/{items.length} done</TinyBadge>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: progressTone }}>{progress}%</span>
+                </div>
+                <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 10 }}>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(progressTone, 0.54)}, ${progressTone})` }} />
+                </div>
+                <MiniMetric label="Focus" value={overview.rank.focus} tone={toneColor(overview.rank.tone)} caption={overview.rank.note} />
+              </div>
+
+              <div style={{ display: 'grid', gap: 8 }}>
+                {items.map((item) => (
+                  <div key={item.id} style={{ padding: '11px 11px 10px', borderRadius: 16, border: `1px solid ${item.done ? shade(C.green, 0.18) : shade(C.accent, 0.12)}`, background: item.done ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.07)' : 'rgba(255,255,255,0.025)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button
+                        onClick={() => onToggle(item.id)}
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: 7,
+                          border: `1px solid ${item.done ? shade(C.green, 0.24) : C.border}`,
+                          background: item.done ? shade(C.green, 0.16) : 'rgba(255,255,255,0.02)',
+                          color: item.done ? C.green : C.text3,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          fontWeight: 900,
+                          fontSize: 12,
+                        }}
+                      >
+                        {item.done ? <Ic.Check /> : null}
+                      </button>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {editing ? (
+                          <input
+                            value={item.title}
+                            onChange={(event) => onTitleChange(item.id, event.target.value)}
+                            style={{
+                              width: '100%',
+                              borderRadius: 10,
+                              border: `1px solid ${C.border}`,
+                              background: 'rgba(255,255,255,0.02)',
+                              color: C.text1,
+                              fontSize: 12.5,
+                              padding: '8px 10px',
+                              fontFamily: 'inherit',
+                            }}
+                          />
+                        ) : (
+                          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: item.done ? C.text1 : C.text2, textDecoration: item.done ? 'line-through' : 'none' }}>
+                            {item.title}
+                          </div>
+                        )}
+                      </div>
+
+                      <GhostButton onClick={() => navigate(item.route)} icon={<Ic.ArrowRight />}>
+                        Open
+                      </GhostButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          whileHover={{ y: -2, scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setOpen((value) => !value)}
+          style={{
+            width: 54,
+            height: 64,
+            padding: '10px 8px',
+            borderRadius: 18,
+            border: `1px solid ${shade(progressTone, 0.18)}`,
+            background: 'linear-gradient(180deg, rgba(9,14,24,0.98), rgba(7,11,20,0.96))',
+            color: C.text1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: `0 18px 42px rgba(0,0,0,0.34), 0 0 0 1px ${shade(progressTone, 0.08)}`,
+            cursor: 'pointer',
+            backdropFilter: 'blur(18px)',
+            position: 'relative',
+          }}
+        >
+          <span style={{ width: 32, height: 32, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${shade(progressTone, 0.2)}, ${shade(progressTone, 0.08)})`, border: `1px solid ${shade(progressTone, 0.2)}`, color: progressTone, boxShadow: `0 0 18px ${shade(progressTone, 0.16)}` }}>
+            <Ic.Checklist />
+          </span>
+          <span style={{ position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 999, padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 900, color: progress >= 100 ? C.deep : progressTone, background: progress >= 100 ? C.green : shade(progressTone, 0.16), border: `1px solid ${shade(progressTone, 0.22)}`, letterSpacing: '-0.02em' }}>
+            {completed}
+          </span>
+          <span style={{ position: 'absolute', bottom: 6, fontSize: 10, color: C.text3 }}>
+            {open ? <Ic.ChevronUp /> : <Ic.ChevronDown />}
+          </span>
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
 function CompactRankPanel({ overview, navigate }) {
   const rank = overview.rank;
   const rankTone = toneColor(rank.tone);
@@ -2091,7 +2273,7 @@ export default function Dashboard() {
           onAccountChange={setActiveAccount}
         />
 
-        <CompactRoutinePanel
+        <WorkflowDock
           items={routineItems}
           onToggle={toggleRoutineItem}
           onTitleChange={changeRoutineTitle}

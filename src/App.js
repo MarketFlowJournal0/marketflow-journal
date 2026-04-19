@@ -10,7 +10,6 @@ import Backtest from './pages/Backtest';
 import Calendar from './pages/Calendar';
 import Equity from './pages/Equity';
 import Psychology from './pages/Psychology';
-import AIChat from './pages/AIChat';
 import AccountSettings from './pages/AccountSettings';
 import PlanSelection from './pages/PlanSelection';
 import SupportPage from './pages/SupportPage';
@@ -176,7 +175,7 @@ function AppLayout({ user, onLogout }) {
               <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />
               <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
               <Route path="/psychology" element={renderProtectedRoute('psychology', <Psychology />)} />
-              <Route path="/ai-chat" element={renderProtectedRoute('ai-chat', <AIChat />)} />
+              <Route path="/ai-chat" element={<Navigate to="/dashboard" replace />} />
               <Route path="/broker-connect" element={renderProtectedRoute('broker-connect', <BrokerConnect />)} />
               <Route
                 path="/account-settings"
