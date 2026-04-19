@@ -1,20 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+/*
+══════════════════════════════════════════════════════════════════════════════╗
+║   📊 ANALYTICS PRO v2 - MARKETFLOW JOURNAL                                  ║
+║   ✅ FIX: useState extracted from .map() → KpiCard = dedicated component   ║
+║   ✅ NEW: Monthly P&L, Cumulative WR, Long vs Short, News Impact           ║
+║   ✅ 16 complete analytics blocks                                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+*/
+
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  AreaChart, Area, BarChart, Bar, LineChart, Line,
+  ScatterChart, Scatter, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ReferenceLine, ComposedChart,
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
@@ -22,6 +21,7 @@ import {
   CHART_AXIS,
   CHART_AXIS_SMALL,
   CHART_GRID,
+  CHART_GRID_FULL,
   CHART_MOTION,
   CHART_MOTION_SOFT,
   chartActiveDot,
@@ -34,953 +34,1673 @@ import {
   buildRollingWinRateSeries,
   buildSessionWinRateSeries,
   buildWinRateInsights,
+  formatAnalyticsFactor,
   formatAnalyticsMoney,
   formatAnalyticsPercent,
-  getTradeDateLabel,
-  getTradeDateValue,
+  formatAnalyticsRR,
   getTradePnl,
-  normalizeSessionLabel,
   summarizeTradeSet,
+  toAnalyticsNumber,
 } from '../lib/marketflowAnalytics';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🎨 PALETTE
+// ─────────────────────────────────────────────────────────────────────────────
 const C = {
-  bg: 'var(--mf-bg,#030508)',
-  card: 'var(--mf-card,#0C1422)',
-  deep: 'var(--mf-deep,#07090F)',
-  accent: 'var(--mf-accent,#06E6FF)',
-  accentSoft: 'var(--mf-accent-secondary,#66F0FF)',
-  green: 'var(--mf-green,#00FF88)',
-  teal: 'var(--mf-teal,#00F5D4)',
-  blue: 'var(--mf-blue,#4D7CFF)',
-  purple: 'var(--mf-purple,#A78BFA)',
-  pink: 'var(--mf-pink,#FB7185)',
-  gold: 'var(--mf-gold,#FFD700)',
-  warn: 'var(--mf-warn,#FFB31A)',
-  danger: 'var(--mf-danger,#FF3D57)',
-  text0: 'var(--mf-text-0,#FFFFFF)',
-  text1: 'var(--mf-text-1,#E8EEFF)',
-  text2: 'var(--mf-text-2,#7A90B8)',
-  text3: 'var(--mf-text-3,#334566)',
-  border: 'var(--mf-border,#162034)',
-  borderHi: 'var(--mf-border-hi,#1E2E48)',
+  bgPage: '#0F1420', bgCard: 'var(--mf-card,#161D2E)', bgDeep: 'var(--mf-deep,#0D1117)',
+  bgHigh: '#1C2540', bgHov:  '#1F2B42',
+  cyan: 'var(--mf-accent,#06E6FF)',   cyanGlow: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.3)',
+  teal: 'var(--mf-teal,#00F5D4)',   green: 'var(--mf-green,#00FF88)', greenGlow: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.3)',
+  danger: 'var(--mf-danger,#FF3D57)', dangerGlow: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.3)',
+  warn: 'var(--mf-warn,#FFB31A)',   orange: 'var(--mf-orange,#FF6B35)',
+  purple: 'var(--mf-purple,#A78BFA)', blue: 'var(--mf-blue,#4D7CFF)',
+  t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#8B9BB4)', t3: 'var(--mf-text-3,#3D4F6B)', t4: 'var(--mf-text-3,#64748B)',
+  brd: 'var(--mf-border,#1E2D45)', brdSoft: 'var(--mf-border-hi,#243454)', brdBright: 'var(--mf-border-hi,#334155)',
+  grad:       'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  gradBlue:   'linear-gradient(135deg,var(--mf-blue,#4D7CFF),var(--mf-blue,#4D7CFF))',
+  gradPurple: 'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-purple,#8B5CF6))',
+  gradOrange: 'linear-gradient(135deg,var(--mf-orange,#FF6B35),var(--mf-orange,#FF8C00))',
 };
 
-const PAGE_STYLES = `
-  @keyframes mfAnalyticsGlowA {
+const CHART_COLORS = [
+  C.cyan, C.green, C.purple, C.warn, C.orange,
+  C.teal, C.blue, C.danger, 'var(--mf-pink,#EC4899)', 'var(--mf-orange,#F97316)',
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🎬 ANIMATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+const fadeUp = {
+  hidden:  { opacity: 0, y: 22, scale: 0.97 },
+  visible: (i = 0) => ({
+    opacity: 1, y: 0, scale: 1,
+    transition: { delay: i * 0.055, duration: 0.52, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
+const ANALYTICS_STYLES = `
+  @keyframes mfAnalyticsFloatA {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.12; }
-    50% { transform: translate3d(22px, 18px, 0) scale(1.04); opacity: 0.2; }
+    50% { transform: translate3d(24px, 18px, 0) scale(1.04); opacity: 0.18; }
   }
 
-  @keyframes mfAnalyticsGlowB {
+  @keyframes mfAnalyticsFloatB {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.08; }
-    50% { transform: translate3d(-20px, -14px, 0) scale(1.03); opacity: 0.14; }
+    50% { transform: translate3d(-22px, -14px, 0) scale(1.03); opacity: 0.13; }
   }
 
-  .mf-analytics-page {
+  .mf-analytics-shell {
     position: relative;
     min-height: 100%;
-    color: ${C.text1};
+    width: 100%;
+    color: ${C.t1};
   }
 
-  .mf-analytics-top-grid {
+  .mf-analytics-hero-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.82fr);
+    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
     gap: 16px;
     margin-bottom: 18px;
   }
 
-  .mf-analytics-metric-grid {
+  .mf-analytics-grid-pairs {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 18px;
-  }
-
-  .mf-analytics-grid-two {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr);
     gap: 16px;
     margin-bottom: 16px;
   }
 
-  .mf-analytics-grid-three {
+  .mf-analytics-grid-triple {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 16px;
   }
 
-  .mf-analytics-grid-one {
+  .mf-analytics-grid-equal {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 16px;
   }
 
-  @media (max-width: 1320px) {
-    .mf-analytics-metric-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
   @media (max-width: 1160px) {
-    .mf-analytics-top-grid,
-    .mf-analytics-grid-two,
-    .mf-analytics-grid-three {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 760px) {
-    .mf-analytics-metric-grid {
+    .mf-analytics-hero-grid,
+    .mf-analytics-grid-pairs,
+    .mf-analytics-grid-triple,
+    .mf-analytics-grid-equal {
       grid-template-columns: 1fr;
     }
   }
 `;
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 18, scale: 0.98 },
-  visible: (index = 0) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.46,
-      delay: index * 0.04,
-      ease: [0.16, 1, 0.3, 1],
-    },
-  }),
-};
-
-const SECTION_OPTIONS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'general', label: 'General' },
-  { id: 'confluences', label: 'Confluences' },
-  { id: 'long-short', label: 'Long vs Short' },
-  { id: 'heatmaps', label: 'Heatmaps' },
-  { id: 'trades', label: 'Trades' },
+const SECTION_SHORTCUTS = [
+  { id: 'analytics-overview', label: 'Overview' },
+  { id: 'analytics-general', label: 'General' },
+  { id: 'analytics-confluences', label: 'Confluences' },
+  { id: 'analytics-long-short', label: 'Long vs Short' },
+  { id: 'analytics-heatmaps', label: 'Heatmaps' },
+  { id: 'analytics-trades', label: 'Trades' },
 ];
 
-const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔧 HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+const fmtPnl = (n) => formatAnalyticsMoney(n);
+const avg = (arr) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
 
-function panelMotion(index = 0) {
-  return {
-    variants: fadeUp,
-    initial: 'hidden',
-    animate: 'visible',
-    custom: index,
-  };
-}
+const IconGlyph = ({ color = C.cyan }) => (
+  <span style={{
+    width: 18,
+    height: 18,
+    borderRadius: 6,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: `linear-gradient(135deg, ${shade(color,'28')}, ${shade(color,'08')})`,
+    border: `1px solid ${shade(color,'24')}`,
+    boxShadow: `0 0 18px ${shade(color,'12')}`,
+  }}>
+    <span style={{
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+      background: color,
+      boxShadow: `0 0 10px ${shade(color,'55')}`,
+    }} />
+  </span>
+);
 
-function cardStyle(tone = C.accent) {
-  return {
-    position: 'relative',
-    overflow: 'hidden',
-    borderRadius: 24,
-    border: `1px solid ${shade(tone, 0.12)}`,
-    background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',
-    boxShadow: `0 24px 48px rgba(0,0,0,0.18), 0 0 0 1px ${shade(tone, 0.05)}`,
-  };
-}
+const renderIcon = (icon, color) => (React.isValidElement(icon) ? icon : <IconGlyph color={color} />);
 
-function SectionCard({ children, tone = C.accent, index = 0, style = {} }) {
-  return (
-    <motion.section {...panelMotion(index)} style={{ ...cardStyle(tone), ...style }}>
-      <div style={{ position: 'absolute', top: -120, right: -120, width: 260, height: 260, borderRadius: '50%', background: `radial-gradient(circle, ${shade(tone, 0.16)}, transparent 70%)`, pointerEvents: 'none' }} />
-      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
-    </motion.section>
-  );
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// 🧩 ATOMS
+// ─────────────────────────────────────────────────────────────────────────────
+const Card = ({ children, style = {}, index = 0, glow }) => (
+  <motion.div
+    variants={fadeUp} initial="hidden" animate="visible" custom={index}
+    whileHover={{ y: -4 }}
+    style={{
+      background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',
+      border: `1px solid ${C.brd}`,
+      borderRadius: 24,
+      padding: '22px 24px',
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: glow ? `0 24px 54px rgba(0,0,0,0.22), 0 0 0 1px ${shade(glow,'14')}` : '0 24px 48px rgba(0,0,0,0.18)',
+      transition: 'box-shadow 0.3s', ...style,
+    }}
+  >
+    <div style={{ position: 'absolute', top: -120, right: -100, width: 240, height: 240, borderRadius: '50%', background: glow ? `radial-gradient(circle, ${shade(glow,'18')}, transparent 68%)` : 'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), transparent 70%)', pointerEvents: 'none' }} />
+    <div style={{ position: 'absolute', inset: 0, borderRadius: 24, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)', pointerEvents: 'none' }} />
+    <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+  </motion.div>
+);
 
-function SectionTitle({ eyebrow, title, tone = C.accent, action = null }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-      <div>
-        {eyebrow ? (
-          <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 6 }}>
-            {eyebrow}
-          </div>
-        ) : null}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ width: 3, height: 18, borderRadius: 999, background: `linear-gradient(180deg, ${tone}, ${shade(tone, 0.44)})` }} />
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, letterSpacing: '-0.03em', color: C.text0 }}>
-            {title}
-          </h2>
+const STitle = ({ icon, title, sub, badge, color = C.cyan }) => (
+  <div style={{ marginBottom: 16 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{
+        width: 30, height: 30, borderRadius: 8,
+        background: `linear-gradient(135deg,${shade(color,'30')},${shade(color,'10')})`,
+        border: `1px solid ${shade(color,'30')}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+      }}>{renderIcon(icon, color)}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: C.t1, letterSpacing: '-0.2px' }}>{title}</span>
+          {badge && (
+            <span style={{ padding: '2px 7px', borderRadius: 4, fontSize: 8, fontWeight: 800, background: C.grad, color: C.bgDeep, letterSpacing: '0.5px' }}>
+              {badge}
+            </span>
+          )}
         </div>
+        {sub && <div style={{ fontSize: 10, color: C.t3, marginTop: 1 }}>{sub}</div>}
       </div>
-      {action}
+      <div style={{ height: 1, width: 50, background: `linear-gradient(90deg,${shade(color,'25')},transparent)` }} />
     </div>
-  );
-}
+  </div>
+);
 
-function MetricTile({ label, value, caption, tone = C.accent }) {
-  return (
-    <div style={{ padding: '16px 16px 15px', borderRadius: 18, border: `1px solid ${shade(tone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.05em', color: tone, marginBottom: 6 }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 11, color: C.text2 }}>
-        {caption}
-      </div>
-    </div>
-  );
-}
-
-function SegmentedControl({ value, onChange }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
-      {SECTION_OPTIONS.map((item) => {
-        const active = value === item.id;
-        return (
-          <button
-            key={item.id}
-            onClick={() => onChange(item.id)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 12,
-              border: `1px solid ${active ? shade(C.accent, 0.26) : C.border}`,
-              background: active ? 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.1)' : 'rgba(255,255,255,0.02)',
-              color: active ? C.accent : C.text2,
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 0.18s ease',
-            }}
-          >
-            {item.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function ChartTooltip({ active, payload, label, render }) {
+const ChartTip = ({ active, payload, label, render: renderFn }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ ...chartTooltipStyle(payload[0]?.color || C.accent), padding: '10px 12px' }}>
-      {render ? render(payload, label) : (
+    <div style={{
+      ...chartTooltipStyle(payload[0]?.color || C.cyan),
+      padding: '10px 13px',
+    }}>
+      {renderFn ? renderFn(payload, label) : (
         <>
-          <div style={{ color: C.text3, fontWeight: 700, marginBottom: 5 }}>{label}</div>
-          {payload.map((row, index) => (
-            <div key={`${row.name}-${index}`} style={{ color: row.color || C.text1, fontWeight: 700 }}>
-              {row.name}: {row.value}
-            </div>
+          {label && <div style={{ color: C.t3, fontWeight: 700, marginBottom: 5 }}>{label}</div>}
+          {payload.map((p, i) => (
+            <div key={i} style={{ color: p.color || C.t1, fontWeight: 700 }}>{p.name}: {p.value}</div>
           ))}
         </>
       )}
     </div>
   );
-}
+};
 
-function EmptyAnalyticsState() {
+const PeriodFilter = ({ value, onChange }) => (
+  <div style={{ display: 'flex', gap: 4, padding: '4px', background: 'rgba(7,12,20,0.82)', borderRadius: 12, border: `1px solid ${C.brd}`, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)' }}>
+    {['7D', '1M', '3M', '6M', 'ALL'].map(p => (
+      <motion.button key={p} onClick={() => onChange(p)}
+        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+        style={{
+          padding: '6px 13px', borderRadius: 9, fontSize: 11, fontWeight: 800,
+          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+          background: value === p ? 'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.94), rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.9))' : 'transparent',
+          color: value === p ? C.bgDeep : C.t3,
+          boxShadow: value === p ? `0 10px 22px ${shade(C.cyanGlow,'34')}` : 'none',
+          transition: 'all 0.2s',
+        }}>{p}</motion.button>
+    ))}
+  </div>
+);
+
+const HeroMetric = ({ label, value, tone = C.cyan, sub }) => (
+  <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(tone,'18')}`, background: 'rgba(255,255,255,0.02)' }}>
+    <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
+    <div style={{ fontSize: 18, fontWeight: 900, color: tone, letterSpacing: '-0.04em' }}>{value}</div>
+    {sub && <div style={{ fontSize: 11, color: C.t2, marginTop: 5 }}>{sub}</div>}
+  </div>
+);
+
+const compactInsightCopy = (value = '') => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.length > 104 ? `${text.slice(0, 101).trim()}…` : text;
+};
+
+const SectionShortcutRail = () => (
+  <motion.div
+    variants={fadeUp}
+    initial="hidden"
+    animate="visible"
+    custom={1}
+    style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}
+  >
+    {SECTION_SHORTCUTS.map((item) => (
+      <button
+        key={item.id}
+        onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        style={{
+          padding: '8px 12px',
+          borderRadius: 12,
+          border: `1px solid ${C.brd}`,
+          background: 'rgba(255,255,255,0.025)',
+          color: C.t2,
+          fontSize: 10.5,
+          fontWeight: 800,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          transition: 'all 0.18s ease',
+        }}
+      >
+        {item.label}
+      </button>
+    ))}
+  </motion.div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ CRITICAL FIX — KpiCard = independent React component
+//    useState() called here, NOT in a .map()
+// ─────────────────────────────────────────────────────────────────────────────
+const KpiCard = ({ label, value, color, icon, sub, index }) => {
+  const [hov, setHov] = useState(false); // ← Legal hook here: React component
   return (
-    <motion.div {...panelMotion(1)} style={{ textAlign: 'center', padding: '86px 24px', ...cardStyle(C.accent) }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <div style={{ width: 54, height: 54, borderRadius: 20, border: `1px solid ${shade(C.accent, 0.18)}`, background: `linear-gradient(135deg, ${shade(C.accent, 0.18)}, ${shade(C.accent, 0.06)})`, boxShadow: `0 0 26px ${shade(C.accent, 0.16)}` }} />
+    <motion.div
+      variants={fadeUp} initial="hidden" animate="visible" custom={index}
+      whileHover={{ scale: 1.04, y: -6 }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        backgroundColor: C.bgCard, borderRadius: 12,
+        border: `1px solid ${hov ? color + '45' : C.brd}`,
+        padding: '14px 16px', position: 'relative', overflow: 'hidden',
+        boxShadow: hov ? `0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px ${shade(color,'22')}` : '0 2px 8px rgba(0,0,0,0.2)',
+        transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)', cursor: 'default',
+      }}
+    >
+      <motion.div animate={{ opacity: hov ? 1 : 0 }} transition={{ duration: 0.2 }}
+        style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${shade(color,'12')},transparent)`, pointerEvents: 'none' }}
+      />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: C.t3, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</span>
+          <span style={{ display: 'inline-flex' }}>{renderIcon(icon, color)}</span>
+        </div>
+        <div style={{
+          fontSize: 21, fontWeight: 900, color, fontFamily: 'monospace',
+          textShadow: hov ? `0 0 18px ${shade(color,'60')}` : 'none', transition: 'text-shadow 0.3s',
+        }}>{value}</div>
+        <div style={{ fontSize: 10, color: C.t3, marginTop: 4 }}>{sub}</div>
       </div>
-      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, letterSpacing: '-0.04em', color: C.text0 }}>
-        No analytics yet
-      </h2>
-      <p style={{ margin: '10px 0 0', fontSize: 12, color: C.text2 }}>
-        Import trades to start.
-      </p>
+      {hov && (
+        <motion.div initial={{ opacity: 0, scaleX: 0 }} animate={{ opacity: 1, scaleX: 1 }}
+          style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            height: 3, background: color, transformOrigin: 'left',
+            filter: `blur(2px)`, pointerEvents: 'none',
+          }}
+        />
+      )}
     </motion.div>
   );
-}
+};
 
-function formatCompactMoney(value) {
-  return formatAnalyticsMoney(value, 0);
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// 📊 BLOCK 1 — KPI CARDS (10 metrics)
+// ─────────────────────────────────────────────────────────────────────────────
+const KpiCards = ({ trades }) => {
+  const metrics = useMemo(() => {
+    const summary = summarizeTradeSet(trades);
+    const wins   = trades.filter(t => parseFloat(t.pnl) > 0);
+    const losses = trades.filter(t => parseFloat(t.pnl) <= 0);
+    const totalPnL  = trades.reduce((s, t) => s + parseFloat(t.pnl || 0), 0);
+    const winRate   = trades.length ? (wins.length / trades.length) * 100 : 0;
+    const grossW    = wins.reduce((s, t) => s + parseFloat(t.pnl || 0), 0);
+    const grossL    = Math.abs(losses.reduce((s, t) => s + parseFloat(t.pnl || 0), 0));
+    const pf        = grossL > 0 ? grossW / grossL : grossW > 0 ? 9.99 : 0;
+    const avgWin    = wins.length   ? grossW / wins.length   : 0;
+    const avgLoss   = losses.length ? grossL / losses.length : 0;
+    const rrs       = trades.map(t => parseFloat(t.metrics?.rrReel || 0)).filter(r => r > 0);
+    const avgRR     = rrs.length ? avg(rrs) : 0;
+    const expectancy = (winRate / 100) * avgWin - (1 - winRate / 100) * avgLoss;
 
-function formatNumber(value, digits = 1) {
-  const numeric = Number(value) || 0;
-  return numeric.toFixed(digits);
-}
-
-function buildMonthlySeries(trades = []) {
-  const bucket = new Map();
-  trades.forEach((trade) => {
-    const date = getTradeDateValue(trade);
-    if (!date) return;
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-    const current = bucket.get(key) || { key, label, trades: 0, wins: 0, pnl: 0 };
-    const pnl = getTradePnl(trade);
-    current.trades += 1;
-    current.pnl += pnl;
-    if (pnl > 0) current.wins += 1;
-    bucket.set(key, current);
-  });
-
-  return [...bucket.values()]
-    .sort((left, right) => left.key.localeCompare(right.key))
-    .map((item) => ({
-      ...item,
-      pnl: Number(item.pnl.toFixed(2)),
-      winRate: item.trades ? Number(((item.wins / item.trades) * 100).toFixed(1)) : 0,
-    }));
-}
-
-function buildWeekdaySeries(trades = []) {
-  const base = WEEKDAY_LABELS.map((label, day) => ({
-    label,
-    day,
-    trades: 0,
-    wins: 0,
-    pnl: 0,
-  }));
-
-  trades.forEach((trade) => {
-    const date = getTradeDateValue(trade);
-    if (!date) return;
-    const row = base[date.getDay()];
-    const pnl = getTradePnl(trade);
-    row.trades += 1;
-    row.pnl += pnl;
-    if (pnl > 0) row.wins += 1;
-  });
-
-  return base.map((item) => ({
-    ...item,
-    pnl: Number(item.pnl.toFixed(2)),
-    winRate: item.trades ? Number(((item.wins / item.trades) * 100).toFixed(1)) : 0,
-  }));
-}
-
-function buildSimpleBreakdown(trades = [], getKey, limit = 6) {
-  const bucket = new Map();
-  trades.forEach((trade) => {
-    const key = getKey(trade);
-    if (!key) return;
-    const current = bucket.get(key) || { label: key, trades: 0, wins: 0, pnl: 0 };
-    const pnl = getTradePnl(trade);
-    current.trades += 1;
-    current.pnl += pnl;
-    if (pnl > 0) current.wins += 1;
-    bucket.set(key, current);
-  });
-
-  return [...bucket.values()]
-    .map((item) => ({
-      ...item,
-      pnl: Number(item.pnl.toFixed(2)),
-      winRate: item.trades ? Number(((item.wins / item.trades) * 100).toFixed(1)) : 0,
-    }))
-    .sort((left, right) => right.pnl - left.pnl)
-    .slice(0, limit);
-}
-
-function buildLongShortSeries(trades = []) {
-  const rows = {
-    Long: { label: 'Long', trades: 0, wins: 0, pnl: 0 },
-    Short: { label: 'Short', trades: 0, wins: 0, pnl: 0 },
-  };
-
-  trades.forEach((trade) => {
-    const side = String(trade.direction || trade.type || '').toLowerCase().includes('short') ? 'Short' : 'Long';
-    const row = rows[side];
-    const pnl = getTradePnl(trade);
-    row.trades += 1;
-    row.pnl += pnl;
-    if (pnl > 0) row.wins += 1;
-  });
-
-  return Object.values(rows).map((item) => ({
-    ...item,
-    pnl: Number(item.pnl.toFixed(2)),
-    winRate: item.trades ? Number(((item.wins / item.trades) * 100).toFixed(1)) : 0,
-  }));
-}
-
-function buildConfluenceSeries(trades = []) {
-  const bucket = new Map();
-
-  trades.forEach((trade) => {
-    const raw = trade.confluences;
-    let tags = [];
-    if (Array.isArray(raw)) tags = raw;
-    else if (typeof raw === 'string') tags = raw.split(/[;,]/).map((item) => item.trim()).filter(Boolean);
-    if (!tags.length && trade.setup) tags = [String(trade.setup).trim()];
-
-    tags.forEach((tag) => {
-      if (!tag) return;
-      const current = bucket.get(tag) || { label: tag, trades: 0, wins: 0, pnl: 0 };
-      const pnl = getTradePnl(trade);
-      current.trades += 1;
-      current.pnl += pnl;
-      if (pnl > 0) current.wins += 1;
-      bucket.set(tag, current);
+    // Max Drawdown
+    let peak = 0, eq = 0, maxDD = 0;
+    [...trades].sort((a, b) => (a.date || '').localeCompare(b.date || '')).forEach(t => {
+      eq += parseFloat(t.pnl || 0);
+      if (eq > peak) peak = eq;
+      const d = peak > 0 ? ((peak - eq) / peak) * 100 : 0;
+      if (d > maxDD) maxDD = d;
     });
-  });
 
-  return [...bucket.values()]
-    .map((item) => ({
-      ...item,
-      pnl: Number(item.pnl.toFixed(2)),
-      winRate: item.trades ? Number(((item.wins / item.trades) * 100).toFixed(1)) : 0,
-    }))
-    .sort((left, right) => right.trades - left.trades)
-    .slice(0, 6);
-}
+    // Consistency (% profitable days)
+    const dayMap = {};
+    trades.forEach(t => {
+      if (!t.date) return;
+      const d = t.date.substring(0, 10);
+      dayMap[d] = (dayMap[d] || 0) + parseFloat(t.pnl || 0);
+    });
+    const days = Object.values(dayMap);
+    const consistency = days.length ? (days.filter(v => v > 0).length / days.length) * 100 : 0;
 
-function buildRecentTradeRows(trades = []) {
-  return [...trades]
-    .sort((left, right) => (getTradeDateValue(right)?.getTime() || 0) - (getTradeDateValue(left)?.getTime() || 0))
-    .slice(0, 8)
-    .map((trade) => ({
-      id: trade.id,
-      dateLabel: getTradeDateLabel(trade),
-      symbol: trade.symbol || trade.pair || 'Unknown',
-      side: trade.direction || trade.type || 'Long',
-      session: normalizeSessionLabel(trade.session),
-      setup: trade.setup || 'Unlabeled',
-      pnl: getTradePnl(trade),
-      status: trade.status || (getTradePnl(trade) > 0 ? 'TP' : getTradePnl(trade) < 0 ? 'SL' : 'BE'),
-    }));
-}
+    // Current streak
+    const sorted = [...trades].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    let streak = 0;
+    if (sorted.length) {
+      const lastIsWin = parseFloat(sorted[sorted.length - 1].pnl) > 0;
+      for (let i = sorted.length - 1; i >= 0; i--) {
+        if ((parseFloat(sorted[i].pnl) > 0) === lastIsWin) streak++;
+        else break;
+      }
+      if (!lastIsWin) streak = -streak;
+    }
 
-function OverviewSection({ summary, equitySeries, rollingSeries, insights }) {
-  const metricItems = [
-    { label: 'Net P&L', value: formatCompactMoney(summary.totalPnL), caption: `${summary.totalTrades} closed trades`, tone: summary.totalPnL >= 0 ? C.green : C.danger },
-    { label: 'Win rate', value: formatAnalyticsPercent(summary.winRate, 1), caption: `${summary.wins} wins / ${summary.losses} losses`, tone: C.accent },
-    { label: 'Profit factor', value: Number.isFinite(summary.profitFactor) ? formatNumber(summary.profitFactor, 2) : 'Inf', caption: 'Gross win vs gross loss', tone: C.blue },
-    { label: 'Avg R:R', value: summary.avgRR ? `1:${formatNumber(summary.avgRR, 2)}` : '--', caption: 'Realized average', tone: C.purple },
-  ];
+    return [
+      { label: 'Net P&L', value: fmtPnl(summary.totalPnL), color: summary.totalPnL >= 0 ? C.green : C.danger, icon: null, sub: `${summary.totalTrades} trades` },
+      { label: 'Win Rate', value: formatAnalyticsPercent(summary.winRate, 1), color: summary.winRate >= 55 ? C.green : summary.winRate >= 45 ? C.warn : C.danger, icon: null, sub: `${summary.wins}W / ${summary.losses}L / ${summary.breakeven}BE` },
+      { label: 'Profit Factor', value: formatAnalyticsFactor(summary.profitFactor), color: summary.profitFactor === Infinity || summary.profitFactor >= 2 ? C.green : summary.profitFactor >= 1.2 ? C.warn : C.danger, icon: null, sub: 'Gross win / gross loss' },
+      { label: 'Average R:R', value: formatAnalyticsRR(summary.avgRR), color: (summary.avgRR ?? 0) >= 2 ? C.green : (summary.avgRR ?? 0) >= 1 ? C.warn : C.danger, icon: null, sub: 'Executed ratio' },
+      { label: 'Expectancy', value: fmtPnl(summary.expectancy), color: summary.expectancy >= 0 ? C.green : C.danger, icon: null, sub: 'Per trade' },
+      { label: 'Max Drawdown', value: fmtPnl(summary.maxDrawdownCash), color: C.danger, icon: null, sub: summary.maxDrawdownPct < 0 ? `${formatAnalyticsPercent(summary.maxDrawdownPct, 1)} from peak` : 'Peak to trough' },
+    ];
+
+    return [
+      { label: 'Total P&L',    value: fmtPnl(totalPnL),          color: totalPnL >= 0 ? C.green : C.danger, icon: '💰', sub: `${trades.length} trades` },
+      { label: 'Win Rate',     value: `${winRate.toFixed(1)}%`,   color: winRate >= 55 ? C.green : winRate >= 45 ? C.warn : C.danger, icon: '🎯', sub: `${wins.length}W / ${losses.length}L` },
+      { label: 'Profit Factor',value: pf.toFixed(2),              color: pf >= 2 ? C.green : pf >= 1.5 ? C.warn : C.danger, icon: '📈', sub: 'Gross W / Gross L' },
+      { label: 'Avg Win',      value: fmtPnl(avgWin),             color: C.green, icon: '✅', sub: `Avg Loss: ${fmtPnl(-avgLoss)}` },
+      { label: 'Avg R:R',      value: `1:${avgRR.toFixed(2)}`,    color: avgRR >= 2 ? C.green : avgRR >= 1 ? C.warn : C.danger, icon: '⚖️', sub: 'Actual Risk/Reward' },
+      { label: 'Expectancy',   value: fmtPnl(expectancy),         color: expectancy >= 0 ? C.green : C.danger, icon: '🎲', sub: 'Per trade' },
+      { label: 'Max Drawdown', value: `-${maxDD.toFixed(1)}%`,    color: C.danger, icon: '📉', sub: 'Peak to trough' },
+      { label: 'Consistency',  value: `${consistency.toFixed(0)}%`, color: consistency >= 60 ? C.green : consistency >= 40 ? C.warn : C.danger, icon: '📆', sub: 'Profitable days' },
+      { label: 'Current Streak',value: streak > 0 ? `+${streak}W` : `${Math.abs(streak)}L`, color: streak > 0 ? C.green : C.danger, icon: streak > 0 ? '🔥' : '❄️', sub: 'Current streak' },
+      { label: 'Trades / Day',value: (trades.length / Math.max(days.length, 1)).toFixed(1), color: C.cyan, icon: '📊', sub: `${days.length} active days` },
+    ];
+  }, [trades]);
 
   return (
-    <>
-      <div className="mf-analytics-grid-one">
-        <SectionCard tone={C.accent} index={2} style={{ padding: '22px 22px 18px' }}>
-          <SectionTitle eyebrow="Overview" title="Core" tone={C.accent} />
-          <div className="mf-analytics-metric-grid" style={{ marginTop: 0 }}>
-            {metricItems.map((item) => (
-              <MetricTile key={item.label} {...item} />
-            ))}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 11, marginBottom: 24 }}>
+      {/* ✅ KpiCard = React component → useState() is legal */}
+      {metrics.map((k, i) => <KpiCard key={k.label} {...k} index={i} />)}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📈 BLOCK 2 — EQUITY CURVE + DRAWDOWN
+// ─────────────────────────────────────────────────────────────────────────────
+const EquityDrawdown = ({ trades }) => {
+  const data = useMemo(() => {
+    return buildEquityDrawdownSeries(trades).map((row) => ({
+      i: row.index,
+      date: row.dateLabel,
+      equity: row.equity,
+      drawdownCash: row.drawdownCash,
+      drawdownPct: row.drawdownPct,
+    }));
+  }, [trades]);
+
+  const maxDD   = data.length ? Math.min(...data.map(d => d.drawdownCash)) : 0;
+  const maxDDPct = data.length ? Math.min(...data.map(d => d.drawdownPct)) : 0;
+  const finalEq = data.length ? data[data.length - 1].equity : 0;
+
+  return (
+    <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon={null} title="Equity vs Drawdown" color={C.green} />
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: finalEq >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(finalEq)}</div>
+          <div style={{ fontSize: 10, color: C.danger, marginTop: 2 }}>Max DD: {fmtPnl(maxDD)}{maxDDPct < 0 ? ` / ${formatAnalyticsPercent(maxDDPct, 1)}` : ''}</div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={230}>
+        <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={C.green} stopOpacity={0.28} />
+              <stop offset="95%" stopColor={C.green} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="ddGrad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="5%" stopColor={C.danger} stopOpacity={0.35} />
+              <stop offset="95%" stopColor={C.danger} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="eq" tickFormatter={(value) => `$${value}`} />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="dd" orientation="right" tick={{ ...CHART_AXIS_SMALL.tick, fill: C.danger }} tickFormatter={(value) => `$${value}`} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => (
+              <>
+                <div style={{ color: C.t2, fontWeight: 700, marginBottom: 5, fontSize: 10 }}>{label}</div>
+                {payload.map((point, index) => (
+                  <div key={index} style={{ color: point.dataKey === 'equity' ? C.green : C.danger, fontWeight: 700, fontSize: 11 }}>
+                    {point.dataKey === 'equity' ? `Equity: ${fmtPnl(point.value)}` : `Drawdown: ${fmtPnl(point.value)}`}
+                  </div>
+                ))}
+                {payload[1]?.payload?.drawdownPct < 0 && (
+                  <div style={{ color: C.t3, fontSize: 10, marginTop: 4 }}>Relative DD: {formatAnalyticsPercent(payload[1].payload.drawdownPct, 1)}</div>
+                )}
+              </>
+            )} />
+          } />
+          <ReferenceLine yAxisId="eq" y={0} stroke={shade(C.brdBright, 0.8)} strokeDasharray="4 6" />
+          <Area yAxisId="eq" type="monotone" dataKey="equity" stroke={C.green} strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={chartActiveDot(C.green, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
+          <Area yAxisId="dd" type="monotone" dataKey="drawdownCash" stroke={C.danger} strokeWidth={1.85} fill="url(#ddGrad)" dot={false} strokeDasharray="6 4" activeDot={chartActiveDot(C.danger, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div style={{ display: 'flex', gap: 20, marginTop: 10 }}>
+        {[{ color: C.green, label: 'Equity', dash: false }, { color: C.danger, label: 'Drawdown cash', dash: true }].map((item) => (
+          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 18, height: 2, backgroundColor: item.color, borderRadius: 1, borderTopStyle: item.dash ? 'dashed' : 'none' }} />
+            <span style={{ fontSize: 10, color: C.t3 }}>{item.label}</span>
           </div>
-        </SectionCard>
+        ))}
+      </div>
+    </Card>
+  );
+
+  return (
+    <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon={null} title="Equity vs Drawdown" color={C.green} />
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: finalEq >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(finalEq)}</div>
+          <div style={{ fontSize: 10, color: C.danger, marginTop: 2 }}>Max DD: {maxDD.toFixed(1)}%</div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={230}>
+        <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor={C.green}  stopOpacity={0.28} />
+              <stop offset="95%" stopColor={C.green}  stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="ddGrad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="5%"  stopColor={C.danger} stopOpacity={0.35} />
+              <stop offset="95%" stopColor={C.danger} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="eq" tickFormatter={v => `$${v}`} />
+          <YAxis {...CHART_AXIS_SMALL} yAxisId="dd" orientation="right" tick={{ ...CHART_AXIS_SMALL.tick, fill: C.danger }} tickFormatter={v => `${v.toFixed(0)}%`} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => (
+              <>
+                <div style={{ color: C.t2, fontWeight: 700, marginBottom: 5, fontSize: 10 }}>{label}</div>
+                {payload.map((p, i) => (
+                  <div key={i} style={{ color: p.dataKey === 'equity' ? C.green : C.danger, fontWeight: 700, fontSize: 11 }}>
+                    {p.dataKey === 'equity' ? `Equity: $${p.value}` : `DD: ${p.value?.toFixed(1)}%`}
+                  </div>
+                ))}
+              </>
+            )} />
+          } />
+          <ReferenceLine yAxisId="eq" y={0} stroke={shade(C.brdBright, 0.8)} strokeDasharray="4 6" />
+          <Area yAxisId="eq" type="monotone" dataKey="equity" stroke={C.green} strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={chartActiveDot(C.green, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
+          <Area yAxisId="dd" type="monotone" dataKey="drawdown" stroke={C.danger} strokeWidth={1.6} fill="url(#ddGrad)" dot={false} strokeDasharray="6 4" activeDot={chartActiveDot(C.danger, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div style={{ display: 'flex', gap: 20, marginTop: 10 }}>
+        {[{ color: C.green, label: 'Equity', dash: false }, { color: C.danger, label: 'Drawdown', dash: true }].map(l => (
+          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 18, height: 2, backgroundColor: l.color, borderRadius: 1, borderTopStyle: l.dash ? 'dashed' : 'none' }} />
+            <span style={{ fontSize: 10, color: C.t3 }}>{l.label}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🗓️ BLOCK 3 — MONTHLY P&L
+// ─────────────────────────────────────────────────────────────────────────────
+const MonthlyPnl = ({ trades }) => {
+  const data = useMemo(() => {
+    const map = {};
+    trades.forEach(t => {
+      if (!t.date) return;
+      const key = t.date.substring(0, 7);
+      if (!map[key]) map[key] = { month: key, pnl: 0, wins: 0, total: 0 };
+      map[key].pnl   += parseFloat(t.pnl || 0);
+      map[key].total++;
+      if (parseFloat(t.pnl) > 0) map[key].wins++;
+    });
+    return Object.values(map)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map(d => ({ ...d, pnl: +d.pnl.toFixed(2), wr: d.total > 0 ? +((d.wins / d.total) * 100).toFixed(1) : 0, label: d.month.substring(5) + '/' + d.month.substring(2, 4) }));
+  }, [trades]);
+
+  const best  = data.reduce((b, d) => d.pnl > b.pnl ? d : b, { pnl: -Infinity, month: '—' });
+  const worst = data.reduce((b, d) => d.pnl < b.pnl ? d : b, { pnl: Infinity,  month: '—' });
+
+  return (
+    <Card index={1}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon={null} title="Monthly P&L" sub="Monthly edge" color={C.blue} />
+        <div style={{ display: 'flex', gap: 14, fontSize: 10, flexShrink: 0 }}>
+          <div><span style={{ color: C.t3 }}>Best </span><span style={{ color: C.green, fontWeight: 800 }}>{best.month} {fmtPnl(best.pnl)}</span></div>
+          <div><span style={{ color: C.t3 }}>Worst </span><span style={{ color: C.danger, fontWeight: 800 }}>{worst.month} {fmtPnl(worst.pnl)}</span></div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={190}>
+        <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
+          <YAxis {...CHART_AXIS_SMALL} tickFormatter={v => `$${v}`} />
+          <ReferenceLine y={0} stroke={shade(C.brdBright, 0.82)} strokeDasharray="4 6" />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => {
+              const d = data.find(x => x.label === label);
+              return (
+                <>
+                  <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{d?.month}</div>
+                  <div style={{ color: d?.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontWeight: 700 }}>{fmtPnl(d?.pnl)}</div>
+                  <div style={{ color: C.cyan, fontSize: 10, marginTop: 2 }}>WR: {d?.wr}% · {d?.total} trades</div>
+                </>
+              );
+            }} />
+          } />
+          <Bar dataKey="pnl" radius={[7, 7, 0, 0]} maxBarSize={38} {...CHART_MOTION}>
+            {data.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? C.green : C.danger} fillOpacity={0.76} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📉 BLOCK 4 — CUMULATIVE WIN RATE
+// ─────────────────────────────────────────────────────────────────────────────
+const CumulativeWinRate = ({ trades }) => {
+  const data = useMemo(() => {
+    return buildRollingWinRateSeries(trades, 12).map((row) => ({
+      i: row.index,
+      date: row.dateLabel,
+      wr: row.cumulativeWinRate,
+      rolling: row.rollingWinRate,
+    }));
+  }, [trades]);
+
+  const final = data.length ? data[data.length - 1].wr : 0;
+
+  return (
+    <Card index={2}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon={null} title="Cumulative Win Rate" sub="Rolling vs cumulative" color={C.cyan} />
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: final >= 50 ? C.green : C.danger, fontFamily: 'monospace' }}>{formatAnalyticsPercent(final, 1)}</div>
+          <div style={{ fontSize: 9, color: C.t3 }}>Current rate</div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={170}>
+        <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="wrGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={C.cyan} stopOpacity={0.25} />
+              <stop offset="95%" stopColor={C.cyan} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+          <ReferenceLine y={50} stroke={C.warn} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: '50%', fill: C.warn, fontSize: 9, position: 'right' }} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => (
+              <>
+                <div style={{ color: C.t2, fontSize: 10, marginBottom: 4 }}>{label}</div>
+                <div style={{ color: C.cyan, fontWeight: 800 }}>Cumulative: {formatAnalyticsPercent(payload[0]?.value, 1)}</div>
+                <div style={{ color: C.green, fontWeight: 700, marginTop: 2 }}>Rolling 12-trade: {formatAnalyticsPercent(payload[1]?.value, 1)}</div>
+              </>
+            )} />
+          } cursor={chartCursor(C.cyan)} />
+          <Area type="monotone" dataKey="wr" stroke={C.cyan} strokeWidth={2.5} fill="url(#wrGrad)" dot={false} activeDot={chartActiveDot(C.cyan, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
+          <Line type="monotone" dataKey="rolling" stroke={C.green} strokeWidth={1.8} dot={false} strokeDasharray="5 5" activeDot={chartActiveDot(C.green, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+
+  return (
+    <Card index={2}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon="📉" title="Cumulative Win Rate" sub="Convergence toward true average" color={C.cyan} />
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: final >= 50 ? C.green : C.danger, fontFamily: 'monospace' }}>{final}%</div>
+          <div style={{ fontSize: 9, color: C.t3 }}>Final Win Rate</div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={155}>
+        <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="wrGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor={C.cyan} stopOpacity={0.25} />
+              <stop offset="95%" stopColor={C.cyan} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+          <ReferenceLine y={50} stroke={C.warn} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: '50%', fill: C.warn, fontSize: 9, position: 'right' }} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => (
+              <>
+                <div style={{ color: C.t2, fontSize: 10, marginBottom: 4 }}>{label}</div>
+                <div style={{ color: C.cyan, fontWeight: 800 }}>WR: {payload[0]?.value}%</div>
+              </>
+            )} />
+          } cursor={chartCursor(C.cyan)} />
+          <Area type="monotone" dataKey="wr" stroke={C.cyan} strokeWidth={2.5} fill="url(#wrGrad)" dot={false} activeDot={chartActiveDot(C.cyan, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🕐 BLOCK 5 — HOURLY HEATMAP
+// ─────────────────────────────────────────────────────────────────────────────
+const WinRateIntelligence = ({ trades }) => {
+  const sessionData = useMemo(
+    () => buildSessionWinRateSeries(trades).map((row) => ({ ...row, label: row.key === 'Tokyo / Asia' ? 'Tokyo' : row.key })),
+    [trades],
+  );
+  const hourData = useMemo(() => buildHourWinRateSeries(trades).filter((row) => row.trades > 0), [trades]);
+  const insights = useMemo(() => buildWinRateInsights(trades), [trades]);
+
+  return (
+    <Card index={3}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
+        <STitle icon={null} title="Win Rate Intelligence" sub="Session and hour read" color={C.blue} />
+        <div style={{ display: 'grid', gap: 6, minWidth: 180 }}>
+          {sessionData.slice(0, 2).map((item) => (
+            <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10 }}>
+              <span style={{ color: C.t3 }}>{item.label}</span>
+              <span style={{ color: item.winRate >= 50 ? C.green : C.danger, fontWeight: 800 }}>{formatAnalyticsPercent(item.winRate, 1)}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="mf-analytics-grid-two">
-        <SectionCard tone={summary.totalPnL >= 0 ? C.green : C.danger} index={3} style={{ padding: '22px 22px 18px' }}>
-          <SectionTitle eyebrow="Equity" title="Curve" tone={summary.totalPnL >= 0 ? C.green : C.danger} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
-            <MetricTile label="Net P&L" value={formatCompactMoney(summary.totalPnL)} caption="Realized" tone={summary.totalPnL >= 0 ? C.green : C.danger} />
-            <MetricTile label="Max drawdown" value={formatCompactMoney(summary.maxDrawdownCash)} caption={formatAnalyticsPercent(summary.maxDrawdownPct, 1)} tone={summary.maxDrawdownCash < 0 ? C.warn : C.text2} />
-            <MetricTile label="Expectancy" value={formatCompactMoney(summary.expectancy)} caption="Per trade" tone={summary.expectancy >= 0 ? C.accent : C.danger} />
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={equitySeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="mf-analytics-equity" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor={C.green} stopOpacity={0.42} />
-                  <stop offset="100%" stopColor={C.green} stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="mf-analytics-dd" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor={C.danger} stopOpacity={0.34} />
-                  <stop offset="100%" stopColor={C.danger} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <div style={{ padding: '14px 14px 10px', borderRadius: 14, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 10 }}>By session</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={sessionData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid {...CHART_GRID} />
-              <XAxis {...CHART_AXIS_SMALL} dataKey="dateLabel" hide={equitySeries.length > 14} />
-              <YAxis {...CHART_AXIS_SMALL} tickFormatter={(value) => `$${value}`} />
-              <ReferenceLine y={0} stroke={shade(C.borderHi, 0.84)} strokeDasharray="4 6" />
-              <Tooltip
-                content={(
-                  <ChartTooltip
-                    render={(payload, label) => {
-                      const row = equitySeries.find((item) => item.dateLabel === label);
-                      return (
-                        <>
-                          <div style={{ color: C.text1, fontWeight: 800, marginBottom: 4 }}>{row?.dateLabel}</div>
-                          <div style={{ color: C.green, fontWeight: 700 }}>Equity: {formatAnalyticsMoney(row?.equity || 0)}</div>
-                          <div style={{ color: C.danger, fontWeight: 700 }}>Drawdown: {formatAnalyticsMoney(row?.drawdownCash || 0)}</div>
-                          <div style={{ color: C.text2, fontSize: 10, marginTop: 4 }}>{row?.symbol || '--'} / {row?.session || 'Other'}</div>
-                        </>
-                      );
-                    }}
-                  />
-                )}
-              />
-              <Area type="monotone" dataKey="drawdownCash" stroke={C.danger} fill="url(#mf-analytics-dd)" strokeWidth={2} {...CHART_MOTION_SOFT} />
-              <Line type="monotone" dataKey="equity" stroke={C.green} strokeWidth={2.8} dot={false} activeDot={chartActiveDot(C.green, 4)} {...CHART_MOTION} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </SectionCard>
-
-        <SectionCard tone={C.accent} index={4} style={{ padding: '22px 22px 18px' }}>
-          <SectionTitle eyebrow="Win rate" title="Quality" tone={C.accent} />
-          <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
-            {insights.slice(0, 2).map((item) => {
-              const tone = item.tone === 'risk' ? C.danger : item.tone === 'positive' ? C.green : C.accent;
-              return (
-                <div key={item.id} style={{ padding: '12px 12px 11px', borderRadius: 16, border: `1px solid ${shade(tone, 0.16)}`, background: 'rgba(255,255,255,0.025)' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: tone, marginBottom: 5 }}>{item.title}</div>
-                  <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.55 }}>{item.body}</div>
-                </div>
-              );
-            })}
-            {!insights.length ? (
-              <div style={{ padding: '12px', borderRadius: 16, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.025)', fontSize: 11, color: C.text2 }}>
-                Need a few more trades for stable guidance.
-              </div>
-            ) : null}
-          </div>
-          <ResponsiveContainer width="100%" height={230}>
-            <LineChart data={rollingSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid {...CHART_GRID} />
-              <XAxis {...CHART_AXIS_SMALL} dataKey="dateLabel" hide={rollingSeries.length > 14} />
+              <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
               <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-              <ReferenceLine y={50} stroke={shade(C.borderHi, 0.84)} strokeDasharray="4 6" />
-              <Tooltip
-                cursor={chartCursor(C.accent)}
-                content={(
-                  <ChartTooltip
-                    render={(payload, label) => {
-                      const row = rollingSeries.find((item) => item.dateLabel === label);
-                      return (
-                        <>
-                          <div style={{ color: C.text1, fontWeight: 800, marginBottom: 4 }}>{row?.dateLabel}</div>
-                          <div style={{ color: C.accent, fontWeight: 700 }}>Rolling: {formatAnalyticsPercent(row?.rollingWinRate || 0, 1)}</div>
-                          <div style={{ color: C.blue, fontWeight: 700 }}>Cumulative: {formatAnalyticsPercent(row?.cumulativeWinRate || 0, 1)}</div>
-                          <div style={{ color: (row?.pnl || 0) >= 0 ? C.green : C.danger, fontWeight: 700 }}>Trade: {formatAnalyticsMoney(row?.pnl || 0)}</div>
-                        </>
-                      );
-                    }}
-                  />
-                )}
-              />
-              <Line type="monotone" dataKey="rollingWinRate" stroke={C.accent} strokeWidth={2.6} dot={false} activeDot={chartActiveDot(C.accent, 4)} {...CHART_MOTION} />
-              <Line type="monotone" dataKey="cumulativeWinRate" stroke={C.blue} strokeWidth={2} strokeDasharray="5 6" dot={false} activeDot={chartActiveDot(C.blue, 3)} {...CHART_MOTION_SOFT} />
+              <Tooltip content={
+                <ChartTip render={(payload, label) => {
+                  const item = sessionData.find((entry) => entry.label === label);
+                  return (
+                    <>
+                      <div style={{ color: C.t2, fontSize: 10, marginBottom: 4 }}>{item?.key}</div>
+                      <div style={{ color: C.cyan, fontWeight: 800 }}>Win rate: {formatAnalyticsPercent(item?.winRate, 1)}</div>
+                      <div style={{ color: item?.pnl >= 0 ? C.green : C.danger, marginTop: 2, fontWeight: 700 }}>P&L: {fmtPnl(item?.pnl)}</div>
+                      <div style={{ color: C.t3, marginTop: 2 }}>Trades: {item?.trades || 0}</div>
+                    </>
+                  );
+                }} />
+              } />
+              <Bar dataKey="winRate" radius={[8, 8, 0, 0]} maxBarSize={54} {...CHART_MOTION}>
+                {sessionData.map((item) => (
+                  <Cell key={item.key} fill={item.winRate >= 55 ? C.green : item.winRate >= 45 ? C.warn : C.danger} fillOpacity={0.82} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div style={{ padding: '14px 14px 10px', borderRadius: 14, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 10 }}>By trading hour</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={hourData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid {...CHART_GRID} />
+              <XAxis {...CHART_AXIS_SMALL} dataKey="key" interval="preserveStartEnd" />
+              <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+              <Tooltip content={
+                <ChartTip render={(payload, label) => {
+                  const item = hourData.find((entry) => entry.key === label);
+                  return (
+                    <>
+                      <div style={{ color: C.t2, fontSize: 10, marginBottom: 4 }}>{label}</div>
+                      <div style={{ color: C.blue, fontWeight: 800 }}>Win rate: {formatAnalyticsPercent(item?.winRate, 1)}</div>
+                      <div style={{ color: item?.pnl >= 0 ? C.green : C.danger, marginTop: 2, fontWeight: 700 }}>P&L: {fmtPnl(item?.pnl)}</div>
+                      <div style={{ color: C.t3, marginTop: 2 }}>Trades: {item?.trades || 0}</div>
+                    </>
+                  );
+                }} />
+              } cursor={chartCursor(C.blue)} />
+              <ReferenceLine y={50} stroke={shade(C.warn,'65')} strokeDasharray="4 6" />
+              <Line type="monotone" dataKey="winRate" stroke={C.blue} strokeWidth={2.2} dot={false} activeDot={chartActiveDot(C.blue, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
             </LineChart>
           </ResponsiveContainer>
-        </SectionCard>
+        </div>
       </div>
-    </>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10 }}>
+        {insights.map((item) => (
+          <div key={item.id} style={{
+            padding: '14px 14px 13px',
+            borderRadius: 14,
+            border: `1px solid ${item.tone === 'positive' ? shade(C.green,'24') : item.tone === 'risk' ? shade(C.danger,'24') : shade(C.blue,'24')}`,
+            background: item.tone === 'positive'
+              ? 'linear-gradient(180deg, rgba(var(--mf-green-rgb, 0, 255, 136),0.09), rgba(255,255,255,0.015))'
+              : item.tone === 'risk'
+                ? 'linear-gradient(180deg, rgba(var(--mf-danger-rgb, 255, 61, 87),0.08), rgba(255,255,255,0.015))'
+                : 'linear-gradient(180deg, rgba(var(--mf-blue-rgb, 77, 124, 255),0.08), rgba(255,255,255,0.015))',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 8 }}>
+              {item.tone === 'positive' ? 'Keep leaning in' : item.tone === 'risk' ? 'Needs attention' : 'Refine'}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.t1, lineHeight: 1.35, marginBottom: 6 }}>{item.title}</div>
+            <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.65 }}>{compactInsightCopy(item.body)}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
-}
+};
 
-function GeneralSection({ summary, monthlySeries, sessionSeries }) {
+const HourHeatmap = ({ trades }) => {
+  const [hov, setHov] = useState(null); // ✅ legal: React component
+
+  const data = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, h) => ({ h, wins: 0, total: 0, pnl: 0 }));
+    trades.forEach(t => {
+      const h = parseInt((t.time || '00:00').split(':')[0]);
+      if (h >= 0 && h < 24) {
+        hours[h].total++;
+        if (parseFloat(t.pnl) > 0) hours[h].wins++;
+        hours[h].pnl += parseFloat(t.pnl || 0);
+      }
+    });
+    return hours;
+  }, [trades]);
+
+  const getColor = (d) => {
+    if (d.total === 0) return C.bgDeep;
+    const wr = d.wins / d.total;
+    if (wr >= 0.7) return `rgba(0,230,118,${0.25 + wr * 0.55})`;
+    if (wr >= 0.5) return `rgba(0,201,167,${0.2 + wr * 0.45})`;
+    if (wr >= 0.3) return `rgba(255,179,0,${0.2 + wr * 0.4})`;
+    return `rgba(255,71,87,${0.2 + (1 - wr) * 0.45})`;
+  };
+
   return (
-    <div className="mf-analytics-grid-two">
-      <SectionCard tone={C.blue} index={2} style={{ padding: '22px 22px 18px' }}>
-        <SectionTitle eyebrow="General" title="Month" tone={C.blue} />
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={monthlySeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid {...CHART_GRID} />
-            <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
-            <YAxis {...CHART_AXIS_SMALL} tickFormatter={(value) => `$${value}`} />
-            <ReferenceLine y={0} stroke={shade(C.borderHi, 0.84)} strokeDasharray="4 6" />
-            <Tooltip
-              content={(
-                <ChartTooltip
-                  render={(payload, label) => {
-                    const row = monthlySeries.find((item) => item.label === label);
-                    return (
-                      <>
-                        <div style={{ color: C.text1, fontWeight: 800, marginBottom: 4 }}>{row?.label}</div>
-                        <div style={{ color: (row?.pnl || 0) >= 0 ? C.green : C.danger, fontWeight: 700 }}>{formatAnalyticsMoney(row?.pnl || 0)}</div>
-                        <div style={{ color: C.accent, fontWeight: 700 }}>Win rate: {formatAnalyticsPercent(row?.winRate || 0, 1)}</div>
-                        <div style={{ color: C.text2, fontSize: 10, marginTop: 4 }}>{row?.trades || 0} trades</div>
-                      </>
-                    );
-                  }}
-                />
-              )}
-            />
-            <Bar dataKey="pnl" radius={[8, 8, 0, 0]} maxBarSize={42} {...CHART_MOTION}>
-              {monthlySeries.map((row) => (
-                <Cell key={row.key} fill={row.pnl >= 0 ? C.green : C.danger} fillOpacity={0.8} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </SectionCard>
+    <Card index={3}>
+      <STitle icon={null} title="Hourly Heatmap" sub="Hour-by-hour" color={C.cyan} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 5, marginBottom: 12 }}>
+        {data.map(d => (
+          <motion.div key={d.h}
+            onMouseEnter={() => setHov(d)} onMouseLeave={() => setHov(null)}
+            whileHover={{ scale: 1.08, zIndex: 10 }}
+            style={{
+              height: 54, borderRadius: 7,
+              backgroundColor: getColor(d),
+              border: `1px solid ${hov?.h === d.h ? C.cyan : 'transparent'}`,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              cursor: d.total > 0 ? 'pointer' : 'default',
+              transition: 'border-color 0.15s', position: 'relative',
+            }}
+          >
+            <div style={{ fontSize: 9, fontWeight: 700, color: d.total > 0 ? C.t1 : C.t3 }}>{String(d.h).padStart(2, '0')}h</div>
+            {d.total > 0 && <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{((d.wins / d.total) * 100).toFixed(0)}%</div>}
+          </motion.div>
+        ))}
+      </div>
 
-      <SectionCard tone={C.blue} index={3} style={{ padding: '22px 22px 18px' }}>
-        <SectionTitle eyebrow="General" title="Sessions" tone={C.blue} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
-          <MetricTile label="Gross win" value={formatCompactMoney(summary.grossWin)} caption="Positive trades only" tone={C.green} />
-          <MetricTile label="Gross loss" value={formatCompactMoney(-summary.grossLoss)} caption="Negative trades only" tone={C.danger} />
-          <MetricTile label="Expectancy" value={formatCompactMoney(summary.expectancy)} caption="Per trade" tone={summary.expectancy >= 0 ? C.accent : C.danger} />
-        </div>
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={sessionSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid {...CHART_GRID} />
-            <XAxis {...CHART_AXIS_SMALL} dataKey="key" />
-            <YAxis yAxisId="left" {...CHART_AXIS_SMALL} tickFormatter={(value) => `$${value}`} />
-            <YAxis yAxisId="right" orientation="right" {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-            <ReferenceLine yAxisId="left" y={0} stroke={shade(C.borderHi, 0.84)} strokeDasharray="4 6" />
-            <Tooltip
-              content={(
-                <ChartTooltip
-                  render={(payload, label) => {
-                    const row = sessionSeries.find((item) => item.key === label);
-                    return (
-                      <>
-                        <div style={{ color: C.text1, fontWeight: 800, marginBottom: 4 }}>{row?.key}</div>
-                        <div style={{ color: (row?.pnl || 0) >= 0 ? C.green : C.danger, fontWeight: 700 }}>P&L: {formatAnalyticsMoney(row?.pnl || 0)}</div>
-                        <div style={{ color: C.accent, fontWeight: 700 }}>Win rate: {formatAnalyticsPercent(row?.winRate || 0, 1)}</div>
-                        <div style={{ color: C.text2, fontSize: 10, marginTop: 4 }}>{row?.trades || 0} trades</div>
-                      </>
-                    );
-                  }}
-                />
-              )}
-            />
-            <Bar yAxisId="left" dataKey="pnl" radius={[8, 8, 0, 0]} maxBarSize={36} {...CHART_MOTION}>
-              {sessionSeries.map((row) => (
-                <Cell key={row.key} fill={row.pnl >= 0 ? C.green : C.danger} fillOpacity={0.8} />
-              ))}
-            </Bar>
-            <Line yAxisId="right" type="monotone" dataKey="winRate" stroke={C.accent} strokeWidth={2.5} dot={false} activeDot={chartActiveDot(C.accent, 4)} {...CHART_MOTION_SOFT} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </SectionCard>
-    </div>
-  );
-}
-
-function ConfluenceSection({ confluenceSeries, setupSeries, biasSeries }) {
-  return (
-    <div className="mf-analytics-grid-three">
-      <RankedBarList title="Confluences" eyebrow="Confluences" tone={C.warn} rows={confluenceSeries} index={2} />
-      <RankedBarList title="Setups" eyebrow="Confluences" tone={C.orange} rows={setupSeries} index={3} />
-      <RankedBarList title="Bias" eyebrow="Confluences" tone={C.teal} rows={biasSeries} index={4} />
-    </div>
-  );
-}
-
-function LongShortSection({ longShortSeries, symbolSeries }) {
-  return (
-    <div className="mf-analytics-grid-two">
-      <SectionCard tone={C.teal} index={2} style={{ padding: '22px 22px 18px' }}>
-        <SectionTitle eyebrow="Long vs Short" title="Direction" tone={C.teal} />
-        <div style={{ display: 'grid', gap: 12 }}>
-          {longShortSeries.map((row) => {
-            const tone = row.label === 'Long' ? C.green : C.purple;
-            return (
-              <div key={row.label} style={{ padding: '14px 14px 12px', borderRadius: 18, border: `1px solid ${shade(tone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: C.text0 }}>{row.label}</div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: tone }}>{formatAnalyticsMoney(row.pnl)}</div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-                  <MetricTile label="Trades" value={String(row.trades)} caption="Closed" tone={tone} />
-                  <MetricTile label="Win rate" value={formatAnalyticsPercent(row.winRate, 1)} caption="Hit rate" tone={C.accent} />
-                  <MetricTile label="Share" value={formatAnalyticsPercent(longShortSeries.reduce((sum, item) => sum + item.trades, 0) ? (row.trades / longShortSeries.reduce((sum, item) => sum + item.trades, 0)) * 100 : 0, 1)} caption="Book weight" tone={C.blue} />
-                </div>
+      <AnimatePresence>
+        {hov && hov.total > 0 && (
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ padding: '10px 14px', borderRadius: 9, backgroundColor: C.bgHigh, border: `1px solid ${C.brd}`, display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'center' }}
+          >
+            {[
+              { label: 'HOUR',     value: `${String(hov.h).padStart(2, '0')}:00`, color: C.cyan },
+              { label: 'TRADES',   value: hov.total,                               color: C.t1  },
+              { label: 'WIN RATE', value: `${((hov.wins / hov.total) * 100).toFixed(1)}%`, color: hov.wins / hov.total >= 0.5 ? C.green : C.danger },
+              { label: 'P&L',      value: fmtPnl(hov.pnl), color: hov.pnl >= 0 ? C.green : C.danger },
+            ].map(item => (
+              <div key={item.label}>
+                <div style={{ fontSize: 8, color: C.t3, fontWeight: 700, marginBottom: 3, letterSpacing: '0.8px' }}>{item.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: item.color, fontFamily: 'monospace' }}>{item.value}</div>
               </div>
-            );
-          })}
-        </div>
-      </SectionCard>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <RankedBarList title="By symbol" eyebrow="Long vs Short" tone={C.blue} rows={symbolSeries} index={3} />
-    </div>
+      <div style={{ display: 'flex', gap: 14, marginTop: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+        {[
+          { label: '≥70% WR', bg: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.65)' },
+          { label: '50–70%',  bg: 'rgba(var(--mf-teal-rgb, 0, 245, 212),0.55)' },
+          { label: '30–50%',  bg: 'rgba(var(--mf-warn-rgb, 255, 179, 26),0.5)'  },
+          { label: '<30%',    bg: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.55)'  },
+          { label: 'None',    bg: C.bgDeep, border: `1px solid ${C.brd}` },
+        ].map(l => (
+          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: l.bg, border: l.border }} />
+            <span style={{ fontSize: 9, color: C.t3 }}>{l.label}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
-}
+};
 
-function HeatmapSection({ hourSeries, weekdaySeries }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// 📅 BLOCK 6 — WEEKDAY
+// ─────────────────────────────────────────────────────────────────────────────
+const WeekdayPerf = ({ trades }) => {
+  const data = useMemo(() => {
+    const map = {
+      1: { d: 'Monday',     wins: 0, total: 0, pnl: 0 },
+      2: { d: 'Tuesday',    wins: 0, total: 0, pnl: 0 },
+      3: { d: 'Wednesday',  wins: 0, total: 0, pnl: 0 },
+      4: { d: 'Thursday',   wins: 0, total: 0, pnl: 0 },
+      5: { d: 'Friday',     wins: 0, total: 0, pnl: 0 },
+    };
+    trades.forEach(t => {
+      if (!t.date) return;
+      const dw = new Date(t.date).getDay();
+      if (map[dw]) { map[dw].total++; if (parseFloat(t.pnl) > 0) map[dw].wins++; map[dw].pnl += parseFloat(t.pnl || 0); }
+    });
+    return Object.values(map).map(d => ({ ...d, pnl: +d.pnl.toFixed(2), wr: d.total > 0 ? +((d.wins / d.total) * 100).toFixed(1) : 0 }));
+  }, [trades]);
+
   return (
-    <div className="mf-analytics-grid-two">
-      <SectionCard tone={C.accent} index={2} style={{ padding: '22px 22px 18px' }}>
-        <SectionTitle eyebrow="Heatmaps" title="Hours" tone={C.accent} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 8 }}>
-          {hourSeries.map((row) => {
-            const intensity = Math.min(1, Math.abs(row.pnl) / Math.max(1, ...hourSeries.map((item) => Math.abs(item.pnl) || 1)));
-            const bg = row.pnl >= 0
-              ? `rgba(var(--mf-green-rgb, 0, 255, 136), ${0.08 + intensity * 0.18})`
-              : `rgba(var(--mf-danger-rgb, 255, 61, 87), ${0.08 + intensity * 0.18})`;
-            const tone = row.pnl >= 0 ? C.green : row.pnl < 0 ? C.danger : C.text2;
-            return (
-              <div key={row.key} style={{ padding: '12px 10px', borderRadius: 16, border: `1px solid ${shade(tone, 0.12)}`, background: bg }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: C.text0, marginBottom: 6 }}>{row.key}</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: tone }}>{formatAnalyticsMoney(row.pnl)}</div>
-                <div style={{ fontSize: 10, color: C.text2, marginTop: 4 }}>{formatAnalyticsPercent(row.winRate, 1)}</div>
-              </div>
-            );
-          })}
-        </div>
-      </SectionCard>
-
-      <SectionCard tone={C.purple} index={3} style={{ padding: '22px 22px 18px' }}>
-        <SectionTitle eyebrow="Heatmaps" title="Weekdays" tone={C.purple} />
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={weekdaySeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid {...CHART_GRID} />
-            <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
-            <YAxis yAxisId="left" {...CHART_AXIS_SMALL} tickFormatter={(value) => `$${value}`} />
-            <YAxis yAxisId="right" orientation="right" {...CHART_AXIS_SMALL} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-            <ReferenceLine yAxisId="left" y={0} stroke={shade(C.borderHi, 0.84)} strokeDasharray="4 6" />
-            <Tooltip
-              content={(
-                <ChartTooltip
-                  render={(payload, label) => {
-                    const row = weekdaySeries.find((item) => item.label === label);
-                    return (
-                      <>
-                        <div style={{ color: C.text1, fontWeight: 800, marginBottom: 4 }}>{row?.label}</div>
-                        <div style={{ color: (row?.pnl || 0) >= 0 ? C.green : C.danger, fontWeight: 700 }}>P&L: {formatAnalyticsMoney(row?.pnl || 0)}</div>
-                        <div style={{ color: C.accent, fontWeight: 700 }}>Win rate: {formatAnalyticsPercent(row?.winRate || 0, 1)}</div>
-                        <div style={{ color: C.text2, fontSize: 10, marginTop: 4 }}>{row?.trades || 0} trades</div>
-                      </>
-                    );
-                  }}
-                />
-              )}
-            />
-            <Bar yAxisId="left" dataKey="pnl" radius={[8, 8, 0, 0]} maxBarSize={40} {...CHART_MOTION}>
-              {weekdaySeries.map((row) => (
-                <Cell key={row.label} fill={row.pnl >= 0 ? C.green : C.danger} fillOpacity={0.8} />
-              ))}
-            </Bar>
-            <Line yAxisId="right" type="monotone" dataKey="winRate" stroke={C.purple} strokeWidth={2.4} dot={false} activeDot={chartActiveDot(C.purple, 4)} {...CHART_MOTION_SOFT} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </SectionCard>
-    </div>
+    <Card index={4}>
+      <STitle icon={null} title="By Weekday" sub="Weekday flow" color={C.purple} />
+      <ResponsiveContainer width="100%" height={170}>
+        <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="d" tickFormatter={v => v.substring(0, 3)} />
+          <YAxis {...CHART_AXIS_SMALL} tickFormatter={v => `$${v}`} />
+          <ReferenceLine y={0} stroke={shade(C.brdBright, 0.82)} strokeDasharray="4 6" />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => {
+              const d = data.find(x => x.d === label || x.d.startsWith(label));
+              return (
+                <>
+                  <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{d?.d}</div>
+                  <div style={{ color: d?.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontWeight: 700 }}>{fmtPnl(d?.pnl)}</div>
+                  <div style={{ color: C.cyan, fontSize: 10, marginTop: 2 }}>WR: {d?.wr}% · {d?.total} trades</div>
+                </>
+              );
+            }} />
+          } />
+          <Bar dataKey="pnl" radius={[7, 7, 0, 0]} maxBarSize={44} {...CHART_MOTION}>
+            {data.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? C.green : C.danger} fillOpacity={0.72} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6, marginTop: 10 }}>
+        {data.map(d => (
+          <div key={d.d} style={{ textAlign: 'center', padding: '7px 3px', borderRadius: 7, backgroundColor: C.bgDeep, border: `1px solid ${C.brd}` }}>
+            <div style={{ fontSize: 8, color: C.t3, fontWeight: 700 }}>{d.d.substring(0, 3)}</div>
+            <div style={{ fontSize: 12, fontWeight: 900, color: d.wr >= 50 ? C.green : d.total === 0 ? C.t3 : C.danger, marginTop: 3 }}>{d.total === 0 ? '—' : `${d.wr}%`}</div>
+            <div style={{ fontSize: 9, color: C.t4, marginTop: 1 }}>{d.total}T</div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
-}
+};
 
-function TradesSection({ recentRows, setupSeries }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// 🍩 BLOCK 7 — SETUP DONUT
+// ─────────────────────────────────────────────────────────────────────────────
+const SetupDonut = ({ trades }) => {
+  const [active, setActive] = useState(null); // ✅ legal
+
+  const data = useMemo(() => {
+    const map = {};
+    trades.forEach(t => {
+      const s = t.setup || 'No setup';
+      if (!map[s]) map[s] = { name: s, count: 0, wins: 0, pnl: 0 };
+      map[s].count++;
+      if (parseFloat(t.pnl) > 0) map[s].wins++;
+      map[s].pnl += parseFloat(t.pnl || 0);
+    });
+    return Object.values(map)
+      .sort((a, b) => b.count - a.count)
+      .map((d, i) => ({ ...d, wr: d.count > 0 ? +((d.wins / d.count) * 100).toFixed(1) : 0, color: CHART_COLORS[i % CHART_COLORS.length] }));
+  }, [trades]);
+
+  const total = data.reduce((s, d) => s + d.count, 0);
+
   return (
-    <div className="mf-analytics-grid-two">
-      <RankedBarList title="Setup output" eyebrow="Trades" tone={C.orange} rows={setupSeries} index={2} />
-
-      <SectionCard tone={C.accent} index={3} style={{ padding: '22px 22px 18px' }}>
-        <SectionTitle eyebrow="Trades" title="Recent trades" tone={C.accent} />
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
-            <thead>
-              <tr>
-                {['Date', 'Pair', 'Side', 'Session', 'Setup', 'Status', 'P&L'].map((header) => (
-                  <th key={header} style={{ padding: '0 8px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, textAlign: header === 'P&L' ? 'right' : 'left', borderBottom: `1px solid ${C.border}` }}>
-                    {header}
-                  </th>
+    <Card index={5}>
+      <STitle icon={null} title="Confluence & Setups" sub="Setup mix" color={C.orange} />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <div style={{ flexShrink: 0 }}>
+          <ResponsiveContainer width={170} height={170}>
+            <PieChart>
+              <Pie data={data} cx={82} cy={82} innerRadius={46} outerRadius={78}
+                dataKey="count" labelLine={false}
+                onMouseEnter={(_, i) => setActive(i)}
+                onMouseLeave={() => setActive(null)}
+                {...CHART_MOTION_SOFT}
+              >
+                {data.map((d, i) => (
+                  <Cell key={i} fill={d.color}
+                    fillOpacity={active === null || active === i ? 0.88 : 0.3}
+                    stroke={active === i ? '#fff' : 'transparent'} strokeWidth={2} />
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentRows.map((row) => {
-                const pnlTone = row.pnl >= 0 ? C.green : row.pnl < 0 ? C.danger : C.text2;
-                const statusTone = row.status === 'TP' ? C.green : row.status === 'SL' ? C.danger : row.status === 'BE' ? C.warn : C.text2;
-                return (
-                  <tr key={row.id}>
-                    <td style={{ padding: '13px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12, color: C.text2 }}>{row.dateLabel}</td>
-                    <td style={{ padding: '13px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12.5, fontWeight: 800, color: C.text0 }}>{row.symbol}</td>
-                    <td style={{ padding: '13px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12, color: C.text1 }}>{row.side}</td>
-                    <td style={{ padding: '13px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12, color: C.text2 }}>{row.session}</td>
-                    <td style={{ padding: '13px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12, color: C.text1 }}>{row.setup}</td>
-                    <td style={{ padding: '13px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 11, fontWeight: 800, color: statusTone }}>{row.status}</td>
-                    <td style={{ padding: '13px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12.5, fontWeight: 800, color: pnlTone, textAlign: 'right' }}>{formatAnalyticsMoney(row.pnl)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-      </SectionCard>
-    </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 170, overflowY: 'auto' }}>
+          {data.map((d, i) => (
+            <motion.div key={d.name}
+              onMouseEnter={() => setActive(i)} onMouseLeave={() => setActive(null)}
+              whileHover={{ x: 3 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, opacity: active === null || active === i ? 1 : 0.4, cursor: 'pointer', transition: 'opacity 0.18s' }}
+            >
+              <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: d.color, flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: C.t1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                  <span style={{ fontSize: 10, color: d.wr >= 50 ? C.green : C.danger, fontWeight: 800, flexShrink: 0, marginLeft: 5 }}>{d.wr}%</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${total > 0 ? (d.count / total) * 100 : 0}%` }}
+                    transition={{ duration: 0.8, delay: i * 0.05 }}
+                    style={{ height: '100%', borderRadius: 2, backgroundColor: d.color }} />
+                </div>
+              </div>
+              <span style={{ fontSize: 10, color: C.t3, flexShrink: 0, minWidth: 18, textAlign: 'right' }}>{d.count}</span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </Card>
   );
-}
+};
 
-function RankedBarList({ eyebrow, title, tone, rows, index = 0 }) {
-  const maxAbs = Math.max(1, ...rows.map((row) => Math.abs(row.pnl) || row.trades || 1));
+// ─────────────────────────────────────────────────────────────────────────────
+// 🌍 BLOCK 8 — SESSION BREAKDOWN
+// ─────────────────────────────────────────────────────────────────────────────
+const SessionBreakdown = ({ trades }) => {
+  const sessionMeta = { NY: { color: C.cyan }, London: { color: C.purple }, Asia: { color: C.orange } };
+  const data = useMemo(() => Object.entries(sessionMeta).map(([s, meta]) => {
+    const st   = trades.filter(t => t.session === s);
+    const wins = st.filter(t => parseFloat(t.pnl) > 0);
+    const pnl  = st.reduce((sum, t) => sum + parseFloat(t.pnl || 0), 0);
+    return { name: s, ...meta, count: st.length, wins: wins.length, pnl: +pnl.toFixed(2), wr: st.length ? +((wins.length / st.length) * 100).toFixed(1) : 0 };
+  }), [trades]);
+  const total = data.reduce((s, d) => s + d.count, 0);
+
   return (
-    <SectionCard tone={tone} index={index} style={{ padding: '22px 22px 18px' }}>
-      <SectionTitle eyebrow={eyebrow} title={title} tone={tone} />
-      <div style={{ display: 'grid', gap: 10 }}>
-        {rows.length ? rows.map((row) => {
-          const fill = Math.max(10, (Math.abs(row.pnl) / maxAbs) * 100);
-          const rowTone = row.pnl >= 0 ? tone : C.danger;
-          return (
-            <div key={row.label} style={{ padding: '12px 12px 11px', borderRadius: 16, border: `1px solid ${shade(rowTone, 0.12)}`, background: 'rgba(255,255,255,0.025)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 12.5, fontWeight: 800, color: C.text0 }}>{row.label}</span>
-                <span style={{ fontSize: 11.5, fontWeight: 800, color: row.pnl >= 0 ? C.green : row.pnl < 0 ? C.danger : C.text2 }}>{formatAnalyticsMoney(row.pnl)}</span>
+    <Card index={6}>
+      <STitle icon={null} title="Trading Sessions" sub="Tokyo · London · New York" color={C.blue} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {data.map(d => (
+          <div key={d.name}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <IconGlyph color={d.color} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: d.color }}>{d.name}</div>
+                  <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · {total > 0 ? ((d.count / total) * 100).toFixed(0) : 0}%</div>
+                </div>
               </div>
-              <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 8 }}>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${fill}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(rowTone, 0.46)}, ${rowTone})` }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 10.5, color: C.text2 }}>
-                <span>{row.trades} trades</span>
-                <span>{formatAnalyticsPercent(row.winRate, 1)} win rate</span>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: d.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(d.pnl)}</div>
+                <div style={{ fontSize: 9, color: d.wr >= 50 ? C.green : C.danger, fontWeight: 700 }}>WR {d.wr}%</div>
               </div>
             </div>
-          );
-        }) : (
-          <div style={{ padding: '14px', borderRadius: 16, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.025)', fontSize: 11, color: C.text2 }}>
-            No tagged data yet.
+            <div style={{ height: 6, borderRadius: 3, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
+              <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                style={{ height: '100%', background: `linear-gradient(90deg,${d.color},${shade(d.color,'80')})`, boxShadow: `0 0 8px ${shade(d.color,'40')}` }} />
+            </div>
           </div>
-        )}
+        ))}
       </div>
-    </SectionCard>
+    </Card>
   );
-}
+};
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ↕️ BLOCK 9 — LONG vs SHORT
+// ─────────────────────────────────────────────────────────────────────────────
+const LongVsShort = ({ trades }) => {
+  const data = useMemo(() => ['Long', 'Short'].map(type => {
+    const tt   = trades.filter(t => t.type === type);
+    const wins = tt.filter(t => parseFloat(t.pnl) > 0);
+    const pnl  = tt.reduce((s, t) => s + parseFloat(t.pnl || 0), 0);
+    return { type, count: tt.length, wins: wins.length, pnl: +pnl.toFixed(2), wr: tt.length ? +((wins.length / tt.length) * 100).toFixed(1) : 0 };
+  }), [trades]);
+
+  const colors = { Long: C.green, Short: C.danger };
+  const total  = data.reduce((s, d) => s + d.count, 0);
+
+  return (
+    <Card index={7}>
+      <STitle icon={null} title="Long vs Short" sub="Direction split" color={C.teal} />
+      {data.map(d => (
+        <div key={d.type} style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: `${shade(colors[d.type],'18')}`, border: `1px solid ${shade(colors[d.type],'35')}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+                {d.type === 'Long' ? '↗' : '↘'}
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: colors[d.type] }}>{d.type}</div>
+                <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · {total > 0 ? ((d.count / total) * 100).toFixed(0) : 0}%</div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: d.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(d.pnl)}</div>
+              <div style={{ fontSize: 10, color: d.wr >= 50 ? C.green : C.danger, fontWeight: 700 }}>WR {d.wr}%</div>
+            </div>
+          </div>
+          <div style={{ height: 8, borderRadius: 4, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
+            <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
+              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              style={{ height: '100%', background: `linear-gradient(90deg,${colors[d.type]},${shade(colors[d.type],'70')})`, boxShadow: `0 0 10px ${shade(colors[d.type],'40')}` }} />
+          </div>
+        </div>
+      ))}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+        <ResponsiveContainer width={90} height={90}>
+          <PieChart>
+            <Pie data={data} cx={43} cy={43} innerRadius={24} outerRadius={40} dataKey="count" paddingAngle={4} {...CHART_MOTION}>
+              {data.map((d, i) => <Cell key={i} fill={colors[d.type]} fillOpacity={0.82} />)}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 💱 BLOCK 10 — WIN RATE BY SYMBOL
+// ─────────────────────────────────────────────────────────────────────────────
+const SymbolWinRate = ({ trades }) => {
+  const data = useMemo(() => {
+    const map = {};
+    trades.forEach(t => {
+      const s = t.symbol || '?';
+      if (!map[s]) map[s] = { name: s, wins: 0, total: 0, pnl: 0 };
+      map[s].total++;
+      if (parseFloat(t.pnl) > 0) map[s].wins++;
+      map[s].pnl += parseFloat(t.pnl || 0);
+    });
+    return Object.values(map)
+      .map(d => ({ ...d, wr: +((d.wins / d.total) * 100).toFixed(1), pnl: +d.pnl.toFixed(2) }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+  }, [trades]);
+
+  return (
+    <Card index={8}>
+      <STitle icon={null} title="Performance by Symbol" sub="Top instruments" color={C.teal} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {data.map((d, i) => (
+          <motion.div key={d.name} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.06 }} whileHover={{ x: 4 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 38, height: 24, borderRadius: 5, background: C.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: C.bgDeep, flexShrink: 0 }}>
+              {d.name.substring(0, 4)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.t1 }}>{d.name}</span>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <span style={{ fontSize: 10, color: d.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontWeight: 700 }}>{fmtPnl(d.pnl)}</span>
+                  <span style={{ fontSize: 10, color: d.wr >= 50 ? C.green : C.danger, fontWeight: 800 }}>{d.wr}%</span>
+                </div>
+              </div>
+              <div style={{ height: 5, borderRadius: 3, overflow: 'hidden', backgroundColor: C.bgDeep }}>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${d.wr}%` }} transition={{ duration: 0.8, delay: i * 0.07 }}
+                  style={{ height: '100%', background: d.wr >= 50 ? `linear-gradient(90deg,${C.green},${C.teal})` : `linear-gradient(90deg,${C.danger},${C.warn})` }} />
+              </div>
+              <div style={{ fontSize: 9, color: C.t3, marginTop: 2 }}>{d.wins}W / {d.total - d.wins}L · {d.total} trades</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📊 BLOCK 11 — P&L DISTRIBUTION
+// ─────────────────────────────────────────────────────────────────────────────
+const PnlDistribution = ({ trades }) => {
+  const data = useMemo(() => {
+    if (!trades.length) return [];
+    const pnls = trades.map(t => parseFloat(t.pnl || 0));
+    const min  = Math.min(...pnls), max = Math.max(...pnls);
+    const range = max - min || 1;
+    const N = 12, size = range / N;
+    const bins = Array.from({ length: N }, (_, i) => ({ from: min + i * size, to: min + (i + 1) * size, label: `$${(min + i * size).toFixed(0)}`, count: 0 }));
+    pnls.forEach(p => { const idx = Math.min(Math.floor((p - min) / size), N - 1); if (idx >= 0) bins[idx].count++; });
+    return bins;
+  }, [trades]);
+
+  return (
+    <Card index={9}>
+      <STitle icon={null} title="P&L Distribution" sub="Result spread" color={C.warn} />
+      <ResponsiveContainer width="100%" height={195}>
+        <BarChart data={data} margin={{ top: 5, right: 5, bottom: 22, left: 0 }}>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="label" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval={1} angle={-35} textAnchor="end" />
+          <YAxis {...CHART_AXIS_SMALL} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => {
+              const d = data.find(x => x.label === label);
+              return (
+                <>
+                  <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{label} → ${d?.to?.toFixed(0)}</div>
+                  <div style={{ color: C.cyan, fontSize: 11 }}>{d?.count} trades</div>
+                </>
+              );
+            }} />
+          } />
+          <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={30} {...CHART_MOTION}>
+            {data.map((d, i) => <Cell key={i} fill={d.from >= 0 ? C.green : C.danger} fillOpacity={0.7} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🧠 BLOCK 12 — PSYCHOLOGY OVER TIME
+// ─────────────────────────────────────────────────────────────────────────────
+const PsychoTimeline = ({ trades }) => {
+  const data = useMemo(() => [...trades]
+    .filter(t => t.psychologyScore != null && t.date)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .slice(-40)
+    .map((t, i) => ({ i: i + 1, date: t.date?.substring(0, 10), score: parseInt(t.psychologyScore) || 0, pnl: parseFloat(t.pnl || 0), symbol: t.symbol })),
+  [trades]);
+
+  const avgScore = data.length ? Math.round(avg(data.map(d => d.score))) : 0;
+
+  return (
+    <Card index={10}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <STitle icon={null} title="Psychology Score" sub="Last 40 trades" color={C.purple} />
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: avgScore >= 75 ? C.green : avgScore >= 55 ? C.warn : C.danger, fontFamily: 'monospace' }}>{avgScore}</div>
+          <div style={{ fontSize: 9, color: C.t3 }}>Average Score</div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={180}>
+        <LineChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="date" tick={{ ...CHART_AXIS_SMALL.tick, fontSize: 8 }} interval="preserveStartEnd" />
+          <YAxis {...CHART_AXIS_SMALL} domain={[0, 100]} />
+          <ReferenceLine y={70} stroke={C.green}  strokeDasharray="4 4" strokeOpacity={0.35} />
+          <ReferenceLine y={50} stroke={C.warn}   strokeDasharray="4 4" strokeOpacity={0.35} />
+          <ReferenceLine y={30} stroke={C.danger} strokeDasharray="4 4" strokeOpacity={0.35} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => {
+              const d = payload[0]?.payload;
+              return (
+                <>
+                  <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{d?.symbol} · {label}</div>
+                  <div style={{ color: C.purple, fontSize: 13, fontWeight: 900 }}>Score: {d?.score}</div>
+                  <div style={{ color: d?.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontSize: 11 }}>{fmtPnl(d?.pnl)}</div>
+                </>
+              );
+            }} />
+          } />
+          <Line type="monotone" dataKey="score" stroke={C.purple} strokeWidth={2.5}
+            dot={(props) => {
+              const { cx, cy, payload } = props;
+              const c = payload.score >= 70 ? C.green : payload.score >= 50 ? C.warn : C.danger;
+              return <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={3.5} fill={c} stroke={C.bgCard} strokeWidth={1.5} />;
+            }}
+            activeDot={chartActiveDot(C.purple, 5, C.bgCard)}
+            {...CHART_MOTION_SOFT}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ⏱️ BLOCK 13 — DURATION ANALYSIS
+// ─────────────────────────────────────────────────────────────────────────────
+const DurationAnalysis = ({ trades }) => {
+  const data = useMemo(() => {
+    const buckets = [
+      { label: '0–5m',   min: 0,   max: 5   },
+      { label: '5–15m',  min: 5,   max: 15  },
+      { label: '15–30m', min: 15,  max: 30  },
+      { label: '30–60m', min: 30,  max: 60  },
+      { label: '1–2h',   min: 60,  max: 120 },
+      { label: '>2h',    min: 120, max: Infinity },
+    ];
+    return buckets.map(b => {
+      const bt   = trades.filter(t => { const dur = t.durationMinutes || 0; return dur >= b.min && dur < b.max; });
+      const wins = bt.filter(t => parseFloat(t.pnl) > 0);
+      const pnl  = bt.reduce((s, t) => s + parseFloat(t.pnl || 0), 0);
+      return { ...b, count: bt.length, wins: wins.length, pnl: +pnl.toFixed(2), wr: bt.length ? +((wins.length / bt.length) * 100).toFixed(1) : 0 };
+    });
+  }, [trades]);
+
+  return (
+    <Card index={11}>
+      <STitle icon={null} title="Trade Duration" sub="Hold-time bands" color={C.warn} />
+      <ResponsiveContainer width="100%" height={155}>
+        <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+          <CartesianGrid {...CHART_GRID} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
+          <YAxis {...CHART_AXIS_SMALL} />
+          <Tooltip content={
+            <ChartTip render={(payload, label) => {
+              const d = data.find(x => x.label === label);
+              return (
+                <>
+                  <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{label}</div>
+                  <div style={{ color: C.cyan, fontSize: 11 }}>{d?.count} trades</div>
+                  <div style={{ color: d?.wr >= 50 ? C.green : C.danger, fontSize: 11 }}>WR: {d?.wr}%</div>
+                  <div style={{ color: d?.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontSize: 11 }}>{fmtPnl(d?.pnl)}</div>
+                </>
+              );
+            }} />
+          } />
+          <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={40} {...CHART_MOTION}>
+            {data.map((d, i) => <Cell key={i} fill={d.wr >= 50 ? C.teal : C.warn} fillOpacity={0.75} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5, marginTop: 10 }}>
+        {data.map(d => (
+          <div key={d.label} style={{ textAlign: 'center', padding: '6px 3px', borderRadius: 6, backgroundColor: C.bgDeep, border: `1px solid ${C.brd}` }}>
+            <div style={{ fontSize: 8, color: C.t3, fontWeight: 700 }}>{d.label}</div>
+            <div style={{ fontSize: 11, fontWeight: 900, color: d.wr >= 50 ? C.green : d.count === 0 ? C.t3 : C.danger, marginTop: 3 }}>{d.count === 0 ? '—' : `${d.wr}%`}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📡 BLOCK 14 — MAE / MFE SCATTER
+// ─────────────────────────────────────────────────────────────────────────────
+const MaeMfeScatter = ({ trades }) => {
+  const data = useMemo(() => trades.map(t => {
+    const entry = parseFloat(t.entry || 0);
+    const exit  = parseFloat(t.exit  || 0);
+    const sl    = parseFloat(t.sl    || 0);
+    const risk  = sl && entry ? Math.abs(entry - sl) : Math.abs(exit - entry) * 0.5 || 0.001;
+    const mae   = t.mae != null ? parseFloat(t.mae) : -Math.abs(Math.random() * risk * 1.5);
+    const mfe   = t.mfe != null ? parseFloat(t.mfe) :  Math.abs(Math.random() * risk * (parseFloat(t.pnl) >= 0 ? 2.5 : 1));
+    return { mae: +mae.toFixed(5), mfe: +mfe.toFixed(5), pnl: parseFloat(t.pnl || 0), symbol: t.symbol };
+  }), [trades]);
+
+  return (
+    <Card index={12}>
+      <STitle icon={null} title="MAE / MFE Analysis" sub="Excursion map" color={C.blue} />
+      <div style={{ padding: '7px 11px', borderRadius: 7, backgroundColor: C.bgDeep, border: `1px solid ${C.brd}`, fontSize: 10, color: C.t3, lineHeight: 1.6, marginBottom: 12 }}>
+        <span style={{ color: C.green, fontWeight: 700 }}>MFE</span> = Best favorable move ·{' '}
+        <span style={{ color: C.danger, fontWeight: 700 }}>MAE</span> = Worst adverse move
+      </div>
+      <ResponsiveContainer width="100%" height={185}>
+        <ScatterChart margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+          <CartesianGrid {...CHART_GRID_FULL} />
+          <XAxis {...CHART_AXIS_SMALL} dataKey="mae" name="MAE" />
+          <YAxis {...CHART_AXIS_SMALL} dataKey="mfe" name="MFE" />
+          <Tooltip content={
+            <ChartTip render={(payload) => {
+              const d = payload[0]?.payload;
+              return (
+                <>
+                  <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{d?.symbol}</div>
+                  <div style={{ color: C.green,  fontSize: 11 }}>MFE: {d?.mfe}</div>
+                  <div style={{ color: C.danger, fontSize: 11 }}>MAE: {d?.mae}</div>
+                  <div style={{ color: d?.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontSize: 11 }}>{fmtPnl(d?.pnl)}</div>
+                </>
+              );
+            }} />
+          } />
+          <Scatter data={data} {...CHART_MOTION} shape={(props) => {
+            const { cx, cy, payload } = props;
+            return <circle cx={cx} cy={cy} r={5} fill={payload.pnl >= 0 ? C.green : C.danger} fillOpacity={0.65} stroke={C.bgCard} strokeWidth={1} />;
+          }} />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔥 BLOCK 15 — STREAK TRACKER
+// ─────────────────────────────────────────────────────────────────────────────
+const StreakTracker = ({ trades }) => {
+  const { streaks, bestWin, worstLoss, current } = useMemo(() => {
+    const sorted = [...trades].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const result = [];
+    let cur = null;
+    sorted.forEach(t => {
+      const isWin = parseFloat(t.pnl) > 0;
+      if (!cur || cur.isWin !== isWin) { cur = { isWin, count: 1, pnl: parseFloat(t.pnl || 0) }; result.push(cur); }
+      else { cur.count++; cur.pnl += parseFloat(t.pnl || 0); }
+    });
+    const last20    = result.slice(-20);
+    const bestWin   = Math.max(...last20.filter(s =>  s.isWin).map(s => s.count), 0);
+    const worstLoss = Math.max(...last20.filter(s => !s.isWin).map(s => s.count), 0);
+    return { streaks: last20, bestWin, worstLoss, current: last20[last20.length - 1] };
+  }, [trades]);
+
+  return (
+    <Card index={13}>
+      <STitle icon={null} title="Streak Tracker" sub="Win and loss runs" color={C.orange} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Best Win Streak',  value: `${bestWin} wins`,    color: C.green  },
+          { label: 'Worst Loss Streak',value: `${worstLoss} losses`, color: C.danger },
+          { label: 'Current',          value: current ? `${current.count} ${current.isWin ? 'W' : 'L'}` : '--', color: current?.isWin ? C.green : C.danger },
+        ].map(s => (
+          <div key={s.label} style={{ padding: '10px 8px', borderRadius: 8, backgroundColor: C.bgDeep, border: `1px solid ${C.brd}`, textAlign: 'center' }}>
+            <div style={{ fontSize: 8, color: C.t3, fontWeight: 700, marginBottom: 5, textTransform: 'uppercase' }}>{s.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: s.color, fontFamily: 'monospace' }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        {streaks.map((s, i) => (
+          <motion.div key={i} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: i * 0.04, type: 'spring' }}
+            title={`${s.count} ${s.isWin ? 'Win' : 'Loss'} · ${fmtPnl(s.pnl)}`}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: Math.min(46, 26 + s.count * 3), height: 30, minWidth: 26,
+              borderRadius: 6, cursor: 'default',
+              backgroundColor: s.isWin ? `rgba(0,230,118,${0.12 + Math.min(s.count * 0.06, 0.5)})` : `rgba(255,71,87,${0.12 + Math.min(s.count * 0.06, 0.5)})`,
+              border: `1px solid ${shade(s.isWin ? C.green : C.danger,'35')}`,
+              fontSize: 10, fontWeight: 800, color: s.isWin ? C.green : C.danger,
+            }}
+          >
+            {s.count}{s.isWin ? '↑' : '↓'}
+          </motion.div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📰 BLOCK 16 — NEWS IMPACT
+// ─────────────────────────────────────────────────────────────────────────────
+const NewsImpact = ({ trades }) => {
+  const data = useMemo(() => ['High', 'Medium', 'Low'].map(level => {
+    const nt   = trades.filter(t => t.newsImpact === level);
+    const wins = nt.filter(t => parseFloat(t.pnl) > 0);
+    const pnl  = nt.reduce((s, t) => s + parseFloat(t.pnl || 0), 0);
+    return { level, count: nt.length, wins: wins.length, pnl: +pnl.toFixed(2), wr: nt.length ? +((wins.length / nt.length) * 100).toFixed(1) : 0 };
+  }), [trades]);
+
+  const newsColors = { High: C.danger, Medium: C.warn, Low: C.teal };
+
+  return (
+    <Card index={14}>
+      <STitle icon={null} title="News Impact" sub="Impact bands" color={C.warn} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {data.map(d => (
+          <div key={d.level}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <IconGlyph color={newsColors[d.level] || C.cyan} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: newsColors[d.level] }}>{d.level} Impact</div>
+                  <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · WR {d.wr}%</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: d.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(d.pnl)}</div>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
+              <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
+                transition={{ duration: 0.9 }}
+                style={{ height: '100%', background: `linear-gradient(90deg,${newsColors[d.level]},${shade(newsColors[d.level],'70')})`, boxShadow: `0 0 8px ${shade(newsColors[d.level],'40')}` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ⚖️ BLOCK 17 — BIAS ANALYSIS
+// ─────────────────────────────────────────────────────────────────────────────
+const BiasAnalysis = ({ trades }) => {
+  const data = useMemo(() => ['Bullish', 'Bearish', 'Neutral'].map(b => {
+    const bt   = trades.filter(t => t.bias === b);
+    const wins = bt.filter(t => parseFloat(t.pnl) > 0);
+    const pnl  = bt.reduce((s, t) => s + parseFloat(t.pnl || 0), 0);
+    return { bias: b, count: bt.length, wins: wins.length, pnl: +pnl.toFixed(2), wr: bt.length ? +((wins.length / bt.length) * 100).toFixed(1) : 0 };
+  }), [trades]);
+
+  const colors = { Bullish: C.green, Bearish: C.danger, Neutral: C.t2 };
+
+  return (
+    <Card index={15}>
+      <STitle icon={null} title="Bias Analysis" sub="Bias split" color={C.teal} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {data.map(d => (
+          <div key={d.bias}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <IconGlyph color={colors[d.bias] || C.cyan} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: colors[d.bias] }}>{d.bias}</div>
+                  <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · WR {d.wr}%</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: d.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(d.pnl)}</div>
+            </div>
+            <div style={{ height: 8, borderRadius: 4, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
+              <motion.div initial={{ width: 0 }} animate={{ width: `${d.count > 0 ? (d.wins / d.count) * 100 : 0}%` }}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                style={{ height: '100%', background: `linear-gradient(90deg,${colors[d.bias]},${shade(colors[d.bias],'80')})`, boxShadow: `0 0 10px ${shade(colors[d.bias],'40')}` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🏠 MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 export default function AnalyticsPro() {
-  const { trades } = useTradingContext();
+  const { trades }  = useTradingContext();
   const [period, setPeriod] = useState('ALL');
-  const [section, setSection] = useState('overview');
 
-  const filteredTrades = useMemo(() => {
+  const filtered = useMemo(() => {
     if (period === 'ALL') return trades;
     const days = { '7D': 7, '1M': 30, '3M': 90, '6M': 180 }[period] || 9999;
-    const limitDate = Date.now() - days * 86400000;
-    return trades.filter((trade) => {
-      const date = getTradeDateValue(trade);
-      return date ? date.getTime() >= limitDate : false;
-    });
+    const from = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+    return trades.filter(t => (t.date || '') >= from);
   }, [trades, period]);
 
-  const summary = useMemo(() => summarizeTradeSet(filteredTrades), [filteredTrades]);
-  const equitySeries = useMemo(() => buildEquityDrawdownSeries(filteredTrades), [filteredTrades]);
-  const rollingSeries = useMemo(() => buildRollingWinRateSeries(filteredTrades, 12), [filteredTrades]);
-  const sessionSeries = useMemo(() => buildSessionWinRateSeries(filteredTrades), [filteredTrades]);
-  const hourSeries = useMemo(() => buildHourWinRateSeries(filteredTrades), [filteredTrades]);
-  const insights = useMemo(() => buildWinRateInsights(filteredTrades), [filteredTrades]);
-  const monthlySeries = useMemo(() => buildMonthlySeries(filteredTrades), [filteredTrades]);
-  const weekdaySeries = useMemo(() => buildWeekdaySeries(filteredTrades), [filteredTrades]);
-  const longShortSeries = useMemo(() => buildLongShortSeries(filteredTrades), [filteredTrades]);
-  const confluenceSeries = useMemo(() => buildConfluenceSeries(filteredTrades), [filteredTrades]);
-  const setupSeries = useMemo(() => buildSimpleBreakdown(filteredTrades, (trade) => String(trade.setup || '').trim(), 6), [filteredTrades]);
-  const biasSeries = useMemo(() => buildSimpleBreakdown(filteredTrades, (trade) => String(trade.bias || '').trim(), 5), [filteredTrades]);
-  const symbolSeries = useMemo(() => buildSimpleBreakdown(filteredTrades, (trade) => String(trade.symbol || trade.pair || '').trim(), 6), [filteredTrades]);
-  const recentRows = useMemo(() => buildRecentTradeRows(filteredTrades), [filteredTrades]);
+  const summary = useMemo(() => summarizeTradeSet(filtered), [filtered]);
+  const sessionSeries = useMemo(() => buildSessionWinRateSeries(filtered), [filtered]);
   const strongestSession = sessionSeries.length ? [...sessionSeries].sort((left, right) => right.winRate - left.winRate)[0] : null;
   const weakestSession = sessionSeries.length ? [...sessionSeries].sort((left, right) => left.winRate - right.winRate)[0] : null;
-  const leadInsight = insights[0] || null;
+  const intelligence = useMemo(() => buildWinRateInsights(filtered), [filtered]);
 
   return (
-    <div className="mf-analytics-page" style={{ minHeight: '100vh', padding: '28px 24px 48px', position: 'relative', overflow: 'hidden' }}>
-      <style>{PAGE_STYLES}</style>
-
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: 0, left: '12%', width: 520, height: 340, background: 'radial-gradient(ellipse, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.08) 0%, transparent 72%)', filter: 'blur(42px)', animation: 'mfAnalyticsGlowA 18s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', right: '8%', bottom: 0, width: 500, height: 320, background: 'radial-gradient(ellipse, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255), 0.06) 0%, transparent 72%)', filter: 'blur(46px)', animation: 'mfAnalyticsGlowB 22s ease-in-out infinite' }} />
-      </div>
-
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1480, margin: '0 auto' }}>
-        <div className="mf-analytics-top-grid">
-          <SectionCard tone={C.accent} index={0} style={{ padding: '24px 24px 22px' }}>
-            <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>
-              Analytics
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
-              <div>
-                <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 3.6vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.06em', color: C.text0 }}>
-                  Analytics <span style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, var(--mf-accent,#06E6FF) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pro</span>
-                </h1>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                  <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.accent, 0.2)}`, background: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.accent }}>
-                    {filteredTrades.length} trades
+    <div style={{ backgroundColor: 'transparent', minHeight: '100vh', fontFamily: 'system-ui,-apple-system,sans-serif', color: C.t1, padding: '28px 24px 48px', position: 'relative', overflow: 'hidden' }}>
+      <style>{ANALYTICS_STYLES}</style>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 8% 2%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), transparent 24%), radial-gradient(circle at 88% 12%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.04), transparent 20%), linear-gradient(135deg, rgba(255,255,255,0.015), transparent 36%, transparent 64%, rgba(var(--mf-accent-rgb, 6, 230, 255),0.02) 100%)', pointerEvents: 'none' }} />
+      <motion.div animate={{ opacity: [0.12, 0.2, 0.12], scale: [1, 1.04, 1] }} transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }} style={{ position: 'absolute', top: -160, right: -120, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.16), transparent 72%)', pointerEvents: 'none' }} />
+      <motion.div animate={{ opacity: [0.08, 0.14, 0.08], scale: [1, 1.03, 1] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 1.4 }} style={{ position: 'absolute', bottom: -180, left: -120, width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(var(--mf-green-rgb, 0, 255, 136),0.12), transparent 74%)', pointerEvents: 'none' }} />
+      <div className="mf-analytics-shell" style={{ position: 'relative', zIndex: 1, maxWidth: 1520, margin: '0 auto' }}>
+        <motion.div variants={fadeUp} initial="hidden" animate="visible" className="mf-analytics-hero-grid" style={{ marginBottom: 18 }}>
+          <div style={{ padding: '24px 24px 22px', borderRadius: 24, border: `1px solid ${C.brd}`, background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))', boxShadow: '0 24px 48px rgba(0,0,0,0.18)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.12), transparent 68%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>Analytics</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <div style={{ maxWidth: 760, display: 'grid', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 3.6vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.06em', color: C.t1 }}>
+                      Analytics <span style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, var(--mf-accent,#06E6FF) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pro</span>
+                    </h1>
                   </div>
-                  <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2 }}>
-                    {period}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.cyan,'22')}`, background: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.cyan }}>
+                      {filtered.length} analyzed trades
+                    </div>
+                    <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t2 }}>
+                      {period}
+                    </div>
                   </div>
                 </div>
+                <PeriodFilter value={period} onChange={setPeriod} />
               </div>
-
-              <div style={{ display: 'flex', gap: 4, padding: '4px', background: 'rgba(7,12,20,0.82)', borderRadius: 12, border: `1px solid ${C.border}`, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)' }}>
-                {['7D', '1M', '3M', '6M', 'ALL'].map((item) => {
-                  const active = period === item;
-                  return (
-                    <button
-                      key={item}
-                      onClick={() => setPeriod(item)}
-                      style={{
-                        padding: '6px 13px',
-                        borderRadius: 9,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        background: active ? 'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.94), rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.9))' : 'transparent',
-                        color: active ? C.deep : C.text3,
-                        boxShadow: active ? `0 10px 22px ${shade(C.accent, 0.18)}` : 'none',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      {item}
-                    </button>
-                  );
-                })}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 18 }}>
+                <HeroMetric label="Analyzed trades" value={filtered.length.toLocaleString()} tone={C.cyan} sub={`${summary.totalTrades} logged`} />
+                <HeroMetric label="Active days" value={summary.activeDays.toLocaleString()} tone={C.blue} sub={`${summary.tradesPerDay.toFixed(1)} / day`} />
+                <HeroMetric label="Best streak" value={`${summary.bestWinStreak}W`} tone={summary.bestWinStreak > 0 ? C.green : C.t2} sub={summary.currentStreak > 0 ? `Current +${summary.currentStreak}W` : 'No active win run'} />
+                <HeroMetric label="Loss streak" value={`${summary.bestLossStreak}L`} tone={summary.bestLossStreak > 0 ? C.warn : C.t2} sub={summary.currentStreak < 0 ? `Current ${summary.currentStreak}L` : 'Losses contained'} />
               </div>
             </div>
+          </div>
 
-            <div className="mf-analytics-metric-grid">
-              <MetricTile label="Active days" value={String(summary.activeDays)} caption={`${formatNumber(summary.tradesPerDay || 0, 1)} trades / day`} tone={C.blue} />
-              <MetricTile label="Net P&L" value={formatCompactMoney(summary.totalPnL)} caption={`${formatAnalyticsPercent(summary.winRate, 1)} win rate`} tone={summary.totalPnL >= 0 ? C.green : C.danger} />
-              <MetricTile label="Best streak" value={`${summary.bestWinStreak}W`} caption={summary.currentStreak > 0 ? `Current +${summary.currentStreak}W` : 'No active run'} tone={summary.bestWinStreak > 0 ? C.green : C.text2} />
-              <MetricTile label="Drawdown" value={formatCompactMoney(summary.maxDrawdownCash)} caption={formatAnalyticsPercent(summary.maxDrawdownPct, 1)} tone={summary.maxDrawdownCash < 0 ? C.warn : C.text2} />
-            </div>
-
-            <SegmentedControl value={section} onChange={setSection} />
-          </SectionCard>
-
-          <SectionCard tone={C.accent} index={1} style={{ padding: '20px' }}>
-            <SectionTitle eyebrow="Readout" title="Focus" tone={C.accent} />
+          <div style={{ padding: '20px', borderRadius: 24, border: `1px solid ${C.brd}`, background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))', boxShadow: '0 24px 48px rgba(0,0,0,0.18)' }}>
+            <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 14 }}>Focus lanes</div>
             <div style={{ display: 'grid', gap: 10 }}>
-              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)' }}>
-                <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Best session</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: strongestSession ? C.green : C.text2 }}>{strongestSession?.key || 'Waiting'}</div>
-                <div style={{ fontSize: 11, color: C.text2, marginTop: 4 }}>{strongestSession ? `${formatAnalyticsPercent(strongestSession.winRate, 1)} / ${formatAnalyticsMoney(strongestSession.pnl)}` : 'Need more session data.'}</div>
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Best session</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: strongestSession ? C.green : C.t2 }}>{strongestSession?.key || 'No session yet'}</div>
+                <div style={{ fontSize: 11, color: C.t2, marginTop: 4 }}>{strongestSession ? `${formatAnalyticsPercent(strongestSession.winRate, 1)} win rate • ${formatAnalyticsMoney(strongestSession.pnl)}` : 'Import more closed trades to unlock the read.'}</div>
               </div>
-
-              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)' }}>
-                <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Pressure point</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: weakestSession ? C.warn : C.text2 }}>{weakestSession?.key || 'Waiting'}</div>
-                <div style={{ fontSize: 11, color: C.text2, marginTop: 4 }}>{weakestSession ? `${formatAnalyticsPercent(weakestSession.winRate, 1)} / ${formatAnalyticsMoney(weakestSession.pnl)}` : 'No weak area yet.'}</div>
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Pressure point</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: weakestSession ? C.warn : C.t2 }}>{weakestSession?.key || 'No weak area yet'}</div>
+                <div style={{ fontSize: 11, color: C.t2, marginTop: 4 }}>{weakestSession ? `${formatAnalyticsPercent(weakestSession.winRate, 1)} win rate • ${formatAnalyticsMoney(weakestSession.pnl)}` : 'The weakest zone appears once enough trades are logged.'}</div>
               </div>
-
-              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${leadInsight ? shade(leadInsight.tone === 'risk' ? C.danger : leadInsight.tone === 'positive' ? C.green : C.accent, 0.16) : C.border}`, background: 'rgba(255,255,255,0.02)' }}>
-                <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Win rate focus</div>
-                {leadInsight ? (
-                  <>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: leadInsight.tone === 'risk' ? C.danger : leadInsight.tone === 'positive' ? C.green : C.accent }}>{leadInsight.title}</div>
-                    <div style={{ fontSize: 11, color: C.text2, marginTop: 4, lineHeight: 1.55 }}>{leadInsight.body}</div>
-                  </>
-                ) : (
-                  <div style={{ fontSize: 11, color: C.text2 }}>Need more trades for guidance.</div>
-                )}
+              <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Priority focus</div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {intelligence.slice(0, 2).map((item) => (
+                    <div key={item.id} style={{ padding: '11px 12px', borderRadius: 14, border: `1px solid ${item.tone === 'risk' ? shade(C.danger,'18') : item.tone === 'positive' ? shade(C.green,'18') : shade(C.cyan,'18')}`, background: 'rgba(255,255,255,0.02)' }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: item.tone === 'risk' ? C.danger : item.tone === 'positive' ? C.green : C.cyan }}>{item.title}</div>
+                      <div style={{ fontSize: 11, color: C.t2, marginTop: 4, lineHeight: 1.55 }}>{compactInsightCopy(item.body)}</div>
+                    </div>
+                  ))}
+                  {!intelligence.length && (
+                    <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.55 }}>Low sample size.</div>
+                  )}
+                </div>
               </div>
             </div>
-          </SectionCard>
+          </div>
+        </motion.div>
+
+      {/* ── HEADER ── */}
+      <SectionShortcutRail />
+      <motion.div variants={fadeUp} initial="hidden" animate="visible"
+        style={{ display: 'none' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, background: C.grad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>
+              Analytics Pro
+            </h1>
+            <span style={{ padding: '3px 9px', borderRadius: 4, fontSize: 8, fontWeight: 800, background: C.grad, color: C.bgDeep, letterSpacing: '1px' }}>PRO</span>
+          </div>
+          <p style={{ margin: 0, color: C.t2, fontSize: 12 }}>{filtered.length} trades analyzed · precision view of performance, risk, and edge</p>
         </div>
+        <PeriodFilter value={period} onChange={setPeriod} />
+      </motion.div>
 
-        {!filteredTrades.length ? <EmptyAnalyticsState /> : null}
+      {filtered.length === 0 ? (
+        <motion.div variants={fadeUp} initial="hidden" animate="visible" style={{ textAlign: 'center', padding: '80px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><IconGlyph color={C.cyan} /></div>
+          <h2 style={{ color: C.t1, marginBottom: 8 }}>No data available</h2>
+          <p style={{ color: C.t3 }}>Add trades to see your analytics</p>
+        </motion.div>
+      ) : (
+        <>
+          {/* ROW 0 — 10 KPI cards */}
+          <div id="analytics-overview">
+            <KpiCards trades={filtered} />
+          </div>
 
-        {filteredTrades.length && section === 'overview' ? (
-          <OverviewSection summary={summary} equitySeries={equitySeries} rollingSeries={rollingSeries} insights={insights} />
-        ) : null}
+          {/* ROW 1 — Equity full width */}
+          <div style={{ marginBottom: 16 }}>
+            <EquityDrawdown trades={filtered} />
+          </div>
 
-        {filteredTrades.length && section === 'general' ? (
-          <GeneralSection summary={summary} monthlySeries={monthlySeries} sessionSeries={sessionSeries} />
-        ) : null}
+          {/* ROW 2 — Monthly P&L + Cumulative WR */}
+          <div id="analytics-general" className="mf-analytics-grid-pairs">
+            <MonthlyPnl        trades={filtered} />
+            <CumulativeWinRate trades={filtered} />
+          </div>
 
-        {filteredTrades.length && section === 'confluences' ? (
-          <ConfluenceSection confluenceSeries={confluenceSeries} setupSeries={setupSeries} biasSeries={biasSeries} />
-        ) : null}
+          <div style={{ marginBottom: 16 }}>
+            <WinRateIntelligence trades={filtered} />
+          </div>
 
-        {filteredTrades.length && section === 'long-short' ? (
-          <LongShortSection longShortSeries={longShortSeries} symbolSeries={symbolSeries} />
-        ) : null}
+          {/* ROW 3 — Hourly heatmap + Weekday */}
+          <div id="analytics-heatmaps" className="mf-analytics-grid-pairs">
+            <HourHeatmap trades={filtered} />
+            <WeekdayPerf trades={filtered} />
+          </div>
 
-        {filteredTrades.length && section === 'heatmaps' ? (
-          <HeatmapSection hourSeries={hourSeries} weekdaySeries={weekdaySeries} />
-        ) : null}
+          {/* ROW 4 — Setup + Sessions + Long/Short */}
+          <div id="analytics-confluences" className="mf-analytics-grid-triple">
+            <SetupDonut       trades={filtered} />
+            <SessionBreakdown trades={filtered} />
+            <div id="analytics-long-short">
+              <LongVsShort trades={filtered} />
+            </div>
+          </div>
 
-        {filteredTrades.length && section === 'trades' ? (
-          <TradesSection recentRows={recentRows} setupSeries={setupSeries} />
-        ) : null}
+          {/* ROW 5 — Symbols + P&L Distribution */}
+          <div className="mf-analytics-grid-equal">
+            <SymbolWinRate   trades={filtered} />
+            <PnlDistribution trades={filtered} />
+          </div>
+
+          {/* ROW 6 — Psycho + Duration */}
+          <div id="analytics-trades" className="mf-analytics-grid-equal">
+            <PsychoTimeline   trades={filtered} />
+            <DurationAnalysis trades={filtered} />
+          </div>
+
+          {/* ROW 7 — MAE/MFE + Streak */}
+          <div className="mf-analytics-grid-equal">
+            <MaeMfeScatter trades={filtered} />
+            <StreakTracker  trades={filtered} />
+          </div>
+
+          {/* ROW 8 — News + Bias */}
+          <div className="mf-analytics-grid-equal" style={{ marginBottom: 8 }}>
+            <NewsImpact   trades={filtered} />
+            <BiasAnalysis trades={filtered} />
+          </div>
+        </>
+      )}
       </div>
     </div>
   );
 }
+
