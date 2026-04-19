@@ -257,6 +257,12 @@ const HeroMetric = ({ label, value, tone = C.cyan, sub }) => (
   </div>
 );
 
+const compactInsightCopy = (value = '') => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.length > 104 ? `${text.slice(0, 101).trim()}…` : text;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ CRITICAL FIX — KpiCard = independent React component
 //    useState() called here, NOT in a .map()
@@ -355,16 +361,12 @@ const KpiCards = ({ trades }) => {
     }
 
     return [
-      { label: 'Total P&L', value: fmtPnl(summary.totalPnL), color: summary.totalPnL >= 0 ? C.green : C.danger, icon: null, sub: `${summary.totalTrades} trades` },
+      { label: 'Net P&L', value: fmtPnl(summary.totalPnL), color: summary.totalPnL >= 0 ? C.green : C.danger, icon: null, sub: `${summary.totalTrades} trades` },
       { label: 'Win Rate', value: formatAnalyticsPercent(summary.winRate, 1), color: summary.winRate >= 55 ? C.green : summary.winRate >= 45 ? C.warn : C.danger, icon: null, sub: `${summary.wins}W / ${summary.losses}L / ${summary.breakeven}BE` },
       { label: 'Profit Factor', value: formatAnalyticsFactor(summary.profitFactor), color: summary.profitFactor === Infinity || summary.profitFactor >= 2 ? C.green : summary.profitFactor >= 1.2 ? C.warn : C.danger, icon: null, sub: 'Gross win / gross loss' },
-      { label: 'Average Win', value: fmtPnl(summary.avgWin), color: C.green, icon: null, sub: `Avg loss ${fmtPnl(-summary.avgLoss)}` },
-      { label: 'Average R:R', value: formatAnalyticsRR(summary.avgRR), color: (summary.avgRR ?? 0) >= 2 ? C.green : (summary.avgRR ?? 0) >= 1 ? C.warn : C.danger, icon: null, sub: 'Executed risk/reward' },
+      { label: 'Average R:R', value: formatAnalyticsRR(summary.avgRR), color: (summary.avgRR ?? 0) >= 2 ? C.green : (summary.avgRR ?? 0) >= 1 ? C.warn : C.danger, icon: null, sub: 'Executed ratio' },
       { label: 'Expectancy', value: fmtPnl(summary.expectancy), color: summary.expectancy >= 0 ? C.green : C.danger, icon: null, sub: 'Per trade' },
       { label: 'Max Drawdown', value: fmtPnl(summary.maxDrawdownCash), color: C.danger, icon: null, sub: summary.maxDrawdownPct < 0 ? `${formatAnalyticsPercent(summary.maxDrawdownPct, 1)} from peak` : 'Peak to trough' },
-      { label: 'Consistency', value: formatAnalyticsPercent(consistency, 0), color: consistency >= 60 ? C.green : consistency >= 40 ? C.warn : C.danger, icon: null, sub: `${summary.activeDays} active days` },
-      { label: 'Current Streak', value: summary.currentStreak > 0 ? `+${summary.currentStreak}W` : summary.currentStreak < 0 ? `${Math.abs(summary.currentStreak)}L` : '--', color: summary.currentStreak > 0 ? C.green : summary.currentStreak < 0 ? C.danger : C.t2, icon: null, sub: `Best ${summary.bestWinStreak}W / ${summary.bestLossStreak}L` },
-      { label: 'Trades / Day', value: summary.tradesPerDay.toFixed(1), color: C.cyan, icon: null, sub: `${summary.activeDays} active days` },
     ];
 
     return [
@@ -382,7 +384,7 @@ const KpiCards = ({ trades }) => {
   }, [trades]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 11, marginBottom: 24 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 11, marginBottom: 24 }}>
       {/* ✅ KpiCard = React component → useState() is legal */}
       {metrics.map((k, i) => <KpiCard key={k.label} {...k} index={i} />)}
     </div>
@@ -410,7 +412,7 @@ const EquityDrawdown = ({ trades }) => {
   return (
     <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon={null} title="Equity Curve + Drawdown" sub="Equity and drawdown are now reading from the exact same execution stream." color={C.green} />
+        <STitle icon={null} title="Equity vs Drawdown" color={C.green} />
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 24, fontWeight: 900, color: finalEq >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(finalEq)}</div>
           <div style={{ fontSize: 10, color: C.danger, marginTop: 2 }}>Max DD: {fmtPnl(maxDD)}{maxDDPct < 0 ? ` / ${formatAnalyticsPercent(maxDDPct, 1)}` : ''}</div>
@@ -466,7 +468,7 @@ const EquityDrawdown = ({ trades }) => {
   return (
     <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon="📈" title="Equity Curve + Drawdown" sub="Real-time capital progression" color={C.green} />
+        <STitle icon={null} title="Equity vs Drawdown" color={C.green} />
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 24, fontWeight: 900, color: finalEq >= 0 ? C.green : C.danger, fontFamily: 'monospace' }}>{fmtPnl(finalEq)}</div>
           <div style={{ fontSize: 10, color: C.danger, marginTop: 2 }}>Max DD: {maxDD.toFixed(1)}%</div>
@@ -542,7 +544,7 @@ const MonthlyPnl = ({ trades }) => {
   return (
     <Card index={1}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon="🗓️" title="Monthly P&L" sub="Month-by-month results" color={C.blue} />
+        <STitle icon={null} title="Monthly P&L" sub="Monthly edge" color={C.blue} />
         <div style={{ display: 'flex', gap: 14, fontSize: 10, flexShrink: 0 }}>
           <div><span style={{ color: C.t3 }}>Best </span><span style={{ color: C.green, fontWeight: 800 }}>{best.month} {fmtPnl(best.pnl)}</span></div>
           <div><span style={{ color: C.t3 }}>Worst </span><span style={{ color: C.danger, fontWeight: 800 }}>{worst.month} {fmtPnl(worst.pnl)}</span></div>
@@ -593,10 +595,10 @@ const CumulativeWinRate = ({ trades }) => {
   return (
     <Card index={2}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon={null} title="Cumulative Win Rate" sub="Cumulative accuracy compared with the rolling 12-trade win rate." color={C.cyan} />
+        <STitle icon={null} title="Cumulative Win Rate" sub="Rolling vs cumulative" color={C.cyan} />
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: final >= 50 ? C.green : C.danger, fontFamily: 'monospace' }}>{formatAnalyticsPercent(final, 1)}</div>
-          <div style={{ fontSize: 9, color: C.t3 }}>Final win rate</div>
+          <div style={{ fontSize: 9, color: C.t3 }}>Current rate</div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={170}>
@@ -677,7 +679,7 @@ const WinRateIntelligence = ({ trades }) => {
   return (
     <Card index={3}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
-        <STitle icon={null} title="Win Rate Intelligence" sub="Read the hit rate in context, then adjust size, schedule, and setups from the same data stream." color={C.blue} />
+        <STitle icon={null} title="Win Rate Intelligence" sub="Session and hour read" color={C.blue} />
         <div style={{ display: 'grid', gap: 6, minWidth: 180 }}>
           {sessionData.slice(0, 2).map((item) => (
             <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10 }}>
@@ -761,7 +763,7 @@ const WinRateIntelligence = ({ trades }) => {
               {item.tone === 'positive' ? 'Keep leaning in' : item.tone === 'risk' ? 'Needs attention' : 'Refine'}
             </div>
             <div style={{ fontSize: 14, fontWeight: 800, color: C.t1, lineHeight: 1.35, marginBottom: 6 }}>{item.title}</div>
-            <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.65 }}>{item.body}</div>
+            <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.65 }}>{compactInsightCopy(item.body)}</div>
           </div>
         ))}
       </div>
@@ -796,7 +798,7 @@ const HourHeatmap = ({ trades }) => {
 
   return (
     <Card index={3}>
-      <STitle icon="🕐" title="Hourly Heatmap" sub="Win rate and P&L by trading hour" color={C.cyan} />
+      <STitle icon={null} title="Hourly Heatmap" sub="Hour-by-hour" color={C.cyan} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 5, marginBottom: 12 }}>
         {data.map(d => (
           <motion.div key={d.h}
@@ -877,7 +879,7 @@ const WeekdayPerf = ({ trades }) => {
 
   return (
     <Card index={4}>
-      <STitle icon="📅" title="By Weekday" sub="Win rate & P&L by day" color={C.purple} />
+      <STitle icon={null} title="By Weekday" sub="Weekday flow" color={C.purple} />
       <ResponsiveContainer width="100%" height={170}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
           <CartesianGrid {...CHART_GRID} />
@@ -938,7 +940,7 @@ const SetupDonut = ({ trades }) => {
 
   return (
     <Card index={5}>
-      <STitle icon="🎯" title="Confluence & Setups" sub="Distribution and win rate by setup" color={C.orange} />
+      <STitle icon={null} title="Confluence & Setups" sub="Setup mix" color={C.orange} />
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         <div style={{ flexShrink: 0 }}>
           <ResponsiveContainer width={170} height={170}>
@@ -990,7 +992,7 @@ const SetupDonut = ({ trades }) => {
 // 🌍 BLOCK 8 — SESSION BREAKDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const SessionBreakdown = ({ trades }) => {
-  const sessionMeta = { NY: { emoji: '🗽', color: C.cyan }, London: { emoji: '🎡', color: C.purple }, Asia: { emoji: '🏯', color: C.orange } };
+  const sessionMeta = { NY: { color: C.cyan }, London: { color: C.purple }, Asia: { color: C.orange } };
   const data = useMemo(() => Object.entries(sessionMeta).map(([s, meta]) => {
     const st   = trades.filter(t => t.session === s);
     const wins = st.filter(t => parseFloat(t.pnl) > 0);
@@ -1001,13 +1003,13 @@ const SessionBreakdown = ({ trades }) => {
 
   return (
     <Card index={6}>
-      <STitle icon="🌍" title="Trading Sessions" sub="NY · London · Asia" color={C.blue} />
+      <STitle icon={null} title="Trading Sessions" sub="Tokyo · London · New York" color={C.blue} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {data.map(d => (
           <div key={d.name}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 18 }}>{d.emoji}</span>
+                <IconGlyph color={d.color} />
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: d.color }}>{d.name}</div>
                   <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · {total > 0 ? ((d.count / total) * 100).toFixed(0) : 0}%</div>
@@ -1046,7 +1048,7 @@ const LongVsShort = ({ trades }) => {
 
   return (
     <Card index={7}>
-      <STitle icon="↕️" title="Long vs Short" sub="Comparison of both directions" color={C.teal} />
+      <STitle icon={null} title="Long vs Short" sub="Direction split" color={C.teal} />
       {data.map(d => (
         <div key={d.type} style={{ marginBottom: 18 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
@@ -1105,7 +1107,7 @@ const SymbolWinRate = ({ trades }) => {
 
   return (
     <Card index={8}>
-      <STitle icon="💱" title="Performance by Symbol" sub="Top 8 traded instruments" color={C.teal} />
+      <STitle icon={null} title="Performance by Symbol" sub="Top instruments" color={C.teal} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {data.map((d, i) => (
           <motion.div key={d.name} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
@@ -1152,7 +1154,7 @@ const PnlDistribution = ({ trades }) => {
 
   return (
     <Card index={9}>
-      <STitle icon="📊" title="P&L Distribution" sub="Result frequency by range" color={C.warn} />
+      <STitle icon={null} title="P&L Distribution" sub="Result spread" color={C.warn} />
       <ResponsiveContainer width="100%" height={195}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 22, left: 0 }}>
           <CartesianGrid {...CHART_GRID} />
@@ -1194,7 +1196,7 @@ const PsychoTimeline = ({ trades }) => {
   return (
     <Card index={10}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <STitle icon="🧠" title="Psychology Score" sub="Evolution over last 40 trades" color={C.purple} />
+        <STitle icon={null} title="Psychology Score" sub="Last 40 trades" color={C.purple} />
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: avgScore >= 75 ? C.green : avgScore >= 55 ? C.warn : C.danger, fontFamily: 'monospace' }}>{avgScore}</div>
           <div style={{ fontSize: 9, color: C.t3 }}>Average Score</div>
@@ -1258,7 +1260,7 @@ const DurationAnalysis = ({ trades }) => {
 
   return (
     <Card index={11}>
-      <STitle icon="⏱️" title="Trade Duration" sub="Performance by holding duration" color={C.warn} />
+      <STitle icon={null} title="Trade Duration" sub="Hold-time bands" color={C.warn} />
       <ResponsiveContainer width="100%" height={155}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
           <CartesianGrid {...CHART_GRID} />
@@ -1310,7 +1312,7 @@ const MaeMfeScatter = ({ trades }) => {
 
   return (
     <Card index={12}>
-      <STitle icon="📡" title="MAE / MFE Analysis" sub="Adverse vs Favorable Excursion" color={C.blue} />
+      <STitle icon={null} title="MAE / MFE Analysis" sub="Excursion map" color={C.blue} />
       <div style={{ padding: '7px 11px', borderRadius: 7, backgroundColor: C.bgDeep, border: `1px solid ${C.brd}`, fontSize: 10, color: C.t3, lineHeight: 1.6, marginBottom: 12 }}>
         <span style={{ color: C.green, fontWeight: 700 }}>MFE</span> = Best favorable move ·{' '}
         <span style={{ color: C.danger, fontWeight: 700 }}>MAE</span> = Worst adverse move
@@ -1364,7 +1366,7 @@ const StreakTracker = ({ trades }) => {
 
   return (
     <Card index={13}>
-      <STitle icon="🔥" title="Streak Tracker" sub="Consecutive win & loss streaks" color={C.orange} />
+      <STitle icon={null} title="Streak Tracker" sub="Win and loss runs" color={C.orange} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Best Win Streak',  value: `${bestWin} wins`,    color: C.green  },
@@ -1414,7 +1416,7 @@ const NewsImpact = ({ trades }) => {
 
   return (
     <Card index={14}>
-      <STitle icon="📰" title="News Impact" sub="Performance by news impact level" color={C.warn} />
+      <STitle icon={null} title="News Impact" sub="Impact bands" color={C.warn} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {data.map(d => (
           <div key={d.level}>
@@ -1455,7 +1457,7 @@ const BiasAnalysis = ({ trades }) => {
 
   return (
     <Card index={15}>
-      <STitle icon="⚖️" title="Bias Analysis" sub="Performance by market bias" color={C.teal} />
+      <STitle icon={null} title="Bias Analysis" sub="Bias split" color={C.teal} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {data.map(d => (
           <div key={d.bias}>
@@ -1512,32 +1514,36 @@ export default function AnalyticsPro() {
           <div style={{ padding: '24px 24px 22px', borderRadius: 24, border: `1px solid ${C.brd}`, background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))', boxShadow: '0 24px 48px rgba(0,0,0,0.18)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.12), transparent 68%)', pointerEvents: 'none' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>Performance command center</div>
+              <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>Analytics</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                <div style={{ maxWidth: 760 }}>
+                <div style={{ maxWidth: 760, display: 'grid', gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
                     <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 3.6vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.06em', color: C.t1 }}>
                       Analytics <span style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, var(--mf-accent,#06E6FF) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pro</span>
                     </h1>
-                    <span style={{ padding: '5px 10px', borderRadius: 999, border: `1px solid ${shade(C.cyan,'24')}`, background: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)', color: C.cyan, fontSize: 10, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Live journal intelligence</span>
                   </div>
-                  <p style={{ margin: 0, color: C.t2, fontSize: 13, lineHeight: 1.8, maxWidth: 720 }}>
-                    Clean read of edge, drawdown, and execution quality. Every chart below is tied to the same real trade stream, with a calmer shell and stronger visual rhythm to match the dashboard.
-                  </p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.cyan,'22')}`, background: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.cyan }}>
+                      {filtered.length} analyzed trades
+                    </div>
+                    <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t2 }}>
+                      {period}
+                    </div>
+                  </div>
                 </div>
                 <PeriodFilter value={period} onChange={setPeriod} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 18 }}>
-                <HeroMetric label="Analyzed trades" value={filtered.length.toLocaleString()} tone={C.cyan} sub={`${summary.activeDays} active day${summary.activeDays === 1 ? '' : 's'}`} />
-                <HeroMetric label="Net performance" value={formatAnalyticsMoney(summary.totalPnL)} tone={summary.totalPnL >= 0 ? C.green : C.danger} sub={`Win rate ${formatAnalyticsPercent(summary.winRate, 1)}`} />
-                <HeroMetric label="Profit factor" value={formatAnalyticsFactor(summary.profitFactor)} tone={summary.profitFactor >= 1.5 ? C.green : summary.profitFactor >= 1 ? C.warn : C.danger} sub={`Expectancy ${formatAnalyticsMoney(summary.expectancy)}`} />
-                <HeroMetric label="Max drawdown" value={formatAnalyticsMoney(summary.maxDrawdownCash)} tone={C.danger} sub={summary.maxDrawdownPct < 0 ? `${formatAnalyticsPercent(summary.maxDrawdownPct, 1)} from peak` : 'Peak to trough'} />
+                <HeroMetric label="Analyzed trades" value={filtered.length.toLocaleString()} tone={C.cyan} sub={`${summary.totalTrades} logged`} />
+                <HeroMetric label="Active days" value={summary.activeDays.toLocaleString()} tone={C.blue} sub={`${summary.tradesPerDay.toFixed(1)} / day`} />
+                <HeroMetric label="Best streak" value={`${summary.bestWinStreak}W`} tone={summary.bestWinStreak > 0 ? C.green : C.t2} sub={summary.currentStreak > 0 ? `Current +${summary.currentStreak}W` : 'No active win run'} />
+                <HeroMetric label="Loss streak" value={`${summary.bestLossStreak}L`} tone={summary.bestLossStreak > 0 ? C.warn : C.t2} sub={summary.currentStreak < 0 ? `Current ${summary.currentStreak}L` : 'Losses contained'} />
               </div>
             </div>
           </div>
 
           <div style={{ padding: '20px', borderRadius: 24, border: `1px solid ${C.brd}`, background: 'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))', boxShadow: '0 24px 48px rgba(0,0,0,0.18)' }}>
-            <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 14 }}>Execution readout</div>
+            <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 14 }}>Focus lanes</div>
             <div style={{ display: 'grid', gap: 10 }}>
               <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
                 <div style={{ fontSize: 10, color: C.t3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Best session</div>
@@ -1555,13 +1561,11 @@ export default function AnalyticsPro() {
                   {intelligence.slice(0, 2).map((item) => (
                     <div key={item.id} style={{ padding: '11px 12px', borderRadius: 14, border: `1px solid ${item.tone === 'risk' ? shade(C.danger,'18') : item.tone === 'positive' ? shade(C.green,'18') : shade(C.cyan,'18')}`, background: 'rgba(255,255,255,0.02)' }}>
                       <div style={{ fontSize: 11, fontWeight: 800, color: item.tone === 'risk' ? C.danger : item.tone === 'positive' ? C.green : C.cyan }}>{item.title}</div>
-                      <div style={{ fontSize: 11, color: C.t2, marginTop: 4, lineHeight: 1.7 }}>{item.body}</div>
+                      <div style={{ fontSize: 11, color: C.t2, marginTop: 4, lineHeight: 1.55 }}>{compactInsightCopy(item.body)}</div>
                     </div>
                   ))}
                   {!intelligence.length && (
-                    <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.7 }}>
-                      The insights panel populates automatically once the journal has enough trades, sessions, and setups to compare.
-                    </div>
+                    <div style={{ fontSize: 11, color: C.t2, lineHeight: 1.55 }}>Low sample size.</div>
                   )}
                 </div>
               </div>

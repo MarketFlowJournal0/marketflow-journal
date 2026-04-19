@@ -2,27 +2,27 @@ import { shade } from './colorAlpha';
 
 export const CHART_MOTION = {
   isAnimationActive: true,
-  animationBegin: 110,
-  animationDuration: 1380,
+  animationBegin: 90,
+  animationDuration: 1560,
   animationEasing: 'ease-out',
 };
 
 export const CHART_MOTION_SOFT = {
   isAnimationActive: true,
-  animationBegin: 140,
-  animationDuration: 1820,
+  animationBegin: 120,
+  animationDuration: 2100,
   animationEasing: 'ease-out',
 };
 
 export const CHART_GRID = {
-  stroke: 'rgba(var(--mf-border-rgb, 22, 32, 52),0.58)',
-  strokeDasharray: '3 9',
+  stroke: 'rgba(var(--mf-border-rgb, 22, 32, 52),0.42)',
+  strokeDasharray: '2 10',
   vertical: false,
 };
 
 export const CHART_GRID_FULL = {
-  stroke: 'rgba(var(--mf-border-rgb, 22, 32, 52),0.54)',
-  strokeDasharray: '3 9',
+  stroke: 'rgba(var(--mf-border-rgb, 22, 32, 52),0.38)',
+  strokeDasharray: '2 10',
 };
 
 export const CHART_AXIS = {
@@ -57,23 +57,23 @@ export function chartCursor(color = 'var(--mf-accent,#06E6FF)') {
 
 export function chartTooltipStyle(color = 'var(--mf-accent,#06E6FF)') {
   return {
-    background: 'linear-gradient(180deg, rgba(9,15,26,0.94), rgba(6,10,18,0.985))',
-    border: `1px solid ${shade(color, 0.16)}`,
-    borderRadius: 16,
+    background: 'linear-gradient(180deg, rgba(10,16,28,0.96), rgba(6,10,18,0.99))',
+    border: `1px solid ${shade(color, 0.14)}`,
+    borderRadius: 18,
     fontSize: 11,
-    boxShadow: `0 22px 56px rgba(0,0,0,0.56), 0 0 0 1px ${shade(color, 0.06)}, 0 0 28px ${shade(color, 0.08)}`,
-    backdropFilter: 'blur(20px) saturate(1.12)',
+    boxShadow: `0 26px 70px rgba(0,0,0,0.62), 0 0 0 1px ${shade(color, 0.05)}, 0 0 32px ${shade(color, 0.1)}`,
+    backdropFilter: 'blur(22px) saturate(1.15)',
   };
 }
 
 export function chartActiveDot(color = 'var(--mf-accent,#06E6FF)', radius = 5, stroke = 'var(--mf-deep,#07090F)') {
   return {
-    r: radius,
+    r: radius + 0.5,
     fill: color,
     stroke,
     strokeWidth: 2.5,
     style: {
-      filter: `drop-shadow(0 0 14px ${shade(color, 0.5)})`,
+      filter: `drop-shadow(0 0 18px ${shade(color, 0.58)})`,
     },
   };
 }

@@ -83,11 +83,26 @@ const GlassCard = ({ children, style = {}, glow = null, hover = true, custom = 0
 const ST = ({ children, sub, color = C.cyan, icon, mb = 16 }) => (
   <div style={{ marginBottom: mb }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      {icon && <span style={{ fontSize: 15, filter: `drop-shadow(0 0 8px ${color})` }}>{icon}</span>}
+      {icon ? (
+        <span style={{
+          width: 16,
+          height: 16,
+          borderRadius: 5,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: `linear-gradient(135deg,${shade(color,'26')},${shade(color,'08')})`,
+          border: `1px solid ${shade(color,'22')}`,
+          boxShadow: `0 0 12px ${shade(color,'12')}`,
+          flexShrink: 0,
+        }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: color, boxShadow: `0 0 8px ${shade(color,'55')}` }} />
+        </span>
+      ) : null}
       <div style={{ width: 3, height: 16, background: `linear-gradient(180deg,${color},${shade(color,'50')})`, borderRadius: 2, flexShrink: 0 }} />
       <span style={{ fontSize: 13, fontWeight: 800, color: C.t1, letterSpacing: '-0.3px' }}>{children}</span>
     </div>
-    {sub && <p style={{ margin: '3px 0 0', fontSize: 9, color: C.t3, paddingLeft: icon ? 31 : 11 }}>{sub}</p>}
+    {sub && <p style={{ margin: '3px 0 0', fontSize: 9, color: C.t3, paddingLeft: icon ? 32 : 11 }}>{sub}</p>}
   </div>
 );
 
@@ -282,8 +297,10 @@ const KpiBadge = ({ label, value, sub, color, icon, custom = 0 }) => (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${shade(color,'60')},transparent)` }} />
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
       <span style={{ fontSize: 7.5, fontWeight: 800, color: C.t3, letterSpacing: '1.4px', textTransform: 'uppercase' }}>{label}</span>
-      <motion.span animate={{ scale: [1, 1.13, 1] }} transition={{ duration: 3.5, repeat: Infinity, delay: custom * 0.22 }}
-        style={{ fontSize: 17, filter: `drop-shadow(0 0 7px ${color})` }}>{icon}</motion.span>
+      {icon ? (
+        <motion.span animate={{ scale: [1, 1.13, 1] }} transition={{ duration: 3.5, repeat: Infinity, delay: custom * 0.22 }}
+          style={{ fontSize: 17, filter: `drop-shadow(0 0 7px ${color})` }}>{icon}</motion.span>
+      ) : null}
     </div>
     <div style={{ fontSize: 26, fontWeight: 900, fontFamily: 'monospace', color, lineHeight: 1, marginBottom: 4, textShadow: `0 0 22px ${shade(color,'40')}` }}>{value}</div>
     {sub && <div style={{ fontSize: 8.5, color: C.t2, lineHeight: 1.5 }}>{sub}</div>}
@@ -856,6 +873,7 @@ export default function Equity() {
   const { trades } = useTradingContext();
 
   const s = useMemo(() => buildEquityStats(trades), [trades]);
+  const [showDeepDive, setShowDeepDive] = useState(false);
 
   // Background particles
   const particles = Array.from({ length: 20 }, (_, i) => ({
@@ -881,14 +899,10 @@ export default function Equity() {
   const last = s.equity[s.equity.length - 1]?.v || 0;
 
   const KPI_ROW = [
-    { label: 'Total P&L',    value: `${last >= 0 ? '+' : ''}${last.toFixed(2)}`,  sub: `${s.n} trades · ${s.yrs}y`, color: last >= 0 ? C.green : C.danger, icon: '💹', custom: 0 },
-    { label: 'Win Rate',     value: `${s.wr}%`,                                    sub: `${s.wins}W · ${s.losses}L · ${shade(s.bes,'BE')}`, color: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, icon: '🎯', custom: 1 },
-    { label: 'Profit Factor',value: s.pf,                                           sub: `${s.grossW.toFixed(2)} won / ${s.grossL.toFixed(2)} lost`, color: s.pf >= 2 ? C.green : s.pf >= 1.3 ? C.cyan : s.pf >= 1 ? C.warn : C.danger, icon: '⚖️', custom: 2 },
-    { label: 'Sharpe',       value: s.sharpe,                                       sub: '≥1 good · ≥2 excellent',  color: s.sharpe  >= 2 ? C.green : s.sharpe  >= 1 ? C.cyan : C.warn, icon: '📏', custom: 3 },
-    { label: 'Sortino',      value: s.sortino,                                      sub: 'Negative vol only',    color: s.sortino >= 2 ? C.green : s.sortino >= 1 ? C.cyan : C.warn, icon: '📐', custom: 4 },
-    { label: 'Calmar',       value: s.calmar,                                       sub: 'P&L / Max Drawdown',         color: s.calmar  >= 2 ? C.green : s.calmar  >= 1 ? C.cyan : C.warn, icon: '🔢', custom: 5 },
-    { label: 'Max Drawdown', value: `-${s.maxDD.toFixed(2)}`,                       sub: `Max duration: ${s.maxDDDur} trades`,     color: C.danger, icon: '📉', custom: 6 },
-    { label: 'Kelly %',      value: `${s.kelly}%`,                                  sub: 'Optimal position size', color: s.kelly >= 25 ? C.danger : s.kelly >= 10 ? C.green : C.warn, icon: '🎯', custom: 7 },
+    { label: 'Net Equity', value: `${last >= 0 ? '+' : ''}${last.toFixed(2)}`, sub: `${s.n} trades`, color: last >= 0 ? C.green : C.danger, icon: null, custom: 0 },
+    { label: 'Win Rate', value: `${s.wr}%`, sub: `${s.wins}W · ${s.losses}L`, color: s.wr >= 60 ? C.green : s.wr >= 50 ? C.warn : C.danger, icon: null, custom: 1 },
+    { label: 'Profit Factor', value: s.pf, sub: `${s.grossW.toFixed(2)} won / ${s.grossL.toFixed(2)} lost`, color: s.pf >= 2 ? C.green : s.pf >= 1.3 ? C.cyan : s.pf >= 1 ? C.warn : C.danger, icon: null, custom: 2 },
+    { label: 'Sharpe', value: s.sharpe, sub: `${s.yrs}y tracked`, color: s.sharpe >= 2 ? C.green : s.sharpe >= 1 ? C.cyan : C.warn, icon: null, custom: 3 },
   ];
 
   return (
@@ -909,10 +923,6 @@ export default function Equity() {
         <motion.div initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           style={{ marginBottom: 22, paddingBottom: 20, borderBottom: `1px solid ${C.brd}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <motion.div animate={{ rotateY: [0, 360] }} transition={{ duration: 9, repeat: Infinity, ease: 'linear' }}
-              style={{ width: 48, height: 48, borderRadius: 14, background: C.gradCyan, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0, boxShadow: `0 4px 24px ${C.cyanGlow}, 0 0 40px ${C.cyanGlow}` }}>
-              📈
-            </motion.div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
                 <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, background: C.gradCyan, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-1px' }}>Equity</h1>
@@ -923,19 +933,12 @@ export default function Equity() {
                   {s.n} trades · {s.yrs}y
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: C.t3 }}>
-                Complete performance analysis · Real-time data from All Trades
-              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* KPI ROW */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 10 }}>
-          {KPI_ROW.slice(0, 4).map(k => <KpiBadge key={k.label} {...k} />)}
-        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 22 }}>
-          {KPI_ROW.slice(4).map(k => <KpiBadge key={k.label} {...k} />)}
+          {KPI_ROW.map(k => <KpiBadge key={k.label} {...k} />)}
         </div>
 
         {/* EQUITY CURVE */}
@@ -949,18 +952,30 @@ export default function Equity() {
           <MonthlyHeatmap s={s} />
         </div>
 
-        {/* ADVANCED STATS */}
-        <div style={{ marginBottom: 14 }}>
-          <AdvancedStats s={s} />
+        <div style={{marginBottom:14,display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+          <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase'}}>Details</div>
+          <button
+            type="button"
+            onClick={()=>setShowDeepDive(value=>!value)}
+            style={{padding:'8px 12px',borderRadius:12,border:`1px solid ${showDeepDive?shade(C.cyan,'32'):C.brd}`,background:showDeepDive?shade(C.cyan,'12'):'rgba(255,255,255,0.02)',color:showDeepDive?C.cyan:C.t2,fontSize:11,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}
+          >
+            {showDeepDive ? 'Hide details' : 'Open details'}
+          </button>
         </div>
 
-        {/* YEAR BREAKDOWN */}
-        <div style={{ marginBottom: 14 }}>
-          <YearBreakdown s={s} />
-        </div>
-
-        {/* MONTE CARLO */}
-        <MonteCarlo s={s} />
+        <AnimatePresence initial={false}>
+          {showDeepDive && (
+            <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:0.24}}>
+              <div style={{ marginBottom: 14 }}>
+                <AdvancedStats s={s} />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <YearBreakdown s={s} />
+              </div>
+              <MonteCarlo s={s} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </div>

@@ -1689,6 +1689,7 @@ export default function AllTrades(){
   const[detailTrade,setDetailTrade]=useState(null);
   const[showWipeModal,setShowWipeModal]=useState(false);
   const[wiping,setWiping]=useState(false);
+  const[showWorkflow,setShowWorkflow]=useState(false);
   const backupRestoreRef=useRef(null);
 
   useEffect(()=>{try{localStorage.setItem(COLUMN_STORAGE_KEY,JSON.stringify(cols));}catch{}},[cols]);
@@ -1703,6 +1704,7 @@ export default function AllTrades(){
   const cumulMap=useMemo(()=>{let r=0;const m={};[...sorted].reverse().forEach(t=>{r+=parseFloat(t.profit_loss??t.pnl??0);m[t.id]=r;});return m;},[sorted]);
   const stats=useMemo(()=>calcLedgerStats(filtered),[filtered]);
   const activeFilterCount=useMemo(()=>[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length,[filters]);
+  const workflowOpen=showWorkflow||activeFilterCount>0;
   const symbolCount=useMemo(()=>new Set(filtered.map(t=>t.symbol).filter(Boolean)).size,[filtered]);
   const averageTrade=stats.total?stats.totalPnL/stats.total:0;
   const latestTrade=sorted[0]||null;
@@ -1792,11 +1794,18 @@ export default function AllTrades(){
           <div style={{padding:'24px 24px 22px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)',position:'relative',overflow:'hidden'}}>
             <div style={{position:'absolute',top:-120,right:-120,width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle, rgba(var(--mf-accent-rgb, 6, 230, 255),0.11), transparent 68%)',pointerEvents:'none'}}/>
             <div style={{position:'relative',zIndex:1}}>
-              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:10}}>Execution center</div>
+              <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:10}}>All trades</div>
               <div style={{display:'flex',justifyContent:'space-between',gap:18,alignItems:'flex-start',flexWrap:'wrap'}}>
-                <div style={{maxWidth:720}}>
-                  <h1 style={{margin:0,fontSize:34,fontWeight:900,letterSpacing:'-0.04em',lineHeight:1.02,color:C.t1}}>All Trades</h1>
-                  <div style={{marginTop:10,fontSize:13,color:C.t2,lineHeight:1.7,maxWidth:560}}>Review every execution from one clean ledger. Import fast, edit only what matters, and keep the table easy to scan.</div>
+                <div style={{maxWidth:720,display:'grid',gap:10}}>
+                  <h1 style={{margin:0,fontSize:34,fontWeight:900,letterSpacing:'-0.04em',lineHeight:1.02,color:C.t1}}>Execution Ledger</h1>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    <div style={{padding:'7px 10px',borderRadius:999,border:`1px solid ${shade(C.cyan,'22')}`,background:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.cyan}}>
+                      {filtered.length} rows in view
+                    </div>
+                    <div style={{padding:'7px 10px',borderRadius:999,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:10,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',color:C.t2}}>
+                      {activeScopeLabel}
+                    </div>
+                  </div>
                 </div>
                 <div style={{display:'grid',gap:8,justifyItems:'end'}}>
                   <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}>
@@ -1820,54 +1829,53 @@ export default function AllTrades(){
               )}
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginTop:18}}>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Scope</div>
-                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{activeScopeLabel}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{filtered.length} of {allTrades.length} trades</div>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Net P&amp;L</div>
+                  <div style={{fontSize:18,fontWeight:900,color:stats.totalPnL>=0?C.green:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatMoney(stats.totalPnL)}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{filtered.length} row{filtered.length===1?'':'s'} in scope</div>
                 </div>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Latest execution</div>
-                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{latestTrade?.symbol || 'No executions yet'}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{latestTrade ? mfFormatDate(latestTrade.open_date || latestTrade.date) : 'Import or add your first trade'}</div>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Win rate</div>
+                  <div style={{fontSize:18,fontWeight:900,color:stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatPercent(stats.winRate,1)}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{stats.wins||0}W / {stats.losses||0}L / {stats.breakeven||0}BE</div>
                 </div>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Tagged setup</div>
-                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{topSetup !== 'Unassigned' ? topSetup : 'No setup tagged'}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{customColumns.length ? `${customColumns.length} custom columns active` : `${symbolCount} symbols in scope`}</div>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Profit factor</div>
+                  <div style={{fontSize:18,fontWeight:900,color:stats.pf===Infinity||stats.pf>=2?C.green:stats.pf>=1.2?C.warn:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatFactor(stats.pf)}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Average R:R {stats.avgRR!=null?mfFormatRR(stats.avgRR):'--'}</div>
                 </div>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Review state</div>
-                  <div style={{fontSize:14,fontWeight:800,color:C.t1}}>{activeSortLabel}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{activeFilterCount ? `${activeFilterCount} active filters` : 'No active filters'}</div>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Average trade</div>
+                  <div style={{fontSize:18,fontWeight:900,color:averageTrade>=0?C.green:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatMoney(averageTrade)}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Max drawdown {stats.maxDD>0?`-${mfFormatPercent(stats.maxDD,1)}`:'0.0%'}</div>
                 </div>
               </div>
             </div>
           </div>
           <div style={{padding:'20px',borderRadius:24,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(10,17,28,0.94), rgba(8,13,22,0.98))',boxShadow:'0 24px 48px rgba(0,0,0,0.18)'}}>
-            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:14}}>Review snapshot</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              {[
-                {label:'Net P&L', value:mfFormatMoney(stats.totalPnL), color:stats.totalPnL>=0?C.green:C.danger},
-                {label:'Average trade', value:mfFormatMoney(averageTrade), color:averageTrade>=0?C.green:C.danger},
-                {label:'Win rate', value:mfFormatPercent(stats.winRate,1), color:stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger},
-                {label:'Profit factor', value:mfFormatFactor(stats.pf), color:stats.pf===Infinity||stats.pf>=2?C.green:stats.pf>=1.2?C.warn:C.danger},
-              ].map(card=>(
-                <div key={card.label} style={{padding:'12px 13px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:8}}>{card.label}</div>
-                  <div style={{fontSize:18,fontWeight:900,color:card.color,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{card.value}</div>
+            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:14}}>Journal desk</div>
+            <div style={{display:'grid',gap:10}}>
+              <div style={{padding:'14px 15px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Latest execution</div>
+                <div style={{fontSize:18,fontWeight:900,color:C.t1,letterSpacing:'-0.03em'}}>{latestTrade?.symbol || 'No executions yet'}</div>
+                <div style={{fontSize:11,color:C.t2,marginTop:4}}>{latestTrade ? `${mfFormatDate(latestTrade.open_date || latestTrade.date)} · ${mfFormatTime(latestTrade.time)}` : 'Import or add the first trade'}</div>
+              </div>
+              <div style={{padding:'14px 15px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Active setup</div>
+                <div style={{fontSize:18,fontWeight:900,color:C.t1,letterSpacing:'-0.03em'}}>{topSetup !== 'Unassigned' ? topSetup : 'No setup tagged'}</div>
+                <div style={{fontSize:11,color:C.t2,marginTop:4}}>{symbolCount} symbol{symbolCount===1?'':'s'} · {customColumns.length} custom column{customColumns.length===1?'':'s'}</div>
+              </div>
+              <div style={{padding:'14px 15px',borderRadius:16,border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}>
+                  <div>
+                    <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Workflow</div>
+                    <div style={{fontSize:16,fontWeight:900,color:C.t1}}>{workflowOpen ? 'Open' : 'Collapsed'}</div>
+                    <div style={{fontSize:11,color:C.t2,marginTop:4}}>{activeFilterCount ? `${activeFilterCount} active filter${activeFilterCount===1?'':'s'}` : 'Ready for clean review'}</div>
+                  </div>
+                  <GlassBtn size="sm" onClick={()=>setShowWorkflow(value=>!value)}>
+                    {workflowOpen ? 'Hide workflow' : 'Open workflow'}
+                  </GlassBtn>
                 </div>
-              ))}
-            </div>
-            <div style={{marginTop:12,padding:'14px 15px',borderRadius:18,border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))',display:'grid',gap:10}}>
-              {[
-                {label:'Average R:R', value:stats.avgRR!=null?mfFormatRR(stats.avgRR):'--', color:C.teal},
-                {label:'Max drawdown', value:stats.maxDD>0?`-${mfFormatPercent(stats.maxDD,1)}`:'0.0%', color:C.danger},
-                {label:'Break-even trades', value:String(stats.breakeven||0), color:C.t2},
-              ].map(item=>(
-                <div key={item.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}>
-                  <div style={{fontSize:11,color:C.t2}}>{item.label}</div>
-                  <div style={{fontSize:12,fontWeight:800,color:item.color,fontFamily:'monospace'}}>{item.value}</div>
-                </div>
-              ))}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -1888,27 +1896,34 @@ export default function AllTrades(){
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" custom={1} style={{background:'linear-gradient(180deg, rgba(10,17,28,0.95), rgba(8,13,22,0.98))',border:`1px solid ${C.brd}`,borderRadius:24,overflow:'hidden',boxShadow:'0 24px 48px rgba(0,0,0,0.18)'}}>
         <div style={{padding:'16px 18px',borderBottom:`1px solid ${C.brd}`,display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap',background:'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))'}}>
           <div>
-            <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:6}}>Execution ledger</div>
             <div style={{fontSize:20,fontWeight:900,color:C.t1,letterSpacing:'-0.03em'}}>Trade review table</div>
-            <div style={{marginTop:4,fontSize:12,color:C.t2}}>Keep the ledger lean. Open a row for the deep review only when you need it.</div>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             <div style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2}}>
               {filtered.length} rows / <span style={{color:C.t1,fontWeight:800}}>{activeSortLabel}</span> {sort.dir==='asc'?'ASC':'DESC'}
             </div>
+            <button type="button" onClick={()=>setShowWorkflow(value=>!value)} style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${workflowOpen?shade(C.cyan,'30'):C.brd}`,background:workflowOpen?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)':'rgba(255,255,255,0.02)',fontSize:11,color:workflowOpen?C.cyan:C.t2,cursor:'pointer',fontFamily:'inherit'}}>
+              Workflow {activeFilterCount>0?`· ${activeFilterCount}`:''}
+            </button>
             <button type="button" onClick={()=>setModalColumns(true)} style={{padding:'9px 11px',borderRadius:12,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)',fontSize:11,color:C.t2,cursor:'pointer',fontFamily:'inherit'}}>
               {visibleCols.length} visible columns
             </button>
           </div>
         </div>
-        <div style={{padding:'12px 18px 0'}}>
-          <FilterBar filters={filters} setFilters={setFilters} trades={trades} onReset={handleReset} compact />
-        </div>
+        <AnimatePresence initial={false}>
+          {workflowOpen&&(
+            <motion.div initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:0.24,ease:[0.22,1,0.36,1]}} style={{overflow:'hidden'}}>
+              <div style={{padding:'12px 18px 0'}}>
+                <FilterBar filters={filters} setFilters={setFilters} trades={trades} onReset={handleReset} compact />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {filtered.length===0?(
           <div style={{padding:'84px 22px',textAlign:'center'}}>
             <div style={{width:54,height:54,borderRadius:18,margin:'0 auto 18px',border:`1px solid ${shade(C.cyan,'18')}`,background:'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.08), rgba(255,255,255,0.01))'}}/>
             <h3 style={{color:C.t1,fontSize:20,fontWeight:800,margin:'0 0 8px'}}>{allTrades.length===0?'No trades yet':trades.length===0?'No trades in this scope':'No trades match the filters'}</h3>
-            <p style={{color:C.t2,fontSize:13,lineHeight:1.7,maxWidth:520,margin:'0 auto 22px'}}>{allTrades.length===0?'Import a file or log the first execution manually.':trades.length===0?'Switch account scope or import trades for this account.':'Clear the filters or widen the date range.'}</p>
+            <p style={{color:C.t2,fontSize:13,lineHeight:1.7,maxWidth:520,margin:'0 auto 22px'}}>{allTrades.length===0?'Import a file or add the first trade.':trades.length===0?'Change scope or import trades for this account.':'Reset the workflow or widen the date range.'}</p>
             <div style={{display:'flex',justifyContent:'center',gap:8,flexWrap:'wrap'}}>
               {allTrades.length===0&&<GlassBtn onClick={()=>setModalImport(true)}>Import trades</GlassBtn>}
               <GlassBtn variant="primary" onClick={handleCreate}>{allTrades.length===0?'Add first trade':'Add trade manually'}</GlassBtn>

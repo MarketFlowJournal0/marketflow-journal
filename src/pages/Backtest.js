@@ -48,11 +48,26 @@ const GlassCard=({children,style={},glow=null,hover=true,custom=0,onClick,...p})
 const ST=({children,sub,color=C.cyan,icon,mb=14})=>(
   <div style={{marginBottom:mb}}>
     <div style={{display:'flex',alignItems:'center',gap:8}}>
-      {icon&&<span style={{fontSize:14,filter:`drop-shadow(0 0 7px ${color})`}}>{icon}</span>}
+      {icon&&(
+        <span style={{
+          width:16,
+          height:16,
+          borderRadius:5,
+          display:'inline-flex',
+          alignItems:'center',
+          justifyContent:'center',
+          background:`linear-gradient(135deg,${shade(color,'26')},${shade(color,'08')})`,
+          border:`1px solid ${shade(color,'22')}`,
+          boxShadow:`0 0 12px ${shade(color,'12')}`,
+          flexShrink:0,
+        }}>
+          <span style={{width:7,height:7,borderRadius:999,background:color,boxShadow:`0 0 8px ${shade(color,'55')}`}} />
+        </span>
+      )}
       <div style={{width:3,height:15,background:`linear-gradient(180deg,${color},${shade(color,'50')})`,borderRadius:2,flexShrink:0}}/>
       <span style={{fontSize:13,fontWeight:800,color:C.t1,letterSpacing:'-0.3px'}}>{children}</span>
     </div>
-    {sub&&<p style={{margin:'3px 0 0',fontSize:9,color:C.t3,paddingLeft:icon?30:11}}>{sub}</p>}
+    {sub&&<p style={{margin:'3px 0 0',fontSize:9,color:C.t3,paddingLeft:icon?32:11}}>{sub}</p>}
   </div>
 );
 
@@ -304,7 +319,7 @@ const KpiCard=({label,value,sub,color,icon,custom})=>(
     <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${shade(color,'60')},transparent)`}}/>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:7}}>
       <span style={{fontSize:7.5,fontWeight:800,color:C.t3,letterSpacing:'1.4px',textTransform:'uppercase'}}>{label}</span>
-      <motion.span animate={{scale:[1,1.12,1]}} transition={{duration:3.5,repeat:Infinity,delay:(custom||0)*0.2}} style={{fontSize:16,filter:`drop-shadow(0 0 6px ${color})`}}>{icon}</motion.span>
+      {icon ? <motion.span animate={{scale:[1,1.12,1]}} transition={{duration:3.5,repeat:Infinity,delay:(custom||0)*0.2}} style={{fontSize:16,filter:`drop-shadow(0 0 6px ${color})`}}>{icon}</motion.span> : null}
     </div>
     <div style={{fontSize:24,fontWeight:900,fontFamily:'monospace',color,lineHeight:1,marginBottom:3,textShadow:`0 0 20px ${shade(color,'40')}`}}>{value}</div>
     {sub&&<div style={{fontSize:8.5,color:C.t2,lineHeight:1.5}}>{sub}</div>}
@@ -568,8 +583,8 @@ const ImportZone=({onImport,isReal,count})=>{
   );
 };
 
-const MAIN_TABS=[{id:'datas',label:'Data',icon:'📊'},{id:'manuel',label:'Manual Backtest',icon:'✏️'}];
-const SEC_TABS=[{id:'overview',label:'Overview',icon:'🏆'},{id:'general',label:'General',icon:'🌐'},{id:'ict',label:'ICT Confluences',icon:'🔷'},{id:'dirsplit',label:'Long vs Short',icon:'↕️'},{id:'heatmaps',label:'Heatmaps',icon:'🌡️'},{id:'trades',label:'Trades',icon:'📋'}];
+const MAIN_TABS=[{id:'datas',label:'Data',icon:null},{id:'manuel',label:'Manual Backtest',icon:null}];
+const SEC_TABS=[{id:'overview',label:'Overview',icon:null},{id:'general',label:'General',icon:null},{id:'ict',label:'ICT Confluences',icon:null},{id:'dirsplit',label:'Long vs Short',icon:null},{id:'heatmaps',label:'Heatmaps',icon:null},{id:'trades',label:'Trades',icon:null}];
 
 export default function Backtest(){
   const[mainTab,setMainTab]=useState('datas');
@@ -600,14 +615,10 @@ export default function Backtest(){
   const ctxDir=useMemo(()=>byKeyDir(trades,t=>t.contexte,CONTEXTE_OPTS),[trades]);
 
   const KPI=stats?[
-    {label:'Total Trades',value:stats.n,sub:`${stats.yrs} years · EUR/USD M5`,color:C.cyan,icon:'📊',custom:0},
-    {label:'Win Rate (TP)',value:`${stats.wr}%`,sub:`${stats.wins}TP · ${stats.losses}SL · ${shade(stats.bes,'BE')}`,color:stats.wr>=60?C.green:stats.wr>=50?C.warn:C.danger,icon:'🎯',custom:1},
-    {label:'Profit Factor',value:stats.pf,sub:`${stats.grossW}R won / ${stats.grossL}R lost`,color:stats.pf>=2?C.green:stats.pf>=1.3?C.cyan:stats.pf>=1?C.warn:C.danger,icon:'⚖️',custom:2},
-    {label:'Total R Won',value:`+${stats.totalRR}R`,sub:`Avg/trade: ${stats.avgRR}R`,color:stats.totalRR>=0?C.green:C.danger,icon:'💹',custom:3},
-    {label:'Avg Win / Loss',value:`+${stats.avgWin}R`,sub:`Avg loss: -${stats.avgLoss}R · ratio ${parseFloat((stats.avgWin/Math.max(0.01,stats.avgLoss)).toFixed(2))}:1`,color:C.green,icon:'📐',custom:4},
-    {label:'Sharpe Ratio',value:stats.sharpe,sub:`≥1 good · ≥2 excellent`,color:stats.sharpe>=2?C.green:stats.sharpe>=1?C.cyan:C.warn,icon:'📏',custom:5},
-    {label:'Max Drawdown',value:`-${stats.maxDD}R`,sub:`Max streak: ${stats.mW}W · ${stats.mL}L`,color:C.danger,icon:'📉',custom:6},
-    {label:'Expectancy',value:`${stats.exp>=0?'+':''}${stats.exp}R`,sub:`Kelly: ${stats.kelly}% · BE rate: ${stats.beRate}%`,color:stats.exp>=0?C.green:C.danger,icon:'🧮',custom:7},
+    {label:'Total Trades',value:stats.n,sub:`${stats.yrs} years · EUR/USD M5`,color:C.cyan,icon:null,custom:0},
+    {label:'Win Rate',value:`${stats.wr}%`,sub:`${stats.wins}TP · ${stats.losses}SL · ${shade(stats.bes,'BE')}`,color:stats.wr>=60?C.green:stats.wr>=50?C.warn:C.danger,icon:null,custom:1},
+    {label:'Profit Factor',value:stats.pf,sub:`${stats.grossW}R won / ${stats.grossL}R lost`,color:stats.pf>=2?C.green:stats.pf>=1.3?C.cyan:stats.pf>=1?C.warn:C.danger,icon:null,custom:2},
+    {label:'Expectancy',value:`${stats.exp>=0?'+':''}${stats.exp}R`,sub:`Max DD -${stats.maxDD}R`,color:stats.exp>=0?C.green:C.danger,icon:null,custom:3},
   ]:[];
 
   return(
@@ -640,15 +651,12 @@ export default function Backtest(){
           style={{marginBottom:20,paddingBottom:18,borderBottom:`1px solid ${C.brd}`}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
             <div style={{display:'flex',alignItems:'center',gap:12}}>
-              <motion.div animate={{rotateY:[0,360]}} transition={{duration:8,repeat:Infinity,ease:'linear'}}
-                style={{width:44,height:44,borderRadius:13,background:C.gradCyan,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,boxShadow:`0 4px 22px ${C.cyanGlow},0 0 40px ${C.cyanGlow}`}}>📊</motion.div>
               <div>
-                <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:3}}>
+                <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:3,flexWrap:'wrap'}}>
                   <h1 style={{margin:0,fontSize:26,fontWeight:900,background:C.gradCyan,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-1px'}}>Backtest Analytics</h1>
                   <span style={{padding:'2px 8px',borderRadius:5,background:`${shade(C.green,'18')}`,border:`1px solid ${shade(C.green,'38')}`,fontSize:8.5,fontWeight:800,color:C.green}}>EUR/USD · M5 · 2023-2025</span>
                   {stats&&<span style={{padding:'2px 8px',borderRadius:5,background:`${shade(C.cyan,'12')}`,border:`1px solid ${shade(C.cyan,'30')}`,fontSize:8.5,fontWeight:800,color:C.cyan}}>{stats.n} trades</span>}
                 </div>
-                <div style={{fontSize:10.5,color:C.t3}}>Your real data · All ICT confluences · Long vs Short split</div>
               </div>
             </div>
             <div style={{display:'flex',gap:3,padding:'3px',borderRadius:13,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.brd}`}}>
@@ -658,7 +666,7 @@ export default function Backtest(){
                     background:mainTab===t.id?`linear-gradient(135deg,${shade(C.blue,'28')},${shade(C.cyan,'15')})`:'transparent',
                     color:mainTab===t.id?C.cyan:C.t3,
                     boxShadow:mainTab===t.id?`0 0 0 1px ${shade(C.cyan,'40')},0 2px 14px ${shade(C.cyan,'15')}`:'none'}}>
-                  <span style={{fontSize:13}}>{t.icon}</span>{t.label}
+                  {t.icon?<span style={{fontSize:13}}>{t.icon}</span>:null}{t.label}
                 </motion.button>
               ))}
             </div>
@@ -669,11 +677,8 @@ export default function Backtest(){
         {mainTab==='datas'&&(
           <motion.div key="datas" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:0.28}}>
             <ImportZone onImport={t=>{setTrades(t);setIsReal(true);}} isReal={isReal} count={trades.length}/>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:10}}>
-              {KPI.slice(0,4).map(k=><KpiCard key={k.label} {...k}/>)}
-            </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:22}}>
-              {KPI.slice(4).map(k=><KpiCard key={k.label} {...k}/>)}
+              {KPI.slice(0,4).map(k=><KpiCard key={k.label} {...k}/>)}
             </div>
             <div style={{display:'flex',gap:3,marginBottom:18,padding:'3px',borderRadius:12,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.brd}`,width:'fit-content',flexWrap:'wrap'}}>
               {SEC_TABS.map(s=>(<motion.button key={s.id} onClick={()=>setSecTab(s.id)} whileHover={{scale:1.03}} whileTap={{scale:0.96}}
@@ -681,7 +686,7 @@ export default function Backtest(){
                   background:secTab===s.id?`linear-gradient(135deg,${shade(C.blue,'22')},${shade(C.purple,'14')})`:'transparent',
                   color:secTab===s.id?C.cyan:C.t3,
                   boxShadow:secTab===s.id?`0 0 0 1px ${shade(C.cyan,'32')},0 2px 10px ${shade(C.cyan,'12')}`:'none'}}>
-                <span>{s.icon}</span>{s.label}
+                {s.icon?<span>{s.icon}</span>:null}{s.label}
               </motion.button>))}
             </div>
 
@@ -702,7 +707,6 @@ export default function Backtest(){
                 <ConfCard title="Retracement after CISD" icon="🔁" color={C.pink} data={bRetr} custom={4}/>
               </motion.div>)}
               {secTab==='dirsplit'&&(<motion.div key="dir" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.25}}>
-                <div style={{background:`${shade(C.blue,'08')}`,border:`1px solid ${shade(C.blue,'18')}`,borderRadius:12,padding:'10px 14px',marginBottom:14,fontSize:9.5,color:C.t2,lineHeight:1.65}}><strong style={{color:C.cyan}}>How to read:</strong> Each table shows the same confluence broken down by direction.&nbsp;<span style={{color:C.green}}>▲ Long</span> = Long trades · <span style={{color:C.danger}}>▼ Short</span> = Short trades · Switch WR/R:R/Tot/PF/# to change the metric.</div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}><DirSplit title="Asian Take × Direction" icon="🌙" color={C.cyan} dataByDir={asianDir} labels={ASIAN_OPTS}/><DirSplit title="Previous Daily × Direction" icon="📌" color={C.teal} dataByDir={pdDir} labels={PD_OPTS} custom={1}/></div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}><DirSplit title="Turtle Soup × Direction" icon="🐢" color={C.orange} dataByDir={tsDir} labels={TS_OPTS} custom={2}/><DirSplit title="Structure (Key-Level) × Direction" icon="🔷" color={C.purple} dataByDir={klDir} labels={KEY_LEVELS} custom={3}/></div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}><DirSplit title="CISD Retracement × Direction" icon="🔁" color={C.pink} dataByDir={retrDir} labels={RETR_OPTS} custom={4}/><DirSplit title="Session × Direction" icon="🌍" color={C.green} dataByDir={sessDir} labels={SESSIONS} custom={5}/></div>
@@ -722,9 +726,8 @@ export default function Backtest(){
         {mainTab==='manuel'&&(
           <motion.div key="manuel" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:0.28}}>
             <GlassCard glow={C.purple} style={{padding:'60px 40px',textAlign:'center'}}>
-              <motion.div animate={{scale:[1,1.07,1]}} transition={{duration:3,repeat:Infinity}} style={{fontSize:52,marginBottom:20}}>🛠️</motion.div>
               <div style={{fontSize:22,fontWeight:900,color:C.t1,marginBottom:8,letterSpacing:'-0.5px'}}>Manual Backtest</div>
-              <div style={{fontSize:12,color:C.t3,maxWidth:400,margin:'0 auto',lineHeight:1.7}}>Trade-by-trade entry with all ICT confluences.<br/><span style={{color:C.cyan,fontWeight:700}}>Under construction — next step.</span></div>
+              <div style={{fontSize:12,color:C.t3,maxWidth:400,margin:'0 auto',lineHeight:1.7}}>Trade-by-trade entry is reserved for the next backtest pass.</div>
               <div style={{marginTop:22,display:'inline-flex',gap:7,flexWrap:'wrap',justifyContent:'center'}}>
                 {['Trade form','ICT validation','Live stats','Excel export'].map(f=>(<span key={f} style={{padding:'5px 13px',borderRadius:20,background:`${shade(C.purple,'12')}`,border:`1px solid ${shade(C.purple,'28')}`,fontSize:9.5,fontWeight:700,color:C.purple}}>{f}</span>))}
               </div>
