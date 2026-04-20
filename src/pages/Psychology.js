@@ -347,7 +347,7 @@ const ScoreCard=({sessions})=>{
 // ═══════════════════════════════════════════════════════════════════
 // 🗓️ PSYCHOLOGY BY DAY OF WEEK — version premium
 // ═══════════════════════════════════════════════════════════════════
-const PsychByDay=({sessions})=>{
+const PsychByDayLegacy=({sessions})=>{
   const data=useMemo(()=>{
     const m=DAYS_FR.map((d,di)=>({day:d,di,score:0,pnl:0,count:0,emotional:0,wins:0,sessions:[]}));
     sessions.forEach(s=>{
@@ -539,6 +539,139 @@ const PsychByDay=({sessions})=>{
           <div style={{width:5,height:5,borderRadius:'50%',background:C.danger}}/>
           Bottom dot = emotional rate
         </div>
+      </div>
+    </GlassCard>
+  );
+};
+
+const PsychByDay=({sessions})=>{
+  const money=v=>`${v>=0?'+':'-'}$${Math.abs(Math.round(v||0)).toLocaleString()}`;
+  const data=useMemo(()=>{
+    const days=DAYS_FR.map((day,di)=>({day,di,score:0,pnl:0,count:0,emotional:0,wins:0,best:0,worst:0}));
+    sessions.forEach(session=>{
+      const di=new Date(`${session.date}T12:00:00`).getDay();
+      const score=calcPsych(session);
+      const pnl=session.pnl||0;
+      const bucket=days[di];
+      bucket.score+=score;
+      bucket.pnl+=pnl;
+      bucket.count+=1;
+      if(score<50) bucket.emotional+=1;
+      if(pnl>0) bucket.wins+=1;
+      bucket.best=Math.max(bucket.best,pnl);
+      bucket.worst=Math.min(bucket.worst,pnl);
+    });
+    return days.map(bucket=>({
+      day:bucket.day,
+      score:bucket.count?Math.round(bucket.score/bucket.count):0,
+      avgPnl:bucket.count?Math.round(bucket.pnl/bucket.count):0,
+      totalPnl:Math.round(bucket.pnl),
+      winRate:bucket.count?Math.round((bucket.wins/bucket.count)*100):0,
+      emotRate:bucket.count?Math.round((bucket.emotional/bucket.count)*100):0,
+      count:bucket.count,
+      bestTrade:bucket.best,
+      worstTrade:bucket.worst,
+      tone:sColor(bucket.count?Math.round(bucket.score/bucket.count):0),
+    }));
+  },[sessions]);
+
+  const activeDays=data.filter(day=>day.count>0);
+  const bestDay=activeDays.reduce((best,day)=>!best||day.score>best.score?day:best,null);
+  const riskDay=activeDays.reduce((worst,day)=>{
+    if(!worst) return day;
+    if(day.score<worst.score) return day;
+    if(day.score===worst.score&&day.emotRate>worst.emotRate) return day;
+    return worst;
+  },null);
+  const topWinDay=activeDays.reduce((best,day)=>!best||day.winRate>best.winRate?day:best,null);
+  const topFlowDay=activeDays.reduce((best,day)=>!best||day.avgPnl>best.avgPnl?day:best,null);
+
+  return(
+    <GlassCard custom={6} glow={C.purple} style={{padding:'26px 24px'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16,marginBottom:18,flexWrap:'wrap'}}>
+        <ST color={C.purple} mb={0}>Psychology by Day of Week</ST>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          {bestDay&&<div style={{padding:'5px 11px',borderRadius:999,background:shade(C.green,'14'),border:`1px solid ${shade(C.green,'24')}`,fontSize:9,fontWeight:800,color:C.green}}>
+            Best {bestDay.day} / {bestDay.score}
+          </div>}
+          {riskDay&&riskDay.day!==bestDay?.day&&<div style={{padding:'5px 11px',borderRadius:999,background:shade(C.danger,'14'),border:`1px solid ${shade(C.danger,'24')}`,fontSize:9,fontWeight:800,color:C.danger}}>
+            Risk {riskDay.day} / {riskDay.score}
+          </div>}
+        </div>
+      </div>
+
+      <div style={{padding:'14px 14px 10px',borderRadius:18,border:`1px solid ${C.brd}`,background:'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',marginBottom:16}}>
+        <ResponsiveContainer width="100%" height={310}>
+          <ComposedChart data={data} margin={{top:8,right:8,left:-10,bottom:0}}>
+            <defs>
+              <linearGradient id="mfPsychDayPnl" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={shade(C.cyan,'55')} />
+                <stop offset="100%" stopColor={shade(C.cyan,'06')} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...CHART_GRID} vertical={false}/>
+            <XAxis dataKey="day" axisLine={false} tickLine={false} {...CHART_AXIS_SMALL}/>
+            <YAxis yAxisId="score" domain={[0,100]} width={34} axisLine={false} tickLine={false} {...CHART_AXIS_SMALL}/>
+            <YAxis yAxisId="pnl" orientation="right" width={56} axisLine={false} tickLine={false} tickFormatter={value=>`${value>=0?'+':'-'}$${Math.abs(value)}`} {...CHART_AXIS_SMALL}/>
+            <Tooltip
+              cursor={chartCursor(C.purple)}
+              content={({active,payload,label})=>{
+                if(!active||!payload?.length) return null;
+                const row=payload[0]?.payload;
+                if(!row) return null;
+                return(
+                  <TTBox
+                    active={active}
+                    label={label}
+                    payload={[
+                      {name:'Score',value:row.score,color:sColor(row.score),unit:'/100'},
+                      {name:'Win rate',value:row.winRate,color:C.cyan,unit:'%'},
+                      {name:'Avg P&L',value:money(row.avgPnl),color:row.avgPnl>=0?C.green:C.danger},
+                      {name:'Emotion',value:row.emotRate,color:C.danger,unit:'%'},
+                    ]}
+                    extra={`${row.count} session${row.count>1?'s':''} • Total ${money(row.totalPnl)}`}
+                  />
+                );
+              }}
+              wrapperStyle={chartTooltipStyle}
+            />
+            <ReferenceLine yAxisId="score" y={60} stroke={shade(C.warn,'60')} strokeDasharray="4 4" />
+            <Area yAxisId="pnl" type="monotone" dataKey="avgPnl" stroke={C.teal} fill="url(#mfPsychDayPnl)" strokeWidth={2.2} animationDuration={900} />
+            <Bar yAxisId="score" dataKey="score" barSize={24} radius={[10,10,5,5]} animationDuration={700}>
+              {data.map((entry)=>(
+                <Cell key={entry.day} fill={entry.count?shade(entry.tone,'D2'):'rgba(255,255,255,0.08)'} stroke={entry.count?shade(entry.tone,'38'):'rgba(255,255,255,0.06)'} />
+              ))}
+            </Bar>
+            <Line yAxisId="score" type="monotone" dataKey="winRate" stroke={C.cyan} strokeWidth={2.6} dot={false} activeDot={chartActiveDot(C.cyan)} animationDuration={950} />
+            <Line yAxisId="score" type="monotone" dataKey="emotRate" stroke={C.danger} strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={chartActiveDot(C.danger)} animationDuration={980} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:10,marginBottom:14}}>
+        {[
+          {label:'Best day',value:bestDay?bestDay.day:'—',sub:bestDay?`Score ${bestDay.score}`:'No sessions',tone:C.green},
+          {label:'Risk day',value:riskDay?riskDay.day:'—',sub:riskDay?`${riskDay.emotRate}% emotional`:'No sessions',tone:C.danger},
+          {label:'Top win rate',value:topWinDay?`${topWinDay.winRate}%`:'0%',sub:topWinDay?topWinDay.day:'No sessions',tone:C.cyan},
+          {label:'Best avg P&L',value:topFlowDay?money(topFlowDay.avgPnl):'$0',sub:topFlowDay?topFlowDay.day:'No sessions',tone:topFlowDay&&topFlowDay.avgPnl<0?C.danger:C.teal},
+        ].map(card=>(
+          <div key={card.label} style={{padding:'10px 11px',borderRadius:14,border:`1px solid ${shade(card.tone,'20')}`,background:'rgba(255,255,255,0.022)'}}>
+            <div style={{fontSize:9,color:C.t3,fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:7}}>{card.label}</div>
+            <div style={{fontSize:18,fontWeight:900,color:card.tone,letterSpacing:'-0.03em',marginBottom:4}}>{card.value}</div>
+            <div style={{fontSize:11,color:C.t2}}>{card.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,minmax(0,1fr))',gap:8,paddingTop:14,borderTop:`1px solid ${C.brd}`}}>
+        {data.map(day=>(
+          <div key={day.day} style={{padding:'10px 8px',borderRadius:12,border:`1px solid ${day.count?shade(day.tone,'18'):C.brd}`,background:day.count?shade(day.tone,'08'):'rgba(255,255,255,0.02)'}}>
+            <div style={{fontSize:10,fontWeight:800,color:day.count?C.t1:C.t3,marginBottom:8,textAlign:'center'}}>{day.day}</div>
+            <div style={{fontSize:16,fontWeight:900,color:day.count?day.tone:C.t3,textAlign:'center',letterSpacing:'-0.03em'}}>{day.count?day.score:'—'}</div>
+            <div style={{fontSize:10,color:C.t3,textAlign:'center',marginTop:3}}>{day.count?`${day.count} sessions`:'No data'}</div>
+            {day.count>0&&<div style={{fontSize:10,color:day.avgPnl>=0?C.green:C.danger,textAlign:'center',marginTop:6,fontFamily:'monospace'}}>{money(day.avgPnl)}</div>}
+          </div>
+        ))}
       </div>
     </GlassCard>
   );
@@ -1557,17 +1690,15 @@ export default function Psychology(){
 
           {tab==='overview'&&(
             <motion.div key="ov" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:0.32}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1.55fr',gap:16,marginBottom:16}}>
+              <div style={{display:'grid',gridTemplateColumns:'1.15fr 0.95fr',gap:16,marginBottom:16}}>
                 <ScoreCard sessions={sessions}/>
-                <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                  <ProfileRadar sessions={sessions}/>
-                </div>
+                <ProfileRadar sessions={sessions}/>
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:16,marginBottom:16}}>
-                <ScoreEvolution sessions={sessions}/>
+              <div style={{display:'grid',gridTemplateColumns:'1.28fr 0.92fr',gap:16,marginBottom:16}}>
+                <PsychByDay sessions={sessions}/>
                 <Patterns sessions={sessions}/>
               </div>
-              <PsychByDay sessions={sessions}/>
+              <ScoreEvolution sessions={sessions}/>
             </motion.div>
           )}
 
@@ -1583,12 +1714,12 @@ export default function Psychology(){
 
           {tab==='patterns'&&(
             <motion.div key="pt" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:0.32}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1.35fr',gap:16,marginBottom:16}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
                 <Patterns sessions={sessions}/>
-                <ScoreEvolution sessions={sessions}/>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
                 <PsychByDay sessions={sessions}/>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1.15fr 0.85fr',gap:16}}>
+                <ScoreEvolution sessions={sessions}/>
                 <ProfileRadar sessions={sessions}/>
               </div>
             </motion.div>

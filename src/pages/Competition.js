@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTradingContext } from '../context/TradingContext';
@@ -7,6 +7,7 @@ import { shade } from '../lib/colorAlpha';
 import {
   buildCompetitionBoard,
   buildMarketFlowRank,
+  getCompetitionDayStamp,
 } from '../lib/marketflowCompetition';
 
 const C = {
@@ -340,7 +341,19 @@ export default function Competition() {
   const rank = overview.rank;
   const rankTone = toneColor(rank.tone);
   const displayName = user?.fullName || user?.name || user?.email?.split('@')[0] || 'You';
-  const board = useMemo(() => buildCompetitionBoard(rank, displayName), [displayName, rank]);
+  const [leaderboardDayStamp, setLeaderboardDayStamp] = useState(() => getCompetitionDayStamp());
+
+  useEffect(() => {
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(24, 0, 5, 0);
+    const timeout = window.setTimeout(() => {
+      setLeaderboardDayStamp(getCompetitionDayStamp());
+    }, Math.max(60000, next.getTime() - now.getTime()));
+    return () => window.clearTimeout(timeout);
+  }, [leaderboardDayStamp]);
+
+  const board = useMemo(() => buildCompetitionBoard(rank, displayName, leaderboardDayStamp), [displayName, leaderboardDayStamp, rank]);
 
   return (
     <div style={{ padding: '30px 30px 54px', position: 'relative' }}>

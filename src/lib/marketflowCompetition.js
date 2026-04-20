@@ -42,6 +42,12 @@ function hashValue(input = '') {
   ), 7);
 }
 
+export function getCompetitionDayStamp(now = new Date()) {
+  const localNow = now instanceof Date ? now : new Date(now);
+  const shifted = new Date(localNow.getTime() - (localNow.getTimezoneOffset() * 60000));
+  return shifted.toISOString().slice(0, 10);
+}
+
 function pickDivision(progress = 0, isTopTier = false) {
   if (isTopTier) return 'I';
   if (progress >= 68) return 'I';
@@ -158,9 +164,9 @@ export function buildMarketFlowRank(stats = {}, context = {}) {
   };
 }
 
-export function buildCompetitionBoard(rank, displayName = 'You') {
+export function buildCompetitionBoard(rank, displayName = 'You', dayStamp = getCompetitionDayStamp()) {
   const safeRank = rank || buildMarketFlowRank({}, {});
-  const seed = hashValue(`${displayName}-${safeRank.score}-${safeRank.position}`);
+  const seed = hashValue(`${dayStamp}-${displayName}-${safeRank.score}-${safeRank.position}`);
   const board = [];
 
   for (let offset = -4; offset <= 5; offset += 1) {
@@ -184,4 +190,3 @@ export function buildCompetitionBoard(rank, displayName = 'You') {
 
   return board.sort((left, right) => left.position - right.position);
 }
-

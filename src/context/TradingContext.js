@@ -3,9 +3,11 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
 const TradingContext = createContext(null);
-const IMPORT_CONCURRENCY = 6;
 const REQUEST_TIMEOUT_MS = 12000;
+const IMPORT_REQUEST_TIMEOUT_MS = 3500;
 const ACTIVE_ACCOUNT_STORAGE_KEY = 'mf_active_account_v1';
+const AUTO_BACKUP_STORAGE_PREFIX = 'mfj_journal_autobackup_v2_';
+const LOCAL_TRADE_PREFIX = 'local-trade-';
 
 export function TradingProvider({ children }) {
   const { session, user } = useAuth();
@@ -34,16 +36,24 @@ export function TradingProvider({ children }) {
     payload,
     timeoutMessage = 'Saving the trade took too long.',
     fallbackMessage = 'A trade row could not be saved.',
+    options = {},
   ) => {
+    const shouldReturnRow = options?.returning !== false;
+    const timeoutMs = Number.isFinite(options?.timeoutMs) ? options.timeoutMs : REQUEST_TIMEOUT_MS;
     try {
       const { data, error } = await runSupabaseRequest(
-        (signal) => supabase
-          .from('trades')
-          .insert([payload])
-          .select()
-          .single()
-          .abortSignal(signal),
-        REQUEST_TIMEOUT_MS,
+        (signal) => {
+          let query = supabase
+            .from('trades')
+            .insert([payload]);
+
+          if (shouldReturnRow) {
+            query = query.select().single();
+          }
+
+          return query.abortSignal(signal);
+        },
+        timeoutMs,
         timeoutMessage,
       );
 
@@ -85,20 +95,31 @@ export function TradingProvider({ children }) {
       );
       if (error) {
         console.error('fetchTrades error:', error.message, error.details);
+        const recoveredTrades = readAutoBackupTrades(userId);
+        if (recoveredTrades.length) {
+          setTrades(recoveredTrades);
+          return recoveredTrades;
+        }
         if (!preserveOnError) setTrades([]);
         return [];
       }
       const normalized = (data || []).map(normalizeTradeRecord);
-      setTrades(normalized);
-      return normalized;
+      const merged = mergeOptimisticTrades(normalized, readAutoBackupTrades(userId));
+      setTrades(merged);
+      return merged;
     } catch(error) {
       console.error('fetchTrades exception:', error);
+      const fallbackTrades = activeUserId ? readAutoBackupTrades(activeUserId) : [];
+      if (fallbackTrades.length) {
+        setTrades(fallbackTrades);
+        return fallbackTrades;
+      }
       if (!preserveOnError) setTrades([]);
       return [];
     } finally {
       setLoading(false);
     }
-  }, [getActiveUserId]);
+  }, [activeUserId, getActiveUserId]);
 
   useEffect(() => {
     if (!activeUserId) {
@@ -127,7 +148,9 @@ export function TradingProvider({ children }) {
 
       if (error) {
         console.error('addTrade error:', error.message, error.details);
-        return null;
+        const localTrade = createImportedTradePreview(payload, Date.now(), { localOnly: true, syncState: 'local-pending' });
+        setTrades(prev => mergeOptimisticTrades(prev, [localTrade]));
+        return localTrade;
       }
       if (data) {
         const normalized = normalizeTradeRecord(data);
@@ -137,14 +160,16 @@ export function TradingProvider({ children }) {
       return null;
     } catch (err) {
       console.error('addTrade exception:', err);
-      return null;
+      const fallbackTrade = createImportedTradePreview(buildTradePayload(tradeData, activeUserId || user?.id || 'local-user'), Date.now(), { localOnly: true, syncState: 'local-pending' });
+      setTrades(prev => mergeOptimisticTrades(prev, [fallbackTrade]));
+      return fallbackTrade;
     }
-  }, [getActiveUserId, persistTradePayload]);
+  }, [activeUserId, getActiveUserId, persistTradePayload, user?.id]);
 
   const importTrades = useCallback(async (tradeRows = [], options = {}) => {
     try {
       const onProgress = typeof options?.onProgress === 'function' ? options.onProgress : null;
-      const rows = Array.isArray(tradeRows) ? tradeRows.filter(Boolean) : [];
+      const rows = Array.isArray(tradeRows) ? tradeRows.filter(Boolean).map(sanitizeImportedTradeInput) : [];
       if (!rows.length) return { imported: 0, skipped: 0, trades: [] };
 
       const userId = await getActiveUserId();
@@ -157,17 +182,16 @@ export function TradingProvider({ children }) {
         };
       }
 
-      const payloads = rows.map((tradeData) => buildTradePayload(tradeData, userId));
       let imported = 0;
       let skipped = 0;
       let firstError = '';
-      const savedTradesByIndex = new Array(payloads.length).fill(null);
-      let cursor = 0;
+      let localFallbackCount = 0;
+      const savedTradesByIndex = new Array(rows.length).fill(null);
 
       const reportProgress = (stage = 'importing') => {
         onProgress?.({
           stage,
-          total: payloads.length,
+          total: rows.length,
           processed: imported + skipped,
           imported,
           skipped,
@@ -176,36 +200,56 @@ export function TradingProvider({ children }) {
 
       reportProgress('starting');
 
-      const worker = async () => {
-        while (true) {
-          const index = cursor;
-          cursor += 1;
+      for (let index = 0; index < rows.length; index += 1) {
+        const tradeData = rows[index];
+        const primaryPayload = buildTradePayload(tradeData, userId);
+        let saveResult = await persistTradePayload(
+          primaryPayload,
+          'Saving one imported trade took too long.',
+          'A trade row could not be saved.',
+          { returning: false, timeoutMs: IMPORT_REQUEST_TIMEOUT_MS },
+        );
 
-          if (index >= payloads.length) return;
+        let normalizedTrade = !saveResult?.error
+          ? createImportedTradePreview(primaryPayload, index)
+          : null;
 
-          const payload = payloads[index];
-          const { data, message } = await persistTradePayload(
-            payload,
-            'Saving one imported trade took too long.',
-            'A trade row could not be saved.',
-          );
-
-          if (data) {
-            savedTradesByIndex[index] = normalizeTradeRecord(data);
-            imported += 1;
-          } else {
-            skipped += 1;
-            if (!firstError && message) {
-              firstError = message;
+        if (saveResult?.error && shouldTryLegacyTradeInsert(saveResult.message)) {
+          const legacyPayload = buildLegacyTradePayload(tradeData, userId);
+          if (legacyPayload) {
+            const legacyResult = await persistTradePayload(
+              legacyPayload,
+              'Saving one imported trade took too long.',
+              saveResult.message || 'A trade row could not be saved.',
+              { returning: false, timeoutMs: IMPORT_REQUEST_TIMEOUT_MS },
+            );
+            if (!legacyResult?.error) {
+              saveResult = legacyResult;
+              normalizedTrade = createImportedTradePreview(legacyPayload, index);
             }
           }
-
-          reportProgress('row');
         }
-      };
 
-      const workerCount = Math.min(IMPORT_CONCURRENCY, Math.max(1, payloads.length));
-      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+        if (!normalizedTrade && saveResult?.message) {
+          normalizedTrade = createImportedTradePreview(primaryPayload, index, { localOnly: true, syncState: 'local-pending' });
+          localFallbackCount += 1;
+          if (!firstError) {
+            firstError = 'Some imports were saved in the local vault because cloud sync stalled.';
+          }
+        }
+
+        if (normalizedTrade) {
+          savedTradesByIndex[index] = normalizedTrade;
+          imported += 1;
+        } else {
+          skipped += 1;
+          if (!firstError && saveResult?.message) {
+            firstError = saveResult.message;
+          }
+        }
+
+        reportProgress('row');
+      }
 
       const savedTrades = savedTradesByIndex.filter(Boolean);
 
@@ -221,6 +265,10 @@ export function TradingProvider({ children }) {
         firstError = 'No trade could be saved.';
       }
 
+      if (localFallbackCount > 0 && !firstError) {
+        firstError = 'Some imports were saved in the local vault because cloud sync stalled.';
+      }
+
       reportProgress('done');
       return { imported, skipped, trades: savedTrades, error: firstError || null };
     } catch (err) {
@@ -231,6 +279,11 @@ export function TradingProvider({ children }) {
 
   const updateTrade = useCallback(async (id, updates) => {
     const currentTrade = trades.find(t => t.id === id);
+    if (isLocalTrade(currentTrade)) {
+      const normalized = normalizeTradeRecord({ ...currentTrade, ...updates, id, localOnly: true, syncState: 'local-pending' });
+      setTrades(prev => prev.map(t => t.id === id ? normalized : t));
+      return normalized;
+    }
     const payload = mapTradeUpdates({ ...currentTrade, ...updates });
     const { data, error } = await supabase
       .from('trades').update(payload).eq('id', id).select().single();
@@ -244,10 +297,15 @@ export function TradingProvider({ children }) {
   }, [trades]);
 
   const deleteTrade = useCallback(async (id) => {
+    const currentTrade = trades.find(t => t.id === id);
+    if (isLocalTrade(currentTrade)) {
+      setTrades(prev => prev.filter(t => t.id !== id));
+      return true;
+    }
     const { error } = await supabase.from('trades').delete().eq('id', id);
     if (!error) setTrades(prev => prev.filter(t => t.id !== id));
     return !error;
-  }, []);
+  }, [trades]);
 
   const accountOptions = useMemo(() => buildAccountOptions(trades), [trades]);
   const scopedTrades = useMemo(() => filterTradesByAccount(trades, activeAccount), [trades, activeAccount]);
@@ -257,6 +315,20 @@ export function TradingProvider({ children }) {
       window.localStorage.setItem(ACTIVE_ACCOUNT_STORAGE_KEY, activeAccount || 'all');
     } catch {}
   }, [activeAccount]);
+
+  useEffect(() => {
+    if (!activeUserId) return;
+    try {
+      const snapshot = {
+        version: 2,
+        savedAt: new Date().toISOString(),
+        activeAccount,
+        accounts: accountOptions,
+        trades,
+      };
+      window.localStorage.setItem(`${AUTO_BACKUP_STORAGE_PREFIX}${activeUserId}`, JSON.stringify(snapshot));
+    } catch {}
+  }, [accountOptions, activeAccount, activeUserId, trades]);
 
   useEffect(() => {
     if (activeAccount === 'all') return;
@@ -528,25 +600,26 @@ function calcPnl(t) {
 }
 
 function buildTradePayload(tradeData = {}, userId) {
+  const normalizedTrade = sanitizeImportedTradeInput(tradeData);
   const pnl = resolveProfitLoss(tradeData);
 
-  const symbol = tradeData.symbol || tradeData.pair || '';
-  const direction = tradeData.direction || tradeData.type || tradeData.dir || 'Long';
-  const entryPrice = nullableDatabaseNumber(tradeData.entry_price ?? tradeData.entry);
-  const exitPrice  = nullableDatabaseNumber(tradeData.exit_price  ?? tradeData.exit);
-  const stopLoss   = nullableDatabaseNumber(tradeData.stop_loss   ?? tradeData.sl);
-  const qty        = nullableDatabaseNumber(tradeData.quantity    ?? tradeData.size  ?? tradeData.lots);
-  const lots       = nullableDatabaseNumber(tradeData.lots ?? tradeData.size ?? tradeData.quantity);
-  const psychologyScore = nullableDatabaseNumber(tradeData.psychologyScore ?? tradeData.psychology_score);
-  const commission = nullableDatabaseNumber(tradeData.commission);
-  const swap = nullableDatabaseNumber(tradeData.swap);
-  const openDate   = tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0];
-  const extra = normalizeJournalExtra(tradeData.extra, {
-    account: tradeData.account,
-    accountName: tradeData.account_name,
-    accountNumber: tradeData.account_number,
-    exchange: tradeData.exchange,
-    broker: tradeData.broker,
+  const symbol = normalizedTrade.symbol || normalizedTrade.pair || '';
+  const direction = normalizeTradeDirection(normalizedTrade.direction || normalizedTrade.type || normalizedTrade.dir || 'Long');
+  const entryPrice = nullableDatabaseNumber(normalizedTrade.entry_price ?? normalizedTrade.entry ?? normalizedTrade.open_price ?? normalizedTrade.openPrice);
+  const exitPrice  = nullableDatabaseNumber(normalizedTrade.exit_price  ?? normalizedTrade.exit ?? normalizedTrade.close_price ?? normalizedTrade.closePrice);
+  const stopLoss   = nullableDatabaseNumber(normalizedTrade.stop_loss   ?? normalizedTrade.sl ?? normalizedTrade.stopLoss);
+  const qty        = nullableDatabaseNumber(normalizedTrade.quantity ?? normalizedTrade.size ?? normalizedTrade.lots ?? normalizedTrade.volume);
+  const lots       = nullableDatabaseNumber(normalizedTrade.lots ?? normalizedTrade.size ?? normalizedTrade.quantity ?? normalizedTrade.volume);
+  const psychologyScore = nullableDatabaseNumber(normalizedTrade.psychologyScore ?? normalizedTrade.psychology_score ?? normalizedTrade.disciplineScore ?? normalizedTrade.discipline_score);
+  const commission = nullableDatabaseNumber(normalizedTrade.commission ?? normalizedTrade.comm);
+  const swap = nullableDatabaseNumber(normalizedTrade.swap ?? normalizedTrade.overnight);
+  const openDate   = normalizedTrade.open_date || normalizedTrade.date || new Date().toISOString().split('T')[0];
+  const extra = normalizeJournalExtra(normalizedTrade.extra, {
+    account: normalizedTrade.account,
+    accountName: normalizedTrade.account_name,
+    accountNumber: normalizedTrade.account_number,
+    exchange: normalizedTrade.exchange,
+    broker: normalizedTrade.broker,
   });
 
   return {
@@ -560,35 +633,73 @@ function buildTradePayload(tradeData = {}, userId) {
     profit_loss:        pnl,
     status:             pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
     open_date:          openDate,
-    notes:              tradeData.notes || '',
-    session:            tradeData.session || detectSession(),
-    emotion_before:     tradeData.emotion_before  || '',
-    emotion_during:     tradeData.emotion_during  || '',
-    emotion_after:      tradeData.emotion_after   || '',
-    psychological_tags: tradeData.psychological_tags || tradeData.tags || null,
-    bias:               tradeData.bias        || null,
-    setup:              tradeData.setup       || null,
-    news_impact:        tradeData.newsImpact  || tradeData.news_impact || null,
+    notes:              normalizedTrade.notes || normalizedTrade.comment || '',
+    session:            normalizedTrade.session || detectSession(),
+    emotion_before:     normalizedTrade.emotion_before || normalizedTrade.emotionBefore || '',
+    emotion_during:     normalizedTrade.emotion_during || normalizedTrade.emotionDuring || '',
+    emotion_after:      normalizedTrade.emotion_after || normalizedTrade.emotionAfter || '',
+    psychological_tags: normalizedTrade.psychological_tags || normalizedTrade.tags || null,
+    bias:               normalizedTrade.bias || null,
+    setup:              normalizedTrade.setup || null,
+    news_impact:        normalizedTrade.newsImpact || normalizedTrade.news_impact || null,
     psychology_score:   psychologyScore,
-    break_even:         normalizeOptionalFlag(tradeData.breakEven ?? tradeData.break_even),
-    trailing_stop:      normalizeOptionalFlag(tradeData.trailingStop ?? tradeData.trailing_stop),
+    break_even:         normalizeOptionalFlag(normalizedTrade.breakEven ?? normalizedTrade.break_even),
+    trailing_stop:      normalizeOptionalFlag(normalizedTrade.trailingStop ?? normalizedTrade.trailing_stop),
     lots,
     commission,
     swap,
-    market_type:        tradeData.marketType  || tradeData.market_type || null,
-    time:               tradeData.time        || null,
+    market_type:        normalizedTrade.marketType || normalizedTrade.market_type || null,
+    time:               normalizedTrade.time || null,
     extra:              Object.keys(extra).length ? extra : null,
   };
 }
 
+function buildLegacyTradePayload(tradeData = {}, userId) {
+  const normalizedTrade = sanitizeImportedTradeInput(tradeData);
+  const openTime = combineDateAndTimeToIso(normalizedTrade.open_date || normalizedTrade.date, normalizedTrade.time);
+  const extra = normalizeJournalExtra(normalizedTrade.extra, {
+    account: normalizedTrade.account,
+    accountName: normalizedTrade.account_name,
+    accountNumber: normalizedTrade.account_number,
+    exchange: normalizedTrade.exchange,
+    broker: normalizedTrade.broker,
+  });
+
+  if (normalizedTrade.session) extra.session = normalizedTrade.session;
+  if (normalizedTrade.bias) extra.bias = normalizedTrade.bias;
+  if (normalizedTrade.setup) extra.setup = normalizedTrade.setup;
+  if (normalizedTrade.marketType || normalizedTrade.market_type) extra.market_type = normalizedTrade.marketType || normalizedTrade.market_type;
+  if (normalizedTrade.newsImpact || normalizedTrade.news_impact) extra.news_impact = normalizedTrade.newsImpact || normalizedTrade.news_impact;
+  if (normalizedTrade.psychologyScore ?? normalizedTrade.psychology_score) extra.psychology_score = normalizedTrade.psychologyScore ?? normalizedTrade.psychology_score;
+
+  return {
+    user_id: userId,
+    symbol: normalizedTrade.symbol || normalizedTrade.pair || '',
+    direction: normalizeTradeDirection(normalizedTrade.direction || normalizedTrade.type || normalizedTrade.dir || 'Long').toLowerCase() === 'short' ? 'sell' : 'buy',
+    volume: nullableDatabaseNumber(normalizedTrade.quantity ?? normalizedTrade.size ?? normalizedTrade.lots ?? normalizedTrade.volume),
+    open_price: nullableDatabaseNumber(normalizedTrade.entry_price ?? normalizedTrade.entry ?? normalizedTrade.open_price ?? normalizedTrade.openPrice),
+    close_price: nullableDatabaseNumber(normalizedTrade.exit_price ?? normalizedTrade.exit ?? normalizedTrade.close_price ?? normalizedTrade.closePrice),
+    open_time: openTime,
+    close_time: openTime,
+    profit: resolveProfitLoss(normalizedTrade),
+    commission: nullableDatabaseNumber(normalizedTrade.commission ?? normalizedTrade.comm),
+    swap: nullableDatabaseNumber(normalizedTrade.swap ?? normalizedTrade.overnight),
+    stop_loss: nullableDatabaseNumber(normalizedTrade.stop_loss ?? normalizedTrade.sl ?? normalizedTrade.stopLoss),
+    take_profit: nullableDatabaseNumber(normalizedTrade.take_profit ?? normalizedTrade.tp ?? normalizedTrade.takeProfit),
+    comment: normalizedTrade.notes || normalizedTrade.comment || null,
+    extra: Object.keys(extra).length ? extra : null,
+  };
+}
+
 function normalizeTradeRecord(trade = {}) {
-  const pnl = finiteNumber(trade.profit_loss ?? trade.pnl ?? 0);
-  const openDate = trade.open_date || trade.date || trade.entryDate || trade.createdAt || '';
-  const direction = trade.direction || trade.type || trade.dir || 'Long';
-  const entry = nullableNumber(trade.entry_price ?? trade.entry);
-  const exit = nullableNumber(trade.exit_price ?? trade.exit);
-  const stopLoss = nullableNumber(trade.stop_loss ?? trade.sl);
-  const quantity = nullableNumber(trade.quantity ?? trade.size ?? trade.lots);
+  const pnl = finiteNumber(trade.profit_loss ?? trade.profit ?? trade.pnl ?? 0);
+  const openDate = normalizeImportDateValue(trade.open_date || trade.date || trade.entryDate || trade.createdAt || trade.open_time || trade.openTime || '');
+  const direction = normalizeTradeDirection(trade.direction || trade.type || trade.dir || trade.side || 'Long');
+  const entry = nullableNumber(trade.entry_price ?? trade.entry ?? trade.open_price ?? trade.openPrice);
+  const exit = nullableNumber(trade.exit_price ?? trade.exit ?? trade.close_price ?? trade.closePrice);
+  const stopLoss = nullableNumber(trade.stop_loss ?? trade.sl ?? trade.stopLoss);
+  const takeProfit = nullableNumber(trade.take_profit ?? trade.tp ?? trade.takeProfit);
+  const quantity = nullableNumber(trade.quantity ?? trade.size ?? trade.lots ?? trade.volume);
   const newsImpact = trade.news_impact || trade.newsImpact || '';
   const psychologyScore = trade.psychology_score ?? trade.psychologyScore ?? null;
   const breakEven = trade.break_even ?? trade.breakEven ?? null;
@@ -620,9 +731,11 @@ function normalizeTradeRecord(trade = {}) {
     exit,
     stop_loss: stopLoss,
     sl: stopLoss,
+    take_profit: takeProfit,
+    tp: takeProfit,
     quantity,
     size: quantity,
-    lots: trade.lots ?? quantity,
+    lots: trade.lots ?? trade.volume ?? quantity,
     market_type: marketType,
     marketType,
     news_impact: newsImpact,
@@ -638,7 +751,11 @@ function normalizeTradeRecord(trade = {}) {
     broker: exchange,
     accountKey: accountMeta.id,
     accountLabel: accountMeta.label,
+    localOnly: Boolean(trade.localOnly) || isLocalTrade(trade),
+    syncState: trade.syncState || (isLocalTrade(trade) ? 'local-pending' : 'synced'),
     durationMinutes: trade.duration_minutes ?? trade.durationMinutes ?? null,
+    time: normalizeImportTimeValue(trade.time || trade.open_time || trade.openTime || ''),
+    notes: trade.notes || trade.comment || '',
     emotionBefore: trade.emotion_before || trade.emotionBefore || '',
     emotionDuring: trade.emotion_during || trade.emotionDuring || '',
     emotionAfter: trade.emotion_after || trade.emotionAfter || '',
@@ -662,15 +779,15 @@ function mapTradeUpdates(tradeData = {}) {
 
   const payload = {
     symbol:            tradeData.symbol || tradeData.pair || '',
-    direction:         tradeData.direction || tradeData.type || tradeData.dir || 'Long',
-    entry_price:       nullableDatabaseNumber(tradeData.entry_price ?? tradeData.entry),
-    exit_price:        nullableDatabaseNumber(tradeData.exit_price ?? tradeData.exit),
-    stop_loss:         nullableDatabaseNumber(tradeData.stop_loss ?? tradeData.sl),
-    quantity:          nullableDatabaseNumber(tradeData.quantity ?? tradeData.size ?? tradeData.lots),
+    direction:         normalizeTradeDirection(tradeData.direction || tradeData.type || tradeData.dir || tradeData.side || 'Long'),
+    entry_price:       nullableDatabaseNumber(tradeData.entry_price ?? tradeData.entry ?? tradeData.open_price ?? tradeData.openPrice),
+    exit_price:        nullableDatabaseNumber(tradeData.exit_price ?? tradeData.exit ?? tradeData.close_price ?? tradeData.closePrice),
+    stop_loss:         nullableDatabaseNumber(tradeData.stop_loss ?? tradeData.sl ?? tradeData.stopLoss),
+    quantity:          nullableDatabaseNumber(tradeData.quantity ?? tradeData.size ?? tradeData.lots ?? tradeData.volume),
     profit_loss:       pnl,
     status:            pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
     open_date:         tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0],
-    notes:             tradeData.notes || '',
+    notes:             tradeData.notes || tradeData.comment || '',
     session:           tradeData.session || detectSession(),
     emotion_before:    tradeData.emotion_before || '',
     emotion_during:    tradeData.emotion_during || '',
@@ -682,15 +799,116 @@ function mapTradeUpdates(tradeData = {}) {
     psychology_score:  nullableDatabaseNumber(tradeData.psychologyScore ?? tradeData.psychology_score),
     break_even:        normalizeOptionalFlag(tradeData.breakEven ?? tradeData.break_even),
     trailing_stop:     normalizeOptionalFlag(tradeData.trailingStop ?? tradeData.trailing_stop),
-    lots:              nullableDatabaseNumber(tradeData.lots ?? tradeData.size ?? tradeData.quantity),
-    commission:        nullableDatabaseNumber(tradeData.commission),
-    swap:              nullableDatabaseNumber(tradeData.swap),
+    lots:              nullableDatabaseNumber(tradeData.lots ?? tradeData.size ?? tradeData.quantity ?? tradeData.volume),
+    commission:        nullableDatabaseNumber(tradeData.commission ?? tradeData.comm),
+    swap:              nullableDatabaseNumber(tradeData.swap ?? tradeData.overnight),
     market_type:       tradeData.marketType || tradeData.market_type || null,
     time:              tradeData.time || null,
     extra:             Object.keys(extra).length ? extra : null,
   };
 
   return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
+}
+
+function sanitizeImportedTradeInput(tradeData = {}) {
+  const normalizedDate = normalizeImportDateValue(
+    tradeData.open_date
+    || tradeData.date
+    || tradeData.open_time
+    || tradeData.openTime
+    || tradeData.createdAt
+    || tradeData.created_at
+  );
+  const normalizedTime = normalizeImportTimeValue(tradeData.time || tradeData.open_time || tradeData.openTime);
+  const extra = tradeData.extra && typeof tradeData.extra === 'object'
+    ? normalizeJournalExtra(tradeData.extra)
+    : null;
+
+  return {
+    ...tradeData,
+    symbol: normalizeImportText(tradeData.symbol || tradeData.pair || tradeData.instrument || tradeData.ticker)?.toUpperCase() || '',
+    pair: normalizeImportText(tradeData.pair || tradeData.symbol || tradeData.instrument || tradeData.ticker)?.toUpperCase() || '',
+    direction: normalizeTradeDirection(tradeData.direction || tradeData.type || tradeData.dir || tradeData.side),
+    type: normalizeTradeDirection(tradeData.type || tradeData.direction || tradeData.dir || tradeData.side),
+    date: normalizedDate,
+    open_date: normalizedDate,
+    time: normalizedTime,
+    entry: nullableDatabaseNumber(tradeData.entry_price ?? tradeData.entry ?? tradeData.open_price ?? tradeData.openPrice),
+    exit: nullableDatabaseNumber(tradeData.exit_price ?? tradeData.exit ?? tradeData.close_price ?? tradeData.closePrice),
+    sl: nullableDatabaseNumber(tradeData.stop_loss ?? tradeData.sl ?? tradeData.stopLoss),
+    tp: nullableDatabaseNumber(tradeData.take_profit ?? tradeData.tp ?? tradeData.takeProfit),
+    pnl: resolveProfitLoss(tradeData),
+    size: nullableDatabaseNumber(tradeData.quantity ?? tradeData.size ?? tradeData.lots ?? tradeData.volume),
+    lots: nullableDatabaseNumber(tradeData.lots ?? tradeData.size ?? tradeData.quantity ?? tradeData.volume),
+    session: normalizeImportText(tradeData.session),
+    bias: normalizeImportText(tradeData.bias),
+    setup: normalizeImportText(tradeData.setup || tradeData.strategy || tradeData.playbook),
+    notes: normalizeImportText(tradeData.notes || tradeData.comment || tradeData.note || tradeData.description),
+    newsImpact: normalizeImportText(tradeData.newsImpact || tradeData.news_impact),
+    psychologyScore: nullableDatabaseNumber(tradeData.psychologyScore ?? tradeData.psychology_score ?? tradeData.disciplineScore ?? tradeData.discipline_score),
+    marketType: normalizeImportText(tradeData.marketType || tradeData.market_type),
+    commission: nullableDatabaseNumber(tradeData.commission ?? tradeData.comm),
+    swap: nullableDatabaseNumber(tradeData.swap ?? tradeData.overnight),
+    extra,
+  };
+}
+
+function normalizeTradeDirection(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'Long';
+  if (['short', 'sell', 'bear', 'bearish', '1'].includes(normalized)) return 'Short';
+  if (['buy', 'long', 'bull', 'bullish', '0'].includes(normalized)) return 'Long';
+  return normalized[0].toUpperCase() + normalized.slice(1);
+}
+
+function normalizeImportText(value) {
+  if (value == null) return '';
+  const text = String(value).trim();
+  if (!text || ['—', '-', 'n/a', 'null', 'undefined'].includes(text.toLowerCase())) return '';
+  return text;
+}
+
+function normalizeImportDateValue(value) {
+  if (!value) return '';
+  const parsed = value instanceof Date ? new Date(value) : new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10);
+  }
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  if (/^\d{4}\/\d{2}\/\d{2}/.test(text)) return text.replace(/\//g, '-').slice(0, 10);
+  return '';
+}
+
+function normalizeImportTimeValue(value) {
+  if (!value) return '';
+  const text = String(value).trim();
+  const match = text.match(/(\d{1,2}):(\d{2})/);
+  if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) {
+    return `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`;
+  }
+  return '';
+}
+
+function combineDateAndTimeToIso(dateValue, timeValue) {
+  const date = normalizeImportDateValue(dateValue);
+  if (!date) return null;
+  const time = normalizeImportTimeValue(timeValue) || '00:00';
+  const iso = new Date(`${date}T${time}:00`);
+  return Number.isNaN(iso.getTime()) ? null : iso.toISOString();
+}
+
+function shouldTryLegacyTradeInsert(message = '') {
+  const text = String(message || '').toLowerCase();
+  return text.includes('column')
+    || text.includes('schema')
+    || text.includes('record')
+    || text.includes('open_price')
+    || text.includes('profit_loss')
+    || text.includes('entry_price')
+    || text.includes('could not find');
 }
 
 function nullableNumber(value) {
@@ -723,6 +941,9 @@ function resolveProfitLoss(tradeData = {}) {
 
   const existingPnl = nullableDatabaseNumber(tradeData.profit_loss);
   if (existingPnl != null) return existingPnl;
+
+  const legacyPnl = nullableDatabaseNumber(tradeData.profit ?? tradeData.gross_profit);
+  if (legacyPnl != null) return legacyPnl;
 
   return calcPnl(tradeData);
 }
@@ -765,19 +986,71 @@ function isTimeoutLike(message = '') {
     || text.includes('failed to fetch');
 }
 
-function createImportedTradePreview(payload = {}, index = 0) {
+function createImportedTradePreview(payload = {}, index = 0, options = {}) {
+  const localOnly = Boolean(options?.localOnly);
   return normalizeTradeRecord({
-    id: `import-${Date.now()}-${index}`,
+    id: localOnly ? `${LOCAL_TRADE_PREFIX}${Date.now()}-${index}` : `import-${Date.now()}-${index}`,
     created_at: new Date().toISOString(),
+    localOnly,
+    syncState: options?.syncState || (localOnly ? 'local-pending' : 'synced'),
     ...payload,
   });
 }
 
 function mergeOptimisticTrades(currentTrades = [], optimisticTrades = []) {
   if (!optimisticTrades.length) return currentTrades;
-  const existingIds = new Set((currentTrades || []).map((trade) => String(trade.id)));
-  const nextOptimistic = optimisticTrades.filter((trade) => !existingIds.has(String(trade.id)));
-  return [...nextOptimistic, ...(currentTrades || [])];
+  const merged = new Map();
+
+  [...(optimisticTrades || []), ...(currentTrades || [])].forEach((trade) => {
+    const normalized = normalizeTradeRecord(trade);
+    const idKey = String(normalized.id || '');
+    const signatureKey = tradeSignature(normalized);
+    const key = signatureKey || idKey;
+    if (!key) return;
+    if (!merged.has(key)) {
+      merged.set(key, normalized);
+      return;
+    }
+
+    const existing = merged.get(key);
+    if (isLocalTrade(existing) && !isLocalTrade(normalized)) {
+      merged.set(key, normalized);
+    }
+  });
+
+  return Array.from(merged.values()).sort((left, right) => {
+    const leftTime = new Date(left.open_date || left.date || left.created_at || 0).getTime();
+    const rightTime = new Date(right.open_date || right.date || right.created_at || 0).getTime();
+    return rightTime - leftTime;
+  });
+}
+
+function isLocalTrade(trade = {}) {
+  return Boolean(trade?.localOnly) || String(trade?.id || '').startsWith(LOCAL_TRADE_PREFIX);
+}
+
+function tradeSignature(trade = {}) {
+  return [
+    trade.symbol || trade.pair || '',
+    trade.direction || trade.type || '',
+    normalizeImportDateValue(trade.open_date || trade.date || ''),
+    normalizeImportTimeValue(trade.time || ''),
+    nullableDatabaseNumber(trade.entry_price ?? trade.entry ?? trade.open_price ?? trade.openPrice) ?? '',
+    nullableDatabaseNumber(trade.exit_price ?? trade.exit ?? trade.close_price ?? trade.closePrice) ?? '',
+    nullableDatabaseNumber(trade.profit_loss ?? trade.pnl ?? trade.profit) ?? '',
+  ].join('|');
+}
+
+function readAutoBackupTrades(userId) {
+  if (!userId || typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(`${AUTO_BACKUP_STORAGE_PREFIX}${userId}`);
+    if (!raw) return [];
+    const snapshot = JSON.parse(raw);
+    return Array.isArray(snapshot?.trades) ? snapshot.trades.map(normalizeTradeRecord) : [];
+  } catch {
+    return [];
+  }
 }
 
 function normalizeJournalExtra(extra = {}, fallback = {}) {
