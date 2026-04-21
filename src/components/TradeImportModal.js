@@ -289,6 +289,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
       let imported = 0;
       let skipped = 0;
       let importError = '';
+      let importNotice = '';
 
       if (onImportBatch) {
         const result = await onImportBatch(normalizedTrades, {
@@ -301,6 +302,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
         imported = Number(result?.imported ?? 0);
         skipped = Number(result?.skipped ?? Math.max(0, normalizedTrades.length - imported));
         importError = String(result?.error || '').trim();
+        importNotice = String(result?.notice || '').trim();
       } else {
         for (const trade of normalizedTrades) {
           const saved = await onImport(trade);
@@ -310,7 +312,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
       }
 
       onImportComplete?.({ imported, skipped });
-      setResult({ imported, skipped, error: importError || null });
+      setResult({ imported, skipped, error: importError || null, notice: importNotice || null });
       setProgress({ stage: 'done', total: normalizedTrades.length, processed: normalizedTrades.length, imported, skipped });
       setStep(3);
       if (imported > 0) {
@@ -424,6 +426,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                 <div style={{ marginTop: 18, fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em' }}>Import complete</div>
                 <div style={{ marginTop: 10, fontSize: 14, color: UI.sub }}>{result?.imported || 0} trade(s) added to the journal.</div>
                 {!!result?.skipped && <div style={{ marginTop: 8, fontSize: 12, color: UI.muted }}>{result.skipped} row(s) could not be saved.</div>}
+                {!!result?.notice && <div style={{ marginTop: 10, fontSize: 12, color: UI.sub, lineHeight: 1.6 }}>{result.notice}</div>}
                 {!!result?.error && <div style={{ marginTop: 10, fontSize: 12, color: UI.danger, lineHeight: 1.6 }}>{result.error}</div>}
                 <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => setStep(1)} style={pillStyle(false)}>Import another file</button>

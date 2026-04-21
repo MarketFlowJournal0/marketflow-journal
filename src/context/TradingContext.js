@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
 const TradingContext = createContext(null);
 const REQUEST_TIMEOUT_MS = 12000;
-const IMPORT_REQUEST_TIMEOUT_MS = 3500;
+const IMPORT_BACKGROUND_TIMEOUT_MS = 1800;
+const IMPORT_BACKGROUND_CONCURRENCY = 6;
 const ACTIVE_ACCOUNT_STORAGE_KEY = 'mf_active_account_v1';
 const AUTO_BACKUP_STORAGE_PREFIX = 'mfj_journal_autobackup_v2_';
 const LOCAL_TRADE_PREFIX = 'local-trade-';
@@ -13,6 +14,7 @@ export function TradingProvider({ children }) {
   const { session, user } = useAuth();
   const [trades,  setTrades]  = useState([]);
   const [loading, setLoading] = useState(true);
+  const importSyncQueueRef = useRef(Promise.resolve());
   const [activeAccount, setActiveAccountState] = useState(() => {
     try {
       return window.localStorage.getItem(ACTIVE_ACCOUNT_STORAGE_KEY) || 'all';
@@ -166,6 +168,82 @@ export function TradingProvider({ children }) {
     }
   }, [activeUserId, getActiveUserId, persistTradePayload, user?.id]);
 
+  const syncImportedTradesInBackground = useCallback(async (preparedTrades = [], userId) => {
+    if (!Array.isArray(preparedTrades) || !preparedTrades.length || !userId) return;
+
+    const markAsLocalVault = (optimisticTrade) => {
+      if (!optimisticTrade?.id) return;
+      setTrades((current) => current.map((trade) => {
+        if (trade.id !== optimisticTrade.id) return trade;
+        return normalizeTradeRecord({
+          ...trade,
+          localOnly: true,
+          syncState: 'local-vault',
+        });
+      }));
+    };
+
+    const persistPreparedTrade = async (preparedTrade) => {
+      const primaryResult = await persistTradePayload(
+        preparedTrade.payload,
+        'Cloud sync took too long for one trade.',
+        'A trade row could not be synced to the cloud.',
+        { timeoutMs: IMPORT_BACKGROUND_TIMEOUT_MS },
+      );
+
+      if (!primaryResult?.error && primaryResult?.data) {
+        return normalizeTradeRecord(primaryResult.data);
+      }
+
+      if (shouldTryLegacyTradeInsert(primaryResult?.message) && preparedTrade.legacyPayload) {
+        const legacyResult = await persistTradePayload(
+          preparedTrade.legacyPayload,
+          'Cloud sync took too long for one trade.',
+          primaryResult?.message || 'A trade row could not be synced to the cloud.',
+          { timeoutMs: IMPORT_BACKGROUND_TIMEOUT_MS },
+        );
+
+        if (!legacyResult?.error && legacyResult?.data) {
+          return normalizeTradeRecord(legacyResult.data);
+        }
+      }
+
+      return null;
+    };
+
+    for (let index = 0; index < preparedTrades.length; index += IMPORT_BACKGROUND_CONCURRENCY) {
+      const chunk = preparedTrades.slice(index, index + IMPORT_BACKGROUND_CONCURRENCY);
+      const results = await Promise.allSettled(chunk.map((preparedTrade) => persistPreparedTrade(preparedTrade)));
+      const syncedTrades = [];
+
+      results.forEach((result, resultIndex) => {
+        const preparedTrade = chunk[resultIndex];
+        if (result.status === 'fulfilled' && result.value) {
+          syncedTrades.push(result.value);
+          return;
+        }
+        markAsLocalVault(preparedTrade.optimisticTrade);
+      });
+
+      if (syncedTrades.length) {
+        setTrades((current) => mergeOptimisticTrades(current, syncedTrades));
+      }
+    }
+
+    void fetchTrades().catch((error) => {
+      console.error('background import refresh error:', error);
+    });
+  }, [fetchTrades, persistTradePayload]);
+
+  const queueImportSync = useCallback((preparedTrades = [], userId) => {
+    importSyncQueueRef.current = importSyncQueueRef.current
+      .catch(() => null)
+      .then(() => syncImportedTradesInBackground(preparedTrades, userId))
+      .catch((error) => {
+        console.error('background import sync error:', error);
+      });
+  }, [syncImportedTradesInBackground]);
+
   const importTrades = useCallback(async (tradeRows = [], options = {}) => {
     try {
       const onProgress = typeof options?.onProgress === 'function' ? options.onProgress : null;
@@ -182,100 +260,72 @@ export function TradingProvider({ children }) {
         };
       }
 
-      let imported = 0;
-      let skipped = 0;
-      let firstError = '';
-      let localFallbackCount = 0;
-      const savedTradesByIndex = new Array(rows.length).fill(null);
-
       const reportProgress = (stage = 'importing') => {
         onProgress?.({
           stage,
           total: rows.length,
-          processed: imported + skipped,
-          imported,
-          skipped,
+          processed: 0,
+          imported: 0,
+          skipped: 0,
         });
       };
 
       reportProgress('starting');
 
-      for (let index = 0; index < rows.length; index += 1) {
-        const tradeData = rows[index];
-        const primaryPayload = buildTradePayload(tradeData, userId);
-        let saveResult = await persistTradePayload(
-          primaryPayload,
-          'Saving one imported trade took too long.',
-          'A trade row could not be saved.',
-          { returning: false, timeoutMs: IMPORT_REQUEST_TIMEOUT_MS },
-        );
-
-        let normalizedTrade = !saveResult?.error
-          ? createImportedTradePreview(primaryPayload, index)
-          : null;
-
-        if (saveResult?.error && shouldTryLegacyTradeInsert(saveResult.message)) {
-          const legacyPayload = buildLegacyTradePayload(tradeData, userId);
-          if (legacyPayload) {
-            const legacyResult = await persistTradePayload(
-              legacyPayload,
-              'Saving one imported trade took too long.',
-              saveResult.message || 'A trade row could not be saved.',
-              { returning: false, timeoutMs: IMPORT_REQUEST_TIMEOUT_MS },
-            );
-            if (!legacyResult?.error) {
-              saveResult = legacyResult;
-              normalizedTrade = createImportedTradePreview(legacyPayload, index);
-            }
-          }
-        }
-
-        if (!normalizedTrade && saveResult?.message) {
-          normalizedTrade = createImportedTradePreview(primaryPayload, index, { localOnly: true, syncState: 'local-pending' });
-          localFallbackCount += 1;
-          if (!firstError) {
-            firstError = 'Some imports were saved in the local vault because cloud sync stalled.';
-          }
-        }
-
-        if (normalizedTrade) {
-          savedTradesByIndex[index] = normalizedTrade;
-          imported += 1;
-        } else {
-          skipped += 1;
-          if (!firstError && saveResult?.message) {
-            firstError = saveResult.message;
-          }
-        }
-
-        reportProgress('row');
-      }
-
-      const savedTrades = savedTradesByIndex.filter(Boolean);
-
-      if (savedTrades.length) {
-        setTrades((current) => mergeOptimisticTrades(current, savedTrades));
-      }
-
-      if (imported > 0) {
-        void fetchTrades().catch((refreshError) => {
-          console.error('importTrades refresh error:', refreshError);
+      const preparedTrades = rows.map((tradeData, index) => {
+        const payload = buildTradePayload(tradeData, userId);
+        const optimisticTrade = createImportedTradePreview(payload, index, {
+          localOnly: true,
+          syncState: 'syncing',
         });
-      } else if (!firstError) {
-        firstError = 'No trade could be saved.';
+
+        return {
+          index,
+          payload,
+          legacyPayload: buildLegacyTradePayload(tradeData, userId),
+          optimisticTrade,
+        };
+      }).filter((preparedTrade) => String(preparedTrade.optimisticTrade?.symbol || '').trim());
+
+      const imported = preparedTrades.length;
+      const skipped = Math.max(0, rows.length - imported);
+      const optimisticTrades = preparedTrades.map((preparedTrade) => preparedTrade.optimisticTrade);
+
+      if (!optimisticTrades.length) {
+        reportProgress('done');
+        return {
+          imported: 0,
+          skipped: rows.length,
+          trades: [],
+          error: 'No valid trade could be prepared from this file.',
+        };
       }
 
-      if (localFallbackCount > 0 && !firstError) {
-        firstError = 'Some imports were saved in the local vault because cloud sync stalled.';
-      }
+      setTrades((current) => mergeOptimisticTrades(current, optimisticTrades));
 
-      reportProgress('done');
-      return { imported, skipped, trades: savedTrades, error: firstError || null };
+      reportProgress('hydrating');
+      onProgress?.({
+        stage: 'done',
+        total: rows.length,
+        processed: rows.length,
+        imported,
+        skipped,
+      });
+
+      queueImportSync(preparedTrades, userId);
+
+      return {
+        imported,
+        skipped,
+        trades: optimisticTrades,
+        error: null,
+        notice: 'Trades are live now. Cloud sync continues in the background.',
+      };
     } catch (err) {
       console.error('importTrades exception:', err);
       throw err;
     }
-  }, [fetchTrades, getActiveUserId, persistTradePayload]);
+  }, [getActiveUserId, queueImportSync]);
 
   const updateTrade = useCallback(async (id, updates) => {
     const currentTrade = trades.find(t => t.id === id);

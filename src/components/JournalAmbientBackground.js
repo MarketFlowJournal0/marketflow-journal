@@ -14,12 +14,12 @@ function rgba(rgb, alpha) {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 }
 
-function getPalette() {
+function readPalette() {
   const style = getComputedStyle(document.documentElement);
-
   return {
-    accent: parseRgb(style.getPropertyValue('--mf-accent-rgb'), [6, 230, 255]),
-    secondary: parseRgb(style.getPropertyValue('--mf-accent-secondary-rgb'), [0, 255, 136]),
+    accent: parseRgb(style.getPropertyValue('--mf-accent-rgb'), [110, 127, 153]),
+    border: parseRgb(style.getPropertyValue('--mf-border-rgb'), [32, 41, 50]),
+    text: parseRgb(style.getPropertyValue('--mf-text-1-rgb'), [219, 226, 234]),
   };
 }
 
@@ -36,169 +36,95 @@ export default function JournalAmbientBackground() {
     let animationFrame = 0;
     let width = 0;
     let height = 0;
-    let ratio = 1;
+    let dpr = 1;
     let frame = 0;
-    let palette = getPalette();
-    const particles = [];
-    const lines = [];
-
-    const readPalette = () => {
-      palette = getPalette();
-    };
-
-    const getSceneCounts = () => {
-      if (window.innerWidth < 720) return { particleCount: 18, lineCount: 4 };
-      if (window.innerWidth < 1200) return { particleCount: 28, lineCount: 6 };
-      return { particleCount: 38, lineCount: 8 };
-    };
+    let palette = readPalette();
 
     const resize = () => {
-      ratio = Math.min(window.devicePixelRatio || 1, 2);
-      width = canvas.offsetWidth;
-      height = canvas.offsetHeight;
-      canvas.width = Math.max(1, width * ratio);
-      canvas.height = Math.max(1, height * ratio);
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      const bounds = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = Math.max(1, bounds.width);
+      height = Math.max(1, bounds.height);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    const createLine = () => {
-      const points = [];
-      let x = Math.random() * width;
-      let y = Math.random() * height;
-      const totalPoints = 7 + Math.floor(Math.random() * 3);
+    const drawGrid = () => {
+      const horizontalGap = width < 900 ? 84 : 104;
+      const verticalGap = width < 900 ? 72 : 88;
 
-      for (let index = 0; index < totalPoints; index += 1) {
-        points.push({ x, y });
-        x += 80 + Math.random() * 110;
-        y += (Math.random() - 0.5) * 72;
-      }
+      context.strokeStyle = rgba(palette.border, 0.12);
+      context.lineWidth = 1;
 
-      return {
-        points,
-        drift: 0.03 + Math.random() * 0.08,
-        opacity: 0.02 + Math.random() * 0.035,
-        color: Math.random() > 0.72 ? 'secondary' : 'accent',
-      };
-    };
-
-    const createParticle = () => ({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.16,
-      vy: (Math.random() - 0.5) * 0.14,
-      radius: 0.8 + Math.random() * 1.4,
-      opacity: 0.06 + Math.random() * 0.12,
-      color: Math.random() > 0.78 ? 'secondary' : 'accent',
-    });
-
-    const initialize = () => {
-      resize();
-      readPalette();
-      particles.length = 0;
-      lines.length = 0;
-
-      const { particleCount, lineCount } = getSceneCounts();
-
-      for (let index = 0; index < particleCount; index += 1) {
-        particles.push(createParticle());
-      }
-
-      for (let index = 0; index < lineCount; index += 1) {
-        lines.push(createLine());
-      }
-    };
-
-    const drawLines = () => {
-      lines.forEach((line) => {
-        const tone = line.color === 'secondary' ? palette.secondary : palette.accent;
-
-        line.points.forEach((point, index) => {
-          point.x += line.drift;
-          point.y += Math.sin((frame * 0.004) + index) * 0.02;
-
-          if (point.x > width + 120) {
-            point.x = -120;
-            point.y = Math.random() * height;
-          }
-        });
-
+      for (let y = verticalGap * 0.5; y < height; y += verticalGap) {
         context.beginPath();
-        context.moveTo(line.points[0].x, line.points[0].y);
-
-        for (let index = 1; index < line.points.length; index += 1) {
-          const previous = line.points[index - 1];
-          const current = line.points[index];
-          const controlX = (previous.x + current.x) / 2;
-          const controlY = (previous.y + current.y) / 2;
-          context.quadraticCurveTo(previous.x, previous.y, controlX, controlY);
-        }
-
-        context.strokeStyle = rgba(tone, line.opacity);
-        context.lineWidth = 0.8;
+        context.moveTo(0, y);
+        context.lineTo(width, y);
         context.stroke();
-      });
-    };
-
-    const drawParticles = () => {
-      particles.forEach((particle) => {
-        const tone = particle.color === 'secondary' ? palette.secondary : palette.accent;
-
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-
-        if (particle.x < -20 || particle.x > width + 20) particle.vx *= -1;
-        if (particle.y < -20 || particle.y > height + 20) particle.vy *= -1;
-
-        context.beginPath();
-        context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-        context.fillStyle = rgba(tone, particle.opacity);
-        context.fill();
-      });
-    };
-
-    const drawConnections = () => {
-      for (let left = 0; left < particles.length; left += 1) {
-        for (let right = left + 1; right < particles.length; right += 1) {
-          const deltaX = particles[left].x - particles[right].x;
-          const deltaY = particles[left].y - particles[right].y;
-          const distance = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
-
-          if (distance > 118) continue;
-
-          const tone = left % 5 === 0 ? palette.secondary : palette.accent;
-
-          context.beginPath();
-          context.moveTo(particles[left].x, particles[left].y);
-          context.lineTo(particles[right].x, particles[right].y);
-          context.strokeStyle = rgba(tone, 0.028 * (1 - (distance / 118)));
-          context.lineWidth = 0.45;
-          context.stroke();
-        }
       }
+
+      context.strokeStyle = rgba(palette.border, 0.06);
+      for (let x = horizontalGap * 0.5; x < width; x += horizontalGap) {
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x, height);
+        context.stroke();
+      }
+    };
+
+    const drawGuideLine = (offset, alpha, thickness) => {
+      const baseY = height * offset;
+      const amplitude = Math.max(12, height * 0.018);
+      const step = Math.max(90, width / 8);
+
+      context.beginPath();
+      for (let x = -step; x <= width + step; x += step) {
+        const phase = (frame * 0.0025) + (x * 0.0065) + (offset * 8);
+        const y = baseY + Math.sin(phase) * amplitude;
+        if (x === -step) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+
+      context.strokeStyle = rgba(palette.accent, alpha);
+      context.lineWidth = thickness;
+      context.stroke();
+    };
+
+    const drawGlows = () => {
+      const upperGlow = context.createRadialGradient(width * 0.18, height * 0.14, 0, width * 0.18, height * 0.14, width * 0.5);
+      upperGlow.addColorStop(0, rgba(palette.accent, 0.06));
+      upperGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      context.fillStyle = upperGlow;
+      context.fillRect(0, 0, width, height);
+
+      const lowerGlow = context.createRadialGradient(width * 0.8, height * 0.82, 0, width * 0.8, height * 0.82, width * 0.45);
+      lowerGlow.addColorStop(0, rgba(palette.text, 0.035));
+      lowerGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      context.fillStyle = lowerGlow;
+      context.fillRect(0, 0, width, height);
     };
 
     const draw = () => {
       frame += 1;
-
-      if (frame % 24 === 0) readPalette();
+      if (frame % 180 === 0) {
+        palette = readPalette();
+      }
 
       context.clearRect(0, 0, width, height);
-      drawLines();
-      drawParticles();
-      drawConnections();
-
+      drawGrid();
+      drawGuideLine(0.24, 0.09, 1.2);
+      drawGuideLine(0.54, 0.05, 1);
+      drawGuideLine(0.74, 0.035, 0.8);
+      drawGlows();
       animationFrame = window.requestAnimationFrame(draw);
     };
 
-    const handleResize = () => {
-      initialize();
-    };
-
     const observer = new MutationObserver(() => {
-      readPalette();
+      palette = readPalette();
     });
 
-    initialize();
+    resize();
     draw();
 
     observer.observe(document.documentElement, {
@@ -206,12 +132,12 @@ export default function JournalAmbientBackground() {
       attributeFilter: ['data-theme', 'style'],
     });
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', resize);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
-      window.removeEventListener('resize', handleResize);
       observer.disconnect();
+      window.removeEventListener('resize', resize);
     };
   }, []);
 
@@ -226,7 +152,7 @@ export default function JournalAmbientBackground() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.9,
+        opacity: 0.82,
       }}
     />
   );

@@ -1,45 +1,43 @@
 const BASE_THEME = {
-  bg: '#030508',
-  card: '#0C1422',
-  high: '#111B2E',
-  deep: '#07090F',
-  text0: '#FFFFFF',
-  text1: '#E8EEFF',
-  text2: '#7A90B8',
-  text3: '#334566',
-  text4: '#1E2E45',
-  border: '#162034',
-  borderHi: '#1E2E48',
-  accent: '#06E6FF',
-  secondary: '#66F0FF',
-  teal: '#36EEFF',
-  green: '#00FF88',
-  blue: '#33B8FF',
-  purple: '#5EA7FF',
-  pink: '#7BD4FF',
-  gold: '#FFD700',
-  warn: '#FFB31A',
-  orange: '#FF8B3D',
-  danger: '#FF3D57',
+  bg: '#090D12',
+  card: '#11171F',
+  high: '#171F28',
+  deep: '#070A0E',
+  text0: '#F5F7FA',
+  text1: '#DBE2EA',
+  text2: '#94A2B3',
+  text3: '#5F6D7F',
+  text4: '#34414F',
+  border: '#202932',
+  borderHi: '#2D3945',
+  accent: '#6E7F99',
+  secondary: '#9AA8B8',
+  teal: '#7F97A8',
+  green: '#5F8F78',
+  blue: '#7187B0',
+  purple: '#7B769C',
+  pink: '#A27A84',
+  gold: '#B39A61',
+  warn: '#C3964F',
+  orange: '#AE7D4B',
+  danger: '#A35E66',
 };
 
 export const JOURNAL_THEME_KEY = 'mfj_elite_sidebar_accent';
 export const JOURNAL_THEME_CUSTOM_KEY = 'mfj_elite_custom_accent';
 export const JOURNAL_THEME_CUSTOM_VALUE = 'custom';
-export const DEFAULT_JOURNAL_THEME_VALUE = '#06E6FF';
-export const DEFAULT_JOURNAL_CUSTOM_ACCENT = '#4C4CDD';
+export const DEFAULT_JOURNAL_THEME_VALUE = '#6E7F99';
+export const DEFAULT_JOURNAL_CUSTOM_ACCENT = '#707D98';
 
 export const JOURNAL_THEME_CHOICES = [
-  { value: '#D7DBE4', label: 'Mono', neutral: true },
-  { value: '#06E6FF', label: 'Aqua' },
-  { value: '#00FF88', label: 'Mint' },
-  { value: '#4D7CFF', label: 'Cobalt' },
-  { value: '#8B5CF6', label: 'Iris' },
-  { value: '#FB7185', label: 'Rose' },
-  { value: '#FF7A59', label: 'Coral' },
-  { value: '#F59E0B', label: 'Amber' },
-  { value: '#FFD700', label: 'Gold' },
-  { value: '#EF4444', label: 'Crimson' },
+  { value: '#D4D7DD', label: 'Mono', neutral: true },
+  { value: '#8F9BAC', label: 'Slate' },
+  { value: '#6E7F99', label: 'Steel' },
+  { value: '#667DC0', label: 'Cobalt' },
+  { value: '#5F8F78', label: 'Forest' },
+  { value: '#AE7D4B', label: 'Copper' },
+  { value: '#B39A61', label: 'Gold' },
+  { value: '#8A626A', label: 'Burgundy' },
 ];
 
 function clamp(value, min, max) {
@@ -142,20 +140,26 @@ function rotateHue(hue, offset) {
   return ((hue + offset) % 360 + 360) % 360;
 }
 
+function toRgbTuple(hex) {
+  const rgb = hexToRgbObject(hex);
+  if (!rgb) return '255, 255, 255';
+  return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+}
+
 function deriveNeutralAccentFamily(color) {
-  const neutral = normalizeHexColor(color) || '#D7DBE4';
+  const neutral = normalizeHexColor(color) || '#D4D7DD';
   const hsl = rgbToHsl(hexToRgbObject(neutral));
   const hue = hsl.h;
-  const saturation = clamp(hsl.s, 0, 12);
+  const saturation = clamp(hsl.s, 0, 10);
 
   return {
     accent: neutral,
-    secondary: hslToHex(hue, saturation, 78),
-    teal: hslToHex(hue, saturation, 74),
-    blue: hslToHex(hue, saturation, 69),
-    purple: hslToHex(hue, saturation, 72),
-    pink: hslToHex(hue, saturation, 80),
-    orange: hslToHex(hue, saturation, 67),
+    secondary: hslToHex(hue, saturation, 76),
+    teal: hslToHex(hue, saturation, 65),
+    blue: hslToHex(hue, saturation, 58),
+    purple: hslToHex(hue, saturation, 56),
+    pink: hslToHex(hue, saturation, 70),
+    orange: hslToHex(hue, saturation, 52),
   };
 }
 
@@ -167,24 +171,18 @@ function deriveAccentFamily(color, { neutral = false } = {}) {
   if (!rgb) return deriveAccentFamily(DEFAULT_JOURNAL_THEME_VALUE);
 
   const { h, s, l } = rgbToHsl(rgb);
-  const saturation = clamp(s < 28 ? s + 28 : s, 26, 96);
-  const lightness = clamp(l, 36, 68);
+  const saturation = clamp(s, 18, 58);
+  const lightness = clamp(l, 42, 62);
 
   return {
     accent,
-    secondary: hslToHex(h, clamp(saturation + 4, 24, 98), clamp(lightness + 14, 48, 82)),
-    teal: hslToHex(rotateHue(h, -8), clamp(saturation + 6, 28, 98), clamp(lightness + 8, 44, 78)),
-    blue: hslToHex(rotateHue(h, -18), clamp(saturation + 8, 28, 100), clamp(lightness - 2, 34, 70)),
-    purple: hslToHex(rotateHue(h, 14), clamp(saturation + 2, 24, 98), clamp(lightness + 9, 42, 78)),
-    pink: hslToHex(rotateHue(h, 24), clamp(saturation - 4, 20, 90), clamp(lightness + 13, 48, 84)),
-    orange: hslToHex(rotateHue(h, -26), clamp(saturation + 8, 30, 100), clamp(lightness + 10, 46, 80)),
+    secondary: hslToHex(h, clamp(saturation - 8, 10, 40), clamp(lightness + 18, 58, 80)),
+    teal: hslToHex(rotateHue(h, -8), clamp(saturation - 4, 12, 44), clamp(lightness + 8, 48, 70)),
+    blue: hslToHex(rotateHue(h, -18), clamp(saturation + 2, 16, 54), clamp(lightness - 2, 38, 62)),
+    purple: hslToHex(rotateHue(h, 10), clamp(saturation - 2, 14, 46), clamp(lightness + 2, 42, 66)),
+    pink: hslToHex(rotateHue(h, 22), clamp(saturation - 6, 12, 42), clamp(lightness + 4, 46, 70)),
+    orange: hslToHex(rotateHue(h, -30), clamp(saturation - 2, 14, 50), clamp(lightness - 4, 40, 60)),
   };
-}
-
-function toRgbTuple(hex) {
-  const rgb = hexToRgbObject(hex);
-  if (!rgb) return '255, 255, 255';
-  return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
 }
 
 export function getJournalThemeChoice(value) {
@@ -197,8 +195,12 @@ function buildThemedAccent(choiceValue, customAccent) {
     return deriveAccentFamily(customAccent || DEFAULT_JOURNAL_CUSTOM_ACCENT);
   }
 
-  const choice = getJournalThemeChoice(choiceValue) || getJournalThemeChoice(DEFAULT_JOURNAL_THEME_VALUE);
-  return deriveAccentFamily(choice?.value, { neutral: choice?.neutral });
+  const choice = getJournalThemeChoice(choiceValue);
+  if (choice) {
+    return deriveAccentFamily(choice.value, { neutral: choice.neutral });
+  }
+
+  return deriveAccentFamily(normalizeHexColor(choiceValue) || DEFAULT_JOURNAL_THEME_VALUE);
 }
 
 export function getJournalTheme(plan, storedValue, customAccent) {
@@ -211,15 +213,15 @@ export function getJournalTheme(plan, storedValue, customAccent) {
       ...accentTheme,
       choice: storedValue === JOURNAL_THEME_CUSTOM_VALUE
         ? { value: JOURNAL_THEME_CUSTOM_VALUE, label: 'Custom' }
-        : (getJournalThemeChoice(storedValue) || getJournalThemeChoice(DEFAULT_JOURNAL_THEME_VALUE)),
+        : (getJournalThemeChoice(storedValue) || null),
     };
   }
 
   if (normalizedPlan === 'pro') {
-    const choice = getJournalThemeChoice(storedValue) || getJournalThemeChoice(DEFAULT_JOURNAL_THEME_VALUE);
+    const choice = getJournalThemeChoice(storedValue);
     return {
       ...BASE_THEME,
-      ...deriveAccentFamily(choice?.value, { neutral: choice?.neutral }),
+      ...buildThemedAccent(storedValue || DEFAULT_JOURNAL_THEME_VALUE, customAccent),
       choice,
     };
   }
@@ -227,13 +229,7 @@ export function getJournalTheme(plan, storedValue, customAccent) {
   if (normalizedPlan === 'starter') {
     return {
       ...BASE_THEME,
-      accent: '#00F5D4',
-      secondary: '#59F7E1',
-      teal: '#26F9E5',
-      blue: '#4DD4FF',
-      purple: '#6AC8FF',
-      pink: '#89E4FF',
-      orange: '#2ED7C8',
+      ...deriveAccentFamily('#7C8B9F'),
       choice: null,
     };
   }
@@ -241,13 +237,7 @@ export function getJournalTheme(plan, storedValue, customAccent) {
   if (normalizedPlan === 'trial') {
     return {
       ...BASE_THEME,
-      accent: '#FB923C',
-      secondary: '#FDBA74',
-      teal: '#FDB27A',
-      blue: '#F59E0B',
-      purple: '#F8B86A',
-      pink: '#FFD2A3',
-      orange: '#FB923C',
+      ...deriveAccentFamily('#A28666'),
       choice: null,
     };
   }
@@ -330,6 +320,4 @@ export function applyJournalTheme(theme) {
   Object.entries(entries).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
-
-  root.setAttribute('data-journal-tone', 'subtle');
 }
