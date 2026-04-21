@@ -31,6 +31,7 @@ import Competition from './pages/Competition';
 import WelcomePage from './pages/WelcomePage';
 import { getEntryRoute, hasRouteAccess, normalizePlan } from './lib/subscription';
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
+import { buildOnboardingRecord } from './lib/onboarding';
 import './App.css';
 import './theme.css';
 
@@ -316,12 +317,12 @@ function AppInner() {
   const handleOnboardingComplete = async (answers) => {
     if (user?.id) {
       localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
-      // Sauvegarder les réponses dans Supabase
+      const onboardingRecord = buildOnboardingRecord({ answers, user });
       try {
         const { supabase } = await import('./lib/supabase');
         await supabase
           .from('profiles')
-          .update({ onboarding: answers })
+          .update({ onboarding: onboardingRecord })
           .eq('id', user.id);
       } catch (_) {}
     }

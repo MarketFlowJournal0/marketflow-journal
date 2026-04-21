@@ -23,6 +23,7 @@ const PAGE_STYLES = `
     display: grid;
     grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.82fr);
     gap: 16px;
+    align-items: start;
   }
 
   .mf-calendar-grid {

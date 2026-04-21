@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import {
   Area,
   AreaChart,
@@ -13,7 +14,16 @@ import {
   YAxis,
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
+import { useAuth } from '../context/AuthContext';
 import { shade } from '../lib/colorAlpha';
+import {
+  buildBacktestSessionName,
+  createBacktestSession,
+  getBacktestSessionLimit,
+  loadBacktestSessions,
+  normalizeBacktestSession,
+  saveBacktestSessions,
+} from '../lib/backtestSessions';
 import {
   CHART_AXIS_SMALL,
   CHART_GRID,
@@ -265,6 +275,18 @@ function buildTradePulse(trades = []) {
   });
 }
 
+function filterTradesForBacktestSession(trades = [], session = {}) {
+  return (trades || []).filter((trade) => {
+    const symbol = getTradeSymbol(trade);
+    const setup = String(trade.setup || '').trim() || 'Unlabeled';
+    const tradingSession = normalizeSessionLabel(trade.session);
+    if (session.symbol && session.symbol !== 'all' && symbol !== session.symbol) return false;
+    if (session.setup && session.setup !== 'all' && setup !== session.setup) return false;
+    if (session.session && session.session !== 'all' && tradingSession !== session.session) return false;
+    return true;
+  });
+}
+
 function TradingViewEmbed({ symbol, interval, height = 420 }) {
   const containerRef = useRef(null);
 
@@ -470,8 +492,66 @@ function Field({ label, value, onChange, options }) {
   );
 }
 
+function TextField({ label, value, onChange, placeholder = '' }) {
+  return (
+    <label style={{ display: 'grid', gap: 6 }}>
+      <span style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: '100%',
+          padding: '11px 12px',
+          borderRadius: 13,
+          border: `1px solid ${C.border}`,
+          background: 'rgba(255,255,255,0.03)',
+          color: C.text1,
+          fontSize: 12,
+          fontFamily: 'inherit',
+          outline: 'none',
+        }}
+      />
+    </label>
+  );
+}
+
+function SessionChip({ active = false, children, onClick }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick?.();
+        }
+      }}
+      style={{
+        width: '100%',
+        textAlign: 'left',
+        padding: '12px 13px',
+        borderRadius: 16,
+        border: `1px solid ${active ? shade(C.accent, 0.22) : shade(C.border, 0.8)}`,
+        background: active ? 'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.15), rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.05))' : 'rgba(255,255,255,0.025)',
+        color: C.text1,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function Backtest() {
+  const { user } = useAuth();
   const { trades, activeAccount, accountOptions } = useTradingContext();
+  const plan = String(user?.plan || 'trial').toLowerCase();
+  const sessionLimit = getBacktestSessionLimit(plan);
   const [selectedSymbol, setSelectedSymbol] = useState('all');
   const [selectedSetup, setSelectedSetup] = useState('all');
   const [selectedSession, setSelectedSession] = useState('all');
@@ -479,6 +559,49 @@ export default function Backtest() {
   const [playbackSpeed, setPlaybackSpeed] = useState(2);
   const [isPlaying, setIsPlaying] = useState(false);
   const [replayIndex, setReplayIndex] = useState(0);
+  const [backtestSessions, setBacktestSessions] = useState([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  const [activeBacktestSessionId, setActiveBacktestSessionId] = useState('');
+  const [sessionName, setSessionName] = useState('');
+  const [sessionNotes, setSessionNotes] = useState('');
+
+  function activateBacktestSession(sessionRecord) {
+    if (!sessionRecord) return;
+    const normalized = normalizeBacktestSession(sessionRecord);
+    setActiveBacktestSessionId(normalized.id);
+    setSelectedSymbol(normalized.symbol || 'all');
+    setSelectedSetup(normalized.setup || 'all');
+    setSelectedSession(normalized.session || 'all');
+    setSelectedInterval(normalized.interval || '15');
+    setPlaybackSpeed(normalized.playbackSpeed || 2);
+    setReplayIndex(normalized.replayIndex || 0);
+    setSessionName(normalized.name || '');
+    setSessionNotes(normalized.notes || '');
+    setIsPlaying(false);
+  }
+
+  useEffect(() => {
+    if (!user?.id) {
+      setBacktestSessions([]);
+      setActiveBacktestSessionId('');
+      setSessionName('');
+      setSessionNotes('');
+      setSessionsLoaded(true);
+      return;
+    }
+
+    const stored = loadBacktestSessions(user.id)
+      .sort((left, right) => new Date(right.lastOpenedAt || right.updatedAt || 0) - new Date(left.lastOpenedAt || left.updatedAt || 0));
+    setBacktestSessions(stored);
+    setSessionsLoaded(true);
+
+    if (stored[0]) activateBacktestSession(stored[0]);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!sessionsLoaded || !user?.id) return;
+    saveBacktestSessions(user.id, backtestSessions);
+  }, [backtestSessions, sessionsLoaded, user?.id]);
 
   const sortedTrades = useMemo(() => {
     return [...trades].sort((left, right) => (getTradeDateValue(left)?.getTime() || 0) - (getTradeDateValue(right)?.getTime() || 0));
@@ -570,6 +693,121 @@ export default function Backtest() {
           ? 'The strike rate is acceptable. Push the average winner further.'
           : 'Keep the same structure and add more clean samples before adjusting the playbook.';
 
+  const activeReplaySession = useMemo(
+    () => backtestSessions.find((session) => session.id === activeBacktestSessionId) || null,
+    [activeBacktestSessionId, backtestSessions],
+  );
+
+  const sessionSummaries = useMemo(() => {
+    return backtestSessions.map((session) => {
+      const sessionTrades = filterTradesForBacktestSession(sortedTrades, session);
+      const summary = summarizeTradeSet(sessionTrades);
+      return {
+        ...session,
+        tradeCount: sessionTrades.length,
+        totalPnL: summary.totalPnL,
+        winRate: summary.winRate,
+      };
+    });
+  }, [backtestSessions, sortedTrades]);
+
+  useEffect(() => {
+    if (!sessionsLoaded || !activeBacktestSessionId) return;
+    setBacktestSessions((current) => {
+      const index = current.findIndex((session) => session.id === activeBacktestSessionId);
+      if (index === -1) return current;
+
+      const existing = normalizeBacktestSession(current[index]);
+      const next = normalizeBacktestSession({
+        ...existing,
+        name: sessionName || existing.name,
+        notes: sessionNotes,
+        symbol: selectedSymbol,
+        setup: selectedSetup,
+        session: selectedSession,
+        interval: selectedInterval,
+        playbackSpeed,
+        replayIndex,
+        accountScope: activeAccount,
+        plan,
+        tradeCount: filteredTrades.length,
+        progressPct: progress,
+        lastSymbol: currentSymbol,
+        updatedAt: new Date().toISOString(),
+        lastOpenedAt: new Date().toISOString(),
+      });
+
+      if (JSON.stringify(existing) === JSON.stringify(next)) return current;
+      const copy = [...current];
+      copy[index] = next;
+      return copy;
+    });
+  }, [
+    activeAccount,
+    activeBacktestSessionId,
+    currentSymbol,
+    filteredTrades.length,
+    plan,
+    playbackSpeed,
+    progress,
+    replayIndex,
+    selectedInterval,
+    selectedSession,
+    selectedSetup,
+    selectedSymbol,
+    sessionName,
+    sessionNotes,
+    sessionsLoaded,
+  ]);
+
+  function handleCreateSession() {
+    if (sessionLimit <= 0) {
+      toast.error('Upgrade to Starter or higher to create replay sessions.');
+      return;
+    }
+
+    if (backtestSessions.length >= sessionLimit) {
+      toast.error(`Your ${plan} plan allows ${sessionLimit} replay session${sessionLimit > 1 ? 's' : ''}.`);
+      return;
+    }
+
+    const sessionRecord = createBacktestSession({
+      name: sessionName || buildBacktestSessionName({ symbol: selectedSymbol, setup: selectedSetup, session: selectedSession }),
+      symbol: selectedSymbol,
+      setup: selectedSetup,
+      session: selectedSession,
+      interval: selectedInterval,
+      playbackSpeed,
+      replayIndex: 0,
+      accountScope: activeAccount,
+      plan,
+      tradeCount: filteredTrades.length,
+      progressPct: filteredTrades.length ? (100 / filteredTrades.length) : 0,
+      lastSymbol: currentSymbol,
+      notes: sessionNotes,
+    });
+
+    setBacktestSessions((current) => [sessionRecord, ...current]);
+    activateBacktestSession(sessionRecord);
+    setReplayIndex(0);
+    toast.success('Replay session created.');
+  }
+
+  function handleDeleteSession(sessionId) {
+    const next = backtestSessions.filter((session) => session.id !== sessionId);
+    setBacktestSessions(next);
+    if (activeBacktestSessionId === sessionId) {
+      const fallback = next[0] || null;
+      if (fallback) activateBacktestSession(fallback);
+      else {
+        setActiveBacktestSessionId('');
+        setSessionName('');
+        setSessionNotes('');
+      }
+    }
+    toast.success('Replay session removed.');
+  }
+
   return (
     <div className="mf-backtest-page" style={{ minHeight: '100vh', padding: '28px 24px 48px', position: 'relative', overflow: 'hidden' }}>
       <style>{PAGE_STYLES}</style>
@@ -580,8 +818,113 @@ export default function Backtest() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1560, margin: '0 auto' }}>
+        <SectionCard tone={C.gold} index={0} style={{ padding: '20px 22px 18px', marginBottom: 14 }}>
+          <SectionTitle
+            eyebrow="Sessions"
+            title="Replay sessions"
+            tone={C.gold}
+            action={(
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.gold, 0.16)}`, background: shade(C.gold, 0.1), fontSize: 10.5, color: C.gold, fontWeight: 800 }}>
+                  {sessionLimit > 0 ? `${backtestSessions.length}/${sessionLimit} session${sessionLimit > 1 ? 's' : ''}` : 'Locked'}
+                </span>
+                <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.025)', fontSize: 10.5, color: C.text2, fontWeight: 700 }}>
+                  {plan}
+                </span>
+              </div>
+            )}
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 0.95fr) minmax(0, 1.05fr)', gap: 14 }}>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <TextField label="Session name" value={sessionName} onChange={setSessionName} placeholder="London momentum review" />
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Session notes</span>
+                <textarea
+                  value={sessionNotes}
+                  onChange={(event) => setSessionNotes(event.target.value)}
+                  rows={4}
+                  placeholder="What are you testing in this replay?"
+                  style={{
+                    width: '100%',
+                    padding: '11px 12px',
+                    borderRadius: 13,
+                    border: `1px solid ${C.border}`,
+                    background: 'rgba(255,255,255,0.03)',
+                    color: C.text1,
+                    fontSize: 12,
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    resize: 'vertical',
+                  }}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <ControlButton onClick={handleCreateSession} disabled={sessionLimit <= 0 || backtestSessions.length >= sessionLimit}>
+                  New session
+                </ControlButton>
+                {activeReplaySession ? (
+                  <ControlButton subtle onClick={() => activateBacktestSession(activeReplaySession)}>
+                    Continue current
+                  </ControlButton>
+                ) : null}
+              </div>
+              <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.7 }}>
+                Starter keeps 1 active replay session. Pro keeps 5. Elite keeps 25. Each session stores filters, interval, replay progress, and notes so you can continue exactly where you stopped.
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 10 }}>
+              {sessionSummaries.length ? sessionSummaries.map((session) => {
+                const active = session.id === activeBacktestSessionId;
+                const pnlTone = session.totalPnL >= 0 ? C.green : C.danger;
+                return (
+                  <SessionChip key={session.id} active={active} onClick={() => activateBacktestSession(session)}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: C.text0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {session.name}
+                        </div>
+                        <div style={{ marginTop: 5, fontSize: 11.5, color: C.text2, lineHeight: 1.55 }}>
+                          {session.symbol === 'all' ? 'All symbols' : session.symbol} · {session.setup === 'all' ? 'All setups' : session.setup} · {session.session === 'all' ? 'All sessions' : session.session}
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gap: 6, justifyItems: 'end', flexShrink: 0 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 800, color: pnlTone }}>{formatAnalyticsMoney(session.totalPnL)}</span>
+                        <span style={{ fontSize: 10.5, color: C.text3 }}>{Math.round(session.progressPct || 0)}%</span>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ padding: '5px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(C.border, 0.8)}`, fontSize: 10.5, color: C.text2 }}>
+                          {session.tradeCount} trades
+                        </span>
+                        <span style={{ padding: '5px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(C.border, 0.8)}`, fontSize: 10.5, color: C.text2 }}>
+                          {formatAnalyticsPercent(session.winRate, 1)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <ControlButton subtle onClick={(event) => { event.stopPropagation(); activateBacktestSession(session); }}>
+                          Continue
+                        </ControlButton>
+                        <ControlButton subtle onClick={(event) => { event.stopPropagation(); handleDeleteSession(session.id); }}>
+                          Remove
+                        </ControlButton>
+                      </div>
+                    </div>
+                  </SessionChip>
+                );
+              }) : (
+                <div style={{ padding: '16px 14px', borderRadius: 16, border: `1px dashed ${shade(C.border, 0.9)}`, background: 'rgba(255,255,255,0.02)', fontSize: 12.5, color: C.text2, lineHeight: 1.7 }}>
+                  No replay session yet. Build one from your current filters, then resume it any time from this desk.
+                </div>
+              )}
+            </div>
+          </div>
+        </SectionCard>
+
         <div className="mf-replay-topbar">
-          <SectionCard tone={C.accent} index={0} style={{ padding: '20px 22px 18px' }}>
+          <SectionCard tone={C.accent} index={1} style={{ padding: '20px 22px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -642,7 +985,7 @@ export default function Backtest() {
             </div>
           </SectionCard>
 
-          <SectionCard tone={C.purple} index={1} style={{ padding: '20px 22px 18px' }}>
+          <SectionCard tone={C.purple} index={2} style={{ padding: '20px 22px 18px' }}>
             <SectionTitle
               eyebrow="Controls"
               title="Replay controls"

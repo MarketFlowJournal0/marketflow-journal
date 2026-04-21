@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getOnboardingAnswers, getOnboardingMeta } from '../lib/onboarding';
 
 const QUESTIONS = {
   experience: {
@@ -101,19 +102,32 @@ export default function OnboardingStats({ onBack }) {
   const [stats,   setStats]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [total,   setTotal]   = useState(0);
+  const [recentResponses, setRecentResponses] = useState([]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('onboarding')
+          .select('email, plan, onboarding')
           .not('onboarding', 'is', null);
 
         if (error) throw error;
 
-        const responses = data.map(r => r.onboarding).filter(Boolean);
+        const responses = data
+          .map((row) => ({
+            email: row.email || '',
+            plan: row.plan || 'trial',
+            answers: getOnboardingAnswers(row.onboarding),
+            meta: getOnboardingMeta(row.onboarding),
+          }))
+          .filter((row) => Object.values(row.answers || {}).some((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value))));
         setTotal(responses.length);
+        setRecentResponses(
+          [...responses]
+            .sort((left, right) => new Date(right.meta?.completedAt || 0) - new Date(left.meta?.completedAt || 0))
+            .slice(0, 8)
+        );
 
         // Calculate stats for each question
         const computed = {};
@@ -123,7 +137,7 @@ export default function OnboardingStats({ onBack }) {
           Object.keys(q.options).forEach(optKey => { counts[optKey] = 0; });
 
           responses.forEach(r => {
-            const val = r[qKey];
+            const val = r.answers?.[qKey];
             if (!val) return;
             if (Array.isArray(val)) {
               val.forEach(v => { if (counts[v] !== undefined) counts[v]++; });
@@ -236,6 +250,47 @@ export default function OnboardingStats({ onBack }) {
               </div>
             );
           })}
+
+          <div className="os-card" style={{ gridColumn: '1 / -1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 18, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Latest onboarding responses</div>
+                <div style={{ fontSize: 12, color: '#3A5070', marginTop: 4 }}>Recent submissions currently stored in the database.</div>
+              </div>
+              <div style={{ padding: '6px 10px', borderRadius: 999, background: 'rgba(6,230,255,0.08)', border: '1px solid rgba(6,230,255,0.16)', fontSize: 11, color: '#06E6FF', fontWeight: 700 }}>
+                {recentResponses.length} shown
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 10 }}>
+              {recentResponses.map((response, index) => {
+                const answers = response.answers || {};
+                const meta = response.meta || {};
+                return (
+                  <div key={`${response.email}-${index}`} style={{ padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.025)', border: '1px solid #142038' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#E8EEFF' }}>{response.email || 'Unknown user'}</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ padding: '4px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', border: '1px solid #1B2A44', fontSize: 10.5, color: '#7A90B8' }}>
+                          {response.plan}
+                        </span>
+                        <span style={{ padding: '4px 8px', borderRadius: 999, background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.16)', fontSize: 10.5, color: '#00FF88' }}>
+                          {meta.completedAt ? new Date(meta.completedAt).toLocaleDateString('fr-FR') : 'No date'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {Object.entries(answers).map(([key, value]) => (
+                        <span key={key} style={{ padding: '6px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: '1px solid #162034', fontSize: 11, color: '#C0D8F8' }}>
+                          <strong style={{ color: '#06E6FF' }}>{key}</strong>: {Array.isArray(value) ? value.join(', ') : value}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

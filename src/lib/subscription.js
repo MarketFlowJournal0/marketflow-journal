@@ -27,6 +27,7 @@ export const PLAN_DETAILS = {
       'CSV import',
       'Performance calendar',
       '1 trading account',
+      '1 backtest session',
     ],
   },
   pro: {
@@ -41,6 +42,7 @@ export const PLAN_DETAILS = {
       'Psychology tracker',
       'Equity curve and drawdown',
       'Strategy backtesting',
+      '5 backtest sessions',
       'Broker sync',
       'PDF report export',
     ],
@@ -56,6 +58,7 @@ export const PLAN_DETAILS = {
       'AI Trading Coach',
       'Unlimited accounts',
       'Elite trade copier desk',
+      '25 backtest sessions',
       'Alerts and notifications',
       'API access',
       '24/7 priority support',
@@ -65,7 +68,7 @@ export const PLAN_DETAILS = {
 
 const ROUTES_BY_PLAN = {
   trial: [...BASE_ROUTES, ...ACCOUNT_ROUTES],
-  starter: [...BASE_ROUTES, 'competition', ...ACCOUNT_ROUTES],
+  starter: [...BASE_ROUTES, 'competition', 'backtest', ...ACCOUNT_ROUTES],
   pro: [
     ...BASE_ROUTES,
     'competition',
