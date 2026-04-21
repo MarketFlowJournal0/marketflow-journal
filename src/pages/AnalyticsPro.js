@@ -38,7 +38,9 @@ import {
   formatAnalyticsMoney,
   formatAnalyticsPercent,
   formatAnalyticsRR,
+  getTradeDateValue,
   getTradePnl,
+  normalizeSessionLabel,
   summarizeTradeSet,
   toAnalyticsNumber,
 } from '../lib/marketflowAnalytics';
@@ -272,6 +274,37 @@ const compactInsightCopy = (value = '') => {
   return text.length > 104 ? `${text.slice(0, 101).trim()}…` : text;
 };
 
+const normalizeAnalyticsTrade = (trade = {}) => {
+  const dateValue = getTradeDateValue(trade);
+  const pnl = getTradePnl(trade);
+  const normalizedDate = dateValue
+    ? dateValue.toISOString().slice(0, 10)
+    : String(trade.date || trade.open_date || '').slice(0, 10);
+  const rr = toAnalyticsNumber(trade.metrics?.rrReel ?? trade.rr);
+  const rawType = String(trade.type || trade.direction || '').toLowerCase();
+  const normalizedType = rawType.includes('short') || rawType.includes('sell')
+    ? 'Short'
+    : rawType.includes('long') || rawType.includes('buy')
+      ? 'Long'
+      : 'Long';
+
+  return {
+    ...trade,
+    pnl,
+    profit_loss: pnl,
+    date: normalizedDate,
+    open_date: trade.open_date || (dateValue ? dateValue.toISOString() : normalizedDate),
+    symbol: trade.symbol || trade.pair || '--',
+    pair: trade.pair || trade.symbol || '--',
+    session: normalizeSessionLabel(trade.session),
+    type: normalizedType,
+    metrics: {
+      ...(trade.metrics || {}),
+      rrReel: rr ?? trade.metrics?.rrReel ?? null,
+    },
+  };
+};
+
 const SectionShortcutRail = () => (
   <motion.div
     variants={fadeUp}
@@ -450,6 +483,7 @@ const EquityDrawdown = ({ trades }) => {
   const maxDD   = data.length ? Math.min(...data.map(d => d.drawdownCash)) : 0;
   const maxDDPct = data.length ? Math.min(...data.map(d => d.drawdownPct)) : 0;
   const finalEq = data.length ? data[data.length - 1].equity : 0;
+  const peakEq = data.length ? Math.max(...data.map((row) => row.equity)) : 0;
 
   return (
     <Card index={0} glow={finalEq >= 0 ? C.greenGlow : C.dangerGlow}>
@@ -492,10 +526,27 @@ const EquityDrawdown = ({ trades }) => {
             )} />
           } />
           <ReferenceLine yAxisId="eq" y={0} stroke={shade(C.brdBright, 0.8)} strokeDasharray="4 6" />
+          {maxDD < 0 ? (
+            <ReferenceLine yAxisId="dd" y={maxDD} stroke={shade(C.danger,'78')} strokeDasharray="4 4" />
+          ) : null}
           <Area yAxisId="eq" type="monotone" dataKey="equity" stroke={C.green} strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={chartActiveDot(C.green, 5, C.bgCard)} {...CHART_MOTION_SOFT} />
           <Area yAxisId="dd" type="monotone" dataKey="drawdownCash" stroke={C.danger} strokeWidth={1.85} fill="url(#ddGrad)" dot={false} strokeDasharray="6 4" activeDot={chartActiveDot(C.danger, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
         </ComposedChart>
       </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 12, marginBottom: 10 }}>
+        <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${shade(C.green,'16')}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 4 }}>Net equity</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: finalEq >= 0 ? C.green : C.danger }}>{fmtPnl(finalEq)}</div>
+        </div>
+        <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${shade(C.blue,'16')}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 4 }}>Equity peak</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: C.blue }}>{fmtPnl(peakEq)}</div>
+        </div>
+        <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${shade(C.danger,'16')}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 4 }}>Worst drawdown</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: C.danger }}>{fmtPnl(maxDD)}</div>
+        </div>
+      </div>
       <div style={{ display: 'flex', gap: 20, marginTop: 10 }}>
         {[{ color: C.green, label: 'Equity', dash: false }, { color: C.danger, label: 'Drawdown cash', dash: true }].map((item) => (
           <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -633,6 +684,8 @@ const CumulativeWinRate = ({ trades }) => {
   }, [trades]);
 
   const final = data.length ? data[data.length - 1].wr : 0;
+  const rollingNow = data.length ? data[data.length - 1].rolling : 0;
+  const peakRolling = data.length ? Math.max(...data.map((row) => row.rolling)) : 0;
 
   return (
     <Card index={2}>
@@ -668,6 +721,20 @@ const CumulativeWinRate = ({ trades }) => {
           <Line type="monotone" dataKey="rolling" stroke={C.green} strokeWidth={1.8} dot={false} strokeDasharray="5 5" activeDot={chartActiveDot(C.green, 4, C.bgCard)} {...CHART_MOTION_SOFT} />
         </AreaChart>
       </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 12 }}>
+        <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${shade(C.cyan,'16')}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 4 }}>Cumulative</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: final >= 50 ? C.green : C.danger }}>{formatAnalyticsPercent(final, 1)}</div>
+        </div>
+        <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${shade(C.green,'16')}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 4 }}>Rolling 12</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: rollingNow >= 50 ? C.green : C.danger }}>{formatAnalyticsPercent(rollingNow, 1)}</div>
+        </div>
+        <div style={{ padding: '10px 12px', borderRadius: 14, border: `1px solid ${shade(C.blue,'16')}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 4 }}>Best burst</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: C.blue }}>{formatAnalyticsPercent(peakRolling, 1)}</div>
+        </div>
+      </div>
     </Card>
   );
 
@@ -1034,7 +1101,11 @@ const SetupDonut = ({ trades }) => {
 // 🌍 BLOCK 8 — SESSION BREAKDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const SessionBreakdown = ({ trades }) => {
-  const sessionMeta = { NY: { color: C.cyan }, London: { color: C.purple }, Asia: { color: C.orange } };
+  const sessionMeta = {
+    'Tokyo / Asia': { color: C.orange, label: 'Tokyo' },
+    London: { color: C.purple, label: 'London' },
+    'New York': { color: C.cyan, label: 'New York' },
+  };
   const data = useMemo(() => Object.entries(sessionMeta).map(([s, meta]) => {
     const st   = trades.filter(t => t.session === s);
     const wins = st.filter(t => parseFloat(t.pnl) > 0);
@@ -1053,7 +1124,7 @@ const SessionBreakdown = ({ trades }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <IconGlyph color={d.color} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: d.color }}>{d.name}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: d.color }}>{d.label || d.name}</div>
                   <div style={{ fontSize: 9, color: C.t3 }}>{d.count} trades · {total > 0 ? ((d.count / total) * 100).toFixed(0) : 0}%</div>
                 </div>
               </div>
@@ -1531,13 +1602,17 @@ const BiasAnalysis = ({ trades }) => {
 export default function AnalyticsPro() {
   const { trades }  = useTradingContext();
   const [period, setPeriod] = useState('ALL');
+  const normalizedTrades = useMemo(() => trades.map(normalizeAnalyticsTrade), [trades]);
 
   const filtered = useMemo(() => {
-    if (period === 'ALL') return trades;
+    if (period === 'ALL') return normalizedTrades;
     const days = { '7D': 7, '1M': 30, '3M': 90, '6M': 180 }[period] || 9999;
-    const from = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
-    return trades.filter(t => (t.date || '') >= from);
-  }, [trades, period]);
+    const from = new Date(Date.now() - days * 86400000);
+    return normalizedTrades.filter((trade) => {
+      const tradeDate = getTradeDateValue(trade);
+      return tradeDate ? tradeDate >= from : false;
+    });
+  }, [normalizedTrades, period]);
 
   const summary = useMemo(() => summarizeTradeSet(filtered), [filtered]);
   const sessionSeries = useMemo(() => buildSessionWinRateSeries(filtered), [filtered]);

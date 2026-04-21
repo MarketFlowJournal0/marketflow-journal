@@ -112,6 +112,12 @@ const DASHBOARD_STYLES = `
     gap: 16px;
   }
 
+  .mf-dashboard-calendar-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 16px;
+  }
+
   .mf-dashboard-side-stack {
     display: flex;
     flex-direction: column;
@@ -127,7 +133,8 @@ const DASHBOARD_STYLES = `
   @media (max-width: 1160px) {
     .mf-dashboard-grid-primary,
     .mf-dashboard-grid-secondary,
-    .mf-dashboard-calendar-shell {
+    .mf-dashboard-calendar-shell,
+    .mf-dashboard-calendar-board {
       grid-template-columns: 1fr;
     }
   }
@@ -2092,15 +2099,6 @@ function CompactCalendarPanel({ trades, navigate }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const calendar = useMemo(() => buildCalendarMonth(trades, monthOffset), [trades, monthOffset]);
   const [selectedKey, setSelectedKey] = useState(null);
-  const board = {
-    shell: 'rgba(9,15,25,0.96)',
-    surface: 'rgba(12,18,30,0.98)',
-    surfaceSoft: 'rgba(16,24,38,0.94)',
-    border: shade(C.accent, 0.1),
-    text: C.text0,
-    muted: C.text2,
-    soft: C.text3,
-  };
 
   useEffect(() => {
     const available = calendar.days.find((day) => day.key === selectedKey && day.trades > 0);
@@ -2110,6 +2108,8 @@ function CompactCalendarPanel({ trades, navigate }) {
   }, [calendar.days, selectedKey]);
 
   const selectedDay = calendar.days.find((day) => day.key === selectedKey) || null;
+  const activeDayCount = calendar.positiveDays + calendar.negativeDays + calendar.flatDays;
+  const monthlyTone = calendar.totalPnl >= 0 ? C.green : C.danger;
 
   return (
     <SectionCard tone={C.accent} index={11} style={{ padding: '18px 18px 16px', marginBottom: 14 }}>
@@ -2129,250 +2129,215 @@ function CompactCalendarPanel({ trades, navigate }) {
 
       {calendar.hasHistory ? (
         <div style={{ display: 'grid', gap: 14 }}>
-          <div
-            style={{
-              borderRadius: 28,
-              padding: '18px 18px 16px',
-              border: `1px solid ${board.border}`,
-              background: `linear-gradient(180deg, ${board.shell} 0%, ${board.surfaceSoft} 100%)`,
-              boxShadow: `0 28px 64px rgba(0,0,0,0.28), inset 0 1px 0 ${shade(C.text0, 0.04)}`,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: board.soft, marginBottom: 6 }}>
-                  MarketFlow calendar
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.05em', color: board.text, marginBottom: 4 }}>
-                  {calendar.monthLabel}
-                </div>
-                <div style={{ fontSize: 12, color: board.muted }}>
-                  {calendar.tradeCount} trades across {calendar.positiveDays + calendar.negativeDays + calendar.flatDays} active days.
-                </div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>
+                MarketFlow calendar
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <div style={{ padding: '9px 12px', borderRadius: 16, border: `1px solid ${shade(C.green, 0.14)}`, background: 'rgba(255,255,255,0.03)', minWidth: 150 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: board.soft, marginBottom: 4 }}>
-                    Monthly state
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: calendar.totalPnl >= 0 ? C.green : C.danger }}>
-                    {formatCurrency(calendar.totalPnl, true)}
-                  </div>
-                </div>
-                <div style={{ padding: '9px 12px', borderRadius: 16, border: `1px solid ${board.border}`, background: 'rgba(255,255,255,0.025)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: board.soft, marginBottom: 4 }}>
-                    Active days
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: board.text }}>
-                    {calendar.positiveDays + calendar.negativeDays + calendar.flatDays}
-                  </div>
-                </div>
+              <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, marginBottom: 4 }}>
+                {calendar.monthLabel}
+              </div>
+              <div style={{ fontSize: 12, color: C.text2 }}>
+                {activeDayCount} active days / {calendar.tradeCount} trades logged.
               </div>
             </div>
 
-            <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
-              <div style={{ minWidth: 980 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                    <div
-                      key={day}
-                      style={{
-                        padding: '0 4px',
-                        fontSize: 10,
-                        fontWeight: 800,
-                        letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
-                        color: board.soft,
-                      }}
-                    >
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: 'grid', gap: 10 }}>
-                  {calendar.days.map((day) => {
-                    const tone = day.pnl > 0 ? C.green : day.pnl < 0 ? C.danger : C.accent;
-                    const active = day.inMonth && day.trades > 0;
-                    const selected = selectedKey === day.key;
-                    return (
-                      <button
-                        key={day.key}
-                        onClick={() => active && setSelectedKey(day.key)}
-                        style={{
-                          minHeight: 108,
-                          borderRadius: 18,
-                          padding: '12px 12px 10px',
-                          border: `1px solid ${selected ? shade(C.accent, 0.34) : day.isToday ? shade(C.accent, 0.22) : active ? shade(tone, 0.16) : shade(C.borderHi, 0.78)}`,
-                          background: active
-                            ? `linear-gradient(180deg, ${shade(tone, 0.15)} 0%, ${shade(tone, 0.05)} 100%)`
-                            : 'linear-gradient(180deg, rgba(14,21,34,0.94) 0%, rgba(10,16,27,0.94) 100%)',
-                          boxShadow: selected
-                            ? `0 18px 32px ${shade(C.accent, 0.16)}, inset 0 0 0 1px ${shade(C.accent, 0.12)}`
-                            : active
-                              ? '0 16px 28px rgba(0,0,0,0.16)'
-                              : 'inset 0 1px 0 rgba(255,255,255,0.03)',
-                          opacity: day.inMonth ? 1 : 0.28,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          gap: 8,
-                          cursor: active ? 'pointer' : 'default',
-                          textAlign: 'left',
-                          fontFamily: 'inherit',
-                          transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: day.isToday ? C.accent : board.text }}>{String(day.day).padStart(2, '0')}</span>
-                          {active && <span style={{ width: 8, height: 8, borderRadius: '50%', background: tone, boxShadow: `0 0 12px ${shade(tone, 0.3)}` }} />}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: '-0.05em', color: active ? tone : board.soft, marginBottom: 4 }}>
-                            {active ? formatCurrency(day.pnl, true) : '—'}
-                          </div>
-                          <div style={{ fontSize: 11, color: active ? board.muted : board.soft }}>
-                            {active ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : 'No trades'}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, marginTop: 12 }}>
-                  {calendar.weeks.map((week, weekIndex) => {
-                    const weekTone = week.pnl > 0 ? C.green : week.pnl < 0 ? C.danger : C.accent;
-                    return (
-                      <div
-                        key={`week-summary-${weekIndex}`}
-                        style={{
-                          borderRadius: 16,
-                          padding: '11px 12px 10px',
-                          border: `1px solid ${week.trades ? shade(weekTone, 0.14) : shade(C.borderHi, 0.78)}`,
-                          background: week.trades
-                            ? `linear-gradient(180deg, ${shade(weekTone, 0.12)} 0%, rgba(255,255,255,0.03) 100%)`
-                            : 'linear-gradient(180deg, rgba(14,21,34,0.94) 0%, rgba(10,16,27,0.94) 100%)',
-                        }}
-                      >
-                        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: board.soft, marginBottom: 6 }}>
-                          Week {weekIndex + 1}
-                        </div>
-                        <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: '-0.05em', color: week.trades ? weekTone : C.text1, marginBottom: 4 }}>
-                          {formatCurrency(week.pnl, true)}
-                        </div>
-                        <div style={{ fontSize: 11, color: board.muted }}>
-                          {week.trades ? `${week.trades} trade${week.trades > 1 ? 's' : ''}` : 'No flow'}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {calendar.bestDay ? (
-                      <div style={{ padding: '8px 11px', borderRadius: 14, border: `1px solid ${shade(C.green, 0.14)}`, background: 'rgba(255,255,255,0.03)', fontSize: 11.5, color: board.muted }}>
-                        Best day <span style={{ color: C.text1, fontWeight: 800 }}>{formatShortDate(calendar.bestDay.date)}</span> <span style={{ color: C.green, fontWeight: 800 }}>{formatCurrency(calendar.bestDay.pnl, true)}</span>
-                      </div>
-                    ) : null}
-                    {calendar.worstDay ? (
-                      <div style={{ padding: '8px 11px', borderRadius: 14, border: `1px solid ${shade(C.danger, 0.14)}`, background: 'rgba(255,255,255,0.03)', fontSize: 11.5, color: board.muted }}>
-                        Worst day <span style={{ color: C.text1, fontWeight: 800 }}>{formatShortDate(calendar.worstDay.date)}</span> <span style={{ color: C.danger, fontWeight: 800 }}>{formatCurrency(calendar.worstDay.pnl, true)}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(118px, 1fr))', gap: 10 }}>
+              <div style={{ padding: '12px 13px', borderRadius: 18, border: `1px solid ${shade(monthlyTone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>Monthly P&L</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: monthlyTone, letterSpacing: '-0.04em' }}>{formatCurrency(calendar.totalPnl, true)}</div>
+              </div>
+              <div style={{ padding: '12px 13px', borderRadius: 18, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.025)' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>Active days</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: C.text0, letterSpacing: '-0.04em' }}>{activeDayCount}</div>
+              </div>
+              <div style={{ padding: '12px 13px', borderRadius: 18, border: `1px solid ${shade(C.blue, 0.12)}`, background: 'rgba(255,255,255,0.025)' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>Monthly flow</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: C.text0, letterSpacing: '-0.04em' }}>{calendar.tradeCount}</div>
               </div>
             </div>
           </div>
 
-          <AnimatePresence mode="wait">
-            {selectedDay ? (
-              <motion.div
-                key={selectedDay.key}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-                style={{
-                  borderRadius: 22,
-                  padding: '16px 16px 14px',
-                  border: `1px solid ${shade(C.accent, 0.12)}`,
-                  background: 'linear-gradient(180deg, rgba(12,18,29,0.94), rgba(8,13,22,0.98))',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-                  <div>
+          <div className="mf-dashboard-calendar-board">
+            <div
+              style={{
+                borderRadius: 28,
+                padding: '18px',
+                border: `1px solid ${shade(C.accent, 0.1)}`,
+                background: 'linear-gradient(180deg, rgba(10,16,27,0.98) 0%, rgba(11,18,29,0.94) 100%)',
+                boxShadow: `0 28px 64px rgba(0,0,0,0.24), inset 0 1px 0 ${shade(C.text0, 0.04)}`,
+              }}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayLabel) => (
+                  <div
+                    key={dayLabel}
+                    style={{
+                      padding: '0 6px',
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: C.text3,
+                    }}
+                  >
+                    {dayLabel}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 10 }}>
+                {calendar.days.map((day) => {
+                  const tone = day.pnl > 0 ? C.green : day.pnl < 0 ? C.danger : C.accent;
+                  const active = day.inMonth && day.trades > 0;
+                  const selected = selectedKey === day.key;
+                  return (
+                    <button
+                      key={day.key}
+                      onClick={() => active && setSelectedKey(day.key)}
+                      style={{
+                        minHeight: 114,
+                        borderRadius: 18,
+                        padding: '12px 12px 10px',
+                        border: `1px solid ${selected ? shade(C.accent, 0.3) : active ? shade(tone, 0.14) : day.isToday ? shade(C.accent, 0.18) : shade(C.borderHi, 0.72)}`,
+                        background: active
+                          ? `linear-gradient(180deg, ${shade(tone, 0.16)} 0%, ${shade(tone, 0.06)} 100%)`
+                          : 'linear-gradient(180deg, rgba(14,20,32,0.94) 0%, rgba(10,15,25,0.94) 100%)',
+                        boxShadow: selected
+                          ? `0 18px 36px ${shade(C.accent, 0.14)}, inset 0 0 0 1px ${shade(C.accent, 0.1)}`
+                          : active
+                            ? `0 12px 24px ${shade(tone, 0.08)}`
+                            : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+                        opacity: day.inMonth ? 1 : 0.3,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        cursor: active ? 'pointer' : 'default',
+                        textAlign: 'left',
+                        fontFamily: 'inherit',
+                        transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: day.isToday ? C.accent : C.text0 }}>{String(day.day).padStart(2, '0')}</span>
+                        {active ? (
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: tone, boxShadow: `0 0 12px ${shade(tone, 0.28)}` }} />
+                        ) : null}
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: '-0.05em', color: active ? tone : C.text3, marginBottom: 4 }}>
+                          {active ? formatCurrency(day.pnl, true) : '—'}
+                        </div>
+                        <div style={{ fontSize: 10.5, color: active ? C.text2 : C.text3 }}>
+                          {active ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : ''}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
+              {calendar.weeks.map((week, weekIndex) => {
+                const weekTone = week.pnl > 0 ? C.green : week.pnl < 0 ? C.danger : C.accent;
+                return (
+                  <div
+                    key={`week-summary-${weekIndex}`}
+                    style={{
+                      borderRadius: 18,
+                      padding: '12px 13px',
+                      border: `1px solid ${week.trades ? shade(weekTone, 0.14) : shade(C.borderHi, 0.74)}`,
+                      background: week.trades
+                        ? `linear-gradient(180deg, ${shade(weekTone, 0.12)} 0%, rgba(255,255,255,0.03) 100%)`
+                        : 'linear-gradient(180deg, rgba(14,20,32,0.94) 0%, rgba(10,15,25,0.94) 100%)',
+                    }}
+                  >
+                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>
+                      Week {weekIndex + 1}
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '-0.05em', color: week.trades ? weekTone : C.text1, marginBottom: 4 }}>
+                      {formatCurrency(week.pnl, true)}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.text2 }}>
+                      {week.trades ? `${week.trades} trade${week.trades > 1 ? 's' : ''}` : 'No flow'}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <AnimatePresence mode="wait">
+                {selectedDay ? (
+                  <motion.div
+                    key={selectedDay.key}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                    style={{
+                      borderRadius: 22,
+                      padding: '15px 15px 14px',
+                      border: `1px solid ${shade(C.accent, 0.12)}`,
+                      background: 'linear-gradient(180deg, rgba(12,18,29,0.96), rgba(8,13,22,0.98))',
+                    }}
+                  >
                     <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>
                       Selected day
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, marginBottom: 4 }}>
+                    <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, marginBottom: 4 }}>
                       {formatLongDate(selectedDay.date)}
                     </div>
-                    <div style={{ fontSize: 12, color: C.text2 }}>
+                    <div style={{ fontSize: 11.5, color: C.text2, marginBottom: 12 }}>
                       {selectedDay.trades} trade{selectedDay.trades > 1 ? 's' : ''} / {selectedDay.winRate}% win rate
                     </div>
-                  </div>
 
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <TinyBadge tone={selectedDay.pnl >= 0 ? C.green : C.danger}>{formatCurrency(selectedDay.pnl, true)}</TinyBadge>
-                    <TinyBadge tone={C.accent}>{formatCurrency(selectedDay.avgTrade, true)} avg</TinyBadge>
-                    {selectedDay.sessionLeader ? <TinyBadge tone={C.teal}>{selectedDay.sessionLeader.label}</TinyBadge> : null}
-                    {selectedDay.pairLeader ? <TinyBadge tone={C.blue}>{selectedDay.pairLeader.label}</TinyBadge> : null}
-                  </div>
-                </div>
+                    <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                      <MiniMetric
+                        label="Day P&L"
+                        value={formatCurrency(selectedDay.pnl, true)}
+                        tone={selectedDay.pnl >= 0 ? C.green : C.danger}
+                        caption={`${formatCurrency(selectedDay.avgTrade, true)} average`}
+                      />
+                      <MiniMetric
+                        label="Lead session"
+                        value={selectedDay.sessionLeader ? selectedDay.sessionLeader.label : 'n/a'}
+                        tone={C.teal}
+                        caption={selectedDay.sessionLeader ? `${selectedDay.sessionLeader.count} trade${selectedDay.sessionLeader.count > 1 ? 's' : ''}` : 'No session edge'}
+                      />
+                      <MiniMetric
+                        label="Lead pair"
+                        value={selectedDay.pairLeader ? selectedDay.pairLeader.label : 'n/a'}
+                        tone={C.blue}
+                        caption={selectedDay.pairLeader ? formatCurrency(selectedDay.pairLeader.pnl, true) : 'No pair lead'}
+                      />
+                    </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
-                  <MiniMetric
-                    label="Lead session"
-                    value={selectedDay.sessionLeader ? selectedDay.sessionLeader.label : 'n/a'}
-                    tone={C.teal}
-                    caption={selectedDay.sessionLeader ? `${selectedDay.sessionLeader.count} trade${selectedDay.sessionLeader.count > 1 ? 's' : ''}` : 'No session edge'}
-                  />
-                  <MiniMetric
-                    label="Lead pair"
-                    value={selectedDay.pairLeader ? selectedDay.pairLeader.label : 'n/a'}
-                    tone={C.blue}
-                    caption={selectedDay.pairLeader ? formatCurrency(selectedDay.pairLeader.pnl, true) : 'No pair lead'}
-                  />
-                  <MiniMetric
-                    label="Best print"
-                    value={selectedDay.bestTrade ? selectedDay.bestTrade.symbol : 'n/a'}
-                    tone={C.green}
-                    caption={selectedDay.bestTrade ? formatCurrency(selectedDay.bestTrade.pnl, true) : 'No best print'}
-                  />
-                  <MiniMetric
-                    label="Worst print"
-                    value={selectedDay.worstTrade ? selectedDay.worstTrade.symbol : 'n/a'}
-                    tone={C.danger}
-                    caption={selectedDay.worstTrade ? formatCurrency(selectedDay.worstTrade.pnl, true) : 'No worst print'}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
-                  {selectedDay.records.slice(0, 4).map((record) => {
-                    const pnlTone = record.pnl >= 0 ? C.green : C.danger;
-                    return (
-                      <div key={record.id} style={{ padding: '11px 12px', borderRadius: 16, border: `1px solid ${shade(pnlTone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: C.text0 }}>{record.symbol}</span>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: pnlTone }}>{formatCurrency(record.pnl, true)}</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.55 }}>
-                          {record.direction} / {record.session}
-                        </div>
-                        <div style={{ fontSize: 11, color: C.text3, marginTop: 4 }}>
-                          {record.setup}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {selectedDay.records.slice(0, 3).map((record) => {
+                        const pnlTone = record.pnl >= 0 ? C.green : C.danger;
+                        return (
+                          <div key={record.id} style={{ padding: '10px 11px', borderRadius: 14, border: `1px solid ${shade(pnlTone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 5 }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: C.text0 }}>{record.symbol}</span>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: pnlTone }}>{formatCurrency(record.pnl, true)}</span>
+                            </div>
+                            <div style={{ fontSize: 10.5, color: C.text2, lineHeight: 1.55 }}>
+                              {record.direction} / {record.session}
+                            </div>
+                            <div style={{ fontSize: 10.5, color: C.text3, marginTop: 4 }}>
+                              {record.setup}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
       ) : (
         <EmptyState title="No trading calendar yet" body="Import trades in All Trades to unlock the monthly view." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />

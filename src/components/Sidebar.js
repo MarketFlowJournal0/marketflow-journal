@@ -258,17 +258,17 @@ function SidebarAmbientCanvas({ accent, secondary }) {
       particles.length = 0;
       lines.length = 0;
 
-      const particleCount = Math.max(6, Math.round(width / 22));
-      const lineCount = Math.max(2, Math.round(width / 120));
+      const particleCount = Math.max(10, Math.round(width / 13));
+      const lineCount = Math.max(3, Math.round(width / 72));
 
       for (let index = 0; index < particleCount; index += 1) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.05,
-          vy: (Math.random() - 0.5) * 0.05,
-          radius: Math.random() * 0.9 + 0.35,
-          alpha: Math.random() * 0.06 + 0.015,
+          vx: (Math.random() - 0.5) * 0.11,
+          vy: (Math.random() - 0.5) * 0.11,
+          radius: Math.random() * 1.1 + 0.4,
+          alpha: Math.random() * 0.12 + 0.02,
           tint: Math.random() > 0.5 ? accent : secondary,
         });
       }
@@ -284,14 +284,14 @@ function SidebarAmbientCanvas({ accent, secondary }) {
             y: pointY,
             sway: Math.random() * Math.PI * 2,
           });
-          pointX += 22 + Math.random() * 32;
-          pointY += (Math.random() - 0.5) * 26;
+          pointX += 18 + Math.random() * 42;
+          pointY += (Math.random() - 0.5) * 44;
         }
 
         lines.push({
           points,
-          speed: Math.random() * 0.05 + 0.02,
-          alpha: Math.random() * 0.016 + 0.006,
+          speed: Math.random() * 0.1 + 0.035,
+          alpha: Math.random() * 0.028 + 0.01,
           tint: index % 2 === 0 ? accent : secondary,
         });
       }
@@ -314,13 +314,13 @@ function SidebarAmbientCanvas({ accent, secondary }) {
       ctx.clearRect(0, 0, width, height);
 
       const topGlow = ctx.createRadialGradient(width * 0.18, height * 0.08, 0, width * 0.18, height * 0.08, width * 0.75);
-      topGlow.addColorStop(0, withAlpha(accent, 0.02));
+      topGlow.addColorStop(0, withAlpha(accent, 0.05));
       topGlow.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = topGlow;
       ctx.fillRect(0, 0, width, height);
 
       const lowerGlow = ctx.createRadialGradient(width * 0.82, height * 0.82, 0, width * 0.82, height * 0.82, width * 0.6);
-      lowerGlow.addColorStop(0, withAlpha(secondary, 0.018));
+      lowerGlow.addColorStop(0, withAlpha(secondary, 0.035));
       lowerGlow.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = lowerGlow;
       ctx.fillRect(0, 0, width, height);
@@ -329,13 +329,13 @@ function SidebarAmbientCanvas({ accent, secondary }) {
         ctx.beginPath();
         line.points.forEach((point, pointIndex) => {
           const pointX = (point.x + time * line.speed * 0.02 + index * 16) % (width + 110) - 55;
-          const pointY = point.y + Math.sin(time * 0.001 + point.sway + pointIndex * 0.35) * 1.6;
+          const pointY = point.y + Math.sin(time * 0.001 + point.sway + pointIndex * 0.35) * 3.2;
 
           if (pointIndex === 0) ctx.moveTo(pointX, pointY);
           else ctx.lineTo(pointX, pointY);
         });
         ctx.strokeStyle = withAlpha(line.tint, line.alpha);
-        ctx.lineWidth = 0.55;
+        ctx.lineWidth = 0.65;
         ctx.stroke();
       });
 
@@ -360,15 +360,15 @@ function SidebarAmbientCanvas({ accent, secondary }) {
           const deltaY = particles[first].y - particles[second].y;
           const distance = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
 
-          if (distance < 52) {
+          if (distance < 64) {
             ctx.beginPath();
             ctx.moveTo(particles[first].x, particles[first].y);
             ctx.lineTo(particles[second].x, particles[second].y);
             ctx.strokeStyle = withAlpha(
               first % 2 === 0 ? accent : secondary,
-              0.008 * (1 - (distance / 52)),
+              0.016 * (1 - (distance / 64)),
             );
-            ctx.lineWidth = 0.35;
+            ctx.lineWidth = 0.5;
             ctx.stroke();
           }
         }
@@ -406,7 +406,7 @@ function SidebarAmbientCanvas({ accent, secondary }) {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        opacity: 0.42,
+        opacity: 0.58,
       }}
     />
   );

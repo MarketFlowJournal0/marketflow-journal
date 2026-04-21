@@ -17,8 +17,8 @@ function AnimatedBg() {
     let w, h;
     const particles = [];
     const lines = [];
-    const PARTICLE_COUNT = 22;
-    const LINE_COUNT = 5;
+    const PARTICLE_COUNT = 60;
+    const LINE_COUNT = 12;
 
     function resize() {
       w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
@@ -34,10 +34,10 @@ function AnimatedBg() {
         particles.push({
           x: Math.random() * (w / window.devicePixelRatio),
           y: Math.random() * (h / window.devicePixelRatio),
-          vx: (Math.random() - 0.5) * 0.12,
-          vy: (Math.random() - 0.5) * 0.12,
-          r: Math.random() * 1.1 + 0.4,
-          o: Math.random() * 0.12 + 0.025,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          r: Math.random() * 1.5 + 0.5,
+          o: Math.random() * 0.3 + 0.05,
         });
       }
       for (let i = 0; i < LINE_COUNT; i++) {
@@ -46,8 +46,8 @@ function AnimatedBg() {
         let y = Math.random() * (h / window.devicePixelRatio);
         for (let j = 0; j < 8; j++) {
           pts.push({ x, y });
-          x += (Math.random() - 0.3) * 90;
-          y += (Math.random() - 0.5) * 54;
+          x += (Math.random() - 0.3) * 120;
+          y += (Math.random() - 0.5) * 80;
         }
         lines.push({ pts, o: Math.random() * 0.06 + 0.02, speed: Math.random() * 0.15 + 0.05 });
       }
@@ -69,7 +69,7 @@ function AnimatedBg() {
           const cpx = (prev.x + curr.x) / 2;
           ctx.quadraticCurveTo(prev.x, prev.y, cpx, (prev.y + curr.y) / 2);
         }
-        ctx.strokeStyle = `rgba(124,142,163,${line.o})`;
+        ctx.strokeStyle = `rgba(6,230,255,${line.o})`;
         ctx.lineWidth = 0.8;
         ctx.stroke();
       });
@@ -81,7 +81,7 @@ function AnimatedBg() {
         if (p.y < 0 || p.y > rh) p.vy *= -1;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(124,142,163,${p.o})`;
+        ctx.fillStyle = `rgba(6,230,255,${p.o})`;
         ctx.fill();
       });
 
@@ -95,7 +95,7 @@ function AnimatedBg() {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(124,142,163,${0.018 * (1 - dist / 120)})`;
+            ctx.strokeStyle = `rgba(6,230,255,${0.04 * (1 - dist / 120)})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -172,44 +172,44 @@ function Counter({ end, suffix = '', prefix = '', duration = 2 }) {
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
   :root {
-    --cyan:#7C8EA3; --green:#6F8F7B; --purple:#7A759B; --blue:#7286AF;
-    --gold:#B39A61; --pink:#9E7B84; --danger:#A25F67;
-    --t0:#F5F7FA; --t1:#DBE2EA; --t2:#95A3B4; --t3:#5F6D7F;
-    --bg:#090D12; --brd:#202932;
+    --cyan:#06E6FF; --green:#00FF88; --purple:#B06EFF; --blue:#4D7CFF;
+    --gold:#FFD700; --pink:#FF4DC4; --danger:#FF3D57;
+    --t0:#FFFFFF; --t1:#E8EEFF; --t2:#7A90B8; --t3:#334566;
+    --bg:#030508; --brd:#162034;
   }
 
   * { box-sizing:border-box; margin:0; padding:0; }
   html { scroll-behavior:smooth; }
-  body { background:var(--bg); color:var(--t1); font-family:'IBM Plex Sans',sans-serif; overflow-x:hidden; }
+  body { background:var(--bg); color:var(--t1); font-family:'Inter',sans-serif; overflow-x:hidden; }
 
   @keyframes flowgrad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-  .flow-text { background:linear-gradient(90deg,#F5F7FA,#A8B3C1,#7C8EA3); background-size:200% 200%; animation:flowgrad 6s ease infinite; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .flow-text { background:linear-gradient(90deg,#06E6FF,#00FF88,#06E6FF); background-size:200% 200%; animation:flowgrad 4s ease infinite; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
   /* NAV */
   .lp-nav {
     position:fixed;top:0;left:0;right:0;z-index:1000;
     padding:0 48px;height:68px;
     display:flex;align-items:center;justify-content:space-between;
-    background:rgba(9,13,18,0.82);
+    background:rgba(3,5,8,0.7);
     backdrop-filter:blur(24px) saturate(180%);
-    border-bottom:1px solid rgba(255,255,255,0.04);
+    border-bottom:1px solid rgba(255,255,255,0.03);
     transition:all 0.3s;
   }
-  .lp-nav.scrolled { background:rgba(9,13,18,0.96); border-bottom-color:var(--brd); }
+  .lp-nav.scrolled { background:rgba(3,5,8,0.95); border-bottom-color:var(--brd); }
   .lp-nav-logo { display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none; }
   .lp-nav-logo-icon { width:36px;height:36px;border-radius:10px;overflow:hidden;border:1px solid rgba(6,230,255,0.15);box-shadow:0 0 16px rgba(6,230,255,0.1); }
-  .lp-nav-logo-text { font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:20px;color:var(--t0);letter-spacing:-0.04em; }
+  .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--t0);letter-spacing:-0.5px; }
   .lp-nav-links { display:flex;align-items:center;gap:4px; }
   .lp-nav-links a { padding:8px 16px;border-radius:8px;color:var(--t2);text-decoration:none;font-size:13.5px;font-weight:500;transition:all 0.18s; }
   .lp-nav-links a:hover { color:var(--t0);background:rgba(255,255,255,0.04); }
   .lp-nav-cta { display:flex;align-items:center;gap:10px; }
-  .btn-ghost { padding:8px 18px;border-radius:9px;border:1px solid var(--brd);background:transparent;color:var(--t1);font-size:13px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all 0.18s; }
+  .btn-ghost { padding:8px 18px;border-radius:9px;border:1px solid var(--brd);background:transparent;color:var(--t1);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.18s; }
   .btn-ghost:hover { border-color:var(--cyan);color:var(--cyan); }
-  .btn-primary-nav { padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),#A0ACBA);border:none;color:#0B0F14;font-size:13px;font-weight:800;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all 0.2s;box-shadow:0 12px 30px rgba(0,0,0,0.18); }
-  .btn-primary-nav:hover { transform:translateY(-1px);box-shadow:0 16px 36px rgba(0,0,0,0.26); }
+  .btn-primary-nav { padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--green));border:none;color:#030508;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 20px rgba(6,230,255,0.25); }
+  .btn-primary-nav:hover { transform:translateY(-1px);box-shadow:0 4px 30px rgba(6,230,255,0.4); }
 
   /* HERO */
   .lp-hero {
