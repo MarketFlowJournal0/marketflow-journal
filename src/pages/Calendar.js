@@ -20,10 +20,19 @@ const C = {
 
 const PAGE_STYLES = `
   .mf-calendar-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.82fr);
+    display: flex;
+    align-items: flex-start;
     gap: 16px;
-    align-items: start;
+  }
+
+  .mf-calendar-board {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .mf-calendar-detail {
+    width: 340px;
+    flex: 0 0 340px;
   }
 
   .mf-calendar-grid {
@@ -41,7 +50,12 @@ const PAGE_STYLES = `
 
   @media (max-width: 1180px) {
     .mf-calendar-layout {
-      grid-template-columns: 1fr;
+      flex-direction: column;
+    }
+
+    .mf-calendar-detail {
+      width: 100%;
+      flex-basis: auto;
     }
   }
 
@@ -205,9 +219,10 @@ function buildCalendarMonth(trades, monthOffset = 0) {
   };
 }
 
-function Card({ children, tone = C.accent, style, index = 0 }) {
+function Card({ children, tone = C.accent, style, index = 0, className = '' }) {
   return (
     <motion.section
+      className={className}
       {...panelMotion(index)}
       style={{
         position: 'relative',
@@ -325,7 +340,7 @@ export default function Calendar() {
           </motion.div>
 
           <div className="mf-calendar-layout">
-            <Card tone={C.accent} index={2} style={{ padding: '18px 18px 16px' }}>
+            <Card tone={C.accent} index={2} style={{ padding: '18px 18px 16px' }} className="mf-calendar-board">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: C.text0 }}>{calendar.monthLabel}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -391,7 +406,7 @@ export default function Calendar() {
               </div>
             </Card>
 
-            <Card tone={C.accent} index={3} style={{ padding: '18px 18px 16px' }}>
+            <Card tone={C.accent} index={3} style={{ padding: '18px 18px 16px' }} className="mf-calendar-detail">
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 10 }}>
                 Day detail
               </div>

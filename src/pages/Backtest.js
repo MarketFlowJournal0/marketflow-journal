@@ -7,6 +7,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Line,
+  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -25,15 +27,16 @@ import {
   saveBacktestSessions,
 } from '../lib/backtestSessions';
 import {
+  CHART_AXIS,
   CHART_AXIS_SMALL,
   CHART_GRID,
-  CHART_MOTION_SOFT,
   chartActiveDot,
   chartCursor,
   chartTooltipStyle,
 } from '../lib/marketflowCharts';
 import {
   buildEquityDrawdownSeries,
+  buildRollingWinRateSeries,
   formatAnalyticsFactor,
   formatAnalyticsMoney,
   formatAnalyticsPercent,
@@ -43,6 +46,7 @@ import {
   getTradePnl,
   getTradeRR,
   normalizeSessionLabel,
+  sortTradesChronologically,
   summarizeTradeSet,
 } from '../lib/marketflowAnalytics';
 
@@ -69,80 +73,232 @@ const C = {
 };
 
 const PAGE_STYLES = `
-  @keyframes mfReplayGlowA {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.14; }
-    50% { transform: translate3d(28px, 18px, 0) scale(1.05); opacity: 0.22; }
-  }
-
-  @keyframes mfReplayGlowB {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.08; }
-    50% { transform: translate3d(-26px, -14px, 0) scale(1.04); opacity: 0.14; }
-  }
-
-  @keyframes mfReplayPulse {
-    0%, 100% { opacity: 0.55; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.08); }
-  }
-
   .mf-backtest-page {
     position: relative;
     min-height: 100%;
     color: ${C.text1};
   }
 
-  .mf-replay-topbar {
+  .mf-backtest-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    gap: 14px;
-    margin-bottom: 14px;
+    grid-template-columns: 310px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
   }
 
-  .mf-replay-layout {
+  .mf-backtest-stage {
     display: grid;
-    grid-template-columns: 340px minmax(0, 1fr);
-    gap: 14px;
+    gap: 18px;
+    min-width: 0;
   }
 
-  .mf-replay-chart-grid {
+  .mf-backtest-top {
     display: grid;
-    grid-template-columns: minmax(0, 1.28fr) minmax(340px, 0.92fr);
-    gap: 14px;
+    grid-template-columns: minmax(0, 1.38fr) minmax(340px, 0.82fr);
+    gap: 18px;
+    align-items: start;
   }
 
-  .mf-replay-bottom-grid {
+  .mf-backtest-bottom {
     display: grid;
-    grid-template-columns: 1.1fr 0.95fr 0.95fr;
-    gap: 14px;
-    margin-top: 14px;
+    grid-template-columns: minmax(0, 1.04fr) minmax(360px, 0.96fr);
+    gap: 18px;
+    align-items: start;
   }
 
-  @media (max-width: 1320px) {
-    .mf-replay-chart-grid,
-    .mf-replay-bottom-grid {
+  .mf-backtest-rail {
+    display: grid;
+    gap: 18px;
+    position: sticky;
+    top: 24px;
+  }
+
+  .mf-backtest-session-list {
+    display: grid;
+    gap: 10px;
+    max-height: 320px;
+    overflow: auto;
+    padding-right: 3px;
+  }
+
+  .mf-backtest-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mf-backtest-insights {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .mf-backtest-right-stack {
+    display: grid;
+    gap: 18px;
+  }
+
+  .mf-backtest-tape {
+    display: grid;
+    gap: 8px;
+    max-height: 286px;
+    overflow: auto;
+    padding-right: 4px;
+  }
+
+  @media (max-width: 1360px) {
+    .mf-backtest-top,
+    .mf-backtest-bottom {
       grid-template-columns: 1fr;
+    }
+
+    .mf-backtest-insights {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 1160px) {
-    .mf-replay-topbar,
-    .mf-replay-layout {
+    .mf-backtest-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .mf-backtest-rail {
+      position: static;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .mf-backtest-form-grid,
+    .mf-backtest-insights {
       grid-template-columns: 1fr;
     }
   }
 `;
 
-const playbackOptions = [1, 2, 5, 10];
+const INTERVAL_OPTIONS = [
+  { value: '3', label: '3m' },
+  { value: '5', label: '5m' },
+  { value: '15', label: '15m' },
+  { value: '60', label: '1h' },
+  { value: '240', label: '4h' },
+  { value: 'D', label: '1D' },
+];
+
+const PLAYBACK_OPTIONS = [1, 2, 5, 10];
+
+const BASE_DRAFT = {
+  name: '',
+  symbol: 'all',
+  setup: 'all',
+  session: 'all',
+  interval: '15',
+  playbackSpeed: 2,
+  accountScope: 'all',
+  notes: '',
+};
+
+const Ic = {
+  Play: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M6 4.8L15 10L6 15.2V4.8Z" fill="currentColor" />
+    </svg>
+  ),
+  Pause: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <rect x="5" y="4.5" width="3.2" height="11" rx="1.2" fill="currentColor" />
+      <rect x="11.8" y="4.5" width="3.2" height="11" rx="1.2" fill="currentColor" />
+    </svg>
+  ),
+  Back: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M12.8 4.9L7.5 10L12.8 15.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Forward: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M7.2 4.9L12.5 10L7.2 15.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Plus: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M10 4.5V15.5M4.5 10H15.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  ),
+  Save: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M5.2 4.7H13.4L15.3 6.6V14.9H4.7V5.2C4.7 4.92 4.92 4.7 5.2 4.7Z" stroke="currentColor" strokeWidth="1.45" />
+      <path d="M7 4.9V8.2H12.6V4.9" stroke="currentColor" strokeWidth="1.45" />
+      <path d="M7.3 14.9V11.7H12.7V14.9" stroke="currentColor" strokeWidth="1.45" />
+    </svg>
+  ),
+  Trash: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M5.4 6.2L6 15.1H14L14.6 6.2" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" />
+      <path d="M3.9 5.5H16.1M7.5 5.5L8.1 4.2H11.9L12.5 5.5" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Duplicate: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <rect x="6.4" y="6.1" width="8.2" height="8.4" rx="1.8" stroke="currentColor" strokeWidth="1.45" />
+      <path d="M5 12.8H4.6C3.72 12.8 3 12.08 3 11.2V5.6C3 4.72 3.72 4 4.6 4H10.1" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" />
+    </svg>
+  ),
+  Replay: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M7.2 6.3H14.4V13.6H7.2" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.2 3.8L5 6.3L8.2 8.8" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Bolt: () => (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+      <path d="M10.8 2.9L5.7 10.1H9.3L8.7 17.1L14.3 9.9H10.7L10.8 2.9Z" fill="currentColor" />
+    </svg>
+  ),
+};
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
 function panelMotion(index = 0) {
   return {
-    initial: { opacity: 0, y: 18, scale: 0.985 },
+    initial: { opacity: 0, y: 16, scale: 0.988 },
     animate: { opacity: 1, y: 0, scale: 1 },
     transition: {
-      duration: 0.42,
+      duration: 0.38,
       delay: index * 0.04,
       ease: [0.16, 1, 0.3, 1],
     },
   };
+}
+
+function getTradeSymbol(trade = {}) {
+  return String(trade.symbol || trade.pair || 'Unknown').trim() || 'Unknown';
+}
+
+function getTradeEntry(trade = {}) {
+  const numeric = Number(trade.entry_price ?? trade.entry ?? trade.open_price ?? trade.open ?? NaN);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function getTradeExit(trade = {}) {
+  const numeric = Number(trade.exit_price ?? trade.exit ?? trade.close_price ?? trade.close ?? NaN);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function getTradeStop(trade = {}) {
+  const numeric = Number(trade.stop_loss ?? trade.sl ?? NaN);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function getTradeTarget(trade = {}) {
+  const numeric = Number(trade.take_profit ?? trade.tp ?? NaN);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function getTradeSize(trade = {}) {
+  const numeric = Number(trade.position_size ?? trade.size ?? trade.lots ?? trade.qty ?? trade.quantity ?? NaN);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function formatPrice(value) {
@@ -154,243 +310,298 @@ function formatPrice(value) {
   });
 }
 
-function getTradeSymbol(trade = {}) {
-  return trade.symbol || trade.pair || 'Unknown';
+function formatCompactDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
-function getTradeEntry(trade = {}) {
-  return Number(trade.entry_price ?? trade.entry ?? trade.open_price ?? trade.open ?? NaN);
+function formatCompactTime(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
-function getTradeExit(trade = {}) {
-  return Number(trade.exit_price ?? trade.exit ?? trade.close_price ?? trade.close ?? NaN);
+function formatSignedCompact(value = 0) {
+  const numeric = Number(value) || 0;
+  const absolute = Math.abs(numeric).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (numeric > 0) return `+$${absolute}`;
+  if (numeric < 0) return `-$${absolute}`;
+  return '$0';
 }
 
-function getTradeStop(trade = {}) {
-  return Number(trade.stop_loss ?? trade.sl ?? NaN);
-}
+function getTradeAccountId(trade = {}) {
+  const label = String(
+    trade.account
+    || trade.account_name
+    || trade.extra?.account
+    || trade.extra?.account_name
+    || trade.extra?.account_number
+    || trade.account_number
+    || trade.exchange
+    || trade.broker
+    || trade.extra?.exchange
+    || trade.extra?.broker
+    || 'Main journal'
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
-function getTradeTarget(trade = {}) {
-  return Number(trade.take_profit ?? trade.tp ?? NaN);
-}
-
-function getTradeSize(trade = {}) {
-  return trade.position_size ?? trade.size ?? trade.lots ?? trade.qty ?? trade.quantity ?? '--';
-}
-
-function extractTagValues(value) {
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
-  }
-
-  if (value && typeof value === 'object') {
-    return Object.entries(value)
-      .filter(([, current]) => current !== null && current !== undefined && current !== false && String(current).trim() !== '')
-      .map(([key, current]) => (typeof current === 'string' && current.trim() !== '' ? `${key}: ${current}` : key));
-  }
-
-  if (typeof value === 'string') {
-    return value
-      .split(/[,|/]/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  return [];
+  return `account:${label || 'main-journal'}`;
 }
 
 function toTradingViewSymbol(symbol = 'EURUSD') {
   const clean = String(symbol || 'EURUSD').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  if (!clean) return 'OANDA:EURUSD';
+  if (!clean || clean === 'ALL') return 'OANDA:EURUSD';
   if (clean === 'BTCUSD') return 'BITSTAMP:BTCUSD';
   if (clean === 'ETHUSD') return 'BITSTAMP:ETHUSD';
   if (clean === 'US30') return 'FOREXCOM:US30';
   if (clean === 'NAS100') return 'FOREXCOM:NSXUSD';
+  if (clean === 'SPX500') return 'FOREXCOM:SPXUSD';
   if (clean === 'XAUUSD') return 'OANDA:XAUUSD';
+  if (clean === 'AAPL') return 'NASDAQ:AAPL';
   if (clean.length === 6) return `OANDA:${clean}`;
-  return `OANDA:${clean}`;
+  return `FOREXCOM:${clean}`;
 }
 
-function getContextInterval(interval) {
+function getContextInterval(interval = '15') {
+  if (interval === '3') return '15';
+  if (interval === '5') return '30';
   if (interval === '15') return '60';
-  if (interval === '30') return '240';
-  if (interval === '60') return 'D';
-  if (interval === '240') return 'W';
+  if (interval === '60') return '240';
+  if (interval === '240') return 'D';
   return 'W';
 }
 
-function buildBreakdown(trades = [], getKey, limit = 6) {
-  const bucket = new Map();
-  trades.forEach((trade) => {
-    const key = getKey(trade);
-    if (!key) return;
-    const current = bucket.get(key) || { label: key, trades: 0, wins: 0, pnl: 0 };
-    const pnl = getTradePnl(trade);
-    current.trades += 1;
-    current.pnl += pnl;
-    if (pnl > 0) current.wins += 1;
-    bucket.set(key, current);
-  });
-
-  return [...bucket.values()]
-    .map((item) => ({
-      ...item,
-      pnl: Number(item.pnl.toFixed(2)),
-      winRate: item.trades ? Number(((item.wins / item.trades) * 100).toFixed(1)) : 0,
-    }))
-    .sort((left, right) => right.pnl - left.pnl)
-    .slice(0, limit);
-}
-
-function buildReplayRows(trades = []) {
-  return [...trades]
-    .slice(-10)
-    .reverse()
-    .map((trade) => ({
-      id: trade.id,
-      time: trade.time || (getTradeDateValue(trade)?.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) || '--'),
-      symbol: getTradeSymbol(trade),
-      setup: trade.setup || 'Unlabeled',
-      direction: trade.direction || trade.type || 'Long',
-      session: normalizeSessionLabel(trade.session),
-      pnl: getTradePnl(trade),
-      entry: getTradeEntry(trade),
-      exit: getTradeExit(trade),
-      size: getTradeSize(trade),
-    }));
-}
-
-function buildTradePulse(trades = []) {
-  let equity = 0;
-  return trades.map((trade, index) => {
-    equity += getTradePnl(trade);
-    return {
-      index: index + 1,
-      label: `${index + 1}`,
-      pnl: getTradePnl(trade),
-      equity: Number(equity.toFixed(2)),
-      symbol: getTradeSymbol(trade),
-      session: normalizeSessionLabel(trade.session),
-    };
-  });
-}
-
-function filterTradesForBacktestSession(trades = [], session = {}) {
+function filterTradesForReplay(trades = [], descriptor = {}) {
   return (trades || []).filter((trade) => {
     const symbol = getTradeSymbol(trade);
+    const session = normalizeSessionLabel(trade.session);
     const setup = String(trade.setup || '').trim() || 'Unlabeled';
-    const tradingSession = normalizeSessionLabel(trade.session);
-    if (session.symbol && session.symbol !== 'all' && symbol !== session.symbol) return false;
-    if (session.setup && session.setup !== 'all' && setup !== session.setup) return false;
-    if (session.session && session.session !== 'all' && tradingSession !== session.session) return false;
+    const accountId = getTradeAccountId(trade);
+
+    if (descriptor.accountScope && descriptor.accountScope !== 'all' && descriptor.accountScope !== accountId) return false;
+    if (descriptor.symbol && descriptor.symbol !== 'all' && descriptor.symbol !== symbol) return false;
+    if (descriptor.setup && descriptor.setup !== 'all' && descriptor.setup !== setup) return false;
+    if (descriptor.session && descriptor.session !== 'all' && descriptor.session !== session) return false;
     return true;
   });
 }
 
-function TradingViewEmbed({ symbol, interval, height = 420 }) {
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const host = containerRef.current;
-    if (!host) return undefined;
-
-    host.innerHTML = '';
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-    script.async = true;
-    script.type = 'text/javascript';
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol: toTradingViewSymbol(symbol),
-      interval,
-      timezone: 'Europe/Paris',
-      theme: 'dark',
-      style: '1',
-      locale: 'en',
-      allow_symbol_change: true,
-      details: false,
-      hotlist: false,
-      calendar: false,
-      hide_side_toolbar: false,
-      hide_top_toolbar: false,
-      support_host: 'https://www.tradingview.com',
-    });
-
-    host.appendChild(script);
-    return () => {
-      if (host) host.innerHTML = '';
-    };
-  }, [interval, symbol]);
-
-  return (
-    <div style={{ height, borderRadius: 20, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-      <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
-    </div>
-  );
+function buildReplayTape(trades = []) {
+  return [...(trades || [])]
+    .slice(-10)
+    .reverse()
+    .map((trade) => ({
+      id: trade.id,
+      symbol: getTradeSymbol(trade),
+      direction: trade.direction || trade.type || 'Long',
+      pnl: getTradePnl(trade),
+      rr: getTradeRR(trade),
+      session: normalizeSessionLabel(trade.session),
+      dateLabel: getTradeDateLabel(trade),
+      timeLabel: trade.time || formatCompactTime(getTradeDateValue(trade)),
+      setup: String(trade.setup || '').trim() || 'Unlabeled',
+    }));
 }
 
-function SectionCard({ children, tone = C.accent, index = 0, style = {} }) {
+function buildPerformanceBars(trades = []) {
+  return [...(trades || [])]
+    .slice(-16)
+    .map((trade, index) => ({
+      index: index + 1,
+      label: getTradeDateLabel(trade),
+      pnl: Number(getTradePnl(trade).toFixed(2)),
+      symbol: getTradeSymbol(trade),
+    }));
+}
+
+function buildReplayInsights(allTrades = [], visibleSummary, fullSummary, currentTrade) {
+  const insights = [];
+  const visibleWinRate = visibleSummary.totalTrades ? visibleSummary.winRate : 0;
+  const sessionWinRate = fullSummary.totalTrades ? fullSummary.winRate : 0;
+
+  insights.push({
+    id: 'progress',
+    label: 'Live read',
+    tone: visibleSummary.totalPnL >= 0 ? C.green : C.danger,
+    title: visibleSummary.totalTrades ? `${formatSignedCompact(visibleSummary.totalPnL)} visible` : 'Waiting for replay',
+    detail: visibleSummary.totalTrades ? `${formatAnalyticsPercent(visibleWinRate, 1)} win rate on the revealed segment` : 'Reveal the first trades to start the replay.',
+  });
+
+  insights.push({
+    id: 'discipline',
+    label: 'Execution bias',
+    tone: sessionWinRate >= 55 ? C.accent : C.warn,
+    title: sessionWinRate >= 55 ? 'Edge is holding' : 'Tighten the execution filter',
+    detail: sessionWinRate >= 55
+      ? `The full scope is running at ${formatAnalyticsPercent(sessionWinRate, 1)}. Keep the same selectivity.`
+      : `Session win rate sits at ${formatAnalyticsPercent(sessionWinRate, 1)}. Reduce marginal entries before size.`,
+  });
+
+  insights.push({
+    id: 'drawdown',
+    label: 'Risk pulse',
+    tone: Math.abs(fullSummary.maxDrawdownCash || 0) > Math.abs(fullSummary.avgWin || 0) * 2 ? C.danger : C.blue,
+    title: formatAnalyticsMoney(fullSummary.maxDrawdownCash || 0),
+    detail: `Max drawdown / ${formatAnalyticsPercent(fullSummary.maxDrawdownPct || 0, 1)} from the full replay scope.`,
+  });
+
+  if (currentTrade) {
+    const pnl = getTradePnl(currentTrade);
+    insights.push({
+      id: 'current',
+      label: 'Current trade',
+      tone: pnl >= 0 ? C.green : C.warn,
+      title: `${getTradeSymbol(currentTrade)} · ${currentTrade.direction || currentTrade.type || 'Long'}`,
+      detail: `${formatSignedCompact(pnl)} / ${formatAnalyticsRR(getTradeRR(currentTrade))} / ${normalizeSessionLabel(currentTrade.session)}`,
+    });
+  }
+
+  return insights.slice(0, 4);
+}
+
+function buildSessionScopeText(descriptor = {}, accountOptions = []) {
+  const accountLabel = accountOptions.find((item) => item.id === descriptor.accountScope)?.label || 'All Accounts';
+  const parts = [accountLabel];
+  if (descriptor.symbol && descriptor.symbol !== 'all') parts.push(descriptor.symbol);
+  if (descriptor.session && descriptor.session !== 'all') parts.push(descriptor.session);
+  if (descriptor.setup && descriptor.setup !== 'all') parts.push(descriptor.setup);
+  return parts.join(' / ');
+}
+
+function getPlaybackDelay(speed = 2) {
+  if (speed === 1) return 1350;
+  if (speed === 2) return 780;
+  if (speed === 5) return 360;
+  if (speed === 10) return 180;
+  return 780;
+}
+
+function sessionsAreEqual(left = {}, right = {}) {
+  return [
+    'id',
+    'name',
+    'symbol',
+    'setup',
+    'session',
+    'interval',
+    'playbackSpeed',
+    'replayIndex',
+    'accountScope',
+    'plan',
+    'tradeCount',
+    'progressPct',
+    'lastSymbol',
+    'notes',
+  ].every((key) => left[key] === right[key]);
+}
+
+function SectionCard({ children, tone = C.accent, style, index = 0, className = '' }) {
   return (
     <motion.section
+      className={className}
       {...panelMotion(index)}
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 28,
-        border: `1px solid ${shade(tone, 0.12)}`,
-        background: 'linear-gradient(180deg, rgba(10,14,24,0.96), rgba(7,10,17,0.98))',
-        boxShadow: `0 28px 56px rgba(0,0,0,0.22), inset 0 1px 0 ${shade('#FFFFFF', 0.03)}`,
+        borderRadius: 24,
+        border: `1px solid ${shade(tone, 0.16)}`,
+        background: 'linear-gradient(180deg, rgba(10,16,28,0.92), rgba(7,10,18,0.96))',
+        boxShadow: '0 24px 70px rgba(0,0,0,0.24)',
         ...style,
       }}
     >
-      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at top right, ${shade(tone, 0.1)}, transparent 40%)`, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(circle at top right, ${shade(tone, 0.1)} 0%, transparent 42%)` }} />
       <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
     </motion.section>
   );
 }
 
-function SectionTitle({ eyebrow, title, tone = C.accent, action = null }) {
+function SectionTitle({ eyebrow, title, tone = C.accent, action = null, icon = null, subtitle = null }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, marginBottom: 16, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
       <div>
-        {eyebrow ? (
-          <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 6 }}>
-            {eyebrow}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          {icon ? (
+            <div style={{ width: 28, height: 28, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: shade(tone, 0.12), color: tone, border: `1px solid ${shade(tone, 0.2)}` }}>
+              {icon}
+            </div>
+          ) : null}
+          {eyebrow ? (
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: shade(tone, 0.92) }}>
+              {eyebrow}
+            </div>
+          ) : null}
+        </div>
+        <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, lineHeight: 1 }}>
+          {title}
+        </div>
+        {subtitle ? (
+          <div style={{ fontSize: 12, color: C.text2, marginTop: 8, lineHeight: 1.6, maxWidth: 720 }}>
+            {subtitle}
           </div>
         ) : null}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ width: 3, height: 18, borderRadius: 999, background: `linear-gradient(180deg, ${tone}, ${shade(tone, 0.44)})` }} />
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, letterSpacing: '-0.03em', color: C.text0 }}>
-            {title}
-          </h2>
-        </div>
       </div>
       {action}
     </div>
   );
 }
 
-function ControlButton({ children, active = false, onClick, subtle = false, disabled = false }) {
+function GhostButton({ children, onClick, icon = null, disabled = false, tone = C.text1 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       style={{
-        padding: '10px 13px',
-        borderRadius: 14,
-        border: `1px solid ${active ? shade(C.accent, 0.28) : subtle ? shade(C.text3, 0.38) : C.border}`,
-        background: active
-          ? 'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.22), rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.12))'
-          : subtle
-            ? 'rgba(255,255,255,0.025)'
-            : 'rgba(255,255,255,0.03)',
-        color: disabled ? C.text3 : active ? C.text0 : C.text2,
+        height: 36,
+        padding: '0 12px',
+        borderRadius: 12,
+        border: `1px solid ${disabled ? shade(C.border, 0.9) : shade(tone, 0.2)}`,
+        background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.035)',
+        color: disabled ? C.text3 : tone,
         fontSize: 11.5,
         fontWeight: 800,
-        letterSpacing: '0.02em',
-        fontFamily: 'inherit',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'all 180ms ease',
+        fontFamily: 'inherit',
+      }}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function ChipButton({ active = false, children, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        height: 34,
+        padding: '0 12px',
+        borderRadius: 12,
+        border: `1px solid ${active ? shade(C.accent, 0.3) : shade(C.borderHi, 0.82)}`,
+        background: active ? shade(C.accent, 0.13) : 'rgba(255,255,255,0.03)',
+        color: active ? C.accent : C.text2,
+        fontSize: 11.5,
+        fontWeight: 800,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
       }}
     >
       {children}
@@ -398,93 +609,45 @@ function ControlButton({ children, active = false, onClick, subtle = false, disa
   );
 }
 
-function StatBlock({ label, value, caption, tone = C.accent }) {
+function MiniStat({ label, value, caption = '', tone = C.text1 }) {
   return (
-    <div style={{ padding: '14px 14px 13px', borderRadius: 18, border: `1px solid ${shade(tone, 0.12)}`, background: 'rgba(255,255,255,0.025)' }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
+    <div style={{ padding: '14px 14px 13px', borderRadius: 18, border: `1px solid ${shade(tone, 0.12)}`, background: 'rgba(255,255,255,0.03)' }}>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.text3, marginBottom: 7 }}>
         {label}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.05em', color: tone, marginBottom: 6 }}>
+      <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.05em', color: tone, marginBottom: caption ? 6 : 0 }}>
         {value}
       </div>
-      <div style={{ fontSize: 11, color: C.text2 }}>
-        {caption}
-      </div>
+      {caption ? <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.6 }}>{caption}</div> : null}
     </div>
   );
 }
 
-function MetricRow({ label, value, tone = C.text1 }) {
+function SelectField({ label, value, onChange, options = [] }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: `1px solid ${shade(C.border, 0.7)}` }}>
-      <span style={{ fontSize: 11, color: C.text3, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 800 }}>{label}</span>
-      <span style={{ fontSize: 12.5, color: tone, fontWeight: 800 }}>{value}</span>
-    </div>
-  );
-}
-
-function TagCluster({ label, values, tone = C.accent }) {
-  if (!values.length) return null;
-  return (
-    <div style={{ padding: '12px 12px 11px', borderRadius: 16, border: `1px solid ${shade(tone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
-        {label}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-        {values.slice(0, 6).map((value) => (
-          <span
-            key={`${label}-${value}`}
-            style={{
-              padding: '6px 9px',
-              borderRadius: 999,
-              border: `1px solid ${shade(tone, 0.18)}`,
-              background: shade(tone, 0.1),
-              color: C.text1,
-              fontSize: 11,
-              fontWeight: 700,
-            }}
-          >
-            {value}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ChartTooltip({ active, payload, label, render }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ ...chartTooltipStyle(payload[0]?.color || C.accent), padding: '10px 12px' }}>
-      {render ? render(payload, label) : null}
-    </div>
-  );
-}
-
-function Field({ label, value, onChange, options }) {
-  return (
-    <label style={{ display: 'grid', gap: 6 }}>
-      <span style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+    <label style={{ display: 'grid', gap: 7 }}>
+      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
         {label}
       </span>
       <select
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={onChange}
         style={{
-          width: '100%',
-          padding: '11px 12px',
-          borderRadius: 13,
+          height: 42,
+          borderRadius: 12,
           border: `1px solid ${C.border}`,
           background: 'rgba(255,255,255,0.03)',
           color: C.text1,
-          fontSize: 12,
+          padding: '0 12px',
+          fontSize: 12.5,
+          fontWeight: 700,
           fontFamily: 'inherit',
           outline: 'none',
         }}
       >
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option === 'all' ? 'All' : option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -492,813 +655,882 @@ function Field({ label, value, onChange, options }) {
   );
 }
 
-function TextField({ label, value, onChange, placeholder = '' }) {
+function DetailRow({ label, value, tone = C.text1 }) {
   return (
-    <label style={{ display: 'grid', gap: 6 }}>
-      <span style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-        {label}
-      </span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        style={{
-          width: '100%',
-          padding: '11px 12px',
-          borderRadius: 13,
-          border: `1px solid ${C.border}`,
-          background: 'rgba(255,255,255,0.03)',
-          color: C.text1,
-          fontSize: 12,
-          fontFamily: 'inherit',
-          outline: 'none',
-        }}
-      />
-    </label>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 0', borderBottom: `1px solid ${shade(C.borderHi, 0.6)}` }}>
+      <span style={{ fontSize: 11.5, color: C.text2 }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 800, color: tone, textAlign: 'right' }}>{value}</span>
+    </div>
   );
 }
 
-function SessionChip({ active = false, children, onClick }) {
+function SessionTile({ session, active, onOpen, onDelete }) {
+  const tone = active ? C.accent : C.text2;
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onClick?.();
-        }
-      }}
       style={{
-        width: '100%',
-        textAlign: 'left',
-        padding: '12px 13px',
-        borderRadius: 16,
-        border: `1px solid ${active ? shade(C.accent, 0.22) : shade(C.border, 0.8)}`,
-        background: active ? 'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.15), rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.05))' : 'rgba(255,255,255,0.025)',
-        color: C.text1,
-        cursor: 'pointer',
-        fontFamily: 'inherit',
+        borderRadius: 18,
+        border: `1px solid ${active ? shade(C.accent, 0.24) : shade(C.borderHi, 0.78)}`,
+        background: active ? shade(C.accent, 0.08) : 'rgba(255,255,255,0.025)',
+        padding: '13px 13px 12px',
       }}
     >
-      {children}
+      <button
+        type="button"
+        onClick={onOpen}
+        style={{
+          all: 'unset',
+          display: 'grid',
+          gap: 8,
+          cursor: 'pointer',
+          width: '100%',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: active ? C.text0 : C.text1 }}>{session.name}</div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: tone }}>{session.progressPct}%</div>
+        </div>
+        <div style={{ fontSize: 11, color: C.text2 }}>
+          {session.tradeCount} trades / {session.symbol === 'all' ? 'Multi-symbol' : session.symbol}
+        </div>
+        <div style={{ width: '100%', height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+          <div style={{ width: `${session.progressPct}%`, height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(C.accent, 0.55)}, ${C.accent})` }} />
+        </div>
+      </button>
+      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <span style={{ fontSize: 10.5, color: C.text3 }}>{formatCompactDate(session.updatedAt)}</span>
+        <button
+          type="button"
+          onClick={onDelete}
+          style={{
+            all: 'unset',
+            color: C.text3,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ic.Trash />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ChartTooltip({ active, payload = [], label, tone = C.accent, valueFormatter = (value) => value }) {
+  if (!active || !payload.length) return null;
+  return (
+    <div style={{ ...chartTooltipStyle(tone), padding: '12px 13px', minWidth: 140 }}>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>
+        {label}
+      </div>
+      {payload.map((entry) => (
+        <div key={entry.dataKey} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, fontSize: 11.5, marginTop: 5 }}>
+          <span style={{ color: C.text2 }}>{entry.name}</span>
+          <span style={{ color: entry.color || tone, fontWeight: 800 }}>{valueFormatter(entry.value, entry.dataKey, entry.payload)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TradingViewEmbed({ symbol, interval, height = 420 }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const host = containerRef.current;
+    if (!host || typeof window === 'undefined') return undefined;
+
+    host.innerHTML = '';
+    const widget = document.createElement('div');
+    widget.className = 'tradingview-widget-container__widget';
+    widget.style.height = '100%';
+    widget.style.width = '100%';
+
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.async = true;
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol: toTradingViewSymbol(symbol),
+      interval: String(interval || '15'),
+      timezone: 'Europe/Paris',
+      theme: 'dark',
+      style: '1',
+      locale: 'en',
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      hide_side_toolbar: false,
+      allow_symbol_change: false,
+      save_image: false,
+      withdateranges: true,
+      calendar: false,
+      backgroundColor: '#0A101B',
+      gridColor: 'rgba(38,55,84,0.28)',
+      studies: [],
+      details: false,
+      hotlist: false,
+      watchlist: false,
+      range: '12M',
+    });
+
+    host.appendChild(widget);
+    host.appendChild(script);
+
+    return () => {
+      host.innerHTML = '';
+    };
+  }, [symbol, interval]);
+
+  return (
+    <div style={{ height, width: '100%', overflow: 'hidden', borderRadius: 18, border: `1px solid ${shade(C.borderHi, 0.7)}`, background: '#0A101B' }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
     </div>
   );
 }
 
 export default function Backtest() {
   const { user } = useAuth();
-  const { trades, activeAccount, accountOptions } = useTradingContext();
+  const { allTrades = [], accountOptions = [], activeAccount = 'all' } = useTradingContext();
   const plan = String(user?.plan || 'trial').toLowerCase();
   const sessionLimit = getBacktestSessionLimit(plan);
-  const [selectedSymbol, setSelectedSymbol] = useState('all');
-  const [selectedSetup, setSelectedSetup] = useState('all');
-  const [selectedSession, setSelectedSession] = useState('all');
-  const [selectedInterval, setSelectedInterval] = useState('15');
-  const [playbackSpeed, setPlaybackSpeed] = useState(2);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const userId = user?.id || 'guest';
+
+  const [savedSessions, setSavedSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState('');
+  const [draft, setDraft] = useState({ ...BASE_DRAFT, accountScope: activeAccount || 'all' });
   const [replayIndex, setReplayIndex] = useState(0);
-  const [backtestSessions, setBacktestSessions] = useState([]);
-  const [sessionsLoaded, setSessionsLoaded] = useState(false);
-  const [activeBacktestSessionId, setActiveBacktestSessionId] = useState('');
-  const [sessionName, setSessionName] = useState('');
-  const [sessionNotes, setSessionNotes] = useState('');
-
-  function activateBacktestSession(sessionRecord) {
-    if (!sessionRecord) return;
-    const normalized = normalizeBacktestSession(sessionRecord);
-    setActiveBacktestSessionId(normalized.id);
-    setSelectedSymbol(normalized.symbol || 'all');
-    setSelectedSetup(normalized.setup || 'all');
-    setSelectedSession(normalized.session || 'all');
-    setSelectedInterval(normalized.interval || '15');
-    setPlaybackSpeed(normalized.playbackSpeed || 2);
-    setReplayIndex(normalized.replayIndex || 0);
-    setSessionName(normalized.name || '');
-    setSessionNotes(normalized.notes || '');
-    setIsPlaying(false);
-  }
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    if (!user?.id) {
-      setBacktestSessions([]);
-      setActiveBacktestSessionId('');
-      setSessionName('');
-      setSessionNotes('');
-      setSessionsLoaded(true);
-      return;
-    }
-
-    const stored = loadBacktestSessions(user.id)
+    const loaded = loadBacktestSessions(userId)
       .sort((left, right) => new Date(right.lastOpenedAt || right.updatedAt || 0) - new Date(left.lastOpenedAt || left.updatedAt || 0));
-    setBacktestSessions(stored);
-    setSessionsLoaded(true);
-
-    if (stored[0]) activateBacktestSession(stored[0]);
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (!sessionsLoaded || !user?.id) return;
-    saveBacktestSessions(user.id, backtestSessions);
-  }, [backtestSessions, sessionsLoaded, user?.id]);
-
-  const sortedTrades = useMemo(() => {
-    return [...trades].sort((left, right) => (getTradeDateValue(left)?.getTime() || 0) - (getTradeDateValue(right)?.getTime() || 0));
-  }, [trades]);
-
-  const symbolRows = useMemo(() => buildBreakdown(sortedTrades, (trade) => getTradeSymbol(trade), 10), [sortedTrades]);
-  const setupRows = useMemo(() => buildBreakdown(sortedTrades, (trade) => String(trade.setup || '').trim() || 'Unlabeled', 10), [sortedTrades]);
-  const sessionRows = useMemo(() => buildBreakdown(sortedTrades, (trade) => normalizeSessionLabel(trade.session), 6), [sortedTrades]);
-
-  const filteredTrades = useMemo(() => {
-    return sortedTrades.filter((trade) => {
-      const symbol = getTradeSymbol(trade);
-      const setup = String(trade.setup || '').trim() || 'Unlabeled';
-      const session = normalizeSessionLabel(trade.session);
-      if (selectedSymbol !== 'all' && symbol !== selectedSymbol) return false;
-      if (selectedSetup !== 'all' && setup !== selectedSetup) return false;
-      if (selectedSession !== 'all' && session !== selectedSession) return false;
-      return true;
-    });
-  }, [selectedSession, selectedSetup, selectedSymbol, sortedTrades]);
-
-  useEffect(() => {
-    if (!filteredTrades.length) {
+    setSavedSessions(loaded);
+    if (loaded.length) {
+      const next = loaded[0];
+      setActiveSessionId(next.id);
+      setDraft({
+        name: next.name || '',
+        symbol: next.symbol || 'all',
+        setup: next.setup || 'all',
+        session: next.session || 'all',
+        interval: next.interval || '15',
+        playbackSpeed: next.playbackSpeed || 2,
+        accountScope: next.accountScope || 'all',
+        notes: next.notes || '',
+      });
+      setReplayIndex(next.replayIndex || 0);
+    } else {
+      setActiveSessionId('');
+      setDraft({ ...BASE_DRAFT, accountScope: activeAccount || 'all' });
       setReplayIndex(0);
-      setIsPlaying(false);
-      return;
     }
+  }, [userId, activeAccount]);
 
-    setReplayIndex((current) => {
-      if (current < 0 || current >= filteredTrades.length) return filteredTrades.length - 1;
-      return current;
-    });
-  }, [filteredTrades.length]);
+  useEffect(() => {
+    saveBacktestSessions(userId, savedSessions);
+  }, [userId, savedSessions]);
+
+  const tradeUniverse = useMemo(() => {
+    return sortTradesChronologically(
+      (allTrades || []).filter((trade) => getTradeDateValue(trade) && getTradeSymbol(trade) !== 'Unknown')
+    );
+  }, [allTrades]);
+
+  const symbolOptions = useMemo(() => {
+    const values = [...new Set(tradeUniverse.map((trade) => getTradeSymbol(trade)).filter(Boolean))].sort();
+    return [{ value: 'all', label: 'All pairs' }, ...values.map((value) => ({ value, label: value }))];
+  }, [tradeUniverse]);
+
+  const setupOptions = useMemo(() => {
+    const values = [...new Set(tradeUniverse.map((trade) => String(trade.setup || '').trim() || 'Unlabeled'))].sort();
+    return [{ value: 'all', label: 'All setups' }, ...values.map((value) => ({ value, label: value }))];
+  }, [tradeUniverse]);
+
+  const sessionOptions = useMemo(() => {
+    const values = [...new Set(tradeUniverse.map((trade) => normalizeSessionLabel(trade.session)).filter(Boolean))];
+    return [{ value: 'all', label: 'All sessions' }, ...values.map((value) => ({ value, label: value }))];
+  }, [tradeUniverse]);
+
+  const accountScopeOptions = useMemo(() => {
+    return (accountOptions || []).map((option) => ({ value: option.id, label: option.label }));
+  }, [accountOptions]);
+
+  const filteredTrades = useMemo(() => filterTradesForReplay(tradeUniverse, draft), [tradeUniverse, draft]);
+  const clampedReplayIndex = useMemo(() => clamp(replayIndex, 0, Math.max(filteredTrades.length - 1, 0)), [replayIndex, filteredTrades.length]);
+  const visibleTrades = useMemo(() => filteredTrades.slice(0, clampedReplayIndex + 1), [filteredTrades, clampedReplayIndex]);
+  const currentTrade = filteredTrades[clampedReplayIndex] || null;
+  const currentSymbol = currentTrade ? getTradeSymbol(currentTrade) : (draft.symbol !== 'all' ? draft.symbol : (filteredTrades[0] ? getTradeSymbol(filteredTrades[0]) : 'EURUSD'));
+  const progressPct = filteredTrades.length ? Math.round(((clampedReplayIndex + 1) / filteredTrades.length) * 100) : 0;
+
+  useEffect(() => {
+    if (replayIndex !== clampedReplayIndex) {
+      setReplayIndex(clampedReplayIndex);
+    }
+  }, [clampedReplayIndex, replayIndex]);
 
   useEffect(() => {
     if (!isPlaying || filteredTrades.length <= 1) return undefined;
-    const delay = Math.max(320, 1600 / playbackSpeed);
-    const timer = window.setInterval(() => {
-      setReplayIndex((current) => {
-        if (current >= filteredTrades.length - 1) return current;
-        return current + 1;
-      });
-    }, delay);
-    return () => window.clearInterval(timer);
-  }, [filteredTrades.length, isPlaying, playbackSpeed]);
+    if (clampedReplayIndex >= filteredTrades.length - 1) {
+      setIsPlaying(false);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      setReplayIndex((value) => Math.min(filteredTrades.length - 1, value + 1));
+    }, getPlaybackDelay(draft.playbackSpeed));
+    return () => window.clearTimeout(timer);
+  }, [isPlaying, clampedReplayIndex, filteredTrades.length, draft.playbackSpeed]);
 
-  useEffect(() => {
-    if (!isPlaying) return;
-    if (replayIndex >= filteredTrades.length - 1) setIsPlaying(false);
-  }, [filteredTrades.length, isPlaying, replayIndex]);
-
-  const visibleTrades = useMemo(() => filteredTrades.slice(0, replayIndex + 1), [filteredTrades, replayIndex]);
-  const currentTrade = filteredTrades[replayIndex] || filteredTrades[filteredTrades.length - 1] || null;
-  const replaySummary = useMemo(() => summarizeTradeSet(visibleTrades), [visibleTrades]);
+  const visibleSummary = useMemo(() => summarizeTradeSet(visibleTrades), [visibleTrades]);
   const fullSummary = useMemo(() => summarizeTradeSet(filteredTrades), [filteredTrades]);
-  const replayCurve = useMemo(() => buildEquityDrawdownSeries(visibleTrades), [visibleTrades]);
-  const tradePulse = useMemo(() => buildTradePulse(visibleTrades), [visibleTrades]);
-  const sessionPulse = useMemo(() => buildBreakdown(visibleTrades, (trade) => normalizeSessionLabel(trade.session), 1), [visibleTrades]);
-  const setupPulse = useMemo(() => buildBreakdown(visibleTrades, (trade) => String(trade.setup || '').trim() || 'Unlabeled', 5), [visibleTrades]);
-  const replayRows = useMemo(() => buildReplayRows(visibleTrades), [visibleTrades]);
-
-  const symbolOptions = ['all', ...symbolRows.map((row) => row.label)];
-  const setupOptions = ['all', ...setupRows.map((row) => row.label)];
-  const sessionOptions = ['all', ...sessionRows.map((row) => row.label)];
-
-  const accountLabel = useMemo(() => {
-    return accountOptions.find((item) => item.id === activeAccount)?.label || 'All Accounts';
-  }, [accountOptions, activeAccount]);
-
-  const currentDate = getTradeDateValue(currentTrade);
-  const currentSymbol = currentTrade ? getTradeSymbol(currentTrade) : selectedSymbol !== 'all' ? selectedSymbol : symbolRows[0]?.label || 'EURUSD';
-  const currentDirection = currentTrade?.direction || currentTrade?.type || 'Long';
-  const currentTone = getTradePnl(currentTrade || {}) >= 0 ? C.green : C.danger;
-  const currentTags = {
-    setup: extractTagValues(currentTrade?.setup),
-    bias: extractTagValues(currentTrade?.bias || currentTrade?.direction),
-    confluences: extractTagValues(currentTrade?.confluences),
-    psychology: extractTagValues(currentTrade?.psychology),
-  };
-
-  const progress = filteredTrades.length ? ((replayIndex + 1) / filteredTrades.length) * 100 : 0;
-  const focusNote = !filteredTrades.length
-    ? 'Import trades to open the replay desk.'
-    : fullSummary.maxDrawdownCash < -Math.abs(fullSummary.avgWin || 0) * 2
-      ? 'Start with the drawdown pocket and watch where invalidation slips.'
-      : replaySummary.winRate < 45
-        ? 'Replay slower and tighten the trigger before scaling size.'
-        : replaySummary.avgRR != null && replaySummary.avgRR < 1.3
-          ? 'The strike rate is acceptable. Push the average winner further.'
-          : 'Keep the same structure and add more clean samples before adjusting the playbook.';
-
-  const activeReplaySession = useMemo(
-    () => backtestSessions.find((session) => session.id === activeBacktestSessionId) || null,
-    [activeBacktestSessionId, backtestSessions],
-  );
-
-  const sessionSummaries = useMemo(() => {
-    return backtestSessions.map((session) => {
-      const sessionTrades = filterTradesForBacktestSession(sortedTrades, session);
-      const summary = summarizeTradeSet(sessionTrades);
-      return {
-        ...session,
-        tradeCount: sessionTrades.length,
-        totalPnL: summary.totalPnL,
-        winRate: summary.winRate,
-      };
-    });
-  }, [backtestSessions, sortedTrades]);
+  const replaySeries = useMemo(() => buildEquityDrawdownSeries(visibleTrades), [visibleTrades]);
+  const rollingWinRate = useMemo(() => {
+    const windowSize = visibleTrades.length >= 20 ? 12 : Math.max(4, visibleTrades.length);
+    return buildRollingWinRateSeries(visibleTrades, windowSize || 4);
+  }, [visibleTrades]);
+  const performanceBars = useMemo(() => buildPerformanceBars(visibleTrades), [visibleTrades]);
+  const executionTape = useMemo(() => buildReplayTape(visibleTrades), [visibleTrades]);
+  const insights = useMemo(() => buildReplayInsights(filteredTrades, visibleSummary, fullSummary, currentTrade), [filteredTrades, visibleSummary, fullSummary, currentTrade]);
+  const sessionScopeLabel = useMemo(() => buildSessionScopeText(draft, accountOptions), [draft, accountOptions]);
 
   useEffect(() => {
-    if (!sessionsLoaded || !activeBacktestSessionId) return;
-    setBacktestSessions((current) => {
-      const index = current.findIndex((session) => session.id === activeBacktestSessionId);
-      if (index === -1) return current;
-
-      const existing = normalizeBacktestSession(current[index]);
-      const next = normalizeBacktestSession({
-        ...existing,
-        name: sessionName || existing.name,
-        notes: sessionNotes,
-        symbol: selectedSymbol,
-        setup: selectedSetup,
-        session: selectedSession,
-        interval: selectedInterval,
-        playbackSpeed,
-        replayIndex,
-        accountScope: activeAccount,
-        plan,
-        tradeCount: filteredTrades.length,
-        progressPct: progress,
-        lastSymbol: currentSymbol,
-        updatedAt: new Date().toISOString(),
-        lastOpenedAt: new Date().toISOString(),
+    if (!activeSessionId) return;
+    setSavedSessions((current) => {
+      let changed = false;
+      const next = current.map((session) => {
+        if (session.id !== activeSessionId) return session;
+        const updated = normalizeBacktestSession({
+          ...session,
+          name: draft.name || session.name || buildBacktestSessionName(draft),
+          symbol: draft.symbol,
+          setup: draft.setup,
+          session: draft.session,
+          interval: draft.interval,
+          playbackSpeed: draft.playbackSpeed,
+          replayIndex: clampedReplayIndex,
+          accountScope: draft.accountScope,
+          plan,
+          tradeCount: filteredTrades.length,
+          progressPct,
+          lastSymbol: currentSymbol,
+          notes: draft.notes,
+          updatedAt: new Date().toISOString(),
+          lastOpenedAt: new Date().toISOString(),
+        });
+        if (!sessionsAreEqual(session, updated)) {
+          changed = true;
+          return updated;
+        }
+        return session;
       });
-
-      if (JSON.stringify(existing) === JSON.stringify(next)) return current;
-      const copy = [...current];
-      copy[index] = next;
-      return copy;
+      return changed ? next : current;
     });
   }, [
-    activeAccount,
-    activeBacktestSessionId,
+    activeSessionId,
+    clampedReplayIndex,
     currentSymbol,
+    draft.accountScope,
+    draft.interval,
+    draft.name,
+    draft.notes,
+    draft.playbackSpeed,
+    draft.session,
+    draft.setup,
+    draft.symbol,
     filteredTrades.length,
     plan,
-    playbackSpeed,
-    progress,
-    replayIndex,
-    selectedInterval,
-    selectedSession,
-    selectedSetup,
-    selectedSymbol,
-    sessionName,
-    sessionNotes,
-    sessionsLoaded,
+    progressPct,
   ]);
 
-  function handleCreateSession() {
-    if (sessionLimit <= 0) {
-      toast.error('Upgrade to Starter or higher to create replay sessions.');
-      return;
+  const handleDraftChange = (field, value) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+    if (field === 'symbol' || field === 'setup' || field === 'session' || field === 'accountScope') {
+      setReplayIndex(0);
+      setIsPlaying(false);
     }
+  };
 
-    if (backtestSessions.length >= sessionLimit) {
-      toast.error(`Your ${plan} plan allows ${sessionLimit} replay session${sessionLimit > 1 ? 's' : ''}.`);
-      return;
-    }
-
-    const sessionRecord = createBacktestSession({
-      name: sessionName || buildBacktestSessionName({ symbol: selectedSymbol, setup: selectedSetup, session: selectedSession }),
-      symbol: selectedSymbol,
-      setup: selectedSetup,
-      session: selectedSession,
-      interval: selectedInterval,
-      playbackSpeed,
-      replayIndex: 0,
-      accountScope: activeAccount,
-      plan,
-      tradeCount: filteredTrades.length,
-      progressPct: filteredTrades.length ? (100 / filteredTrades.length) : 0,
-      lastSymbol: currentSymbol,
-      notes: sessionNotes,
-    });
-
-    setBacktestSessions((current) => [sessionRecord, ...current]);
-    activateBacktestSession(sessionRecord);
+  const handleStartNew = () => {
+    setIsPlaying(false);
+    setActiveSessionId('');
     setReplayIndex(0);
-    toast.success('Replay session created.');
-  }
+    setDraft((current) => ({
+      ...BASE_DRAFT,
+      accountScope: current.accountScope || activeAccount || 'all',
+      interval: current.interval || '15',
+      playbackSpeed: current.playbackSpeed || 2,
+    }));
+  };
 
-  function handleDeleteSession(sessionId) {
-    const next = backtestSessions.filter((session) => session.id !== sessionId);
-    setBacktestSessions(next);
-    if (activeBacktestSessionId === sessionId) {
-      const fallback = next[0] || null;
-      if (fallback) activateBacktestSession(fallback);
-      else {
-        setActiveBacktestSessionId('');
-        setSessionName('');
-        setSessionNotes('');
-      }
+  const handleOpenSession = (session) => {
+    setIsPlaying(false);
+    setActiveSessionId(session.id);
+    setDraft({
+      name: session.name || '',
+      symbol: session.symbol || 'all',
+      setup: session.setup || 'all',
+      session: session.session || 'all',
+      interval: session.interval || '15',
+      playbackSpeed: session.playbackSpeed || 2,
+      accountScope: session.accountScope || 'all',
+      notes: session.notes || '',
+    });
+    setReplayIndex(session.replayIndex || 0);
+  };
+
+  const handleDeleteSession = (sessionId) => {
+    setSavedSessions((current) => current.filter((session) => session.id !== sessionId));
+    if (activeSessionId === sessionId) {
+      handleStartNew();
     }
     toast.success('Replay session removed.');
+  };
+
+  const handleSaveSession = () => {
+    if (!filteredTrades.length) {
+      toast.error('No trades match this replay scope yet.');
+      return;
+    }
+
+    if (!activeSessionId && savedSessions.length >= sessionLimit) {
+      toast.error(`Your ${plan} plan keeps ${sessionLimit} replay session${sessionLimit > 1 ? 's' : ''}.`);
+      return;
+    }
+
+    if (activeSessionId) {
+      setSavedSessions((current) => current.map((session) => (
+        session.id === activeSessionId
+          ? normalizeBacktestSession({
+              ...session,
+              name: draft.name || session.name || buildBacktestSessionName(draft),
+              symbol: draft.symbol,
+              setup: draft.setup,
+              session: draft.session,
+              interval: draft.interval,
+              playbackSpeed: draft.playbackSpeed,
+              replayIndex: clampedReplayIndex,
+              accountScope: draft.accountScope,
+              plan,
+              tradeCount: filteredTrades.length,
+              progressPct,
+              lastSymbol: currentSymbol,
+              notes: draft.notes,
+              updatedAt: new Date().toISOString(),
+              lastOpenedAt: new Date().toISOString(),
+            })
+          : session
+      )));
+      toast.success('Replay session saved.');
+      return;
+    }
+
+    const nextSession = createBacktestSession({
+      name: draft.name || buildBacktestSessionName(draft),
+      symbol: draft.symbol,
+      setup: draft.setup,
+      session: draft.session,
+      interval: draft.interval,
+      playbackSpeed: draft.playbackSpeed,
+      replayIndex: clampedReplayIndex,
+      accountScope: draft.accountScope,
+      plan,
+      tradeCount: filteredTrades.length,
+      progressPct,
+      lastSymbol: currentSymbol,
+      notes: draft.notes,
+    });
+
+    setSavedSessions((current) => [nextSession, ...current].slice(0, sessionLimit));
+    setActiveSessionId(nextSession.id);
+    setDraft((current) => ({ ...current, name: nextSession.name }));
+    toast.success('Replay session created.');
+  };
+
+  const handleDuplicateSession = () => {
+    if (!filteredTrades.length) {
+      toast.error('There is no replay scope to duplicate yet.');
+      return;
+    }
+    if (savedSessions.length >= sessionLimit) {
+      toast.error(`Your ${plan} plan keeps ${sessionLimit} replay session${sessionLimit > 1 ? 's' : ''}.`);
+      return;
+    }
+    const nextSession = createBacktestSession({
+      name: `${draft.name || buildBacktestSessionName(draft)} copy`,
+      symbol: draft.symbol,
+      setup: draft.setup,
+      session: draft.session,
+      interval: draft.interval,
+      playbackSpeed: draft.playbackSpeed,
+      replayIndex: clampedReplayIndex,
+      accountScope: draft.accountScope,
+      plan,
+      tradeCount: filteredTrades.length,
+      progressPct,
+      lastSymbol: currentSymbol,
+      notes: draft.notes,
+    });
+    setSavedSessions((current) => [nextSession, ...current].slice(0, sessionLimit));
+    setActiveSessionId(nextSession.id);
+    setDraft((current) => ({ ...current, name: nextSession.name }));
+    toast.success('Replay session duplicated.');
+  };
+
+  const togglePlay = () => {
+    if (!filteredTrades.length) {
+      toast.error('Import trades first to unlock the replay desk.');
+      return;
+    }
+    if (clampedReplayIndex >= filteredTrades.length - 1) {
+      setReplayIndex(0);
+    }
+    setIsPlaying((value) => !value);
+  };
+
+  const emptyState = !tradeUniverse.length;
+  const liveTone = visibleSummary.totalPnL >= 0 ? C.green : C.danger;
+  const sessionTone = fullSummary.totalPnL >= 0 ? C.green : C.danger;
+
+  if (sessionLimit <= 0) {
+    return (
+      <div style={{ padding: '30px', width: '100%', boxSizing: 'border-box' }}>
+        <style>{PAGE_STYLES}</style>
+        <SectionCard tone={C.gold} style={{ padding: '28px 28px 24px', maxWidth: 760 }}>
+          <SectionTitle eyebrow="Backtest" title="Replay desk starts from Starter" tone={C.gold} icon={<Ic.Replay />} />
+          <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7 }}>
+            Upgrade to Starter or above to unlock persistent replay sessions. Starter keeps 1 session, Pro keeps 5, and Elite keeps 25.
+          </div>
+        </SectionCard>
+      </div>
+    );
   }
 
   return (
-    <div className="mf-backtest-page" style={{ minHeight: '100vh', padding: '28px 24px 48px', position: 'relative', overflow: 'hidden' }}>
+    <div className="mf-backtest-page" style={{ padding: '30px 30px 56px', width: '100%', boxSizing: 'border-box' }}>
       <style>{PAGE_STYLES}</style>
 
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: 0, left: '10%', width: 520, height: 340, background: 'radial-gradient(ellipse, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.08) 0%, transparent 72%)', filter: 'blur(42px)', animation: 'mfReplayGlowA 18s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', right: '8%', bottom: 0, width: 520, height: 340, background: 'radial-gradient(ellipse, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255), 0.06) 0%, transparent 72%)', filter: 'blur(46px)', animation: 'mfReplayGlowB 22s ease-in-out infinite' }} />
-      </div>
-
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1560, margin: '0 auto' }}>
-        <SectionCard tone={C.gold} index={0} style={{ padding: '20px 22px 18px', marginBottom: 14 }}>
-          <SectionTitle
-            eyebrow="Sessions"
-            title="Replay sessions"
-            tone={C.gold}
-            action={(
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.gold, 0.16)}`, background: shade(C.gold, 0.1), fontSize: 10.5, color: C.gold, fontWeight: 800 }}>
-                  {sessionLimit > 0 ? `${backtestSessions.length}/${sessionLimit} session${sessionLimit > 1 ? 's' : ''}` : 'Locked'}
-                </span>
-                <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.025)', fontSize: 10.5, color: C.text2, fontWeight: 700 }}>
-                  {plan}
-                </span>
-              </div>
-            )}
-          />
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 0.95fr) minmax(0, 1.05fr)', gap: 14 }}>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <TextField label="Session name" value={sessionName} onChange={setSessionName} placeholder="London momentum review" />
-              <label style={{ display: 'grid', gap: 6 }}>
-                <span style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Session notes</span>
-                <textarea
-                  value={sessionNotes}
-                  onChange={(event) => setSessionNotes(event.target.value)}
-                  rows={4}
-                  placeholder="What are you testing in this replay?"
-                  style={{
-                    width: '100%',
-                    padding: '11px 12px',
-                    borderRadius: 13,
-                    border: `1px solid ${C.border}`,
-                    background: 'rgba(255,255,255,0.03)',
-                    color: C.text1,
-                    fontSize: 12,
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                    resize: 'vertical',
-                  }}
-                />
-              </label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <ControlButton onClick={handleCreateSession} disabled={sessionLimit <= 0 || backtestSessions.length >= sessionLimit}>
-                  New session
-                </ControlButton>
-                {activeReplaySession ? (
-                  <ControlButton subtle onClick={() => activateBacktestSession(activeReplaySession)}>
-                    Continue current
-                  </ControlButton>
-                ) : null}
-              </div>
-              <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.7 }}>
-                Starter keeps 1 active replay session. Pro keeps 5. Elite keeps 25. Each session stores filters, interval, replay progress, and notes so you can continue exactly where you stopped.
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gap: 10 }}>
-              {sessionSummaries.length ? sessionSummaries.map((session) => {
-                const active = session.id === activeBacktestSessionId;
-                const pnlTone = session.totalPnL >= 0 ? C.green : C.danger;
-                return (
-                  <SessionChip key={session.id} active={active} onClick={() => activateBacktestSession(session)}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: C.text0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {session.name}
-                        </div>
-                        <div style={{ marginTop: 5, fontSize: 11.5, color: C.text2, lineHeight: 1.55 }}>
-                          {session.symbol === 'all' ? 'All symbols' : session.symbol} · {session.setup === 'all' ? 'All setups' : session.setup} · {session.session === 'all' ? 'All sessions' : session.session}
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gap: 6, justifyItems: 'end', flexShrink: 0 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 800, color: pnlTone }}>{formatAnalyticsMoney(session.totalPnL)}</span>
-                        <span style={{ fontSize: 10.5, color: C.text3 }}>{Math.round(session.progressPct || 0)}%</span>
-                      </div>
-                    </div>
-                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ padding: '5px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(C.border, 0.8)}`, fontSize: 10.5, color: C.text2 }}>
-                          {session.tradeCount} trades
-                        </span>
-                        <span style={{ padding: '5px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(C.border, 0.8)}`, fontSize: 10.5, color: C.text2 }}>
-                          {formatAnalyticsPercent(session.winRate, 1)}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <ControlButton subtle onClick={(event) => { event.stopPropagation(); activateBacktestSession(session); }}>
-                          Continue
-                        </ControlButton>
-                        <ControlButton subtle onClick={(event) => { event.stopPropagation(); handleDeleteSession(session.id); }}>
-                          Remove
-                        </ControlButton>
-                      </div>
-                    </div>
-                  </SessionChip>
-                );
-              }) : (
-                <div style={{ padding: '16px 14px', borderRadius: 16, border: `1px dashed ${shade(C.border, 0.9)}`, background: 'rgba(255,255,255,0.02)', fontSize: 12.5, color: C.text2, lineHeight: 1.7 }}>
-                  No replay session yet. Build one from your current filters, then resume it any time from this desk.
-                </div>
-              )}
-            </div>
+      <motion.div
+        {...panelMotion(0)}
+        style={{
+          marginBottom: 18,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: shade(C.accent, 0.9), marginBottom: 8 }}>
+            Backtest
           </div>
-        </SectionCard>
-
-        <div className="mf-replay-topbar">
-          <SectionCard tone={C.accent} index={1} style={{ padding: '20px 22px 18px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>
-                  Backtest replay desk
-                </div>
-                <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 3.2vw, 3rem)', fontWeight: 900, letterSpacing: '-0.06em', color: C.text0 }}>
-                  {currentSymbol}
-                </h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-                  <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.accent, 0.18)}`, background: 'rgba(var(--mf-accent-rgb, 6, 230, 255), 0.08)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.accent }}>
-                    {accountLabel}
-                  </span>
-                  <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(currentTone, 0.18)}`, background: shade(currentTone, 0.1), fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: currentTone }}>
-                    {currentDirection}
-                  </span>
-                  <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.03)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2 }}>
-                    {filteredTrades.length} samples
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ minWidth: 280, flex: '0 1 420px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
-                  <div style={{ fontSize: 11, color: C.text2, fontWeight: 700 }}>Replay progress</div>
-                  <div style={{ fontSize: 11, color: C.text2 }}>{replayIndex + 1}/{Math.max(filteredTrades.length, 0)}</div>
-                </div>
-                <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 12 }}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.46), rgba(var(--mf-accent-secondary-rgb, 102, 240, 255),0.95))' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <ControlButton onClick={() => setReplayIndex((current) => Math.max(0, current - 1))} subtle disabled={!filteredTrades.length}>
-                    Prev
-                  </ControlButton>
-                  <ControlButton
-                    active={isPlaying}
-                    onClick={() => {
-                      if (!filteredTrades.length) return;
-                      if (replayIndex >= filteredTrades.length - 1) setReplayIndex(0);
-                      setIsPlaying((current) => !current);
-                    }}
-                    disabled={!filteredTrades.length}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: isPlaying ? C.green : C.text2, animation: isPlaying ? 'mfReplayPulse 1.2s ease-in-out infinite' : 'none' }} />
-                      {isPlaying ? 'Pause replay' : 'Play replay'}
-                    </span>
-                  </ControlButton>
-                  <ControlButton onClick={() => setReplayIndex((current) => Math.min(filteredTrades.length - 1, current + 1))} subtle disabled={!filteredTrades.length}>
-                    Next
-                  </ControlButton>
-                </div>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard tone={C.purple} index={2} style={{ padding: '20px 22px 18px' }}>
-            <SectionTitle
-              eyebrow="Controls"
-              title="Replay controls"
-              tone={C.purple}
-              action={currentDate ? (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.025)', fontSize: 10.5, color: C.text2, fontWeight: 700 }}>
-                    {currentDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.025)', fontSize: 10.5, color: C.text2, fontWeight: 700 }}>
-                    {currentDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-                  </span>
-                </div>
-              ) : null}
-            />
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
-              <Field label="Symbol" value={selectedSymbol} onChange={setSelectedSymbol} options={symbolOptions} />
-              <Field label="Setup" value={selectedSetup} onChange={setSelectedSetup} options={setupOptions} />
-              <Field label="Session" value={selectedSession} onChange={setSelectedSession} options={sessionOptions} />
-              <Field label="Interval" value={selectedInterval} onChange={setSelectedInterval} options={['15', '30', '60', '240', 'D']} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {playbackOptions.map((speed) => (
-                  <ControlButton key={speed} active={playbackSpeed === speed} onClick={() => setPlaybackSpeed(speed)}>
-                    {speed}x
-                  </ControlButton>
-                ))}
-              </div>
-
-              <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.6 }}>
-                Focus on one symbol, one setup, or one session to isolate the edge.
-              </div>
-            </div>
-          </SectionCard>
+          <h1 style={{ margin: 0, fontSize: 34, lineHeight: 1, letterSpacing: '-0.05em', color: C.text0 }}>
+            Replay desk
+          </h1>
+          <div style={{ fontSize: 12.5, color: C.text2, marginTop: 10, lineHeight: 1.7, maxWidth: 760 }}>
+            MarketFlow replay runs from your real journal history. Continue a saved session or start a fresh one with a tighter scope.
+          </div>
         </div>
 
-        {filteredTrades.length ? (
-          <div className="mf-replay-layout">
-            <SectionCard tone={currentTone} index={2} style={{ padding: '18px 18px 16px', height: 'fit-content' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 7 }}>
-                    Current trade
-                  </div>
-                  <div style={{ fontSize: 34, fontWeight: 900, letterSpacing: '-0.06em', color: C.text0, marginBottom: 4 }}>
-                    {currentSymbol}
-                  </div>
-                  <div style={{ fontSize: 12, color: C.text2 }}>
-                    {currentDate ? getTradeDateLabel(currentTrade) : '--'} / {currentTrade?.setup || 'Unlabeled'}
-                  </div>
-                </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <GhostButton onClick={handleStartNew} icon={<Ic.Plus />}>New replay</GhostButton>
+          <GhostButton onClick={handleSaveSession} icon={<Ic.Save />} tone={C.accent}>Save session</GhostButton>
+          <div style={{ padding: '7px 10px', borderRadius: 999, background: shade(C.accent, 0.12), border: `1px solid ${shade(C.accent, 0.18)}`, fontSize: 10.5, fontWeight: 800, color: C.accent }}>
+            {savedSessions.length}/{sessionLimit} saved
+          </div>
+        </div>
+      </motion.div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.05em', color: currentTone }}>
-                    {formatAnalyticsMoney(getTradePnl(currentTrade))}
-                  </div>
-                  <div style={{ fontSize: 11, color: C.text2 }}>
-                    {formatAnalyticsRR(getTradeRR(currentTrade))} / {normalizeSessionLabel(currentTrade?.session)}
-                  </div>
-                </div>
+      {emptyState ? (
+        <SectionCard tone={C.accent} index={1} style={{ padding: '28px 26px' }}>
+          <SectionTitle eyebrow="Backtest" title="Import trades to launch the replay desk" tone={C.accent} icon={<Ic.Replay />} />
+          <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, maxWidth: 720 }}>
+            The replay engine reads your journal history. Add or import trades in <strong style={{ color: C.text1 }}>All Trades</strong> and this desk will immediately build replay scopes, curves, and saved sessions.
+          </div>
+        </SectionCard>
+      ) : (
+        <div className="mf-backtest-shell">
+          <div className="mf-backtest-rail">
+            <SectionCard tone={C.accent} index={1} style={{ padding: '18px 18px 16px' }}>
+              <SectionTitle eyebrow="Library" title="Replay sessions" tone={C.accent} icon={<Ic.Replay />} />
+              <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
+                <MiniStat label="Plan capacity" value={`${savedSessions.length}/${sessionLimit}`} caption={`${plan.toUpperCase()} replay slots`} tone={C.accent} />
               </div>
-
-              <div style={{ display: 'grid', gap: 2, marginBottom: 16 }}>
-                <MetricRow label="Entry" value={formatPrice(getTradeEntry(currentTrade))} />
-                <MetricRow label="Exit" value={formatPrice(getTradeExit(currentTrade))} />
-                <MetricRow label="Stop" value={formatPrice(getTradeStop(currentTrade))} />
-                <MetricRow label="Target" value={formatPrice(getTradeTarget(currentTrade))} />
-                <MetricRow label="Size" value={String(getTradeSize(currentTrade))} />
-                <MetricRow label="Result" value={formatAnalyticsMoney(getTradePnl(currentTrade))} tone={currentTone} />
-              </div>
-
-              <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
-                <TagCluster label="Setup" values={currentTags.setup} tone={C.green} />
-                <TagCluster label="Bias" values={currentTags.bias} tone={C.blue} />
-                <TagCluster label="Confluences" values={currentTags.confluences} tone={C.purple} />
-                <TagCluster label="Psychology" values={currentTags.psychology} tone={C.warn} />
-              </div>
-
-              <div style={{ padding: '14px 15px', borderRadius: 18, border: `1px solid ${shade(C.accent, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-                <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 7 }}>
-                  Replay note
-                </div>
-                <div style={{ fontSize: 12.5, color: C.text1, lineHeight: 1.65 }}>
-                  {focusNote}
-                </div>
-                {currentTrade?.notes ? (
-                  <div style={{ marginTop: 10, fontSize: 11.5, color: C.text2, lineHeight: 1.6 }}>
-                    {currentTrade.notes}
+              <div className="mf-backtest-session-list">
+                {savedSessions.length ? savedSessions.map((session) => (
+                  <SessionTile
+                    key={session.id}
+                    session={session}
+                    active={activeSessionId === session.id}
+                    onOpen={() => handleOpenSession(session)}
+                    onDelete={() => handleDeleteSession(session.id)}
+                  />
+                )) : (
+                  <div style={{ padding: '14px 12px', borderRadius: 16, border: `1px dashed ${shade(C.borderHi, 0.8)}`, color: C.text2, fontSize: 12, lineHeight: 1.7 }}>
+                    No saved replay yet. Build your scope and save the first session.
                   </div>
-                ) : null}
+                )}
               </div>
             </SectionCard>
 
-            <div>
-              <SectionCard tone={C.accent} index={3} style={{ padding: '18px 18px 16px' }}>
+            <SectionCard tone={C.blue} index={2} style={{ padding: '18px 18px 16px' }}>
+              <SectionTitle eyebrow="Setup" title="Replay scope" tone={C.blue} icon={<Ic.Bolt />} />
+
+              <div className="mf-backtest-form-grid" style={{ marginBottom: 12 }}>
+                <SelectField label="Account" value={draft.accountScope} onChange={(event) => handleDraftChange('accountScope', event.target.value)} options={accountScopeOptions} />
+                <SelectField label="Pair" value={draft.symbol} onChange={(event) => handleDraftChange('symbol', event.target.value)} options={symbolOptions} />
+                <SelectField label="Session" value={draft.session} onChange={(event) => handleDraftChange('session', event.target.value)} options={sessionOptions} />
+                <SelectField label="Setup" value={draft.setup} onChange={(event) => handleDraftChange('setup', event.target.value)} options={setupOptions} />
+                <SelectField label="Chart interval" value={draft.interval} onChange={(event) => handleDraftChange('interval', event.target.value)} options={INTERVAL_OPTIONS} />
+                <SelectField
+                  label="Replay speed"
+                  value={String(draft.playbackSpeed)}
+                  onChange={(event) => handleDraftChange('playbackSpeed', Number(event.target.value))}
+                  options={PLAYBACK_OPTIONS.map((value) => ({ value: String(value), label: `${value}x` }))}
+                />
+              </div>
+
+              <label style={{ display: 'grid', gap: 7, marginBottom: 12 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+                  Session name
+                </span>
+                <input
+                  value={draft.name}
+                  onChange={(event) => handleDraftChange('name', event.target.value)}
+                  placeholder={buildBacktestSessionName(draft)}
+                  style={{
+                    height: 42,
+                    borderRadius: 12,
+                    border: `1px solid ${C.border}`,
+                    background: 'rgba(255,255,255,0.03)',
+                    color: C.text1,
+                    padding: '0 12px',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </label>
+
+              <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                <DetailRow label="Replay scope" value={sessionScopeLabel} tone={C.text1} />
+                <DetailRow label="Trades in scope" value={`${filteredTrades.length}`} tone={C.accent} />
+                <DetailRow label="Saved progress" value={`${progressPct}%`} tone={liveTone} />
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+                <GhostButton onClick={handleSaveSession} icon={<Ic.Save />} tone={C.accent}>Save</GhostButton>
+                <GhostButton onClick={handleDuplicateSession} icon={<Ic.Duplicate />}>Duplicate</GhostButton>
+                <GhostButton onClick={handleStartNew} icon={<Ic.Plus />}>Reset scope</GhostButton>
+              </div>
+
+              <label style={{ display: 'grid', gap: 7 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
+                  Session notes
+                </span>
+                <textarea
+                  value={draft.notes}
+                  onChange={(event) => handleDraftChange('notes', event.target.value)}
+                  placeholder="Execution notes, replay observations, plan refinements."
+                  rows={5}
+                  style={{
+                    resize: 'vertical',
+                    minHeight: 118,
+                    borderRadius: 14,
+                    border: `1px solid ${C.border}`,
+                    background: 'rgba(255,255,255,0.03)',
+                    color: C.text1,
+                    padding: '12px',
+                    fontSize: 12.5,
+                    lineHeight: 1.7,
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </label>
+            </SectionCard>
+
+            <SectionCard tone={currentTrade ? (getTradePnl(currentTrade) >= 0 ? C.green : C.danger) : C.text2} index={3} style={{ padding: '18px 18px 16px' }}>
+              <SectionTitle eyebrow="Active trade" title={currentTrade ? getTradeSymbol(currentTrade) : 'Awaiting replay'} tone={currentTrade ? (getTradePnl(currentTrade) >= 0 ? C.green : C.text2) : C.text2} />
+              {currentTrade ? (
+                <div style={{ display: 'grid', gap: 2 }}>
+                  <DetailRow label="Direction" value={currentTrade.direction || currentTrade.type || 'Long'} tone={C.text1} />
+                  <DetailRow label="Entry" value={formatPrice(getTradeEntry(currentTrade))} tone={C.accent} />
+                  <DetailRow label="Exit" value={formatPrice(getTradeExit(currentTrade))} tone={C.text1} />
+                  <DetailRow label="Stop" value={formatPrice(getTradeStop(currentTrade))} tone={C.danger} />
+                  <DetailRow label="Target" value={formatPrice(getTradeTarget(currentTrade))} tone={C.green} />
+                  <DetailRow label="Size" value={getTradeSize(currentTrade) != null ? String(getTradeSize(currentTrade)) : '--'} tone={C.text1} />
+                  <DetailRow label="P&L" value={formatAnalyticsMoney(getTradePnl(currentTrade))} tone={getTradePnl(currentTrade) >= 0 ? C.green : C.danger} />
+                  <DetailRow label="R:R" value={formatAnalyticsRR(getTradeRR(currentTrade))} tone={C.blue} />
+                  <DetailRow label="Setup" value={String(currentTrade.setup || '').trim() || 'Unlabeled'} tone={C.text1} />
+                  <DetailRow label="Session" value={normalizeSessionLabel(currentTrade.session)} tone={C.text1} />
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.7 }}>
+                  Choose a replay scope and reveal the first trade.
+                </div>
+              )}
+            </SectionCard>
+          </div>
+
+          <div className="mf-backtest-stage">
+            <SectionCard tone={liveTone} index={4} style={{ padding: '18px 18px 16px' }}>
+              <SectionTitle
+                eyebrow="Replay desk"
+                title={draft.name || buildBacktestSessionName(draft)}
+                tone={liveTone}
+                subtitle={`Running ${filteredTrades.length} trades from ${sessionScopeLabel}. Progress is persisted automatically while you replay.`}
+                action={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <GhostButton onClick={() => { setIsPlaying(false); setReplayIndex(0); }} icon={<Ic.Back />}>Restart</GhostButton>
+                    <GhostButton onClick={togglePlay} icon={isPlaying ? <Ic.Pause /> : <Ic.Play />} tone={C.accent}>
+                      {isPlaying ? 'Pause' : 'Play'}
+                    </GhostButton>
+                  </div>
+                }
+                icon={<Ic.Replay />}
+              />
+
+              <div className="mf-backtest-insights">
+                <MiniStat label="Visible P&L" value={formatAnalyticsMoney(visibleSummary.totalPnL || 0)} caption={`${visibleSummary.totalTrades || 0} revealed trades`} tone={liveTone} />
+                <MiniStat label="Session win rate" value={formatAnalyticsPercent(fullSummary.winRate || 0, 1)} caption={`${fullSummary.wins || 0} wins / ${fullSummary.losses || 0} losses`} tone={fullSummary.winRate >= 50 ? C.green : C.warn} />
+                <MiniStat label="Max drawdown" value={formatAnalyticsMoney(fullSummary.maxDrawdownCash || 0)} caption={formatAnalyticsPercent(fullSummary.maxDrawdownPct || 0, 1)} tone={Math.abs(fullSummary.maxDrawdownCash || 0) > Math.abs(fullSummary.avgWin || 0) * 2 ? C.danger : C.blue} />
+              </div>
+            </SectionCard>
+
+            <div className="mf-backtest-top">
+              <SectionCard tone={C.accent} index={5} style={{ padding: '18px 18px 16px' }}>
                 <SectionTitle
-                  eyebrow="Replay"
-                  title="Market replay"
+                  eyebrow="Main chart"
+                  title={`${currentSymbol} · ${draft.interval}`}
                   tone={C.accent}
-                  action={(
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(currentTone, 0.16)}`, background: shade(currentTone, 0.1), fontSize: 10.5, fontWeight: 700, color: currentTone }}>
-                        {currentDirection}
-                      </span>
-                      <span style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.025)', fontSize: 10.5, fontWeight: 700, color: C.text2 }}>
-                        {normalizeSessionLabel(currentTrade?.session)}
-                      </span>
+                  subtitle={currentTrade ? `${getTradeDateLabel(currentTrade)} / ${currentTrade.time || formatCompactTime(getTradeDateValue(currentTrade))}` : 'Use the controls to scrub through the session.'}
+                  action={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <GhostButton onClick={() => { setIsPlaying(false); setReplayIndex((value) => Math.max(0, value - 1)); }} icon={<Ic.Back />}>Prev</GhostButton>
+                      <GhostButton onClick={() => { setIsPlaying(false); setReplayIndex((value) => Math.min(filteredTrades.length - 1, value + 1)); }} icon={<Ic.Forward />}>Next</GhostButton>
                     </div>
-                  )}
+                  }
+                  icon={<Ic.Replay />}
                 />
 
-                <div className="mf-replay-chart-grid">
-                  <div>
-                    <div style={{ padding: '12px 12px 10px', borderRadius: 18, border: `1px solid ${shade(C.accent, 0.12)}`, background: 'rgba(255,255,255,0.02)', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-                        <div>
-                          <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>
-                            Primary chart
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: C.text0 }}>
-                            {currentSymbol} / {selectedInterval}m
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 11, color: C.text2 }}>{replayIndex + 1} / {filteredTrades.length}</span>
-                          <span style={{ fontSize: 11, color: C.text2 }}>{currentTrade?.time || '--'}</span>
-                        </div>
+                <div style={{ display: 'grid', gap: 14 }}>
+                  <div style={{ padding: 14, borderRadius: 18, border: `1px solid ${shade(C.accent, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {PLAYBACK_OPTIONS.map((option) => (
+                          <ChipButton key={option} active={draft.playbackSpeed === option} onClick={() => handleDraftChange('playbackSpeed', option)}>
+                            {option}x
+                          </ChipButton>
+                        ))}
                       </div>
-                      <TradingViewEmbed symbol={currentSymbol} interval={selectedInterval} height={520} />
+                      <div style={{ fontSize: 11.5, fontWeight: 800, color: C.text2 }}>
+                        {Math.min(clampedReplayIndex + 1, filteredTrades.length)} / {filteredTrades.length} trades
+                      </div>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={Math.max(filteredTrades.length - 1, 0)}
+                      step={1}
+                      value={clampedReplayIndex}
+                      onChange={(event) => {
+                        setIsPlaying(false);
+                        setReplayIndex(Number(event.target.value));
+                      }}
+                      style={{ width: '100%' }}
+                    />
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 10, fontSize: 11, color: C.text3 }}>
+                      <span>Start</span>
+                      <span style={{ color: liveTone, fontWeight: 800 }}>{progressPct}% revealed</span>
+                      <span>{filteredTrades.length ? getTradeDateLabel(filteredTrades[filteredTrades.length - 1]) : 'No scope'}</span>
                     </div>
                   </div>
 
-                  <div>
-                    <div style={{ padding: '12px 12px 10px', borderRadius: 18, border: `1px solid ${shade(C.purple, 0.12)}`, background: 'rgba(255,255,255,0.02)', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-                        <div>
-                          <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>
-                            Context chart
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: C.text0 }}>
-                            {currentSymbol} / {getContextInterval(selectedInterval)}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 11, color: C.text2 }}>
-                          Higher timeframe
-                        </div>
-                      </div>
-                      <TradingViewEmbed symbol={currentSymbol} interval={getContextInterval(selectedInterval)} height={520} />
-                    </div>
-                  </div>
+                  <TradingViewEmbed symbol={currentSymbol} interval={draft.interval} height={468} />
                 </div>
               </SectionCard>
 
-              <div className="mf-replay-bottom-grid">
-                <SectionCard tone={C.accent} index={4} style={{ padding: '18px 18px 16px' }}>
-                  <SectionTitle eyebrow="Execution" title="Replay tape" tone={C.accent} />
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
-                      <thead>
-                        <tr>
-                          {['Time', 'Pair', 'Setup', 'Dir', 'Entry', 'Exit', 'P&L'].map((header) => (
-                            <th key={header} style={{ padding: '0 8px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, textAlign: header === 'P&L' ? 'right' : 'left', borderBottom: `1px solid ${C.border}` }}>
-                              {header}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {replayRows.map((row) => {
-                          const rowTone = row.pnl >= 0 ? C.green : C.danger;
-                          return (
-                            <tr key={row.id}>
-                              <td style={{ padding: '12px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 11.5, color: C.text2 }}>{row.time}</td>
-                              <td style={{ padding: '12px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12.5, fontWeight: 800, color: C.text0 }}>{row.symbol}</td>
-                              <td style={{ padding: '12px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 11.5, color: C.text1 }}>{row.setup}</td>
-                              <td style={{ padding: '12px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 11, fontWeight: 800, color: row.direction === 'Short' ? C.danger : C.green }}>{row.direction}</td>
-                              <td style={{ padding: '12px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 11.5, color: C.text2 }}>{formatPrice(row.entry)}</td>
-                              <td style={{ padding: '12px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 11.5, color: C.text2 }}>{formatPrice(row.exit)}</td>
-                              <td style={{ padding: '12px 8px', borderBottom: `1px solid ${shade(C.border, 0.72)}`, fontSize: 12, fontWeight: 800, color: rowTone, textAlign: 'right' }}>{formatAnalyticsMoney(row.pnl)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+              <div className="mf-backtest-right-stack">
+                <SectionCard tone={C.blue} index={6} style={{ padding: '18px 18px 16px' }}>
+                  <SectionTitle eyebrow="Context chart" title={`${currentSymbol} · ${getContextInterval(draft.interval)}`} tone={C.blue} icon={<Ic.Bolt />} />
+                  <TradingViewEmbed symbol={currentSymbol} interval={getContextInterval(draft.interval)} height={248} />
                 </SectionCard>
 
-                <SectionCard tone={replaySummary.totalPnL >= 0 ? C.green : C.danger} index={5} style={{ padding: '18px 18px 16px' }}>
-                  <SectionTitle eyebrow="Curve" title="Replay curve" tone={replaySummary.totalPnL >= 0 ? C.green : C.danger} />
-                  <ResponsiveContainer width="100%" height={260}>
-                    <AreaChart data={replayCurve} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <SectionCard tone={sessionTone} index={7} style={{ padding: '18px 18px 16px' }}>
+                  <SectionTitle eyebrow="Session readout" title="Replay summary" tone={sessionTone} />
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    <MiniStat label="Net P&L" value={formatAnalyticsMoney(fullSummary.totalPnL || 0)} tone={sessionTone} caption={`${filteredTrades.length} scoped trades`} />
+                    <MiniStat label="Profit factor" value={formatAnalyticsFactor(fullSummary.profitFactor || 0)} tone={C.blue} caption={`${formatAnalyticsMoney(fullSummary.avgWin || 0)} avg win / ${formatAnalyticsMoney(fullSummary.avgLoss || 0)} avg loss`} />
+                    <MiniStat label="Expectancy" value={formatAnalyticsMoney(fullSummary.expectancy || 0)} tone={C.teal} caption={`${formatAnalyticsRR(fullSummary.avgRR || 0)} average realized R:R`} />
+                  </div>
+                </SectionCard>
+              </div>
+            </div>
+
+            <div className="mf-backtest-bottom">
+              <SectionCard tone={C.green} index={8} style={{ padding: '18px 18px 16px' }}>
+                <SectionTitle eyebrow="Replay curve" title="Equity and drawdown" tone={C.green} subtitle="The curve updates as each trade is revealed, so the tape, the chart, and the risk profile stay synchronized." />
+                <div style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={replaySeries}>
                       <defs>
-                        <linearGradient id="mf-replay-equity" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor={replaySummary.totalPnL >= 0 ? C.green : C.danger} stopOpacity={0.38} />
-                          <stop offset="100%" stopColor={replaySummary.totalPnL >= 0 ? C.green : C.danger} stopOpacity={0.03} />
+                        <linearGradient id="mfReplayEquity" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor={shade(C.green, 0.48)} />
+                          <stop offset="100%" stopColor={shade(C.green, 0.02)} />
+                        </linearGradient>
+                        <linearGradient id="mfReplayDrawdown" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor={shade(C.danger, 0.32)} />
+                          <stop offset="100%" stopColor={shade(C.danger, 0.02)} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid {...CHART_GRID} />
-                      <XAxis {...CHART_AXIS_SMALL} dataKey="dateLabel" hide={replayCurve.length > 10} />
-                      <YAxis {...CHART_AXIS_SMALL} tickFormatter={(value) => `$${value}`} />
-                      <ReferenceLine y={0} stroke={shade(C.text3, 0.8)} strokeDasharray="3 3" />
+                      <XAxis dataKey="dateLabel" interval="preserveStartEnd" minTickGap={24} {...CHART_AXIS} />
+                      <YAxis yAxisId="equity" width={76} tickFormatter={(value) => formatSignedCompact(value)} {...CHART_AXIS} />
+                      <YAxis yAxisId="drawdown" orientation="right" width={76} tickFormatter={(value) => formatSignedCompact(value)} {...CHART_AXIS} />
                       <Tooltip
-                        cursor={chartCursor(replaySummary.totalPnL >= 0 ? C.green : C.danger)}
-                        content={(
-                          <ChartTooltip
-                            render={(payload, label) => {
-                              const row = replayCurve.find((item) => item.dateLabel === label);
-                              return (
-                                <>
-                                  <div style={{ color: C.text1, fontWeight: 800, marginBottom: 4 }}>{row?.dateLabel}</div>
-                                  <div style={{ color: replaySummary.totalPnL >= 0 ? C.green : C.danger, fontWeight: 700 }}>Equity: {formatAnalyticsMoney(row?.equity || 0)}</div>
-                                  <div style={{ color: C.text2, fontSize: 10, marginTop: 4 }}>{row?.symbol || '--'} / {row?.session || 'Other'}</div>
-                                </>
-                              );
-                            }}
-                          />
-                        )}
+                        cursor={chartCursor(C.green)}
+                        content={<ChartTooltip tone={C.green} valueFormatter={(value, key) => key === 'drawdownCash' ? formatAnalyticsMoney(value || 0) : formatAnalyticsMoney(value || 0)} />}
                       />
+                      <ReferenceLine yAxisId="equity" y={0} stroke={shade(C.text3, 0.55)} strokeDasharray="4 8" />
                       <Area
+                        yAxisId="equity"
                         type="monotone"
                         dataKey="equity"
-                        stroke={replaySummary.totalPnL >= 0 ? C.green : C.danger}
-                        fill="url(#mf-replay-equity)"
-                        strokeWidth={2.6}
-                        activeDot={chartActiveDot(replaySummary.totalPnL >= 0 ? C.green : C.danger, 4)}
-                        {...CHART_MOTION_SOFT}
+                        name="Equity"
+                        stroke={C.green}
+                        strokeWidth={2.2}
+                        fill="url(#mfReplayEquity)"
+                        activeDot={chartActiveDot(C.green)}
+                        isAnimationActive
+                      />
+                      <Area
+                        yAxisId="drawdown"
+                        type="monotone"
+                        dataKey="drawdownCash"
+                        name="Drawdown"
+                        stroke={C.danger}
+                        strokeWidth={1.8}
+                        fill="url(#mfReplayDrawdown)"
+                        activeDot={chartActiveDot(C.danger, 4.5)}
+                        isAnimationActive
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                </div>
+              </SectionCard>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 12 }}>
-                    <StatBlock label="Net P&L" value={formatAnalyticsMoney(replaySummary.totalPnL)} caption={`${replaySummary.totalTrades} trades`} tone={replaySummary.totalPnL >= 0 ? C.green : C.danger} />
-                    <StatBlock label="Win rate" value={formatAnalyticsPercent(replaySummary.winRate, 1)} caption={`${replaySummary.wins} wins / ${replaySummary.losses} losses`} tone={C.teal} />
-                    <StatBlock label="Drawdown" value={formatAnalyticsMoney(replaySummary.maxDrawdownCash)} caption={formatAnalyticsPercent(replaySummary.maxDrawdownPct, 1)} tone={C.warn} />
+              <div className="mf-backtest-right-stack">
+                <SectionCard tone={C.purple} index={9} style={{ padding: '18px 18px 16px' }}>
+                  <SectionTitle eyebrow="Win rate" title="Live win-rate curve" tone={C.purple} subtitle="Cumulative and rolling win rate are both tied to the same replay segment." />
+                  <div style={{ height: 214 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={rollingWinRate}>
+                        <CartesianGrid {...CHART_GRID} />
+                        <XAxis dataKey="dateLabel" interval="preserveStartEnd" minTickGap={18} {...CHART_AXIS_SMALL} />
+                        <YAxis width={46} domain={[0, 100]} tickFormatter={(value) => `${value}%`} {...CHART_AXIS_SMALL} />
+                        <Tooltip cursor={chartCursor(C.purple)} content={<ChartTooltip tone={C.purple} valueFormatter={(value) => formatAnalyticsPercent(value || 0, 1)} />} />
+                        <Line
+                          type="monotone"
+                          dataKey="cumulativeWinRate"
+                          name="Cumulative"
+                          stroke={C.purple}
+                          strokeWidth={2.2}
+                          dot={false}
+                          activeDot={chartActiveDot(C.purple)}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="rollingWinRate"
+                          name="Rolling"
+                          stroke={C.accent}
+                          strokeWidth={1.9}
+                          strokeDasharray="6 6"
+                          dot={false}
+                          activeDot={chartActiveDot(C.accent, 4.5)}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 </SectionCard>
 
-                <SectionCard tone={C.purple} index={6} style={{ padding: '18px 18px 16px' }}>
-                  <SectionTitle eyebrow="Readout" title="Session pulse" tone={C.purple} />
-                  <ResponsiveContainer width="100%" height={170}>
-                    <BarChart data={sessionPulse} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid {...CHART_GRID} />
-                      <XAxis {...CHART_AXIS_SMALL} dataKey="label" />
-                      <YAxis {...CHART_AXIS_SMALL} tickFormatter={(value) => `$${value}`} />
-                      <Tooltip
-                        cursor={chartCursor(C.purple)}
-                        content={(
-                          <ChartTooltip
-                            render={(payload, label) => {
-                              const row = sessionPulse.find((item) => item.label === label);
-                              return (
-                                <>
-                                  <div style={{ color: C.text1, fontWeight: 800, marginBottom: 4 }}>{row?.label}</div>
-                                  <div style={{ color: C.purple, fontWeight: 700 }}>{formatAnalyticsMoney(row?.pnl || 0)}</div>
-                                  <div style={{ color: C.text2, fontSize: 10, marginTop: 4 }}>{row?.trades || 0} trades / {formatAnalyticsPercent(row?.winRate || 0, 1)}</div>
-                                </>
-                              );
-                            }}
-                          />
-                        )}
-                      />
-                      <Bar dataKey="pnl" radius={[6, 6, 0, 0]} fill={C.purple} />
-                    </BarChart>
-                  </ResponsiveContainer>
-
-                  <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-                    {setupPulse.slice(0, 3).map((row) => {
-                      const tone = row.pnl >= 0 ? C.green : C.danger;
+                <SectionCard tone={C.accent} index={10} style={{ padding: '18px 18px 16px' }}>
+                  <SectionTitle eyebrow="Execution tape" title="Revealed trades" tone={C.accent} />
+                  <div className="mf-backtest-tape">
+                    {executionTape.length ? executionTape.map((trade) => {
+                      const tone = trade.pnl >= 0 ? C.green : C.danger;
                       return (
-                        <div key={row.label} style={{ padding: '11px 12px', borderRadius: 16, border: `1px solid ${shade(tone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 800, color: C.text0 }}>{row.label}</span>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: tone }}>{formatAnalyticsMoney(row.pnl)}</span>
+                        <div key={trade.id} style={{ padding: '12px 12px 11px', borderRadius: 16, border: `1px solid ${shade(tone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 5 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 800, color: C.text1 }}>{trade.symbol}</div>
+                            <div style={{ fontSize: 11.5, fontWeight: 800, color: tone }}>{formatAnalyticsMoney(trade.pnl)}</div>
                           </div>
-                          <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 7 }}>
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.max(10, row.winRate)}%` }}
-                              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                              style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(tone, 0.44)}, ${tone})` }}
-                            />
+                          <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.6 }}>
+                            {trade.dateLabel} / {trade.timeLabel} / {trade.direction} / {trade.session}
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 10.5, color: C.text2 }}>
-                            <span>{row.trades} trades</span>
-                            <span>{formatAnalyticsPercent(row.winRate, 1)}</span>
+                          <div style={{ fontSize: 11, color: C.text3, marginTop: 4 }}>
+                            {trade.setup} / {formatAnalyticsRR(trade.rr)}
                           </div>
                         </div>
                       );
-                    })}
+                    }) : (
+                      <div style={{ padding: '12px', borderRadius: 16, border: `1px dashed ${shade(C.borderHi, 0.8)}`, fontSize: 12, color: C.text2 }}>
+                        Start the replay to reveal the tape.
+                      </div>
+                    )}
                   </div>
                 </SectionCard>
               </div>
             </div>
+
+            <SectionCard tone={C.gold} index={11} style={{ padding: '18px 18px 16px' }}>
+              <SectionTitle eyebrow="Review" title="Replay intelligence" tone={C.gold} subtitle="The desk keeps the feedback tight: what is working, where the drag sits, and what to tighten next." />
+              <div className="mf-backtest-insights">
+                {insights.map((insight) => (
+                  <div key={insight.id} style={{ padding: '15px 15px 14px', borderRadius: 18, border: `1px solid ${shade(insight.tone, 0.14)}`, background: 'rgba(255,255,255,0.03)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.13em', textTransform: 'uppercase', color: shade(insight.tone, 0.92), marginBottom: 8 }}>
+                      {insight.label}
+                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: '-0.04em', color: C.text0, marginBottom: 7 }}>
+                      {insight.title}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.65 }}>
+                      {insight.detail}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+
+            <SectionCard tone={C.blue} index={12} style={{ padding: '18px 18px 16px' }}>
+              <SectionTitle eyebrow="Recent flow" title="Trade-by-trade distribution" tone={C.blue} subtitle="Every bar is one revealed trade. Keep the replay open until the bar sequence and the equity curve tell the same story." />
+              <div style={{ height: 240 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={performanceBars}>
+                    <CartesianGrid {...CHART_GRID} />
+                    <XAxis dataKey="index" {...CHART_AXIS_SMALL} />
+                    <YAxis width={64} tickFormatter={(value) => formatSignedCompact(value)} {...CHART_AXIS_SMALL} />
+                    <Tooltip cursor={chartCursor(C.blue)} content={<ChartTooltip tone={C.blue} valueFormatter={(value) => formatAnalyticsMoney(value || 0)} />} />
+                    <ReferenceLine y={0} stroke={shade(C.text3, 0.55)} strokeDasharray="4 8" />
+                    <Bar
+                      dataKey="pnl"
+                      name="P&L"
+                      radius={[7, 7, 0, 0]}
+                      isAnimationActive
+                      fill={C.blue}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </SectionCard>
           </div>
-        ) : (
-          <SectionCard tone={C.accent} index={2} style={{ padding: '28px 28px 26px' }}>
-            <div style={{ maxWidth: 620 }}>
-              <div style={{ fontSize: 10, color: C.text3, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>
-                Backtest
-              </div>
-              <h2 style={{ margin: 0, fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, marginBottom: 10 }}>
-                Import trades to unlock the replay desk.
-              </h2>
-              <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7 }}>
-                The replay room opens when MarketFlow has enough history to build the chart context, execution flow, and session readout.
-              </div>
-            </div>
-          </SectionCard>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
