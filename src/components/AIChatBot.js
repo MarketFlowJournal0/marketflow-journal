@@ -4,7 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 /* ── Logo icon ── */
-const LOGO_ICON = "/logo192.png";
+function AIOrbIcon({ size = 28, stroke = 'rgba(6,230,255,0.85)' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="21" height="21" rx="7" stroke={stroke} strokeWidth="1.2" />
+      <circle cx="14" cy="14" r="4.6" fill="rgba(6,230,255,0.08)" stroke={stroke} strokeWidth="1.2" />
+      <path d="M14 7.4V9.8M14 18.2V20.6M20.6 14H18.2M9.8 14H7.4" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 /* ── Knowledge base for smart responses ── */
 const KNOWLEDGE = {
@@ -203,8 +211,8 @@ export default function AIChatBot() {
             <line x1="14" y1="4" x2="4" y2="14"/>
           </svg>
         ) : (
-          <div style={{ width: 28, height: 28, borderRadius: 7, overflow: 'hidden', opacity: 0.85 }}>
-            <img src={LOGO_ICON} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }}/>
+          <div style={{ width: 28, height: 28, borderRadius: 7, opacity: 0.9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <AIOrbIcon size={24} />
           </div>
         )}
       </motion.button>
@@ -243,10 +251,14 @@ export default function AIChatBot() {
               flexShrink: 0,
             }}>
               <div style={{
-                width: 32, height: 32, borderRadius: 9, overflow: 'hidden',
+                width: 32, height: 32, borderRadius: 9,
                 border: '1px solid rgba(6,230,255,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(255,255,255,0.02)',
               }}>
-                <img src={LOGO_ICON} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }}/>
+                <AIOrbIcon size={22} />
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mf-text-1,#E8EEFF)' }}>MarketFlow AI</div>
