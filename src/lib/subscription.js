@@ -26,6 +26,7 @@ export const PLAN_DETAILS = {
       'Dashboard and core statistics',
       'CSV import',
       'Performance calendar',
+      'Core analytics',
       '1 trading account',
       '1 backtest session',
     ],
@@ -38,7 +39,7 @@ export const PLAN_DETAILS = {
     entryRoute: 'dashboard',
     features: [
       'Everything in Starter',
-      'Advanced Pro analytics',
+      'Analytics Pro',
       'Psychology tracker',
       'Equity curve and drawdown',
       'Strategy backtesting',
@@ -57,6 +58,7 @@ export const PLAN_DETAILS = {
       'Everything in Pro',
       'AI Trading Coach',
       'Unlimited accounts',
+      'Elite analytics overlays',
       'Elite trade copier desk',
       '25 backtest sessions',
       'Alerts and notifications',
@@ -68,7 +70,7 @@ export const PLAN_DETAILS = {
 
 const ROUTES_BY_PLAN = {
   trial: [...BASE_ROUTES, ...ACCOUNT_ROUTES],
-  starter: [...BASE_ROUTES, 'competition', 'backtest', ...ACCOUNT_ROUTES],
+  starter: [...BASE_ROUTES, 'competition', 'analytics', 'backtest', ...ACCOUNT_ROUTES],
   pro: [
     ...BASE_ROUTES,
     'competition',

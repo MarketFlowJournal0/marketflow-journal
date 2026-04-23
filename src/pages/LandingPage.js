@@ -1,16 +1,209 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
-const PAGE_STYLES = `
+const PROP_FIRMS = [
+  'FTMO',
+  'The5ers',
+  'Topstep',
+  'FundedNext',
+  'Funding Pips',
+  'E8 Markets',
+  'Blue Guardian',
+  'Alpha Capital Group',
+];
+
+const FEATURE_CARDS = [
+  {
+    icon: 'journal',
+    title: 'Smart Trade Journal',
+    desc: 'Import CSV, XLSX, XLS, TSV, JSON, or paste raw trade history, then review everything inside a cleaner execution ledger.',
+  },
+  {
+    icon: 'analytics',
+    title: 'Tiered Analytics',
+    desc: 'Starter gets core analytics, Pro unlocks the deeper review stack, and Elite gets boosted overlays on top of that.',
+  },
+  {
+    icon: 'calendar',
+    title: 'Performance Calendar',
+    desc: 'Monthly trade view with day selection, day review, and the same dataset connected to dashboard and journal pages.',
+  },
+  {
+    icon: 'psychology',
+    title: 'Psychology Tracking',
+    desc: 'Score discipline, behavior, routine, confidence, and session quality inside a dedicated review workflow.',
+  },
+  {
+    icon: 'backtest',
+    title: 'Backtest Sessions',
+    desc: 'Starter includes 1 session, Pro includes 5, and Elite includes 25 resumable backtest sessions.',
+  },
+  {
+    icon: 'stack',
+    title: 'Reports, Alerts, API',
+    desc: 'Plan-based operational tools are exposed only where they already exist today in the journal.',
+  },
+];
+
+const MODULE_PILLARS = [
+  {
+    overline: 'Workspace',
+    title: 'A more readable journal shell.',
+    desc: 'Dashboard, All Trades, Calendar, Competition, and the daily workflow are framed as a clearer operating system instead of a pile of noisy widgets.',
+    points: ['Command-center dashboard', 'Execution-ledger review', 'Calendar and daily flow visibility'],
+  },
+  {
+    overline: 'Analytics',
+    title: 'Starter, Pro, and Elite each have a role.',
+    desc: 'Starter now gets the basic analytics page, Pro keeps the deeper analytics stack, and Elite gets extra overlays to read timing, setup edge, and confluence density faster.',
+    points: ['Starter: core performance analytics', 'Pro: deeper review stack', 'Elite: boosted overlays and richer readouts'],
+  },
+  {
+    overline: 'Trust',
+    title: 'Marketing claims are kept on a shorter leash.',
+    desc: 'The landing no longer leans on fake user counters, fake reviews, fake market tape, or shaky competitor comparisons.',
+    points: ['No invented user counts', 'No fake live ticker', 'No unsupported competitor grid'],
+  },
+];
+
+const FAQS = [
+  {
+    q: 'Does the landing use fake customer numbers or fake reviews?',
+    a: 'No. The landing has been cleaned so it no longer relies on synthetic social proof or invented user statistics.',
+  },
+  {
+    q: 'Why is there no live market ticker on the landing anymore?',
+    a: 'Because there is no production-grade real-time market feed wired into the landing right now. It is safer to remove it than to simulate market data.',
+  },
+  {
+    q: 'Can Starter access analytics now?',
+    a: 'Yes. Starter now includes the core analytics page. Pro keeps the deeper analytics stack, and Elite gets additional overlays above that.',
+  },
+  {
+    q: 'Are the prop firm names official partnerships?',
+    a: 'No. They are shown as examples of well-known prop environments traders care about, not as endorsements or official partnerships.',
+  },
+  {
+    q: 'Is the 14-day activation flow still explicit?',
+    a: 'Yes. Card-required activation is still stated clearly, and the landing does not try to hide that flow behind vague trial language.',
+  },
+];
+
+const PAGE_CONTENT = {
+  changelog: {
+    title: 'Changelog',
+    subtitle: 'Recent product updates',
+    items: [
+      'Landing page rewritten with cleaner structure and stricter claims.',
+      'Dashboard, calendar, all-trades import, and journal access flow have been reworked.',
+      'Plan access now reflects the current journal modules more accurately.',
+    ],
+  },
+  roadmap: {
+    title: 'Roadmap',
+    subtitle: 'Direction, not a promise contract',
+    items: [
+      'Mobile app workstream',
+      'Broker connectivity hardening',
+      'Backtest lab upgrades',
+      'Elite execution infrastructure maturation',
+    ],
+  },
+  support: {
+    title: 'Support',
+    subtitle: 'Need help with access or billing?',
+    items: [
+      'Email: marketflowjournal0@gmail.com',
+      'In-app support page after login',
+      'Subscription management from the journal account area',
+    ],
+  },
+  legal: {
+    title: 'Legal and Privacy',
+    subtitle: 'Core policy points',
+    items: [
+      'Payments are processed via Stripe.',
+      'MarketFlow does not need fake numbers to sell the product.',
+      'The landing is being tightened to match the real product state.',
+    ],
+  },
+};
+
+const PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    monthly: 15,
+    annual: 11,
+    priceMonthly: 'price_1T9t9L2Ouddv7uendIMAR6IP',
+    priceAnnual: 'price_1TDQ7w2Ouddv7ueno5CuaNTH',
+    accent: '#00F5D4',
+    badge: 'Focused journal',
+    desc: 'Core journal access with dashboard, all trades, calendar, competition, basic analytics, and one backtest session.',
+    features: [
+      'Unlimited trade journal',
+      'Dashboard and daily workflow',
+      'CSV, Excel, and raw import',
+      'Performance calendar',
+      'Competition page',
+      'Core analytics',
+      '1 backtest session',
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    monthly: 22,
+    annual: 15,
+    priceMonthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
+    priceAnnual: 'price_1T9t9U2Ouddv7uenK6oT1O13',
+    accent: '#06E6FF',
+    badge: 'Most complete review layer',
+    desc: 'Adds the deeper review stack: Analytics Pro, psychology, equity, reports, broker desk access, and more sessions.',
+    features: [
+      'Everything in Starter',
+      'Analytics Pro',
+      'Psychology tracker',
+      'Equity curve and drawdown',
+      'Broker desk access',
+      '5 backtest sessions',
+      'Downloadable reports',
+    ],
+    popular: true,
+  },
+  {
+    id: 'elite',
+    name: 'Elite',
+    monthly: 38,
+    annual: 27,
+    priceMonthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
+    priceAnnual: 'price_1T9t9K2Ouddv7uennnWOJ44p',
+    accent: '#FFD700',
+    badge: 'Elite unlocks',
+    desc: 'Adds the highest-access modules already live in the journal, plus Elite analytics overlays and operational tooling.',
+    features: [
+      'Everything in Pro',
+      'AI assistant access',
+      'Unlimited accounts',
+      'Elite analytics overlays',
+      'Alerts and notifications',
+      'API access',
+      '25 backtest sessions',
+      'Priority support channel',
+    ],
+  },
+];
+
+const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   :root {
-    --lp-bg: #04070d;
-    --lp-bg-2: #09101c;
+    --lp-bg: #03060c;
+    --lp-bg-soft: #09111d;
     --lp-card: rgba(10, 16, 27, 0.78);
     --lp-card-strong: rgba(12, 20, 34, 0.92);
     --lp-border: rgba(125, 150, 190, 0.16);
-    --lp-border-strong: rgba(125, 150, 190, 0.26);
+    --lp-border-soft: rgba(125, 150, 190, 0.08);
     --lp-text: #eef4ff;
     --lp-text-2: #a6b6d6;
     --lp-text-3: #6e81a7;
@@ -18,18 +211,11 @@ const PAGE_STYLES = `
     --lp-accent-2: #00ff88;
     --lp-positive: #12e39b;
     --lp-negative: #ff6875;
-    --lp-gold: #f4c96b;
-    --lp-shadow: 0 24px 90px rgba(0, 0, 0, 0.42);
+    --lp-shadow: 0 26px 90px rgba(0, 0, 0, 0.38);
   }
 
-  * {
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
     margin: 0;
     font-family: 'Inter', sans-serif;
@@ -41,15 +227,9 @@ const PAGE_STYLES = `
     min-height: 100vh;
     background:
       radial-gradient(circle at 12% 12%, rgba(6, 230, 255, 0.08), transparent 24%),
-      radial-gradient(circle at 86% 18%, rgba(0, 255, 136, 0.06), transparent 22%),
-      linear-gradient(180deg, #04070d 0%, #07101b 38%, #04070d 100%);
-    color: var(--lp-text);
+      radial-gradient(circle at 88% 16%, rgba(0, 255, 136, 0.05), transparent 20%),
+      linear-gradient(180deg, #03060c 0%, #09111d 34%, #03060c 100%);
     overflow-x: hidden;
-  }
-
-  .lp-shell {
-    position: relative;
-    z-index: 1;
   }
 
   .lp-nav {
@@ -57,20 +237,20 @@ const PAGE_STYLES = `
     top: 0;
     left: 0;
     right: 0;
+    z-index: 50;
     height: 78px;
     padding: 0 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    z-index: 50;
-    background: rgba(4, 7, 13, 0.48);
+    background: rgba(3, 6, 12, 0.46);
     backdrop-filter: blur(18px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     transition: background 0.2s ease, border-color 0.2s ease;
   }
 
   .lp-nav.scrolled {
-    background: rgba(4, 7, 13, 0.92);
+    background: rgba(3, 6, 12, 0.92);
     border-bottom-color: var(--lp-border);
   }
 
@@ -79,7 +259,6 @@ const PAGE_STYLES = `
     align-items: center;
     gap: 12px;
     cursor: pointer;
-    text-decoration: none;
   }
 
   .lp-brand-mark {
@@ -87,14 +266,12 @@ const PAGE_STYLES = `
     height: 38px;
     border-radius: 11px;
     border: 1px solid rgba(6, 230, 255, 0.16);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-      rgba(6, 14, 24, 0.88);
+    background: rgba(7, 14, 24, 0.88);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 16px 38px rgba(0, 0, 0, 0.28);
     overflow: hidden;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
   }
 
   .lp-brand-mark img {
@@ -119,7 +296,7 @@ const PAGE_STYLES = `
   }
 
   .lp-brand-title span {
-    background: linear-gradient(90deg, #9fe8ff 0%, #06e6ff 48%, #00ff88 100%);
+    background: linear-gradient(90deg, #b5f2ff 0%, #06e6ff 48%, #00ff88 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -163,11 +340,9 @@ const PAGE_STYLES = `
 
   .lp-btn-ghost,
   .lp-btn-primary,
-  .lp-btn-secondary {
-    border-radius: 999px;
+  .lp-btn-secondary,
+  .lp-btn-plan {
     font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
     cursor: pointer;
     transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
   }
@@ -175,72 +350,67 @@ const PAGE_STYLES = `
   .lp-btn-ghost {
     height: 42px;
     padding: 0 18px;
+    border-radius: 999px;
     color: var(--lp-text);
-    background: transparent;
     border: 1px solid var(--lp-border);
-  }
-
-  .lp-btn-ghost:hover,
-  .lp-btn-secondary:hover {
-    border-color: rgba(6, 230, 255, 0.28);
-    color: #cbf8ff;
-    transform: translateY(-1px);
+    background: transparent;
+    font-size: 13px;
+    font-weight: 700;
   }
 
   .lp-btn-primary {
-    height: 44px;
-    padding: 0 20px;
-    color: #051018;
+    height: 46px;
+    padding: 0 22px;
+    border-radius: 999px;
+    color: #041017;
     border: none;
-    background: linear-gradient(135deg, #8ae9ff 0%, #06e6ff 46%, #00ff88 100%);
+    background: linear-gradient(135deg, #8ae9ff 0%, #06e6ff 44%, #00ff88 100%);
     box-shadow: 0 10px 34px rgba(6, 230, 255, 0.22);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .lp-btn-secondary,
+  .lp-btn-plan {
+    height: 46px;
+    padding: 0 20px;
+    border-radius: 999px;
+    color: var(--lp-text);
+    border: 1px solid var(--lp-border);
+    background: rgba(255, 255, 255, 0.02);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .lp-btn-ghost:hover,
+  .lp-btn-secondary:hover,
+  .lp-btn-plan:hover {
+    border-color: rgba(6, 230, 255, 0.22);
+    color: #d9fbff;
+    transform: translateY(-1px);
   }
 
   .lp-btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 18px 40px rgba(6, 230, 255, 0.3);
+    box-shadow: 0 18px 40px rgba(6, 230, 255, 0.28);
   }
 
-  .lp-btn-secondary {
-    height: 46px;
-    padding: 0 20px;
-    color: var(--lp-text);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--lp-border);
-  }
-
-  .lp-section {
-    padding: 108px 32px;
-  }
-
-  .lp-section-inner {
-    max-width: 1280px;
-    margin: 0 auto;
-  }
+  .lp-section { padding: 100px 32px; }
+  .lp-section-inner { max-width: 1240px; margin: 0 auto; }
 
   .lp-hero {
     position: relative;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    padding: 126px 32px 72px;
+    padding: 128px 32px 56px;
     overflow: hidden;
   }
 
-  .lp-hero-grid {
+  .lp-hero-inner {
     position: relative;
     z-index: 1;
-    width: 100%;
-    max-width: 1280px;
+    max-width: 1240px;
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: minmax(0, 0.88fr) minmax(520px, 1.12fr);
-    gap: 28px;
-    align-items: center;
-  }
-
-  .lp-hero-copy {
-    max-width: 620px;
+    text-align: left;
   }
 
   .lp-overline {
@@ -250,12 +420,12 @@ const PAGE_STYLES = `
     padding: 8px 14px;
     border-radius: 999px;
     border: 1px solid rgba(6, 230, 255, 0.18);
-    background: rgba(6, 230, 255, 0.06);
+    background: rgba(6, 230, 255, 0.05);
+    color: #a9f0ff;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #9fe8ff;
     margin-bottom: 22px;
   }
 
@@ -269,102 +439,67 @@ const PAGE_STYLES = `
   }
 
   .lp-hero-title {
-    margin: 0 0 18px;
+    max-width: 920px;
+    margin: 0;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: clamp(46px, 6vw, 84px);
-    line-height: 0.96;
-    letter-spacing: -0.055em;
+    font-size: clamp(46px, 7vw, 88px);
+    line-height: 0.95;
+    letter-spacing: -0.06em;
     color: var(--lp-text);
   }
 
   .lp-hero-title span {
-    color: #bdf2ff;
+    color: #bff3ff;
   }
 
   .lp-hero-sub {
-    margin: 0 0 26px;
-    max-width: 580px;
+    margin: 22px 0 0;
+    max-width: 760px;
     color: var(--lp-text-2);
-    font-size: 17px;
-    line-height: 1.75;
+    font-size: 18px;
+    line-height: 1.8;
+  }
+
+  .lp-hero-note {
+    margin-top: 14px;
+    max-width: 760px;
+    color: var(--lp-text-3);
+    font-size: 13px;
+    line-height: 1.8;
   }
 
   .lp-hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    margin-bottom: 18px;
-  }
-
-  .lp-hero-note {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    color: var(--lp-text-3);
-    font-size: 12px;
-    line-height: 1.7;
-  }
-
-  .lp-hero-note strong {
-    color: #d6e9ff;
-  }
-
-  .lp-trust-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
     margin-top: 30px;
   }
 
-  .lp-mini-stat {
-    min-width: 160px;
-    padding: 15px 16px;
-    border-radius: 18px;
-    background: rgba(10, 16, 27, 0.58);
-    border: 1px solid rgba(125, 150, 190, 0.1);
-    backdrop-filter: blur(10px);
+  .lp-hero-preview-shell {
+    position: relative;
+    margin-top: 42px;
+    padding-top: 48px;
   }
 
-  .lp-mini-stat-value {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    color: var(--lp-text);
-  }
-
-  .lp-mini-stat-label {
-    margin-top: 5px;
-    font-size: 11px;
-    color: var(--lp-text-3);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .lp-candle-layer {
+  .lp-hero-preview-shell::before {
+    content: '';
     position: absolute;
-    inset: 0;
+    inset: 0 8% auto;
+    height: 220px;
+    background: linear-gradient(180deg, rgba(6, 230, 255, 0), rgba(6, 230, 255, 0.08) 38%, rgba(0, 255, 136, 0.06) 62%, rgba(4, 7, 13, 0) 100%);
+    filter: blur(36px);
     pointer-events: none;
-    opacity: 0.9;
-  }
-
-  .lp-candle-fade {
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(90deg, rgba(4, 7, 13, 0.95) 0%, rgba(4, 7, 13, 0.32) 24%, rgba(4, 7, 13, 0.12) 54%, rgba(4, 7, 13, 0.82) 100%),
-      linear-gradient(180deg, rgba(4, 7, 13, 0.1) 0%, rgba(4, 7, 13, 0.3) 60%, rgba(4, 7, 13, 0.9) 100%);
   }
 
   .lp-window {
     position: relative;
+    z-index: 1;
     border-radius: 30px;
     overflow: hidden;
     border: 1px solid rgba(125, 150, 190, 0.18);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
-      rgba(6, 12, 21, 0.9);
+      rgba(6, 12, 21, 0.92);
     box-shadow: var(--lp-shadow);
   }
 
@@ -375,7 +510,7 @@ const PAGE_STYLES = `
     height: 56px;
     padding: 0 20px;
     border-bottom: 1px solid rgba(125, 150, 190, 0.12);
-    background: rgba(7, 11, 18, 0.92);
+    background: rgba(6, 10, 18, 0.94);
   }
 
   .lp-window-dot {
@@ -396,21 +531,18 @@ const PAGE_STYLES = `
 
   .lp-window-body {
     display: grid;
-    grid-template-columns: 178px minmax(0, 1fr);
+    grid-template-columns: 190px minmax(0, 1fr);
     min-height: 560px;
   }
 
-  .lp-app-rail {
+  .lp-sidebar {
     padding: 18px 14px;
     border-right: 1px solid rgba(125, 150, 190, 0.12);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
   }
 
-  .lp-app-rail-group {
-    margin-top: 18px;
-  }
-
-  .lp-app-rail-label {
+  .lp-sidebar-group { margin-top: 18px; }
+  .lp-sidebar-label {
     margin: 0 0 10px 4px;
     color: var(--lp-text-3);
     font-size: 10px;
@@ -419,7 +551,7 @@ const PAGE_STYLES = `
     text-transform: uppercase;
   }
 
-  .lp-app-link {
+  .lp-sidebar-link {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -431,13 +563,13 @@ const PAGE_STYLES = `
     background: transparent;
   }
 
-  .lp-app-link.active {
+  .lp-sidebar-link.active {
     color: var(--lp-text);
     background: rgba(6, 230, 255, 0.08);
     border: 1px solid rgba(6, 230, 255, 0.14);
   }
 
-  .lp-app-link-icon {
+  .lp-sidebar-icon {
     width: 28px;
     height: 28px;
     border-radius: 9px;
@@ -450,13 +582,13 @@ const PAGE_STYLES = `
     flex-shrink: 0;
   }
 
-  .lp-app-link.active .lp-app-link-icon {
-    color: #bdf2ff;
+  .lp-sidebar-link.active .lp-sidebar-icon {
+    color: #c8f8ff;
     border-color: rgba(6, 230, 255, 0.22);
     background: rgba(6, 230, 255, 0.08);
   }
 
-  .lp-app-main {
+  .lp-main {
     padding: 22px;
   }
 
@@ -464,19 +596,14 @@ const PAGE_STYLES = `
     border-radius: 22px;
     border: 1px solid rgba(125, 150, 190, 0.12);
     background: rgba(8, 13, 22, 0.84);
-    transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
   }
 
-  .lp-panel:hover {
-    border-color: rgba(6, 230, 255, 0.18);
-  }
-
-  .lp-command-bar {
+  .lp-command {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 16px 18px;
+    padding: 18px 20px;
     margin-bottom: 16px;
   }
 
@@ -486,32 +613,32 @@ const PAGE_STYLES = `
     gap: 5px;
   }
 
-  .lp-command-over {
-    color: var(--lp-text-3);
+  .lp-command-copy span {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
+    color: var(--lp-text-3);
   }
 
-  .lp-command-title {
+  .lp-command-copy strong {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 22px;
     font-weight: 700;
+    line-height: 1.12;
     letter-spacing: -0.04em;
     color: var(--lp-text);
+    max-width: 620px;
   }
 
-  .lp-command-scopes {
+  .lp-command-pills {
     display: flex;
-    align-items: center;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 8px;
     justify-content: flex-end;
   }
 
-  .lp-scope-pill,
-  .lp-scope-accent {
+  .lp-pill {
     padding: 8px 12px;
     border-radius: 999px;
     border: 1px solid rgba(125, 150, 190, 0.12);
@@ -523,17 +650,10 @@ const PAGE_STYLES = `
     color: var(--lp-text-2);
   }
 
-  .lp-scope-accent {
-    color: #cdfdff;
+  .lp-pill.accent {
+    color: #d0fbff;
     border-color: rgba(6, 230, 255, 0.18);
     background: rgba(6, 230, 255, 0.08);
-  }
-
-  .lp-hero-panels {
-    display: grid;
-    grid-template-columns: 1.16fr 0.84fr;
-    gap: 16px;
-    margin-bottom: 16px;
   }
 
   .lp-kpi-grid {
@@ -549,16 +669,16 @@ const PAGE_STYLES = `
 
   .lp-kpi-label {
     font-size: 10px;
-    color: var(--lp-text-3);
+    font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    font-weight: 700;
+    color: var(--lp-text-3);
   }
 
   .lp-kpi-value {
     margin-top: 8px;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     letter-spacing: -0.04em;
     color: var(--lp-text);
@@ -570,33 +690,53 @@ const PAGE_STYLES = `
     color: var(--lp-text-2);
   }
 
-  .lp-positive {
-    color: var(--lp-positive);
+  .lp-positive { color: var(--lp-positive); }
+  .lp-negative { color: var(--lp-negative); }
+
+  .lp-preview-grid {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 16px;
   }
 
-  .lp-negative {
-    color: var(--lp-negative);
+  .lp-calendar-panel,
+  .lp-side-card,
+  .lp-showcase-card,
+  .lp-feature-card,
+  .lp-module-card,
+  .lp-pricing-card,
+  .lp-faq-item {
+    border-radius: 20px;
+    border: 1px solid rgba(125, 150, 190, 0.12);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0)),
+      rgba(10, 16, 27, 0.84);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
   }
 
-  .lp-calendar-preview {
-    padding: 16px;
-  }
-
-  .lp-calendar-head {
+  .lp-calendar-panel { padding: 16px; }
+  .lp-calendar-head,
+  .lp-mini-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     margin-bottom: 12px;
   }
 
-  .lp-calendar-title {
-    font-size: 13px;
+  .lp-calendar-title,
+  .lp-mini-head strong {
+    font-size: 14px;
     font-weight: 700;
     color: var(--lp-text);
   }
 
-  .lp-calendar-meta {
-    font-size: 11px;
+  .lp-calendar-meta,
+  .lp-mini-head span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--lp-text-3);
   }
 
@@ -606,28 +746,25 @@ const PAGE_STYLES = `
     gap: 8px;
   }
 
-  .lp-day-cell {
+  .lp-day {
     min-height: 74px;
     padding: 10px;
     border-radius: 16px;
     border: 1px solid rgba(125, 150, 190, 0.1);
-    background: rgba(255, 255, 255, 0.02);
-    transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+    background: rgba(255,255,255,0.02);
   }
 
-  .lp-day-cell.win {
+  .lp-day.win {
     background: linear-gradient(180deg, rgba(18, 227, 155, 0.18), rgba(18, 227, 155, 0.08));
     border-color: rgba(18, 227, 155, 0.22);
   }
 
-  .lp-day-cell.loss {
+  .lp-day.loss {
     background: linear-gradient(180deg, rgba(255, 104, 117, 0.16), rgba(255, 104, 117, 0.06));
     border-color: rgba(255, 104, 117, 0.2);
   }
 
-  .lp-day-cell.muted {
-    opacity: 0.55;
-  }
+  .lp-day.muted { opacity: 0.55; }
 
   .lp-day-number {
     font-size: 11px;
@@ -654,30 +791,7 @@ const PAGE_STYLES = `
     gap: 16px;
   }
 
-  .lp-side-card {
-    padding: 16px;
-  }
-
-  .lp-side-card-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-
-  .lp-side-card-title strong {
-    font-size: 13px;
-    color: var(--lp-text);
-  }
-
-  .lp-side-card-title span {
-    font-size: 10px;
-    color: var(--lp-text-3);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-weight: 700;
-  }
+  .lp-side-card { padding: 16px; }
 
   .lp-checklist {
     display: grid;
@@ -686,20 +800,17 @@ const PAGE_STYLES = `
 
   .lp-check-item {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
     padding: 11px 12px;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255,255,255,0.02);
     border: 1px solid rgba(125, 150, 190, 0.08);
   }
 
   .lp-check-copy {
     display: flex;
-    align-items: center;
     gap: 10px;
-    min-width: 0;
   }
 
   .lp-check-bullet {
@@ -731,73 +842,47 @@ const PAGE_STYLES = `
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #cafbf3;
-    background: rgba(18, 227, 155, 0.12);
     border: 1px solid rgba(18, 227, 155, 0.2);
+    background: rgba(18, 227, 155, 0.12);
+    color: #cbfbf2;
     white-space: nowrap;
   }
 
-  .lp-strip-panel {
-    padding: 14px 16px;
-  }
-
-  .lp-strip-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
-  .lp-strip-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--lp-text);
-  }
-
-  .lp-strip-meta {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--lp-text-3);
-  }
-
-  .lp-strip-table {
+  .lp-ledger {
     display: grid;
     gap: 8px;
   }
 
-  .lp-strip-row {
+  .lp-ledger-row {
     display: grid;
-    grid-template-columns: 1.4fr 0.75fr 0.75fr 0.9fr;
+    grid-template-columns: 1.25fr 1fr 0.75fr 0.8fr;
     gap: 8px;
     align-items: center;
     padding: 10px 12px;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255,255,255,0.02);
     border: 1px solid rgba(125, 150, 190, 0.08);
     font-size: 11px;
     color: var(--lp-text-2);
   }
 
-  .lp-strip-row strong {
+  .lp-ledger-row strong {
     color: var(--lp-text);
     font-weight: 600;
   }
 
-  .lp-marquee-wrap {
-    padding: 24px 0;
+  .lp-propfirms {
+    padding: 28px 0;
     border-top: 1px solid rgba(255, 255, 255, 0.04);
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
       rgba(5, 9, 15, 0.88);
     overflow: hidden;
   }
 
-  .lp-marquee-head {
-    max-width: 1280px;
+  .lp-prop-head {
+    max-width: 1240px;
     margin: 0 auto 14px;
     padding: 0 32px;
     display: flex;
@@ -807,36 +892,34 @@ const PAGE_STYLES = `
     align-items: baseline;
   }
 
-  .lp-marquee-head strong {
+  .lp-prop-head strong {
     font-size: 13px;
     color: var(--lp-text);
   }
 
-  .lp-marquee-head span {
+  .lp-prop-head span {
     font-size: 12px;
     color: var(--lp-text-3);
   }
 
-  .lp-marquee {
+  .lp-prop-marquee {
     display: flex;
     width: max-content;
-    animation: lpMarquee 36s linear infinite;
+    animation: lpPropMove 36s linear infinite;
   }
 
-  .lp-marquee:hover {
-    animation-play-state: paused;
-  }
+  .lp-prop-marquee:hover { animation-play-state: paused; }
 
-  @keyframes lpMarquee {
+  @keyframes lpPropMove {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
   }
 
-  .lp-marquee-item {
+  .lp-prop-item {
     margin-right: 12px;
     padding: 12px 16px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255,255,255,0.03);
     border: 1px solid rgba(125, 150, 190, 0.08);
     color: #dce8ff;
     font-size: 12px;
@@ -846,12 +929,7 @@ const PAGE_STYLES = `
     white-space: nowrap;
   }
 
-  .lp-section-head {
-    margin-bottom: 28px;
-    max-width: 760px;
-  }
-
-  .lp-eyebrow {
+  .lp-section-tag {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -859,82 +937,48 @@ const PAGE_STYLES = `
     border-radius: 999px;
     border: 1px solid rgba(6, 230, 255, 0.14);
     background: rgba(6, 230, 255, 0.05);
+    color: #9fe8ff;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #9fe8ff;
     margin-bottom: 16px;
   }
 
-  .lp-section-title {
+  .lp-section h2 {
     margin: 0;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: clamp(32px, 4vw, 56px);
-    line-height: 1.02;
+    font-size: clamp(34px, 4vw, 54px);
+    line-height: 1.04;
     letter-spacing: -0.05em;
     color: var(--lp-text);
   }
 
-  .lp-section-desc {
+  .lp-section-sub {
     margin: 16px 0 0;
+    max-width: 760px;
     color: var(--lp-text-2);
     font-size: 16px;
     line-height: 1.8;
   }
 
-  .lp-transparency-grid,
-  .lp-feature-grid,
-  .lp-plan-grid,
-  .lp-faq-grid,
-  .lp-module-grid {
+  .lp-features-grid {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
+    margin-top: 48px;
   }
 
-  .lp-transparency-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .lp-transparency-card,
   .lp-feature-card,
-  .lp-module-card,
-  .lp-plan-card,
-  .lp-faq-card {
-    border-radius: 24px;
-    border: 1px solid rgba(125, 150, 190, 0.12);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
-      rgba(10, 16, 27, 0.84);
-    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
-  }
-
-  .lp-transparency-card {
+  .lp-module-card {
     padding: 22px;
-  }
-
-  .lp-feature-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .lp-feature-card {
-    padding: 22px;
-    min-height: 226px;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-  }
-
-  .lp-feature-card:hover,
-  .lp-module-card:hover,
-  .lp-plan-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(6, 230, 255, 0.18);
   }
 
   .lp-feature-top {
     display: flex;
-    align-items: center;
     justify-content: space-between;
     gap: 12px;
+    align-items: center;
     margin-bottom: 18px;
   }
 
@@ -944,28 +988,17 @@ const PAGE_STYLES = `
     border-radius: 14px;
     border: 1px solid rgba(6, 230, 255, 0.14);
     background: rgba(6, 230, 255, 0.08);
-    color: #bdf2ff;
+    color: #c8f8ff;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
-  .lp-plan-pill {
-    padding: 7px 10px;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--lp-text-2);
-    border: 1px solid rgba(125, 150, 190, 0.1);
-    background: rgba(255, 255, 255, 0.02);
-  }
-
   .lp-feature-card h3,
   .lp-module-card h3,
-  .lp-transparency-card h3 {
+  .lp-showcase-card h3,
+  .lp-pricing-card h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 700;
@@ -975,14 +1008,31 @@ const PAGE_STYLES = `
 
   .lp-feature-card p,
   .lp-module-card p,
-  .lp-transparency-card p {
+  .lp-showcase-card p,
+  .lp-pricing-card p {
     margin: 10px 0 0;
-    color: var(--lp-text-2);
     font-size: 14px;
     line-height: 1.75;
+    color: var(--lp-text-2);
   }
 
-  .lp-feature-points {
+  .lp-module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 48px;
+  }
+
+  .lp-module-overline {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lp-text-3);
+    margin-bottom: 14px;
+  }
+
+  .lp-points {
     margin: 16px 0 0;
     padding: 0;
     list-style: none;
@@ -990,15 +1040,15 @@ const PAGE_STYLES = `
     gap: 9px;
   }
 
-  .lp-feature-points li {
+  .lp-points li {
     display: flex;
     gap: 10px;
-    color: var(--lp-text-2);
     font-size: 13px;
     line-height: 1.6;
+    color: var(--lp-text-2);
   }
 
-  .lp-feature-points li::before {
+  .lp-points li::before {
     content: '';
     width: 7px;
     height: 7px;
@@ -1010,281 +1060,65 @@ const PAGE_STYLES = `
 
   .lp-showcase-grid {
     display: grid;
-    grid-template-columns: 1.06fr 0.94fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+    margin-top: 46px;
   }
 
-  .lp-screen-card {
-    padding: 18px;
-    border-radius: 26px;
-    border: 1px solid rgba(125, 150, 190, 0.12);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-      rgba(8, 13, 22, 0.9);
-    overflow: hidden;
-    position: relative;
+  .lp-showcase-card {
+    padding: 20px;
     transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
   }
 
-  .lp-screen-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(6, 230, 255, 0.2);
-    box-shadow: 0 22px 64px rgba(0, 0, 0, 0.28);
-  }
-
-  .lp-screen-card:hover .lp-screen-float {
+  .lp-showcase-card:hover,
+  .lp-feature-card:hover,
+  .lp-module-card:hover,
+  .lp-pricing-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(6, 230, 255, 0.16);
-  }
-
-  .lp-screen-card:hover .lp-bar {
-    transform: scaleY(1.08) translateY(-2px);
-    opacity: 1;
-  }
-
-  .lp-screen-card:hover .lp-heat {
-    transform: translateY(-2px);
-    filter: saturate(1.08);
-  }
-
-  .lp-screen-card:hover .lp-ring-progress {
-    stroke-dashoffset: 56;
-  }
-
-  .lp-screen-card:hover .lp-preview-line-a {
-    transform: translateY(-3px);
-  }
-
-  .lp-screen-card:hover .lp-preview-line-b {
-    transform: translateY(2px);
-  }
-
-  .lp-screen-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .lp-screen-label {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .lp-screen-label span {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--lp-text-3);
-  }
-
-  .lp-screen-label strong {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: var(--lp-text);
-  }
-
-  .lp-screen-badge {
-    padding: 7px 11px;
-    border-radius: 999px;
-    background: rgba(6, 230, 255, 0.08);
-    border: 1px solid rgba(6, 230, 255, 0.16);
-    color: #bdf2ff;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .lp-screen-shell {
-    display: grid;
-    gap: 12px;
-  }
-
-  .lp-screen-float {
-    transition: transform 0.24s ease, border-color 0.24s ease;
-  }
-
-  .lp-preview-metrics {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .lp-preview-metric {
-    padding: 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(125, 150, 190, 0.1);
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .lp-preview-metric span {
-    display: block;
-    color: var(--lp-text-3);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .lp-preview-metric strong {
-    display: block;
-    margin-top: 8px;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: var(--lp-text);
-  }
-
-  .lp-preview-grid {
-    display: grid;
-    grid-template-columns: 1.14fr 0.86fr;
-    gap: 12px;
-  }
-
-  .lp-chart-panel,
-  .lp-card-panel {
-    padding: 16px;
-    border-radius: 18px;
-    border: 1px solid rgba(125, 150, 190, 0.1);
-    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(6, 230, 255, 0.18);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.26);
   }
 
   .lp-chart-bars {
-    height: 180px;
+    height: 190px;
     display: flex;
     align-items: flex-end;
     gap: 7px;
+    margin-top: 16px;
   }
 
   .lp-bar {
     flex: 1;
     border-radius: 8px 8px 2px 2px;
-    background: linear-gradient(180deg, rgba(6, 230, 255, 0.85), rgba(6, 230, 255, 0.14));
-    transition: transform 0.26s ease, opacity 0.26s ease;
+    background: linear-gradient(180deg, rgba(6, 230, 255, 0.85), rgba(6, 230, 255, 0.16));
+    transition: transform 0.28s ease, opacity 0.28s ease;
     transform-origin: bottom center;
-    opacity: 0.92;
   }
 
   .lp-bar.negative {
     background: linear-gradient(180deg, rgba(255, 104, 117, 0.9), rgba(255, 104, 117, 0.15));
   }
 
-  .lp-preview-lines {
-    position: relative;
-    height: 160px;
-    overflow: hidden;
+  .lp-showcase-card:hover .lp-bar {
+    transform: scaleY(1.08) translateY(-2px);
   }
 
-  .lp-preview-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .lp-preview-line-a,
-  .lp-preview-line-b {
-    transition: transform 0.3s ease;
-  }
-
-  .lp-heat-grid {
+  .lp-mini-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .lp-heat {
-    min-height: 54px;
-    border-radius: 14px;
-    border: 1px solid rgba(125, 150, 190, 0.08);
-    background: rgba(255, 255, 255, 0.02);
-    transition: transform 0.24s ease, filter 0.24s ease;
-  }
-
-  .lp-heat.good {
-    background: linear-gradient(180deg, rgba(18, 227, 155, 0.22), rgba(18, 227, 155, 0.08));
-  }
-
-  .lp-heat.mid {
-    background: linear-gradient(180deg, rgba(6, 230, 255, 0.16), rgba(6, 230, 255, 0.06));
-  }
-
-  .lp-heat.soft {
-    background: linear-gradient(180deg, rgba(125, 150, 190, 0.12), rgba(125, 150, 190, 0.04));
-  }
-
-  .lp-heat.bad {
-    background: linear-gradient(180deg, rgba(255, 104, 117, 0.18), rgba(255, 104, 117, 0.06));
-  }
-
-  .lp-ring-wrap {
-    display: grid;
-    place-items: center;
-    min-height: 176px;
-  }
-
-  .lp-ring {
-    width: 132px;
-    height: 132px;
-  }
-
-  .lp-ring-track {
-    fill: none;
-    stroke: rgba(125, 150, 190, 0.12);
-    stroke-width: 10;
-  }
-
-  .lp-ring-progress {
-    fill: none;
-    stroke: url(#lpRingGradient);
-    stroke-width: 10;
-    stroke-linecap: round;
-    stroke-dasharray: 240;
-    stroke-dashoffset: 68;
-    transition: stroke-dashoffset 0.35s ease;
-  }
-
-  .lp-ring-center {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
-    fill: #eef4ff;
-    text-anchor: middle;
-  }
-
-  .lp-ring-sub {
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    fill: #6e81a7;
-    text-anchor: middle;
-  }
-
-  .lp-module-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .lp-module-card {
-    padding: 22px;
-    min-height: 220px;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-  }
-
-  .lp-module-meta {
-    display: flex;
-    justify-content: space-between;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    margin-bottom: 18px;
+    margin-top: 16px;
   }
 
-  .lp-module-route,
-  .lp-module-level {
+  .lp-mini-box {
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(125, 150, 190, 0.1);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .lp-mini-box span {
+    display: block;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -1292,94 +1126,148 @@ const PAGE_STYLES = `
     color: var(--lp-text-3);
   }
 
-  .lp-module-points {
-    margin: 16px 0 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 8px;
-  }
-
-  .lp-module-points li {
-    color: var(--lp-text-2);
-    font-size: 13px;
-    line-height: 1.6;
-  }
-
-  .lp-plan-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .lp-plan-card {
-    padding: 24px;
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .lp-plan-card.featured {
-    border-color: rgba(6, 230, 255, 0.22);
-    box-shadow: 0 0 0 1px rgba(6, 230, 255, 0.12), 0 18px 60px rgba(0, 0, 0, 0.24);
-  }
-
-  .lp-plan-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    align-items: flex-start;
-    margin-bottom: 18px;
-  }
-
-  .lp-plan-name {
-    margin: 0;
+  .lp-mini-box strong {
+    display: block;
+    margin-top: 8px;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.04em;
     color: var(--lp-text);
   }
 
-  .lp-plan-caption {
-    margin-top: 7px;
-    font-size: 13px;
+  .lp-pricing-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+
+  .lp-billing-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .lp-billing-toggle button {
+    border: none;
+    background: transparent;
     color: var(--lp-text-2);
-    line-height: 1.65;
-  }
-
-  .lp-plan-price {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 42px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
     font-weight: 700;
-    letter-spacing: -0.05em;
-    color: var(--lp-text);
+    padding: 8px 18px;
+    border-radius: 999px;
+    cursor: pointer;
   }
 
-  .lp-plan-price small {
-    font-size: 14px;
-    color: var(--lp-text-3);
-    letter-spacing: 0;
+  .lp-billing-toggle button.active {
+    background: #06e6ff;
+    color: #031018;
+  }
+
+  .lp-billing-note {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8bf6d2;
+  }
+
+  .lp-pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 36px;
+    align-items: stretch;
+  }
+
+  .lp-pricing-card {
+    padding: 26px 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .lp-pricing-card.popular {
+    border-color: rgba(6, 230, 255, 0.26);
+    box-shadow: 0 0 0 1px rgba(6, 230, 255, 0.12), 0 22px 70px rgba(0,0,0,0.26);
+  }
+
+  .lp-pricing-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
   }
 
   .lp-plan-badge {
     padding: 7px 10px;
     border-radius: 999px;
-    background: rgba(6, 230, 255, 0.08);
-    border: 1px solid rgba(6, 230, 255, 0.16);
-    color: #bdf2ff;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    color: #c8f8ff;
+    border: 1px solid rgba(6, 230, 255, 0.18);
+    background: rgba(6, 230, 255, 0.08);
     white-space: nowrap;
   }
 
-  .lp-plan-list {
-    margin: 0 0 22px;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 10px;
+  .lp-price {
+    margin-top: 18px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--lp-text);
   }
 
-  .lp-plan-list li {
+  .lp-price small {
+    font-size: 15px;
+    color: var(--lp-text-3);
+    letter-spacing: 0;
+  }
+
+  .lp-price-line {
+    font-size: 12px;
+    color: var(--lp-text-3);
+    margin-top: 8px;
+  }
+
+  .lp-save {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(18, 227, 155, 0.18);
+    background: rgba(18, 227, 155, 0.08);
+    color: #8ff0ca;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .lp-price-feats {
+    list-style: none;
+    padding: 0;
+    margin: 22px 0 26px;
+    display: grid;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .lp-price-feats li {
     display: flex;
     gap: 10px;
     color: var(--lp-text-2);
@@ -1387,7 +1275,7 @@ const PAGE_STYLES = `
     line-height: 1.6;
   }
 
-  .lp-plan-list li::before {
+  .lp-price-feats li::before {
     content: '';
     width: 7px;
     height: 7px;
@@ -1397,91 +1285,256 @@ const PAGE_STYLES = `
     flex-shrink: 0;
   }
 
-  .lp-pricing-note {
-    margin-top: 18px;
-    font-size: 12px;
-    color: var(--lp-text-3);
-    line-height: 1.7;
+  .lp-faq-list {
+    margin-top: 42px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 860px;
   }
 
-  .lp-faq-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .lp-faq-item {
+    overflow: hidden;
   }
 
-  .lp-faq-card {
-    padding: 22px;
-  }
-
-  .lp-faq-card h3 {
-    margin: 0;
-    font-size: 17px;
+  .lp-faq-q {
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    font-size: 14.5px;
     font-weight: 700;
-    letter-spacing: -0.03em;
     color: var(--lp-text);
   }
 
-  .lp-faq-card p {
-    margin: 10px 0 0;
+  .lp-faq-arrow {
+    color: var(--lp-text-3);
+    font-size: 18px;
+    transition: transform 0.24s ease, color 0.24s ease;
+  }
+
+  .lp-faq-item.open .lp-faq-arrow {
+    transform: rotate(45deg);
+    color: #bff3ff;
+  }
+
+  .lp-faq-a {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.28s ease;
+  }
+
+  .lp-faq-item.open .lp-faq-a {
+    max-height: 240px;
+  }
+
+  .lp-faq-a-inner {
+    padding: 0 22px 18px;
+    font-size: 13.5px;
     color: var(--lp-text-2);
-    font-size: 14px;
     line-height: 1.75;
   }
 
-  .lp-footer {
-    padding: 32px;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+  .lp-cta {
+    padding: 90px 32px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
   }
 
-  .lp-footer-inner {
-    max-width: 1280px;
-    margin: 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 18px;
-    align-items: center;
-  }
+  .lp-cta-inner { max-width: 920px; margin: 0 auto; }
 
-  .lp-footer-copy {
-    color: var(--lp-text-3);
-    font-size: 12px;
-    line-height: 1.7;
-  }
-
-  .lp-footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .lp-footer-links a,
-  .lp-footer-links button {
-    color: var(--lp-text-2);
-    background: transparent;
-    border: none;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    padding: 0;
-  }
-
-  .lp-footer-links a:hover,
-  .lp-footer-links button:hover {
+  .lp-cta h2 {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(36px, 4vw, 58px);
+    line-height: 1.04;
+    letter-spacing: -0.05em;
     color: var(--lp-text);
   }
 
-  @media (max-width: 1200px) {
-    .lp-hero-grid,
-    .lp-showcase-grid,
-    .lp-hero-panels,
-    .lp-preview-grid,
+  .lp-cta p {
+    margin: 16px auto 0;
+    max-width: 720px;
+    font-size: 16px;
+    color: var(--lp-text-2);
+    line-height: 1.8;
+  }
+
+  .lp-cta-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 28px;
+  }
+
+  .lp-footer {
+    padding: 62px 32px 30px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .lp-footer-inner { max-width: 1240px; margin: 0 auto; }
+
+  .lp-footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 36px;
+    margin-bottom: 38px;
+  }
+
+  .lp-footer-brand p {
+    margin-top: 12px;
+    max-width: 340px;
+    color: var(--lp-text-3);
+    font-size: 12.5px;
+    line-height: 1.75;
+  }
+
+  .lp-footer-col h4 {
+    margin: 0 0 12px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--lp-text-2);
+  }
+
+  .lp-footer-col a,
+  .lp-footer-col button {
+    display: block;
+    margin-bottom: 9px;
+    color: var(--lp-text-3);
+    text-decoration: none;
+    font: inherit;
+    font-size: 12.5px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .lp-footer-col a:hover,
+  .lp-footer-col button:hover {
+    color: var(--lp-text);
+  }
+
+  .lp-footer-bottom {
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .lp-footer-bottom p {
+    margin: 0;
+    color: var(--lp-text-3);
+    font-size: 11.5px;
+  }
+
+  .lp-social-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .lp-social-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--lp-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--lp-text-3);
+    text-decoration: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .lp-social-btn:hover {
+    border-color: rgba(6, 230, 255, 0.22);
+    color: #d9fbff;
+  }
+
+  .lp-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 4, 10, 0.85);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .lp-modal {
+    width: min(680px, calc(100vw - 32px));
+    max-height: 80vh;
+    overflow: auto;
+    border-radius: 20px;
+    border: 1px solid rgba(125, 150, 190, 0.16);
+    background: linear-gradient(160deg, #0c1830, #080f1e);
+    box-shadow: 0 28px 90px rgba(0,0,0,0.52);
+  }
+
+  .lp-modal-header {
+    padding: 24px 28px 18px;
+    border-bottom: 1px solid rgba(125, 150, 190, 0.14);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .lp-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--lp-text);
+  }
+
+  .lp-modal-header p {
+    margin: 6px 0 0;
+    color: var(--lp-text-3);
+    font-size: 12px;
+  }
+
+  .lp-modal-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(125, 150, 190, 0.14);
+    background: transparent;
+    color: var(--lp-text-2);
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .lp-modal-body {
+    padding: 24px 28px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .lp-modal-item {
+    color: var(--lp-text-2);
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 1180px) {
+    .lp-features-grid,
     .lp-module-grid,
-    .lp-feature-grid,
-    .lp-plan-grid,
-    .lp-transparency-grid,
-    .lp-faq-grid {
+    .lp-pricing-grid,
+    .lp-showcase-grid,
+    .lp-preview-grid {
       grid-template-columns: 1fr;
     }
 
@@ -1489,13 +1542,13 @@ const PAGE_STYLES = `
       grid-template-columns: 1fr;
     }
 
-    .lp-app-rail {
+    .lp-sidebar {
       border-right: none;
       border-bottom: 1px solid rgba(125, 150, 190, 0.12);
     }
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: 920px) {
     .lp-nav {
       padding: 0 18px;
     }
@@ -1505,31 +1558,36 @@ const PAGE_STYLES = `
     }
 
     .lp-section,
-    .lp-hero {
+    .lp-hero,
+    .lp-cta,
+    .lp-footer {
       padding-left: 20px;
       padding-right: 20px;
     }
 
-    .lp-marquee-head {
+    .lp-prop-head {
       padding: 0 20px;
     }
 
-    .lp-kpi-grid,
-    .lp-preview-metrics {
-      grid-template-columns: 1fr;
-    }
-
-    .lp-command-bar {
+    .lp-command {
       flex-direction: column;
       align-items: flex-start;
     }
 
-    .lp-command-scopes {
+    .lp-command-pills {
       justify-content: flex-start;
+    }
+
+    .lp-kpi-grid {
+      grid-template-columns: 1fr;
     }
 
     .lp-calendar-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .lp-footer-top {
+      grid-template-columns: 1fr 1fr;
     }
   }
 
@@ -1538,298 +1596,66 @@ const PAGE_STYLES = `
       display: none;
     }
 
-    .lp-hero-grid {
-      gap: 20px;
-      grid-template-columns: 1fr;
-    }
-
     .lp-hero-title {
       font-size: clamp(38px, 12vw, 56px);
-    }
-
-    .lp-window-top {
-      padding: 0 16px;
-    }
-
-    .lp-window-body,
-    .lp-app-main,
-    .lp-app-rail,
-    .lp-footer {
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-
-    .lp-app-main {
-      padding-top: 16px;
-      padding-bottom: 16px;
-    }
-
-    .lp-strip-row {
-      grid-template-columns: 1fr;
     }
 
     .lp-calendar-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .lp-day-cell {
-      min-height: 66px;
+    .lp-day {
+      min-height: 68px;
+    }
+
+    .lp-ledger-row {
+      grid-template-columns: 1fr;
+    }
+
+    .lp-footer-top {
+      grid-template-columns: 1fr;
     }
   }
 `;
 
-const PROP_FIRMS = [
-  'FTMO',
-  'The5ers',
-  'Topstep',
-  'FundedNext',
-  'Funding Pips',
-  'E8 Markets',
-  'Blue Guardian',
-  'Alpha Capital Group',
-];
+function useReveal() {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
 
-const TRANSPARENCY_CARDS = [
-  {
-    title: 'No synthetic social proof',
-    copy: 'The landing no longer shows fake user counts, fake trade totals, ratings, or invented reviews. If MarketFlow does not have public proof yet, the page stays quiet.',
-    icon: 'shield',
-  },
-  {
-    title: 'No placeholder market tape',
-    copy: 'The scrolling market ticker was removed because there is no production-grade real-time feed wired into the landing right now. Better no tape than fake tape.',
-    icon: 'pulse',
-  },
-  {
-    title: 'No risky competitor claims',
-    copy: 'The old comparison block is gone. The landing now speaks about MarketFlow itself instead of publishing unsupported statements about other platforms.',
-    icon: 'balance',
-  },
-];
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.12 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
-const FEATURE_CARDS = [
-  {
-    title: 'Structured trade ledger',
-    plan: 'Starter',
-    icon: 'ledger',
-    copy: 'Import CSV, XLSX, XLS, TSV, JSON, or paste trade data directly. Review, edit, filter, and organize trades inside a cleaner execution-first workspace.',
-    points: ['Universal import desk', 'Editable review table', 'Column mapping and custom columns'],
-  },
-  {
-    title: 'Daily dashboard',
-    plan: 'Starter',
-    icon: 'dashboard',
-    copy: 'Use MarketFlow as a repeatable daily command center, with workflow prompts, scoreboard context, calendar visibility, and account-aware navigation.',
-    points: ['Daily workflow dock', 'Plan-aware access', 'Calendar and ranking context'],
-  },
-  {
-    title: 'Analytics Pro',
-    plan: 'Pro',
-    icon: 'analytics',
-    copy: 'Read edge, drawdown, win rate behavior, confluences, long-versus-short behavior, heatmaps, and trade-level patterns from the same trade stream.',
-    points: ['Real drawdown and equity linkage', 'Win rate intelligence views', 'Confluence and timing breakdowns'],
-  },
-  {
-    title: 'Psychology and discipline',
-    plan: 'Pro',
-    icon: 'psychology',
-    copy: 'Track mental score, behavioral patterns, discipline, routine quality, and the relationship between state of mind and performance.',
-    points: ['Behavior review', 'Session scoring', 'Pattern-oriented psychology panels'],
-  },
-  {
-    title: 'Backtest sessions',
-    plan: 'Starter / Pro / Elite',
-    icon: 'backtest',
-    copy: 'Backtest is unlocked by session count: 1 session on Starter, 5 on Pro, and 25 on Elite. The landing only claims the replay workspace that exists today.',
-    points: ['Session library', 'Resume existing work', 'Plan-based session limits'],
-  },
-  {
-    title: 'Reports, alerts, and API',
-    plan: 'Pro / Elite',
-    icon: 'stack',
-    copy: 'Downloadable reports, alert configuration, and API access are shown only where the journal already exposes those modules today.',
-    points: ['Report export workspace', 'Alert center', 'Elite API surface'],
-  },
-];
+  return [ref, visible];
+}
 
-const MODULES = [
-  {
-    route: '/dashboard',
-    level: 'Starter',
-    title: 'Dashboard',
-    copy: 'Daily overview, workflow focus, calendar visibility, rank context, and account scope control.',
-    points: ['Visible immediately after access', 'Designed for daily use', 'Shared data model with the rest of the journal'],
-  },
-  {
-    route: '/all-trades',
-    level: 'Starter',
-    title: 'All Trades',
-    copy: 'Import, map, clean, and review trades in a simpler execution ledger without forcing a bloated interface.',
-    points: ['Universal import formats', 'Custom columns', 'Saved trade review workflow'],
-  },
-  {
-    route: '/calendar',
-    level: 'Starter',
-    title: 'Calendar',
-    copy: 'Month view with real trade days and a deeper day review overlay for the selected session.',
-    points: ['Monthly PnL view', 'Daily detail overlay', 'Connected to the same trade stream'],
-  },
-  {
-    route: '/competition',
-    level: 'Starter',
-    title: 'Competition',
-    copy: 'Leaderboard and rank context live inside the journal, refreshed on a daily cadence instead of floating as disconnected marketing.',
-    points: ['MarketFlow ranking', 'Dashboard linkage', 'Competitive layer'],
-  },
-  {
-    route: '/analytics-pro',
-    level: 'Pro',
-    title: 'Analytics Pro',
-    copy: 'A deeper read of performance, drawdown, win rate, confluences, long-versus-short, heatmaps, and trade intelligence.',
-    points: ['Real drawdown on chart', 'Detailed win rate views', 'Multi-section analytics navigation'],
-  },
-  {
-    route: '/psychology',
-    level: 'Pro',
-    title: 'Psychology',
-    copy: 'Score, mood, routine, confidence, discipline, and behavioral insight panels built around the same trading dataset.',
-    points: ['Mental score tracking', 'Behavioral patterns', 'Performance correlation'],
-  },
-  {
-    route: '/equity',
-    level: 'Pro',
-    title: 'Equity',
-    copy: 'Equity curve, drawdown reading, and risk context presented in a dedicated workspace rather than buried inside generic widgets.',
-    points: ['Equity focus view', 'Risk awareness', 'Connected data'],
-  },
-  {
-    route: '/backtest',
-    level: 'Starter / Pro / Elite',
-    title: 'Backtest',
-    copy: 'Session-based backtest lab with plan-limited session counts and resumable workflow.',
-    points: ['1 / 5 / 25 session limits', 'Resume or start new session', 'Stored session context'],
-  },
-  {
-    route: '/broker-connect',
-    level: 'Pro / Elite',
-    title: 'Broker Desk',
-    copy: 'Broker workspace and Elite execution infrastructure sit inside the product, but the landing avoids claiming unsupported live connectivity.',
-    points: ['Broker workspace', 'Elite-only execution desk layer', 'Connection-oriented setup view'],
-  },
-];
+function Reveal({ children, delay = 0, style = {} }) {
+  const [ref, visible] = useReveal();
 
-const PLAN_CARDS = [
-  {
-    id: 'starter',
-    priceId: 'price_1T9t9L2Ouddv7uendIMAR6IP',
-    name: 'Starter',
-    price: '$15',
-    featured: false,
-    badge: 'Focused journal',
-    copy: 'Core MarketFlow workspace with the journal, dashboard, calendar, competition, and one backtest session.',
-    features: [
-      'Unlimited trade journal',
-      'Dashboard and daily workflow',
-      'CSV, Excel, and raw data import',
-      'Performance calendar',
-      'Competition page',
-      '1 backtest session',
-    ],
-  },
-  {
-    id: 'pro',
-    priceId: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
-    name: 'Pro',
-    price: '$22',
-    featured: true,
-    badge: 'Most complete review layer',
-    copy: 'Adds the deeper review stack: Analytics Pro, psychology, equity, broker desk, more backtest sessions, and report exports.',
-    features: [
-      'Everything in Starter',
-      'Analytics Pro',
-      'Psychology tracker',
-      'Equity curve and drawdown',
-      'Broker desk access',
-      '5 backtest sessions',
-      'Downloadable reports',
-    ],
-  },
-  {
-    id: 'elite',
-    priceId: 'price_1T9t9L2Ouddv7uen4DXuOatj',
-    name: 'Elite',
-    price: '$38',
-    featured: false,
-    badge: 'Elite unlocks',
-    copy: 'Adds the highest-access modules already present in the journal, including alerts, API access, unlimited accounts, and Elite-only tooling.',
-    features: [
-      'Everything in Pro',
-      'AI assistant access',
-      'Unlimited accounts',
-      'Alerts and notifications',
-      'API access',
-      '25 backtest sessions',
-      'Priority support channel',
-    ],
-  },
-];
-
-const FAQS = [
-  {
-    question: 'Do you show fake customer metrics on the landing page?',
-    answer: 'No. The landing now avoids synthetic user counts, fake trade totals, and made-up testimonials. If there is no public proof yet, MarketFlow does not pretend there is.',
-  },
-  {
-    question: 'Is the scrolling market data strip live?',
-    answer: 'Not right now. It was removed from the landing until a production-grade real-time data feed is wired and audited. The page should not simulate a market tape.',
-  },
-  {
-    question: 'Why are prop firm names shown?',
-    answer: 'They are shown as examples of well-known prop environments traders care about. The landing does not present them as partnerships, certifications, or official endorsements.',
-  },
-  {
-    question: 'What does the 14-day flow mean?',
-    answer: 'The landing keeps the current activation flow: card required, access activated, then the journal unlocks according to the selected plan.',
-  },
-  {
-    question: 'Does the landing only describe live modules?',
-    answer: 'That is the goal of this rewrite. The page now focuses on modules already visible in the journal today and avoids future-facing promises unless they are clearly labeled elsewhere.',
-  },
-  {
-    question: 'Why is there no direct competitor table anymore?',
-    answer: 'Because unsupported comparison claims are a legal and trust risk. It is safer to remove them than to publish weak or outdated statements about other products.',
-  },
-];
-
-const HERO_CALENDAR = [
-  { day: 'Mon 08', value: null, caption: null, state: 'muted' },
-  { day: 'Tue 09', value: '+$420', caption: '2 trades', state: 'win' },
-  { day: 'Wed 10', value: '+$285', caption: '1 trade', state: 'win' },
-  { day: 'Thu 11', value: '-$96', caption: '1 trade', state: 'loss' },
-  { day: 'Fri 12', value: '+$560', caption: '3 trades', state: 'win' },
-  { day: 'Mon 15', value: '+$380', caption: 'London', state: 'win' },
-  { day: 'Tue 16', value: null, caption: null, state: 'muted' },
-  { day: 'Wed 17', value: '+$140', caption: 'US30', state: 'win' },
-];
-
-const LEDGER_ROWS = [
-  { pair: 'EURUSD', setup: 'London breakout', side: 'Long', pnl: '+$380' },
-  { pair: 'BTCUSD', setup: 'NY reclaim', side: 'Short', pnl: '+$650' },
-  { pair: 'US30', setup: 'Open drive', side: 'Long', pnl: '+$4,500' },
-];
-
-const SHOWCASE_BARS = [42, 58, 46, 72, 68, 80, 62, 88, 70, 76];
-
-function Reveal({ children, delay = 0 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay }}
+    <div
+      ref={ref}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(26px)',
+        transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
+        ...style,
+      }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -1846,7 +1672,7 @@ function Icon({ name, size = 18 }) {
   };
 
   switch (name) {
-    case 'ledger':
+    case 'journal':
       return (
         <svg {...shared}>
           <rect x="3" y="3" width="14" height="14" rx="3" />
@@ -1855,20 +1681,20 @@ function Icon({ name, size = 18 }) {
           <path d="M6.5 13h4.5" />
         </svg>
       );
-    case 'dashboard':
-      return (
-        <svg {...shared}>
-          <rect x="3" y="3" width="5.5" height="5.5" rx="1.4" />
-          <rect x="11.5" y="3" width="5.5" height="8" rx="1.4" />
-          <rect x="3" y="11.5" width="5.5" height="5.5" rx="1.4" />
-          <rect x="11.5" y="14" width="5.5" height="3" rx="1.4" />
-        </svg>
-      );
     case 'analytics':
       return (
         <svg {...shared}>
           <path d="M4 15l3.2-4.2 2.8 2.7 5-6" />
           <path d="M15 4h-3.5V7.5" />
+        </svg>
+      );
+    case 'calendar':
+      return (
+        <svg {...shared}>
+          <rect x="3" y="4" width="14" height="13" rx="2.4" />
+          <path d="M6 2.8v2.6" />
+          <path d="M14 2.8v2.6" />
+          <path d="M3 8h14" />
         </svg>
       );
     case 'psychology':
@@ -1897,29 +1723,6 @@ function Icon({ name, size = 18 }) {
           <path d="M4 14l6 3 6-3" />
         </svg>
       );
-    case 'pulse':
-      return (
-        <svg {...shared}>
-          <path d="M3 10h3l1.6-3.2 2.5 6 2.1-4.4H17" />
-        </svg>
-      );
-    case 'shield':
-      return (
-        <svg {...shared}>
-          <path d="M10 3l5.3 2.2v4.1c0 3.1-2.1 5.8-5.3 7.2-3.2-1.4-5.3-4.1-5.3-7.2V5.2z" />
-          <path d="M7.7 9.8l1.6 1.7 3-3.4" />
-        </svg>
-      );
-    case 'balance':
-      return (
-        <svg {...shared}>
-          <path d="M10 4v10" />
-          <path d="M5 6h10" />
-          <path d="M7 6L4.5 10h5L7 6z" />
-          <path d="M13 6l-2.5 4h5L13 6z" />
-          <path d="M6 16h8" />
-        </svg>
-      );
     default:
       return (
         <svg {...shared}>
@@ -1929,21 +1732,21 @@ function Icon({ name, size = 18 }) {
   }
 }
 
-function CandleBackdrop() {
-  const canvasRef = useRef(null);
+function AnimatedCandleBg() {
+  const ref = useRef(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = ref.current;
     if (!canvas) return undefined;
 
     const ctx = canvas.getContext('2d');
     let animationFrame = 0;
     let width = 0;
     let height = 0;
-    let candles = [];
     let dpr = 1;
+    let candles = [];
 
-    const makeCandle = (x, previousClose = 0.52) => {
+    const createCandle = (x, previousClose = 0.52) => {
       const drift = (Math.random() - 0.5) * 0.18;
       const open = Math.min(0.82, Math.max(0.18, previousClose + drift));
       const close = Math.min(0.82, Math.max(0.18, open + (Math.random() - 0.5) * 0.22));
@@ -1972,7 +1775,7 @@ function CandleBackdrop() {
       let x = -60;
       let previous = 0.52;
       while (x < width + 120) {
-        const candle = makeCandle(x, previous);
+        const candle = createCandle(x, previous);
         candles.push(candle);
         previous = candle.close;
         x += 16 + Math.random() * 10;
@@ -1982,14 +1785,13 @@ function CandleBackdrop() {
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
 
-      const gridColor = 'rgba(154, 178, 219, 0.07)';
-      ctx.lineWidth = 1;
       for (let i = 0; i < 7; i += 1) {
         const y = ((i + 1) / 8) * height;
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
-        ctx.strokeStyle = gridColor;
+        ctx.strokeStyle = 'rgba(154, 178, 219, 0.06)';
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
 
@@ -1998,7 +1800,7 @@ function CandleBackdrop() {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
-        ctx.strokeStyle = 'rgba(154, 178, 219, 0.035)';
+        ctx.strokeStyle = 'rgba(154, 178, 219, 0.03)';
         ctx.stroke();
       }
 
@@ -2008,29 +1810,21 @@ function CandleBackdrop() {
         if (index === 0) ctx.moveTo(candle.x, y);
         else ctx.lineTo(candle.x, y);
       });
-      ctx.strokeStyle = 'rgba(111, 223, 255, 0.18)';
-      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = 'rgba(111, 223, 255, 0.12)';
+      ctx.lineWidth = 1.2;
       ctx.stroke();
 
       candles.forEach((candle, index) => {
         candle.x -= candle.speed;
-
         if (candle.x < -36) {
           const last = candles[(index - 1 + candles.length) % candles.length];
-          const nextX = Math.max(width + 20, last.x + 22);
-          const recycled = makeCandle(nextX, last.close);
-          candle.x = recycled.x;
-          candle.width = recycled.width;
-          candle.speed = recycled.speed;
-          candle.open = recycled.open;
-          candle.close = recycled.close;
-          candle.high = recycled.high;
-          candle.low = recycled.low;
+          const recycled = createCandle(Math.max(width + 20, last.x + 24), last.close);
+          Object.assign(candle, recycled);
         }
 
         const bullish = candle.close >= candle.open;
         const color = bullish ? 'rgba(18, 227, 155, 0.78)' : 'rgba(255, 104, 117, 0.78)';
-        const fill = bullish ? 'rgba(18, 227, 155, 0.18)' : 'rgba(255, 104, 117, 0.16)';
+        const fill = bullish ? 'rgba(18, 227, 155, 0.16)' : 'rgba(255, 104, 117, 0.14)';
         const openY = height * (1 - candle.open);
         const closeY = height * (1 - candle.close);
         const highY = height * (1 - candle.high);
@@ -2067,182 +1861,259 @@ function CandleBackdrop() {
   }, []);
 
   return (
-    <div className="lp-candle-layer">
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-      <div className="lp-candle-fade" />
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      <canvas ref={ref} style={{ width: '100%', height: '100%', display: 'block', opacity: 0.9 }} />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'linear-gradient(90deg, rgba(3,6,12,0.92) 0%, rgba(3,6,12,0.26) 28%, rgba(3,6,12,0.14) 56%, rgba(3,6,12,0.88) 100%), linear-gradient(180deg, rgba(3,6,12,0.08) 0%, rgba(3,6,12,0.32) 62%, rgba(3,6,12,0.92) 100%)',
+        }}
+      />
     </div>
   );
 }
 
-function SectionHeading({ eyebrow, title, description }) {
-  return (
-    <div className="lp-section-head">
-      <div className="lp-eyebrow">{eyebrow}</div>
-      <h2 className="lp-section-title">{title}</h2>
-      <p className="lp-section-desc">{description}</p>
-    </div>
-  );
-}
+function PageModal({ page, onClose }) {
+  const content = PAGE_CONTENT[page];
+  if (!content) return null;
 
-function HeroWorkspace() {
   return (
-    <Reveal delay={0.18}>
-      <div className="lp-window">
-        <div className="lp-window-top">
-          <div className="lp-window-dot" />
-          <div className="lp-window-dot" />
-          <div className="lp-window-dot" />
-          <div className="lp-window-label">Live MarketFlow workspace preview</div>
+    <div className="lp-modal-overlay" onClick={onClose}>
+      <div className="lp-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="lp-modal-header">
+          <div>
+            <h3>{content.title}</h3>
+            <p>{content.subtitle}</p>
+          </div>
+          <button className="lp-modal-close" onClick={onClose}>×</button>
         </div>
-        <div className="lp-window-body">
-          <aside className="lp-app-rail">
-            <div className="lp-brand" style={{ cursor: 'default' }}>
-              <div className="lp-brand-mark">
-                <img src="/logo192.png" alt="MarketFlow" />
-              </div>
-              <div className="lp-brand-wordmark">
-                <div className="lp-brand-title">
-                  Market<span>Flow</span>
+        <div className="lp-modal-body">
+          {content.items.map((item) => (
+            <div key={item} className="lp-modal-item">{item}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeroPreview() {
+  const bars = [42, 58, 46, 72, 68, 80, 62, 88, 70, 76];
+  const propLoop = [...PROP_FIRMS, ...PROP_FIRMS];
+
+  return (
+    <>
+      <div className="lp-hero-preview-shell">
+        <div className="lp-window">
+          <div className="lp-window-top">
+            <div className="lp-window-dot" />
+            <div className="lp-window-dot" />
+            <div className="lp-window-dot" />
+            <div className="lp-window-label">Live MarketFlow workspace preview</div>
+          </div>
+
+          <div className="lp-window-body">
+            <aside className="lp-sidebar">
+              <div className="lp-brand" style={{ cursor: 'default' }}>
+                <div className="lp-brand-mark">
+                  <img src="/logo192.png" alt="MarketFlow" />
                 </div>
-                <div className="lp-brand-sub">Journal</div>
-              </div>
-            </div>
-
-            <div className="lp-app-rail-group">
-              <div className="lp-app-rail-label">Core</div>
-              <div className="lp-app-link active">
-                <div className="lp-app-link-icon"><Icon name="dashboard" size={14} /></div>
-                Dashboard
-              </div>
-              <div className="lp-app-link">
-                <div className="lp-app-link-icon"><Icon name="ledger" size={14} /></div>
-                All Trades
-              </div>
-              <div className="lp-app-link">
-                <div className="lp-app-link-icon"><Icon name="analytics" size={14} /></div>
-                Analytics
-              </div>
-              <div className="lp-app-link">
-                <div className="lp-app-link-icon"><Icon name="psychology" size={14} /></div>
-                Psychology
-              </div>
-            </div>
-
-            <div className="lp-app-rail-group">
-              <div className="lp-app-rail-label">Plan unlocks</div>
-              <div className="lp-app-link">
-                <div className="lp-app-link-icon"><Icon name="backtest" size={14} /></div>
-                Backtest
-              </div>
-              <div className="lp-app-link">
-                <div className="lp-app-link-icon"><Icon name="stack" size={14} /></div>
-                Reports
-              </div>
-            </div>
-          </aside>
-
-          <div className="lp-app-main">
-            <div className="lp-panel lp-command-bar">
-              <div className="lp-command-copy">
-                <div className="lp-command-over">MarketFlow command center</div>
-                <div className="lp-command-title">Daily review, account scope, and execution context</div>
-              </div>
-              <div className="lp-command-scopes">
-                <div className="lp-scope-pill">All accounts</div>
-                <div className="lp-scope-pill">London</div>
-                <div className="lp-scope-accent">Analytics live</div>
-              </div>
-            </div>
-
-            <div className="lp-kpi-grid">
-              <div className="lp-panel lp-kpi-card">
-                <div className="lp-kpi-label">Net PnL</div>
-                <div className="lp-kpi-value">$8,620</div>
-                <div className="lp-kpi-meta"><span className="lp-positive">9 trading days</span> in scope</div>
-              </div>
-              <div className="lp-panel lp-kpi-card">
-                <div className="lp-kpi-label">Win rate</div>
-                <div className="lp-kpi-value">68.4%</div>
-                <div className="lp-kpi-meta">Rolling and cumulative views</div>
-              </div>
-              <div className="lp-panel lp-kpi-card">
-                <div className="lp-kpi-label">Max drawdown</div>
-                <div className="lp-kpi-value">-$920</div>
-                <div className="lp-kpi-meta">Linked to equity and analytics</div>
-              </div>
-            </div>
-
-            <div className="lp-hero-panels">
-              <div className="lp-panel lp-calendar-preview">
-                <div className="lp-calendar-head">
-                  <div className="lp-calendar-title">Calendar review</div>
-                  <div className="lp-calendar-meta">Selected month: April</div>
-                </div>
-                <div className="lp-calendar-grid">
-                  {HERO_CALENDAR.map((cell) => (
-                    <div key={cell.day} className={`lp-day-cell ${cell.state}`}>
-                      <div className="lp-day-number">{cell.day}</div>
-                      {cell.value ? <div className="lp-day-value">{cell.value}</div> : <div className="lp-day-value">-</div>}
-                      <div className="lp-day-caption">{cell.caption || 'No flow'}</div>
-                    </div>
-                  ))}
+                <div className="lp-brand-wordmark">
+                  <div className="lp-brand-title">Market<span>Flow</span></div>
+                  <div className="lp-brand-sub">Journal</div>
                 </div>
               </div>
 
-              <div className="lp-side-stack">
-                <div className="lp-panel lp-side-card">
-                  <div className="lp-side-card-title">
-                    <strong>Workflow</strong>
-                    <span>Today</span>
+              <div className="lp-sidebar-group">
+                <div className="lp-sidebar-label">Core</div>
+                <div className="lp-sidebar-link active">
+                  <div className="lp-sidebar-icon"><Icon name="journal" size={14} /></div>
+                  Dashboard
+                </div>
+                <div className="lp-sidebar-link">
+                  <div className="lp-sidebar-icon"><Icon name="journal" size={14} /></div>
+                  All Trades
+                </div>
+                <div className="lp-sidebar-link">
+                  <div className="lp-sidebar-icon"><Icon name="analytics" size={14} /></div>
+                  Analytics
+                </div>
+                <div className="lp-sidebar-link">
+                  <div className="lp-sidebar-icon"><Icon name="psychology" size={14} /></div>
+                  Psychology
+                </div>
+              </div>
+
+              <div className="lp-sidebar-group">
+                <div className="lp-sidebar-label">Plan unlocks</div>
+                <div className="lp-sidebar-link">
+                  <div className="lp-sidebar-icon"><Icon name="backtest" size={14} /></div>
+                  Backtest
+                </div>
+                <div className="lp-sidebar-link">
+                  <div className="lp-sidebar-icon"><Icon name="stack" size={14} /></div>
+                  Reports
+                </div>
+              </div>
+            </aside>
+
+            <div className="lp-main">
+              <div className="lp-panel lp-command">
+                <div className="lp-command-copy">
+                  <span>MarketFlow command center</span>
+                  <strong>Daily review, account scope, and execution context.</strong>
+                </div>
+                <div className="lp-command-pills">
+                  <div className="lp-pill">All accounts</div>
+                  <div className="lp-pill">London</div>
+                  <div className="lp-pill accent">Analytics live</div>
+                </div>
+              </div>
+
+              <div className="lp-kpi-grid">
+                <div className="lp-panel lp-kpi-card">
+                  <div className="lp-kpi-label">Net PnL</div>
+                  <div className="lp-kpi-value">$8,620</div>
+                  <div className="lp-kpi-meta"><span className="lp-positive">9 trading days</span> in scope</div>
+                </div>
+                <div className="lp-panel lp-kpi-card">
+                  <div className="lp-kpi-label">Win rate</div>
+                  <div className="lp-kpi-value">68.4%</div>
+                  <div className="lp-kpi-meta">Rolling and cumulative views</div>
+                </div>
+                <div className="lp-panel lp-kpi-card">
+                  <div className="lp-kpi-label">Max drawdown</div>
+                  <div className="lp-kpi-value">-$920</div>
+                  <div className="lp-kpi-meta">Linked to equity and analytics</div>
+                </div>
+              </div>
+
+              <div className="lp-preview-grid">
+                <div className="lp-calendar-panel">
+                  <div className="lp-calendar-head">
+                    <div className="lp-calendar-title">Calendar review</div>
+                    <div className="lp-calendar-meta">Selected month: April</div>
                   </div>
-                  <div className="lp-checklist">
-                    <div className="lp-check-item">
-                      <div className="lp-check-copy">
-                        <div className="lp-check-bullet" />
-                        <div>
-                          <strong>Pre-session notes</strong>
-                          <span>Bias, plan, and invalidation</span>
-                        </div>
-                      </div>
-                      <div className="lp-check-badge">Open</div>
-                    </div>
-                    <div className="lp-check-item">
-                      <div className="lp-check-copy">
-                        <div className="lp-check-bullet" />
-                        <div>
-                          <strong>Import last fills</strong>
-                          <span>Execution review desk</span>
-                        </div>
-                      </div>
-                      <div className="lp-check-badge">Ready</div>
-                    </div>
-                    <div className="lp-check-item">
-                      <div className="lp-check-copy">
-                        <div className="lp-check-bullet" />
-                        <div>
-                          <strong>Rank snapshot</strong>
-                          <span>Leaderboard refresh every 24h</span>
-                        </div>
-                      </div>
-                      <div className="lp-check-badge">Live</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lp-panel lp-strip-panel">
-                  <div className="lp-strip-head">
-                    <div className="lp-strip-title">Latest execution review</div>
-                    <div className="lp-strip-meta">All trades</div>
-                  </div>
-                  <div className="lp-strip-table">
-                    {LEDGER_ROWS.map((row) => (
-                      <div key={row.pair + row.setup} className="lp-strip-row">
-                        <strong>{row.pair}</strong>
-                        <span>{row.setup}</span>
-                        <span>{row.side}</span>
-                        <strong className={row.pnl.startsWith('-') ? 'lp-negative' : 'lp-positive'}>{row.pnl}</strong>
+                  <div className="lp-calendar-grid">
+                    {[
+                      ['Mon 08', '-', 'No flow', 'muted'],
+                      ['Tue 09', '+$420', '2 trades', 'win'],
+                      ['Wed 10', '+$285', '1 trade', 'win'],
+                      ['Thu 11', '-$96', '1 trade', 'loss'],
+                      ['Fri 12', '+$560', '3 trades', 'win'],
+                      ['Mon 15', '+$380', 'London', 'win'],
+                      ['Tue 16', '-', 'No flow', 'muted'],
+                      ['Wed 17', '+$140', 'US30', 'win'],
+                    ].map(([day, value, caption, state]) => (
+                      <div key={day} className={`lp-day ${state}`}>
+                        <div className="lp-day-number">{day}</div>
+                        <div className="lp-day-value">{value}</div>
+                        <div className="lp-day-caption">{caption}</div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                <div className="lp-side-stack">
+                  <div className="lp-side-card">
+                    <div className="lp-mini-head">
+                      <strong>Workflow</strong>
+                      <span>Today</span>
+                    </div>
+                    <div className="lp-checklist">
+                      <div className="lp-check-item">
+                        <div className="lp-check-copy">
+                          <div className="lp-check-bullet" />
+                          <div>
+                            <strong>Pre-session notes</strong>
+                            <span>Bias, plan, and invalidation</span>
+                          </div>
+                        </div>
+                        <div className="lp-check-badge">Open</div>
+                      </div>
+                      <div className="lp-check-item">
+                        <div className="lp-check-copy">
+                          <div className="lp-check-bullet" />
+                          <div>
+                            <strong>Import last fills</strong>
+                            <span>Execution review desk</span>
+                          </div>
+                        </div>
+                        <div className="lp-check-badge">Ready</div>
+                      </div>
+                      <div className="lp-check-item">
+                        <div className="lp-check-copy">
+                          <div className="lp-check-bullet" />
+                          <div>
+                            <strong>Rank snapshot</strong>
+                            <span>Leaderboard refresh every 24h</span>
+                          </div>
+                        </div>
+                        <div className="lp-check-badge">Live</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lp-side-card">
+                    <div className="lp-mini-head">
+                      <strong>Latest execution review</strong>
+                      <span>All trades</span>
+                    </div>
+                    <div className="lp-ledger">
+                      {[
+                        ['EURUSD', 'London breakout', 'Long', '+$380'],
+                        ['BTCUSD', 'NY reclaim', 'Short', '+$650'],
+                        ['US30', 'Open drive', 'Long', '+$4,500'],
+                      ].map((row) => (
+                        <div key={row.join('-')} className="lp-ledger-row">
+                          <strong>{row[0]}</strong>
+                          <span>{row[1]}</span>
+                          <span>{row[2]}</span>
+                          <strong className={String(row[3]).startsWith('-') ? 'lp-negative' : 'lp-positive'}>{row[3]}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lp-showcase-grid" style={{ marginTop: 16 }}>
+                <div className="lp-showcase-card">
+                  <div className="lp-mini-head">
+                    <strong>Analytics motion</strong>
+                    <span>Hover-ready</span>
+                  </div>
+                  <div className="lp-chart-bars">
+                    {bars.map((bar, index) => (
+                      <div key={String(bar) + String(index)} className={`lp-bar ${index === 2 || index === 6 ? 'negative' : ''}`} style={{ height: `${bar}%` }} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lp-showcase-card">
+                  <div className="lp-mini-head">
+                    <strong>Tiered analytics</strong>
+                    <span>Starter / Pro / Elite</span>
+                  </div>
+                  <div className="lp-mini-grid">
+                    <div className="lp-mini-box">
+                      <span>Starter</span>
+                      <strong>Core view</strong>
+                    </div>
+                    <div className="lp-mini-box">
+                      <span>Pro</span>
+                      <strong>Deep stack</strong>
+                    </div>
+                    <div className="lp-mini-box">
+                      <span>Elite</span>
+                      <strong>Boosted overlays</strong>
+                    </div>
+                    <div className="lp-mini-box">
+                      <span>Data model</span>
+                      <strong>Shared stream</strong>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2250,176 +2121,40 @@ function HeroWorkspace() {
           </div>
         </div>
       </div>
-    </Reveal>
-  );
-}
 
-function ShowcaseScreens() {
-  return (
-    <div className="lp-showcase-grid">
-      <Reveal>
-        <div className="lp-screen-card">
-          <div className="lp-screen-head">
-            <div className="lp-screen-label">
-              <span>Execution review</span>
-              <strong>All Trades</strong>
-            </div>
-            <div className="lp-screen-badge">Import and review</div>
-          </div>
-
-          <div className="lp-screen-shell">
-            <div className="lp-preview-metrics">
-              <div className="lp-preview-metric lp-screen-float">
-                <span>Imported</span>
-                <strong>166 rows</strong>
-              </div>
-              <div className="lp-preview-metric lp-screen-float">
-                <span>Mapped fields</span>
-                <strong>Pair, PnL, Date</strong>
-              </div>
-              <div className="lp-preview-metric lp-screen-float">
-                <span>Columns</span>
-                <strong>Custom ready</strong>
-              </div>
-            </div>
-
-            <div className="lp-chart-panel lp-screen-float">
-              <div className="lp-strip-head">
-                <div className="lp-strip-title">Execution ledger</div>
-                <div className="lp-strip-meta">Saved views</div>
-              </div>
-              <div className="lp-strip-table">
-                {[
-                  ['EURUSD', 'Breakout', 'Long', '+$380'],
-                  ['BTCUSD', 'Reversal', 'Short', '+$650'],
-                  ['GBPUSD', 'Pullback', 'Long', '-$120'],
-                  ['US30', 'Open drive', 'Long', '+$4,500'],
-                ].map((row) => (
-                  <div key={row.join('-')} className="lp-strip-row">
-                    <strong>{row[0]}</strong>
-                    <span>{row[1]}</span>
-                    <span>{row[2]}</span>
-                    <strong className={String(row[3]).startsWith('-') ? 'lp-negative' : 'lp-positive'}>{row[3]}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+      <div className="lp-propfirms">
+        <div className="lp-prop-head">
+          <strong>Known prop environments traders actually recognize</strong>
+          <span>Shown as examples only, not as endorsements or partnerships.</span>
         </div>
-      </Reveal>
-
-      <Reveal delay={0.1}>
-        <div className="lp-screen-card">
-          <div className="lp-screen-head">
-            <div className="lp-screen-label">
-              <span>Analytics Pro</span>
-              <strong>Linked charts and hover motion</strong>
-            </div>
-            <div className="lp-screen-badge">Same trade stream</div>
-          </div>
-
-          <div className="lp-screen-shell">
-            <div className="lp-preview-grid">
-              <div className="lp-chart-panel lp-screen-float">
-                <div className="lp-strip-head">
-                  <div className="lp-strip-title">Performance rhythm</div>
-                  <div className="lp-strip-meta">PnL sequence</div>
-                </div>
-                <div className="lp-chart-bars">
-                  {SHOWCASE_BARS.map((value, index) => (
-                    <div
-                      key={String(value) + String(index)}
-                      className={`lp-bar ${index === 2 || index === 6 ? 'negative' : ''}`}
-                      style={{ height: `${value}%` }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="lp-card-panel lp-screen-float">
-                <div className="lp-strip-head">
-                  <div className="lp-strip-title">Win rate read</div>
-                  <div className="lp-strip-meta">Advice layer</div>
-                </div>
-                <div className="lp-ring-wrap">
-                  <svg className="lp-ring" viewBox="0 0 120 120">
-                    <defs>
-                      <linearGradient id="lpRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#8ae9ff" />
-                        <stop offset="60%" stopColor="#06e6ff" />
-                        <stop offset="100%" stopColor="#00ff88" />
-                      </linearGradient>
-                    </defs>
-                    <circle className="lp-ring-track" cx="60" cy="60" r="38" />
-                    <circle className="lp-ring-progress" cx="60" cy="60" r="38" transform="rotate(-90 60 60)" />
-                    <text className="lp-ring-center" x="60" y="58">68%</text>
-                    <text className="lp-ring-sub" x="60" y="76">win rate</text>
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="lp-preview-grid">
-              <div className="lp-card-panel lp-screen-float">
-                <div className="lp-strip-head">
-                  <div className="lp-strip-title">Drawdown and equity</div>
-                  <div className="lp-strip-meta">Real values</div>
-                </div>
-                <div className="lp-preview-lines">
-                  <svg className="lp-preview-svg" viewBox="0 0 400 160" preserveAspectRatio="none">
-                    <path
-                      className="lp-preview-line-a"
-                      d="M0 120 C40 114 80 100 120 84 C160 68 200 62 240 66 C280 70 320 54 360 40 C380 34 390 36 400 28"
-                      fill="none"
-                      stroke="rgba(18, 227, 155, 0.72)"
-                      strokeWidth="3"
-                    />
-                    <path
-                      className="lp-preview-line-b"
-                      d="M0 38 C60 42 120 50 170 74 C220 98 270 96 330 74 C360 62 380 56 400 52"
-                      fill="none"
-                      stroke="rgba(255, 104, 117, 0.62)"
-                      strokeWidth="2.6"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              <div className="lp-card-panel lp-screen-float">
-                <div className="lp-strip-head">
-                  <div className="lp-strip-title">Timing heatmap</div>
-                  <div className="lp-strip-meta">Session edges</div>
-                </div>
-                <div className="lp-heat-grid">
-                  {['good', 'mid', 'soft', 'good', 'bad', 'soft', 'good', 'mid', 'good', 'soft'].map((state, index) => (
-                    <div key={String(state) + String(index)} className={`lp-heat ${state}`} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="lp-prop-marquee">
+          {propLoop.map((name, index) => (
+            <div key={name + String(index)} className="lp-prop-item">{name}</div>
+          ))}
         </div>
-      </Reveal>
-    </div>
+      </div>
+    </>
   );
 }
 
 export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const [scrolled, setScrolled] = useState(false);
+  const [billing, setBilling] = useState('monthly');
+  const [openFaq, setOpenFaq] = useState(null);
+  const [modal, setModal] = useState(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 28);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const handler = () => setScrolled(window.scrollY > 30);
+    handler();
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
   }, []);
 
-  const goTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  const propLoop = [...PROP_FIRMS, ...PROP_FIRMS];
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="lp-page">
-      <style>{PAGE_STYLES}</style>
+      <style>{STYLES}</style>
 
       <nav className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="lp-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -2427,18 +2162,17 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <img src="/logo192.png" alt="MarketFlow" />
           </div>
           <div className="lp-brand-wordmark">
-            <div className="lp-brand-title">
-              Market<span>Flow</span>
-            </div>
+            <div className="lp-brand-title">Market<span>Flow</span></div>
             <div className="lp-brand-sub">Trading Journal</div>
           </div>
         </div>
 
         <div className="lp-nav-links">
-          <a href="#workspace" onClick={(event) => { event.preventDefault(); goTo('workspace'); }}>Workspace</a>
-          <a href="#modules" onClick={(event) => { event.preventDefault(); goTo('modules'); }}>Modules</a>
-          <a href="#pricing" onClick={(event) => { event.preventDefault(); goTo('pricing'); }}>Pricing</a>
-          <a href="#faq" onClick={(event) => { event.preventDefault(); goTo('faq'); }}>FAQ</a>
+          <a href="#workspace" onClick={(event) => { event.preventDefault(); scrollTo('workspace'); }}>Workspace</a>
+          <a href="#features" onClick={(event) => { event.preventDefault(); scrollTo('features'); }}>Features</a>
+          <a href="#modules" onClick={(event) => { event.preventDefault(); scrollTo('modules'); }}>Modules</a>
+          <a href="#pricing" onClick={(event) => { event.preventDefault(); scrollTo('pricing'); }}>Pricing</a>
+          <a href="#faq" onClick={(event) => { event.preventDefault(); scrollTo('faq'); }}>FAQ</a>
         </div>
 
         <div className="lp-nav-cta">
@@ -2447,276 +2181,331 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         </div>
       </nav>
 
-      <div className="lp-shell">
-        <section className="lp-hero">
-          <CandleBackdrop />
-          <div className="lp-hero-grid">
-            <div className="lp-hero-copy">
-              <Reveal>
-                <div className="lp-overline">Only live product modules are shown here</div>
-              </Reveal>
+      <section className="lp-hero">
+        <AnimatedCandleBg />
+        <div className="lp-hero-inner">
+          <Reveal>
+            <div className="lp-overline">Only live product modules are described here</div>
+          </Reveal>
 
-              <Reveal delay={0.05}>
-                <h1 className="lp-hero-title">
-                  MarketFlow Journal for <span>cleaner execution review</span> and real post-trade discipline.
-                </h1>
-              </Reveal>
+          <Reveal delay={0.05}>
+            <h1 className="lp-hero-title">
+              MarketFlow Journal for <span>cleaner execution review</span> and real post-trade discipline.
+            </h1>
+          </Reveal>
 
-              <Reveal delay={0.1}>
-                <p className="lp-hero-sub">
-                  MarketFlow is a structured trading journal built around the modules already available in the product today:
-                  journal review, dashboard, calendar, analytics, psychology, equity, backtest sessions, reports, alerts,
-                  and API access by plan. No fake user counters. No fake market tape. No inflated promises.
-                </p>
-              </Reveal>
+          <Reveal delay={0.1}>
+            <p className="lp-hero-sub">
+              MarketFlow is a structured trading journal built around the modules already available in the product today:
+              journal review, dashboard, calendar, starter analytics, pro analytics, psychology, equity, backtest
+              sessions, reports, alerts, and API access by plan.
+            </p>
+          </Reveal>
 
-              <Reveal delay={0.14}>
-                <div className="lp-hero-actions">
-                  <button className="lp-btn-primary" onClick={onSignup}>Start your 14-day flow</button>
-                  <button className="lp-btn-secondary" onClick={() => goTo('workspace')}>Explore the workspace</button>
-                </div>
-              </Reveal>
+          <Reveal delay={0.15}>
+            <p className="lp-hero-note">
+              Card-required activation remains explicit. The landing avoids fake proof points, fake tape, and risky
+              competitor comparisons so the site stays aligned with the real journal.
+            </p>
+          </Reveal>
 
-              <Reveal delay={0.18}>
-                <div className="lp-hero-note">
-                  <span><strong>Activation flow:</strong> card required, then access opens by plan.</span>
-                  <span><strong>Positioning:</strong> built for serious discretionary review, not for fake marketing optics.</span>
-                </div>
-              </Reveal>
-
-              <Reveal delay={0.22}>
-                <div className="lp-trust-row">
-                  <div className="lp-mini-stat">
-                    <div className="lp-mini-stat-value">Starter / Pro / Elite</div>
-                    <div className="lp-mini-stat-label">Plan-based journal access</div>
-                  </div>
-                  <div className="lp-mini-stat">
-                    <div className="lp-mini-stat-value">1 / 5 / 25</div>
-                    <div className="lp-mini-stat-label">Backtest sessions by plan</div>
-                  </div>
-                  <div className="lp-mini-stat">
-                    <div className="lp-mini-stat-value">No fake counters</div>
-                    <div className="lp-mini-stat-label">Landing rewritten for transparency</div>
-                  </div>
-                </div>
-              </Reveal>
+          <Reveal delay={0.2}>
+            <div className="lp-hero-actions">
+              <button className="lp-btn-primary" onClick={onSignup}>Start your 14-day flow</button>
+              <button className="lp-btn-secondary" onClick={() => scrollTo('workspace')}>Explore the workspace</button>
             </div>
+          </Reveal>
 
-            <HeroWorkspace />
-          </div>
-        </section>
+          <HeroPreview />
+        </div>
+      </section>
 
-        <section className="lp-marquee-wrap">
-          <div className="lp-marquee-head">
-            <strong>Prop-style workflows in mind</strong>
-            <span>Names shown as widely known prop environments. No official affiliation or endorsement is implied.</span>
-          </div>
-          <div className="lp-marquee">
-            {propLoop.map((name, index) => (
-              <div key={name + String(index)} className="lp-marquee-item">{name}</div>
+      <section className="lp-section" id="features">
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Features</div></Reveal>
+          <Reveal><h2>Improve the journal, not the fantasy around it.</h2></Reveal>
+          <Reveal>
+            <p className="lp-section-sub">
+              The landing is back to a more classical structure: features, workspace, modules, pricing, FAQ, and a real footer.
+              The difference is that the messaging is now tighter and closer to the product state.
+            </p>
+          </Reveal>
+
+          <div className="lp-features-grid">
+            {FEATURE_CARDS.map((feature, index) => (
+              <Reveal key={feature.title} delay={index * 0.05}>
+                <div className="lp-feature-card">
+                  <div className="lp-feature-top">
+                    <div className="lp-icon-chip"><Icon name={feature.icon} /></div>
+                  </div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.desc}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="lp-section" id="workspace">
-          <div className="lp-section-inner">
+      <section className="lp-section" id="workspace" style={{ paddingTop: 24 }}>
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Workspace</div></Reveal>
+          <Reveal><h2>Structured sections instead of a landing that feels improvised.</h2></Reveal>
+          <Reveal>
+            <p className="lp-section-sub">
+              This keeps the old landing logic of a real site while upgrading the visual language, the background transitions,
+              and the product previews.
+            </p>
+          </Reveal>
+
+          <div className="lp-module-grid">
+            {MODULE_PILLARS.map((module, index) => (
+              <Reveal key={module.title} delay={index * 0.05}>
+                <div className="lp-module-card">
+                  <div className="lp-module-overline">{module.overline}</div>
+                  <h3>{module.title}</h3>
+                  <p>{module.desc}</p>
+                  <ul className="lp-points">
+                    {module.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-section" id="modules" style={{ paddingTop: 24 }}>
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Modules</div></Reveal>
+          <Reveal><h2>Starter, Pro, and Elite now read more logically.</h2></Reveal>
+          <Reveal>
+            <p className="lp-section-sub">
+              Starter now gets the basic analytics layer. Pro keeps the deeper review stack. Elite gets extra overlays above that instead of only “more data”.
+            </p>
+          </Reveal>
+
+          <div className="lp-showcase-grid">
             <Reveal>
-              <SectionHeading
-                eyebrow="Workspace"
-                title="A landing page that can survive real scrutiny."
-                description="The old landing leaned too hard on decorative SaaS tropes, placeholder quotes, and unsupported claims. This version centers the actual workspace, the real modules, and the review flow traders will actually open."
-              />
+              <div className="lp-showcase-card">
+                <div className="lp-mini-head">
+                  <strong>Starter analytics</strong>
+                  <span>Core</span>
+                </div>
+                <p>
+                  Performance, setups, time of day, day of week, market type, and confluence readouts in the basic analytics page.
+                </p>
+                <div className="lp-mini-grid">
+                  <div className="lp-mini-box">
+                    <span>Focus</span>
+                    <strong>Read the basics</strong>
+                  </div>
+                  <div className="lp-mini-box">
+                    <span>Use case</span>
+                    <strong>Daily review</strong>
+                  </div>
+                </div>
+              </div>
             </Reveal>
 
-            <div className="lp-transparency-grid">
-              {TRANSPARENCY_CARDS.map((card, index) => (
-                <Reveal key={card.title} delay={index * 0.06}>
-                  <div className="lp-transparency-card">
-                    <div className="lp-icon-chip" style={{ marginBottom: 16 }}>
-                      <Icon name={card.icon} />
-                    </div>
-                    <h3>{card.title}</h3>
-                    <p>{card.copy}</p>
+            <Reveal delay={0.08}>
+              <div className="lp-showcase-card">
+                <div className="lp-mini-head">
+                  <strong>Elite analytics</strong>
+                  <span>Boosted</span>
+                </div>
+                <p>
+                  Elite gets boosted overlays to surface timing edge, setup edge, market read, and confluence density faster.
+                </p>
+                <div className="lp-mini-grid">
+                  <div className="lp-mini-box">
+                    <span>Boosted timing</span>
+                    <strong>Best window</strong>
                   </div>
-                </Reveal>
+                  <div className="lp-mini-box">
+                    <span>Boosted setup</span>
+                    <strong>Edge stack</strong>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-section" id="pricing">
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Pricing</div></Reveal>
+          <Reveal><h2>Aligned pricing cards, monthly and annual.</h2></Reveal>
+          <Reveal>
+            <p className="lp-section-sub">
+              The pricing section is back to a more familiar site layout, but now it reflects the real plan structure and annual billing options already wired in the product.
+            </p>
+          </Reveal>
+
+          <div className="lp-pricing-top">
+            <div className="lp-billing-toggle">
+              {['monthly', 'annual'].map((mode) => (
+                <button
+                  key={mode}
+                  className={billing === mode ? 'active' : ''}
+                  onClick={() => setBilling(mode)}
+                >
+                  {mode === 'monthly' ? 'Monthly' : 'Annual'}
+                </button>
               ))}
             </div>
+            {billing === 'annual' && <div className="lp-billing-note">Annual billing active</div>}
           </div>
-        </section>
 
-        <section className="lp-section" style={{ paddingTop: 36 }}>
-          <div className="lp-section-inner">
-            <Reveal>
-              <SectionHeading
-                eyebrow="Screens"
-                title="Real product-style previews instead of generic SaaS filler."
-                description="The previews below are built around MarketFlow modules and naming, not around fake notebook cards or decorative widgets. Hover them and the analytics surfaces move with a cleaner, more professional motion language."
-              />
-            </Reveal>
+          <div className="lp-pricing-grid">
+            {PLANS.map((plan, index) => {
+              const isAnnual = billing === 'annual';
+              const price = isAnnual ? plan.annual : plan.monthly;
+              const billed = isAnnual ? plan.annual * 12 : plan.monthly;
+              const priceId = isAnnual ? plan.priceAnnual : plan.priceMonthly;
+              const save = (plan.monthly - plan.annual) * 12;
 
-            <ShowcaseScreens />
-          </div>
-        </section>
-
-        <section className="lp-section" id="modules">
-          <div className="lp-section-inner">
-            <Reveal>
-              <SectionHeading
-                eyebrow="Features"
-                title="What the journal already exposes today."
-                description="Each block below maps to pages or modules already accessible in the current product. If a capability is still too soft or too incomplete, it stays off the landing."
-              />
-            </Reveal>
-
-            <div className="lp-feature-grid">
-              {FEATURE_CARDS.map((feature, index) => (
-                <Reveal key={feature.title} delay={index * 0.05}>
-                  <div className="lp-feature-card">
-                    <div className="lp-feature-top">
-                      <div className="lp-icon-chip">
-                        <Icon name={feature.icon} />
-                      </div>
-                      <div className="lp-plan-pill">{feature.plan}</div>
-                    </div>
-                    <h3>{feature.title}</h3>
-                    <p>{feature.copy}</p>
-                    <ul className="lp-feature-points">
-                      {feature.points.map((point) => (
-                        <li key={point}>{point}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-section" style={{ paddingTop: 36 }}>
-          <div className="lp-section-inner">
-            <Reveal>
-              <SectionHeading
-                eyebrow="Live map"
-                title="Current page map inside MarketFlow."
-                description="This is the product map the landing now follows: pages, plan level, and actual review purpose. No abstract marketing bullets detached from the journal."
-              />
-            </Reveal>
-
-            <div className="lp-module-grid">
-              {MODULES.map((module, index) => (
-                <Reveal key={module.route} delay={index * 0.04}>
-                  <div className="lp-module-card">
-                    <div className="lp-module-meta">
-                      <div className="lp-module-route">{module.route}</div>
-                      <div className="lp-module-level">{module.level}</div>
-                    </div>
-                    <h3>{module.title}</h3>
-                    <p>{module.copy}</p>
-                    <ul className="lp-module-points">
-                      {module.points.map((point) => (
-                        <li key={point}>{point}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-section" id="pricing">
-          <div className="lp-section-inner">
-            <Reveal>
-              <SectionHeading
-                eyebrow="Pricing"
-                title="Plan messaging aligned to what is unlocked in the journal."
-                description="No fake urgency, no invented discounts, and no features pushed into the wrong plan. These cards are written to match the current product routing and module access."
-              />
-            </Reveal>
-
-            <div className="lp-plan-grid">
-              {PLAN_CARDS.map((plan, index) => (
+              return (
                 <Reveal key={plan.id} delay={index * 0.06}>
-                  <div className={`lp-plan-card ${plan.featured ? 'featured' : ''}`}>
-                    <div className="lp-plan-head">
+                  <div className={`lp-pricing-card ${plan.popular ? 'popular' : ''}`}>
+                    <div className="lp-pricing-head">
                       <div>
-                        <h3 className="lp-plan-name">{plan.name}</h3>
-                        <div className="lp-plan-caption">{plan.copy}</div>
+                        <h3>{plan.name}</h3>
+                        <p>{plan.desc}</p>
                       </div>
                       <div className="lp-plan-badge">{plan.badge}</div>
                     </div>
 
-                    <div className="lp-plan-price">
-                      {plan.price} <small>/ month</small>
+                    <div className="lp-price">
+                      ${price}
+                      <small> / month</small>
                     </div>
 
-                    <ul className="lp-plan-list">
+                    <div className="lp-price-line">
+                      {isAnnual ? `Billed $${billed}/yr` : 'Billed monthly'}
+                    </div>
+
+                    {isAnnual && save > 0 && <div className="lp-save">save ${save}/yr</div>}
+
+                    <ul className="lp-price-feats">
                       {plan.features.map((feature) => (
                         <li key={feature}>{feature}</li>
                       ))}
                     </ul>
 
                     <button
-                      className={plan.featured ? 'lp-btn-primary' : 'lp-btn-secondary'}
-                      style={{ width: '100%', justifyContent: 'center' }}
-                      onClick={() => (onSignupWithPlan ? onSignupWithPlan(plan.priceId) : onSignup?.())}
+                      className={plan.popular ? 'lp-btn-primary' : 'lp-btn-plan'}
+                      style={{ width: '100%' }}
+                      onClick={() => (onSignupWithPlan ? onSignupWithPlan(priceId) : onSignup?.())}
                     >
                       Start {plan.name}
                     </button>
                   </div>
                 </Reveal>
-              ))}
-            </div>
-
-            <Reveal delay={0.12}>
-              <div className="lp-pricing-note">
-                Every paid plan currently starts through the same activation flow with card required. The landing keeps that flow explicit instead of hiding it behind vague trial language.
-              </div>
-            </Reveal>
+              );
+            })}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="lp-section" id="faq">
-          <div className="lp-section-inner">
-            <Reveal>
-              <SectionHeading
-                eyebrow="FAQ"
-                title="Straight answers, without selling a fantasy."
-                description="These are the practical questions a careful buyer should ask before trusting a trading journal landing page."
-              />
-            </Reveal>
+      <section className="lp-section" id="faq" style={{ paddingTop: 24 }}>
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">FAQ</div></Reveal>
+          <Reveal><h2>Common questions.</h2></Reveal>
 
-            <div className="lp-faq-grid">
-              {FAQS.map((faq, index) => (
-                <Reveal key={faq.question} delay={index * 0.04}>
-                  <div className="lp-faq-card">
-                    <h3>{faq.question}</h3>
-                    <p>{faq.answer}</p>
+          <div className="lp-faq-list">
+            {FAQS.map((faq, index) => (
+              <Reveal key={faq.q} delay={index * 0.04}>
+                <div className={`lp-faq-item ${openFaq === index ? 'open' : ''}`}>
+                  <div className="lp-faq-q" onClick={() => setOpenFaq(openFaq === index ? null : index)}>
+                    {faq.q}
+                    <span className="lp-faq-arrow">+</span>
                   </div>
-                </Reveal>
-              ))}
-            </div>
+                  <div className="lp-faq-a">
+                    <div className="lp-faq-a-inner">{faq.a}</div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <footer className="lp-footer">
-          <div className="lp-footer-inner">
-            <div className="lp-footer-copy">
-              MarketFlow Journal. Built for structured review, sharper execution, and cleaner accountability.
-              <br />
-              Prop firm names shown on this page are examples of well-known firms, not partnership claims.
+      <section className="lp-cta">
+        <div className="lp-cta-inner">
+          <Reveal><h2>Use the landing as an honest front door to the journal.</h2></Reveal>
+          <Reveal delay={0.06}>
+            <p>
+              The structure is back to something more familiar, the previews are more product-native, and the claims are tighter.
+              From here we can keep polishing the site without drifting back into fake signals.
+            </p>
+          </Reveal>
+          <Reveal delay={0.12}>
+            <div className="lp-cta-actions">
+              <button className="lp-btn-primary" onClick={onSignup}>Start your 14-day flow</button>
+              <button className="lp-btn-secondary" onClick={onLogin}>Log in</button>
             </div>
-            <div className="lp-footer-links">
-              <button onClick={() => goTo('workspace')}>Workspace</button>
-              <button onClick={() => goTo('modules')}>Modules</button>
-              <button onClick={() => goTo('pricing')}>Pricing</button>
-              <button onClick={() => goTo('faq')}>FAQ</button>
+          </Reveal>
+        </div>
+      </section>
+
+      <footer className="lp-footer">
+        <div className="lp-footer-inner">
+          <div className="lp-footer-top">
+            <div className="lp-footer-brand">
+              <div className="lp-brand" style={{ cursor: 'default' }}>
+                <div className="lp-brand-mark">
+                  <img src="/logo192.png" alt="MarketFlow" />
+                </div>
+                <div className="lp-brand-wordmark">
+                  <div className="lp-brand-title">Market<span>Flow</span></div>
+                  <div className="lp-brand-sub">Trading Journal</div>
+                </div>
+              </div>
+              <p>
+                Structured trading review, clearer daily workflow, plan-based access, and a landing page that no longer tries to sell a fantasy.
+              </p>
+            </div>
+
+            <div className="lp-footer-col">
+              <h4>Product</h4>
+              <button onClick={() => scrollTo('workspace')}>Workspace</button>
+              <button onClick={() => scrollTo('features')}>Features</button>
+              <button onClick={() => scrollTo('modules')}>Modules</button>
+              <button onClick={() => scrollTo('pricing')}>Pricing</button>
+            </div>
+
+            <div className="lp-footer-col">
+              <h4>Support</h4>
+              <button onClick={() => setModal('support')}>Support</button>
               <a href="mailto:marketflowjournal0@gmail.com">Contact</a>
               <button onClick={onLogin}>Log in</button>
+              <button onClick={onSignup}>Start trial</button>
+            </div>
+
+            <div className="lp-footer-col">
+              <h4>Resources</h4>
+              <button onClick={() => setModal('changelog')}>Changelog</button>
+              <button onClick={() => setModal('roadmap')}>Roadmap</button>
+              <button onClick={() => setModal('legal')}>Legal</button>
+              <button onClick={() => scrollTo('faq')}>FAQ</button>
             </div>
           </div>
-        </footer>
-      </div>
+
+          <div className="lp-footer-bottom">
+            <p>© 2026 MarketFlow Journal. Prop firm names on this page are examples, not endorsements.</p>
+            <div className="lp-social-row">
+              <a href="https://twitter.com/marketflowjrl" target="_blank" rel="noopener noreferrer" className="lp-social-btn">X</a>
+              <a href="https://discord.gg/Cvh6H8yK8m" target="_blank" rel="noopener noreferrer" className="lp-social-btn">Chat</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {modal && <PageModal page={modal} onClose={() => setModal(null)} />}
     </div>
   );
 }

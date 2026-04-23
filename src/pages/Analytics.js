@@ -1,9 +1,12 @@
 import React, { useMemo } from 'react';
 import { useTradingContext } from '../context/TradingContext';
+import { useAuth } from '../context/AuthContext';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function Analytics() {
   const { trades, globalStats, confluences } = useTradingContext();
+  const { user } = useAuth();
+  const plan = String(user?.plan || user?.user_metadata?.plan || 'trial').toLowerCase();
 
   // Advanced calculations for charts
   const analyticsData = useMemo(() => {
@@ -161,13 +164,74 @@ function Analytics() {
     };
   }, [trades, globalStats]);
 
+  const eliteInsights = useMemo(() => {
+    if (plan !== 'elite' || trades.length === 0) return null;
+
+    const bestSetup = [...analyticsData.setupPerformance]
+      .filter((setup) => setup.count > 0)
+      .sort((a, b) => (b.winRate * b.count) - (a.winRate * a.count))[0];
+
+    const bestWindow = [...analyticsData.timeOfDayData]
+      .sort((a, b) => b.pnl - a.pnl)[0];
+
+    const mostEfficientMarket = [...analyticsData.marketTypeData]
+      .sort((a, b) => b.winRate - a.winRate)[0];
+
+    const confluenceCount = analyticsData.confluencePerformance.length;
+
+    return {
+      bestSetup,
+      bestWindow,
+      mostEfficientMarket,
+      confluenceCount,
+    };
+  }, [analyticsData, plan, trades.length]);
+
   return (
     <div className="p-8">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-2">Advanced Analytics</h1>
-        <p className="text-[#A0AEC0]">Deep insights into your trading performance</p>
+        <p className="text-[#A0AEC0]">
+          {plan === 'starter'
+            ? 'Core analytics for performance, timing, setups, and market read.'
+            : 'Deep insights into your trading performance.'}
+        </p>
       </div>
+
+      {eliteInsights && (
+        <div className="grid grid-cols-4 gap-6 mb-6">
+          <div className="bg-[#1E2536] rounded-xl p-5 border border-[rgba(6,230,255,0.18)]">
+            <div className="text-[#A0AEC0] text-sm mb-1">Elite timing edge</div>
+            <div className="text-xl font-bold text-white">{eliteInsights.bestWindow?.time || '—'}</div>
+            <div className="text-[#06E6FF] text-sm mt-2">
+              {eliteInsights.bestWindow ? `${eliteInsights.bestWindow.pnl >= 0 ? '+' : ''}$${eliteInsights.bestWindow.pnl.toFixed(0)} best P&L window` : 'Waiting for enough trades'}
+            </div>
+          </div>
+
+          <div className="bg-[#1E2536] rounded-xl p-5 border border-[rgba(0,255,136,0.18)]">
+            <div className="text-[#A0AEC0] text-sm mb-1">Elite setup edge</div>
+            <div className="text-xl font-bold text-white">{eliteInsights.bestSetup?.name || '—'}</div>
+            <div className="text-[#10B981] text-sm mt-2">
+              {eliteInsights.bestSetup ? `${eliteInsights.bestSetup.winRate}% WR · ${eliteInsights.bestSetup.count} trades` : 'Waiting for setup history'}
+            </div>
+          </div>
+
+          <div className="bg-[#1E2536] rounded-xl p-5 border border-[rgba(139,92,246,0.18)]">
+            <div className="text-[#A0AEC0] text-sm mb-1">Elite market read</div>
+            <div className="text-xl font-bold text-white">{eliteInsights.mostEfficientMarket?.name || '—'}</div>
+            <div className="text-[#A78BFA] text-sm mt-2">
+              {eliteInsights.mostEfficientMarket ? `${eliteInsights.mostEfficientMarket.winRate}% WR` : 'Waiting for market mix'}
+            </div>
+          </div>
+
+          <div className="bg-[#1E2536] rounded-xl p-5 border border-[rgba(245,158,11,0.18)]">
+            <div className="text-[#A0AEC0] text-sm mb-1">Confluence map</div>
+            <div className="text-xl font-bold text-white">{eliteInsights.confluenceCount}</div>
+            <div className="text-[#F59E0B] text-sm mt-2">Tracked confluence clusters</div>
+          </div>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-4 gap-6 mb-8">
