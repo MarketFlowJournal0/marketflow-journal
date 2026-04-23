@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 const FAQS = [
   { q: 'How do I import my MetaTrader trades?', a: 'Go to File → Export CSV in MT4/MT5, then drag and drop the file into MarketFlow. Import takes less than 30 seconds. We automatically recognize MT4, MT5 and cTrader formats.' },
   { q: 'Is the AI Coach really useful for beginners?', a: 'Yes, that\'s actually where it\'s most effective. For beginners, it guides you on risk management and identifying the most costly mistakes. For advanced traders, it detects subtle patterns.' },
-  { q: 'Can I use MarketFlow with a prop firm?', a: 'Absolutely. MarketFlow is designed for prop traders — FTMO, The5%ers, MyForexFunds, E8, TopStep. The exportable PDF report is formatted to be sent directly to prop firms.' },
-  { q: 'Is my data secure?', a: 'Your data is encrypted with AES-256 in transit and at rest. We are GDPR compliant. Your data is never sold or shared. You can export or delete your account at any time.' },
+  { q: 'Can I use MarketFlow with a prop firm?', a: 'Absolutely. MarketFlow is designed for prop traders — FTMO, The5ers, Topstep, E8, and Funding Pips. The exportable PDF report is formatted to be sent directly to prop firms.' },
+  { q: 'Is my data secure?', a: 'Account, subscription, and journal data are used to operate the product. Export and deletion controls are available from the journal flow.' },
   { q: 'How do I cancel my subscription?', a: 'You can cancel at any time from Settings → Manage Subscription. Access remains active until the end of the current period.' },
 ];
 
@@ -193,7 +193,7 @@ export default function SupportPage({ user, onBack }) {
               Contact Us
             </div>
             {[
-              { icon: '📧', label: 'Support email', value: 'support@marketflowjournal.com', href: 'mailto:support@marketflowjournal.com' },
+              { icon: '📧', label: 'Support email', value: 'marketflowjournal0@gmail.com', href: 'mailto:marketflowjournal0@gmail.com' },
               { icon: '💬', label: 'Community Discord', value: 'discord.gg/Cvh6H8yK8m', href: 'https://discord.gg/Cvh6H8yK8m' },
             ].map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i === 0 ? 12 : 0 }}>
@@ -253,4 +253,5 @@ export default function SupportPage({ user, onBack }) {
     </div>
   );
 }
+
 

@@ -175,7 +175,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                       {forgotMode ? 'Reset your password' : tab === 'login' ? 'Welcome back' : 'Create your account'}
                     </h2>
                     <p style={{ fontSize: 12.5, color: 'rgba(139,163,204,0.85)' }}>
-                      {forgotMode ? "We'll send you a reset link by email." : tab === 'login' ? 'Sign in to access your trading journal.' : 'Start your 14-day free trial. No credit card required.'}
+                      {forgotMode ? "We'll send you a reset link by email." : tab === 'login' ? 'Sign in to access your trading journal.' : 'Create your account, then choose a plan to activate access.'}
                     </p>
                   </div>
 
@@ -271,7 +271,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                       </button>
 
                       <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
-                        By creating an account, you agree to our <a href="#terms" className="auth-link">Terms</a> and <a href="#privacy" className="auth-link">Privacy Policy</a>. No credit card required.
+                        By creating an account, you agree to our <a href="#terms" className="auth-link">Terms</a> and <a href="#privacy" className="auth-link">Privacy Policy</a>. Billing details are shown before activation.
                       </p>
                     </form>
                   )}

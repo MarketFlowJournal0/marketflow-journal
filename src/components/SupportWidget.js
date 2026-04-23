@@ -10,7 +10,7 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['price', 'pricing', 'subscription', 'plan', 'starter', 'pro', 'elite', 'cost', 'how much'],
-    answer: "💳 **Our Plans**\n\n• **Starter** — $15/month (or $11 annually)\n• **Pro** — $22/month (or $15 annually) ⭐\n• **Elite** — $38/month (or $27 annually)\n\nAll plans include **14 days free**, no credit card required 🎉",
+    answer: "💳 **Our Plans**\n\n• **Starter** — $15/month (or $11 annually)\n• **Pro** — $22/month (or $15 annually) ⭐\n• **Elite** — $38/month (or $27 annually)\n\nAll plans use a card-backed 14-day activation flow before the first paid renewal.",
   },
   {
     keywords: ['ai', 'coach', 'intelligence', 'artificial', 'analysis'],
@@ -26,7 +26,7 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['security', 'data', 'gdpr', 'privacy', 'encryption'],
-    answer: "🔒 **Security & GDPR**\n\nYour data is:\n• AES-256 encrypted in transit and at rest\n• Hosted in the EU (Supabase EU)\n• Never sold or shared\n\nYou can export or delete your account at any time.",
+    answer: "🔒 **Security & Privacy**\n\nAccount, subscription, and journal data are used to operate the product. Export and deletion controls are available from the journal flow.",
   },
   {
     keywords: ['prop', 'ftmo', 'funded', 'challenge', 'pdf', 'report'],
@@ -34,30 +34,30 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['trial', 'free', 'free', 'trial', 'test'],
-    answer: "🎁 **Free Trial**\n\nYes! All plans include a **14-day free trial**, no credit card required.\n\nYou get access to all features of your chosen plan during the trial period 🚀",
+    answer: "🎁 **Free Trial**\n\nAll plans use a **14-day trial window** with billing details shown before activation.\n\nYou get access to all features of your chosen plan during the trial period 🚀",
   },
   {
     keywords: ['bug', 'problem', 'error', 'not working', 'not working', 'bug'],
-    answer: "🐛 **Report a Bug**\n\nTo help us resolve issues quickly:\n1. Describe the problem in detail\n2. Specify the steps to reproduce it\n3. Indicate your browser and OS\n\nSend all that to **support@marketflowjournal.com** or use the form below 👇",
+    answer: "🐛 **Report a Bug**\n\nTo help us resolve issues quickly:\n1. Describe the problem in detail\n2. Specify the steps to reproduce it\n3. Indicate your browser and OS\n\nSend all that to **marketflowjournal0@gmail.com** or use the form below 👇",
   },
   {
     keywords: ['received', 'receive', 'receive', 'journal', 'email', 'mail', 'newsletter', 'receive', 'send', 'sent'],
-    answer: "📬 **Delivery Issue**\n\nIf you haven't received an email from us:\n1. Check your **spam / junk folder**\n2. Add **support@marketflowjournal.com** to your contacts\n3. Verify that your account email address is correct\n\nIf the issue persists, contact us directly 👇",
+    answer: "📬 **Delivery Issue**\n\nIf you haven't received an email from us:\n1. Check your **spam / junk folder**\n2. Add **marketflowjournal0@gmail.com** to your contacts\n3. Verify that your account email address is correct\n\nIf the issue persists, contact us directly 👇",
   },
   {
     keywords: ['account', 'password', 'login', 'connect', 'login', 'access', 'forgotten'],
-    answer: "🔑 **Login Issue**\n\nIf you can't log in:\n1. Click **\"Forgot Password\"** on the login page\n2. Check your spam for the reset email\n3. Make sure you're using the correct email address\n\nStill stuck? Email us at **support@marketflowjournal.com**.",
+    answer: "🔑 **Login Issue**\n\nIf you can't log in:\n1. Click **\"Forgot Password\"** on the login page\n2. Check your spam for the reset email\n3. Make sure you're using the correct email address\n\nStill stuck? Email us at **marketflowjournal0@gmail.com**.",
   },
   {
     keywords: ['payment', 'invoice', 'card', 'credit card', 'billing', 'billing', 'charge'],
-    answer: "💳 **Payment & Billing**\n\nPayments are securely processed via **Stripe**.\n\n• Invoices are automatically sent by email\n• You can download your invoices from **Settings > Subscription**\n• For any payment disputes, contact us at **support@marketflowjournal.com**",
+    answer: "💳 **Payment & Billing**\n\nPayments are securely processed via **Stripe**.\n\n• Invoices are automatically sent by email\n• You can download your invoices from **Settings > Subscription**\n• For any payment disputes, contact us at **marketflowjournal0@gmail.com**",
   },
 ];
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
   role: 'bot',
-  text: "👋 Hi! I'm the **MarketFlow** assistant.\n\nI can help you with:\n• 📊 Features & Analytics\n• 💳 Subscriptions & Pricing\n• 📥 Trade Import\n• 🔒 Security & GDPR\n• 📬 Delivery Issues\n• 🔑 Login & Account\n\nHow can I help you?",
+  text: "👋 Hi! I'm the **MarketFlow** assistant.\n\nI can help you with:\n• 📊 Features & Analytics\n• 💳 Subscriptions & Pricing\n• 📥 Trade Import\n• 🔒 Security & Privacy\n• 📬 Delivery Issues\n• 🔑 Login & Account\n\nHow can I help you?",
   time: new Date(),
 };
 
@@ -91,7 +91,7 @@ function getBotAnswer(input) {
       return faq.answer;
     }
   }
-  return "I don't have a precise answer to that question 🤔\n\nBut our team is here for you! Send us an email at **support@marketflowjournal.com**.\n\n⏱ Guaranteed response within **24 business hours**.";
+  return "I don't have a precise answer to that question 🤔\n\nBut our team is here for you! Send us an email at **marketflowjournal0@gmail.com**.\n\n⏱ Guaranteed response within **24 business hours**.";
 }
 
 export default function SupportWidget({ onOpenPage }) {
@@ -379,3 +379,5 @@ export default function SupportWidget({ onOpenPage }) {
     </>
   );
 }
+
+

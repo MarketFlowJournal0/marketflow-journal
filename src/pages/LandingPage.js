@@ -48,44 +48,52 @@ const FEATURE_CARDS = [
 const MODULE_PILLARS = [
   {
     overline: 'Workspace',
-    title: 'A more readable journal shell.',
-    desc: 'Dashboard, All Trades, Calendar, Competition, and the daily workflow are framed as a clearer operating system instead of a pile of noisy widgets.',
+    title: 'A clearer daily operating desk.',
+    desc: 'Dashboard, All Trades, Calendar, Competition, and the workflow layer stay connected so the journal reads like one system instead of isolated pages.',
     points: ['Command-center dashboard', 'Execution-ledger review', 'Calendar and daily flow visibility'],
   },
   {
     overline: 'Analytics',
-    title: 'Starter, Pro, and Elite each have a role.',
-    desc: 'Starter now gets the basic analytics page, Pro keeps the deeper analytics stack, and Elite gets extra overlays to read timing, setup edge, and confluence density faster.',
+    title: 'Each plan unlocks a real review layer.',
+    desc: 'Starter keeps the essential readouts, Pro opens the deeper review stack, and Elite adds faster overlays and richer operational tooling.',
     points: ['Starter: core performance analytics', 'Pro: deeper review stack', 'Elite: boosted overlays and richer readouts'],
   },
   {
-    overline: 'Trust',
-    title: 'Marketing claims are kept on a shorter leash.',
-    desc: 'The landing no longer leans on fake user counters, fake reviews, fake market tape, or shaky competitor comparisons.',
-    points: ['No invented user counts', 'No fake live ticker', 'No unsupported competitor grid'],
+    overline: 'Operations',
+    title: 'Reports, alerts, API, and account tooling stay mapped to the live product.',
+    desc: 'The commercial site is written against the modules already present in the journal so the plan grid and the product shell stay aligned.',
+    points: ['Reports and exports', 'Alerts and API by plan', 'Billing and support transparency'],
   },
 ];
 
 const FAQS = [
   {
-    q: 'Does the landing use fake customer numbers or fake reviews?',
-    a: 'No. The landing has been cleaned so it no longer relies on synthetic social proof or invented user statistics.',
+    q: 'What can I import into MarketFlow?',
+    a: 'The journal currently supports CSV, XLSX, XLS, TSV, JSON, and pasted raw trade history inside All Trades.',
   },
   {
-    q: 'Why is there no live market ticker on the landing anymore?',
-    a: 'Because there is no production-grade real-time market feed wired into the landing right now. It is safer to remove it than to simulate market data.',
+    q: 'Does Starter include analytics?',
+    a: 'Yes. Starter includes the core analytics layer. Pro unlocks the deeper review stack, and Elite adds richer overlays and operational modules.',
   },
   {
-    q: 'Can Starter access analytics now?',
-    a: 'Yes. Starter now includes the core analytics page. Pro keeps the deeper analytics stack, and Elite gets additional overlays above that.',
+    q: 'When does billing start?',
+    a: 'Activation is card-backed, but the selected plan is not charged during the 14-day trial. Billing starts automatically when the trial ends unless the subscription is canceled before renewal.',
+  },
+  {
+    q: 'Can I cancel online?',
+    a: 'Yes. Subscription management is available from the account area. Access stays active until the end of the already-paid period or trial window.',
   },
   {
     q: 'Are the prop firm names official partnerships?',
-    a: 'No. They are shown as examples of well-known prop environments traders care about, not as endorsements or official partnerships.',
+    a: 'No. They are shown as examples of trading environments people recognize, not as endorsements, affiliations, or official partnerships.',
   },
   {
-    q: 'Is the 14-day activation flow still explicit?',
-    a: 'Yes. Card-required activation is still stated clearly, and the landing does not try to hide that flow behind vague trial language.',
+    q: 'What data is used to run the journal?',
+    a: 'MarketFlow uses account, subscription, onboarding, and trade-journal data needed to provide the workspace, imports, analytics, and support flow.',
+  },
+  {
+    q: 'Does the landing only describe live modules?',
+    a: 'That is the goal of this page. The public copy is kept tied to the modules that are already accessible in the journal by plan.',
   },
 ];
 
@@ -111,7 +119,7 @@ const PAGE_CONTENT = {
   },
   support: {
     title: 'Support',
-    subtitle: 'Need help with access or billing?',
+    subtitle: 'Access, billing, and account help',
     items: [
       'Email: marketflowjournal0@gmail.com',
       'In-app support page after login',
@@ -119,12 +127,31 @@ const PAGE_CONTENT = {
     ],
   },
   legal: {
-    title: 'Legal and Privacy',
-    subtitle: 'Core policy points',
+    title: 'Legal and Billing',
+    subtitle: 'Operational points visible on the public site',
     items: [
       'Payments are processed via Stripe.',
-      'MarketFlow does not need fake numbers to sell the product.',
-      'The landing is being tightened to match the real product state.',
+      'Plan access depends on the selected subscription tier.',
+      'Prop firm names shown on the site are references, not endorsements.',
+      'Billing terms are stated before checkout and remain visible in the account flow.',
+    ],
+  },
+  privacy: {
+    title: 'Privacy',
+    subtitle: 'What the public site states clearly',
+    items: [
+      'Account, onboarding, subscription, and trade-journal data are used to operate the product.',
+      'Support requests can be sent by email or from the in-app support area.',
+      'Data export and deletion controls exist inside the journal flow.',
+    ],
+  },
+  billing: {
+    title: 'Billing',
+    subtitle: 'Short version of the plan flow',
+    items: [
+      'Activation is card-backed before the journal opens.',
+      'The 14-day trial is not charged during the trial window.',
+      'Renewal continues until canceled from the account area.',
     ],
   },
 };
@@ -265,7 +292,7 @@ const FEATURE_REEL_SCENES = [
     title: 'Exports, alerts, and integrations that stay grounded.',
     desc: 'Operational modules stay available only where they already exist in the product, with exports tied to the current journal state.',
     cards: [
-      { title: 'Report desk', meta: 'HTML report · CSV ledger · backup snapshot' },
+      { title: 'Report desk', meta: 'HTML report - CSV ledger - backup snapshot' },
       { title: 'Alerts', meta: 'Rule-based checks tied to journal data' },
       { title: 'API desk', meta: 'Live MT sync and market data routes only' },
     ],
@@ -479,8 +506,38 @@ const STYLES = `
   .lp-hero {
     position: relative;
     min-height: 100vh;
-    padding: 128px 32px 56px;
+    padding: 128px 32px 72px;
     overflow: hidden;
+  }
+
+  .lp-hero-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .lp-hero-bg::before {
+    content: '';
+    position: absolute;
+    inset: -18% -6% 36% -6%;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(6, 230, 255, 0.14), transparent 28%),
+      radial-gradient(circle at 86% 12%, rgba(18, 227, 155, 0.12), transparent 24%),
+      radial-gradient(circle at 54% 34%, rgba(120, 160, 255, 0.08), transparent 34%);
+    filter: blur(34px);
+    opacity: 0.9;
+  }
+
+  .lp-hero-grid {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(rgba(142, 165, 202, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(142, 165, 202, 0.04) 1px, transparent 1px);
+    background-size: 112px 112px, 112px 112px;
+    opacity: 0.28;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.08) 72%, transparent);
   }
 
   .lp-hero-inner {
@@ -489,6 +546,12 @@ const STYLES = `
     max-width: 1240px;
     margin: 0 auto;
     text-align: left;
+  }
+
+  .lp-hero-copy {
+    position: relative;
+    z-index: 2;
+    max-width: 920px;
   }
 
   .lp-overline {
@@ -505,6 +568,7 @@ const STYLES = `
     letter-spacing: 0.16em;
     text-transform: uppercase;
     margin-bottom: 22px;
+    backdrop-filter: blur(10px);
   }
 
   .lp-overline::before {
@@ -517,7 +581,7 @@ const STYLES = `
   }
 
   .lp-hero-title {
-    max-width: 920px;
+    max-width: 860px;
     margin: 0;
     font-family: 'Space Grotesk', sans-serif;
     font-size: clamp(46px, 7vw, 88px);
@@ -527,7 +591,10 @@ const STYLES = `
   }
 
   .lp-hero-title span {
-    color: #bff3ff;
+    background: linear-gradient(180deg, #f7fbff 0%, #d6f7ff 42%, #9de8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .lp-hero-sub {
@@ -553,10 +620,40 @@ const STYLES = `
     margin-top: 30px;
   }
 
+  .lp-hero-micro {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .lp-hero-micro-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(125, 150, 190, 0.12);
+    background: rgba(7, 12, 22, 0.46);
+    color: var(--lp-text-2);
+    font-size: 12px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+  }
+
+  .lp-hero-micro-item::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #8ae9ff, #00ff88);
+    box-shadow: 0 0 14px rgba(6, 230, 255, 0.3);
+  }
+
   .lp-hero-preview-shell {
     position: relative;
-    margin-top: 42px;
-    padding-top: 48px;
+    margin-top: 52px;
+    padding-top: 56px;
   }
 
   .lp-hero-preview-shell::before {
@@ -567,6 +664,91 @@ const STYLES = `
     background: linear-gradient(180deg, rgba(6, 230, 255, 0), rgba(6, 230, 255, 0.08) 38%, rgba(0, 255, 136, 0.06) 62%, rgba(4, 7, 13, 0) 100%);
     filter: blur(36px);
     pointer-events: none;
+  }
+
+  .lp-prop-floating-wrap {
+    position: absolute;
+    inset: 80px 0 auto;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0.9;
+  }
+
+  .lp-prop-floating-head {
+    max-width: 1240px;
+    margin: 0 auto 14px;
+    padding: 0 32px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .lp-prop-floating-head strong {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(206, 223, 255, 0.56);
+  }
+
+  .lp-prop-floating-head span {
+    font-size: 11px;
+    color: rgba(150, 170, 206, 0.54);
+  }
+
+  .lp-prop-marquee-floating {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .lp-prop-marquee-floating::before,
+  .lp-prop-marquee-floating::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 180px;
+    z-index: 1;
+  }
+
+  .lp-prop-marquee-floating::before {
+    left: 0;
+    background: linear-gradient(90deg, rgba(3,6,12,0.96), rgba(3,6,12,0));
+  }
+
+  .lp-prop-marquee-floating::after {
+    right: 0;
+    background: linear-gradient(270deg, rgba(3,6,12,0.96), rgba(3,6,12,0));
+  }
+
+  .lp-prop-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: lpPropMove 34s linear infinite;
+    padding: 0 20px;
+  }
+
+  .lp-prop-marquee-track:hover { animation-play-state: paused; }
+
+  @keyframes lpPropMove {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .lp-prop-item {
+    margin-right: 12px;
+    padding: 11px 15px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(125, 150, 190, 0.08);
+    color: rgba(226, 236, 255, 0.82);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
   }
 
   .lp-window {
@@ -729,6 +911,12 @@ const STYLES = `
     transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
   }
 
+  .lp-reel-nav button:hover {
+    border-color: rgba(6, 230, 255, 0.16);
+    color: #dffbff;
+    background: rgba(255,255,255,0.04);
+  }
+
   .lp-reel-nav button.active {
     border-color: rgba(6, 230, 255, 0.2);
     background: rgba(6, 230, 255, 0.08);
@@ -768,6 +956,13 @@ const STYLES = `
     border-radius: 18px;
     border: 1px solid rgba(125, 150, 190, 0.1);
     background: rgba(255,255,255,0.025);
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .lp-scene-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(6, 230, 255, 0.16);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
   }
 
   .lp-scene-card.wide {
@@ -830,6 +1025,13 @@ const STYLES = `
     border: 1px solid rgba(125, 150, 190, 0.08);
     color: var(--lp-text-2);
     font-size: 12px;
+    transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  }
+
+  .lp-scene-list-row:hover {
+    transform: translateX(4px);
+    border-color: rgba(6, 230, 255, 0.16);
+    background: rgba(255,255,255,0.04);
   }
 
   .lp-scene-list-row strong {
@@ -875,6 +1077,13 @@ const STYLES = `
     color: var(--lp-text);
     font-size: 12px;
     font-weight: 700;
+    transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  }
+
+  .lp-scene-tag:hover {
+    transform: translateX(4px);
+    border-color: rgba(6, 230, 255, 0.16);
+    background: rgba(6, 230, 255, 0.08);
   }
 
   .lp-scene-meter-head {
@@ -919,6 +1128,13 @@ const STYLES = `
     border-radius: 16px;
     border: 1px solid rgba(125, 150, 190, 0.1);
     background: rgba(255,255,255,0.025);
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .lp-scene-calendar-cell:hover {
+    transform: translateY(-3px);
+    border-color: rgba(6, 230, 255, 0.16);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
   }
 
   .lp-scene-calendar-cell strong {
@@ -980,6 +1196,13 @@ const STYLES = `
     border-radius: 14px;
     border: 1px solid rgba(125, 150, 190, 0.08);
     background: rgba(255,255,255,0.025);
+    transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  }
+
+  .lp-reel-film-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(6, 230, 255, 0.16);
+    background: rgba(255,255,255,0.04);
   }
 
   .lp-reel-film-item.active {
@@ -1279,64 +1502,6 @@ const STYLES = `
     font-weight: 600;
   }
 
-  .lp-propfirms {
-    padding: 28px 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
-      rgba(5, 9, 15, 0.88);
-    overflow: hidden;
-  }
-
-  .lp-prop-head {
-    max-width: 1240px;
-    margin: 0 auto 14px;
-    padding: 0 32px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 10px;
-    align-items: baseline;
-  }
-
-  .lp-prop-head strong {
-    font-size: 13px;
-    color: var(--lp-text);
-  }
-
-  .lp-prop-head span {
-    font-size: 12px;
-    color: var(--lp-text-3);
-  }
-
-  .lp-prop-marquee {
-    display: flex;
-    width: max-content;
-    animation: lpPropMove 36s linear infinite;
-  }
-
-  .lp-prop-marquee:hover { animation-play-state: paused; }
-
-  @keyframes lpPropMove {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-
-  .lp-prop-item {
-    margin-right: 12px;
-    padding: 12px 16px;
-    border-radius: 16px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(125, 150, 190, 0.08);
-    color: #dce8ff;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
   .lp-section-tag {
     display: inline-flex;
     align-items: center;
@@ -1587,6 +1752,36 @@ const STYLES = `
     color: #8bf6d2;
   }
 
+  .lp-price-support {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .lp-price-rail-item {
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(125, 150, 190, 0.1);
+    background: rgba(255,255,255,0.025);
+  }
+
+  .lp-price-rail-item span {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lp-text-3);
+  }
+
+  .lp-price-rail-item strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--lp-text);
+  }
+
   .lp-pricing-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1675,6 +1870,13 @@ const STYLES = `
     flex: 1;
   }
 
+  .lp-card-foot {
+    margin: 0 0 18px;
+    font-size: 11.5px;
+    color: var(--lp-text-3);
+    line-height: 1.7;
+  }
+
   .lp-price-feats li {
     display: flex;
     gap: 10px;
@@ -1703,6 +1905,13 @@ const STYLES = `
 
   .lp-faq-item {
     overflow: hidden;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+  }
+
+  .lp-faq-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(6, 230, 255, 0.16);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
   }
 
   .lp-faq-q {
@@ -1937,6 +2146,28 @@ const STYLES = `
     line-height: 1.7;
   }
 
+  .lp-modal-section {
+    display: grid;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(125, 150, 190, 0.1);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .lp-modal-section strong {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lp-text);
+  }
+
+  .lp-modal-section-list {
+    display: grid;
+    gap: 10px;
+  }
+
   @media (max-width: 1180px) {
     .lp-features-grid,
     .lp-module-grid,
@@ -1953,6 +2184,10 @@ const STYLES = `
     .lp-reel-head,
     .lp-scene-grid.analytics,
     .lp-reel-film {
+      grid-template-columns: 1fr;
+    }
+
+    .lp-price-support {
       grid-template-columns: 1fr;
     }
 
@@ -1979,8 +2214,9 @@ const STYLES = `
       padding-right: 20px;
     }
 
-    .lp-prop-head {
+    .lp-prop-floating-head {
       padding: 0 20px;
+      justify-content: flex-start;
     }
 
     .lp-command {
@@ -2017,6 +2253,10 @@ const STYLES = `
 
     .lp-hero-title {
       font-size: clamp(38px, 12vw, 56px);
+    }
+
+    .lp-prop-floating-head {
+      display: none;
     }
 
     .lp-calendar-grid {
@@ -2319,10 +2559,20 @@ function PageModal({ page, onClose }) {
             <h3>{content.title}</h3>
             <p>{content.subtitle}</p>
           </div>
-          <button className="lp-modal-close" onClick={onClose}>×</button>
+          <button className="lp-modal-close" onClick={onClose}>x</button>
         </div>
         <div className="lp-modal-body">
-          {content.items.map((item) => (
+          {(content.sections || []).map((section) => (
+            <div key={section.title} className="lp-modal-section">
+              <strong>{section.title}</strong>
+              <div className="lp-modal-section-list">
+                {section.items.map((item) => (
+                  <div key={item} className="lp-modal-item">{item}</div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {(content.items || []).map((item) => (
             <div key={item} className="lp-modal-item">{item}</div>
           ))}
         </div>
@@ -2418,7 +2668,7 @@ function FeatureScene({ scene }) {
               className={`lp-scene-calendar-cell ${active ? hit[2] : 'neutral'}`}
             >
               <strong>{active ? hit[0] : String(index + 1).padStart(2, '0')}</strong>
-              <span>{active ? hit[1] : '—'}</span>
+              <span>{active ? hit[1] : '-'}</span>
             </div>
           );
         })}
@@ -2438,9 +2688,28 @@ function FeatureScene({ scene }) {
   );
 }
 
+function AmbientPropRibbon() {
+  const propLoop = [...PROP_FIRMS, ...PROP_FIRMS];
+
+  return (
+    <div className="lp-prop-floating-wrap" aria-hidden="true">
+      <div className="lp-prop-floating-head">
+        <strong>Known prop environments traders actually recognize</strong>
+        <span>Shown as examples only, not as endorsements or partnerships.</span>
+      </div>
+      <div className="lp-prop-marquee-floating">
+        <div className="lp-prop-marquee-track">
+          {propLoop.map((name, index) => (
+            <div key={name + String(index)} className="lp-prop-item">{name}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HeroPreview() {
   const [sceneIndex, setSceneIndex] = useState(0);
-  const propLoop = [...PROP_FIRMS, ...PROP_FIRMS];
   const scene = FEATURE_REEL_SCENES[sceneIndex];
 
   useEffect(() => {
@@ -2452,129 +2721,122 @@ function HeroPreview() {
   }, []);
 
   return (
-    <>
-      <div className="lp-hero-preview-shell">
-        <div className="lp-window">
-          <div className="lp-window-top">
-            <div className="lp-window-dot" />
-            <div className="lp-window-dot" />
-            <div className="lp-window-dot" />
-            <div className="lp-window-label">Live MarketFlow workspace preview</div>
-          </div>
+    <div className="lp-hero-preview-shell">
+      <motion.div
+        className="lp-window"
+        initial={{ opacity: 0, y: 22 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        whileHover={{ y: -4, scale: 1.003 }}
+      >
+        <div className="lp-window-top">
+          <div className="lp-window-dot" />
+          <div className="lp-window-dot" />
+          <div className="lp-window-dot" />
+          <div className="lp-window-label">Live MarketFlow workspace preview</div>
+        </div>
 
-          <div className="lp-window-body">
-            <aside className="lp-sidebar">
-              <div className="lp-brand" style={{ cursor: 'default' }}>
-                <div className="lp-brand-mark">
-                  <img src="/logo192.png" alt="MarketFlow" />
-                </div>
-                <div className="lp-brand-wordmark">
-                  <div className="lp-brand-title">Market<span>Flow</span></div>
-                  <div className="lp-brand-sub">Journal</div>
-                </div>
+        <div className="lp-window-body">
+          <aside className="lp-sidebar">
+            <div className="lp-brand" style={{ cursor: 'default' }}>
+              <div className="lp-brand-mark">
+                <img src="/logo192.png" alt="MarketFlow" />
               </div>
-
-              <div className="lp-sidebar-group">
-                <div className="lp-sidebar-label">Core</div>
-                <div className="lp-sidebar-link active">
-                  <div className="lp-sidebar-icon"><Icon name="journal" size={14} /></div>
-                  Dashboard
-                </div>
-                <div className="lp-sidebar-link">
-                  <div className="lp-sidebar-icon"><Icon name="journal" size={14} /></div>
-                  All Trades
-                </div>
-                <div className="lp-sidebar-link">
-                  <div className="lp-sidebar-icon"><Icon name="analytics" size={14} /></div>
-                  Analytics
-                </div>
-                <div className="lp-sidebar-link">
-                  <div className="lp-sidebar-icon"><Icon name="psychology" size={14} /></div>
-                  Psychology
-                </div>
+              <div className="lp-brand-wordmark">
+                <div className="lp-brand-title">Market<span>Flow</span></div>
+                <div className="lp-brand-sub">Journal</div>
               </div>
+            </div>
 
-              <div className="lp-sidebar-group">
-                <div className="lp-sidebar-label">Plan unlocks</div>
-                <div className="lp-sidebar-link">
-                  <div className="lp-sidebar-icon"><Icon name="backtest" size={14} /></div>
-                  Backtest
-                </div>
-                <div className="lp-sidebar-link">
-                  <div className="lp-sidebar-icon"><Icon name="stack" size={14} /></div>
-                  Reports
-                </div>
+            <div className="lp-sidebar-group">
+              <div className="lp-sidebar-label">Core</div>
+              <div className="lp-sidebar-link active">
+                <div className="lp-sidebar-icon"><Icon name="journal" size={14} /></div>
+                Dashboard
               </div>
-            </aside>
+              <div className="lp-sidebar-link">
+                <div className="lp-sidebar-icon"><Icon name="journal" size={14} /></div>
+                All Trades
+              </div>
+              <div className="lp-sidebar-link">
+                <div className="lp-sidebar-icon"><Icon name="analytics" size={14} /></div>
+                Analytics
+              </div>
+              <div className="lp-sidebar-link">
+                <div className="lp-sidebar-icon"><Icon name="psychology" size={14} /></div>
+                Psychology
+              </div>
+            </div>
 
-            <div className="lp-main">
-              <div className="lp-reel-shell">
-                <div className="lp-reel-head">
-                  <div>
-                    <div className="lp-reel-overline">{scene.section}</div>
-                    <strong>{scene.title}</strong>
-                    <p>{scene.desc}</p>
-                  </div>
-                  <div className="lp-reel-nav">
-                    {FEATURE_REEL_SCENES.map((item, index) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className={index === sceneIndex ? 'active' : ''}
-                        onClick={() => setSceneIndex(index)}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
+            <div className="lp-sidebar-group">
+              <div className="lp-sidebar-label">Plan unlocks</div>
+              <div className="lp-sidebar-link">
+                <div className="lp-sidebar-icon"><Icon name="backtest" size={14} /></div>
+                Backtest
+              </div>
+              <div className="lp-sidebar-link">
+                <div className="lp-sidebar-icon"><Icon name="stack" size={14} /></div>
+                Reports
+              </div>
+            </div>
+          </aside>
+
+          <div className="lp-main">
+            <div className="lp-reel-shell">
+              <div className="lp-reel-head">
+                <div>
+                  <div className="lp-reel-overline">{scene.section}</div>
+                  <strong>{scene.title}</strong>
+                  <p>{scene.desc}</p>
                 </div>
-
-                <div className="lp-reel-stage">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={scene.id}
-                      initial={{ opacity: 0, y: 18, scale: 0.985 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -12, scale: 0.985 }}
-                      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                      className="lp-reel-screen"
+                <div className="lp-reel-nav">
+                  {FEATURE_REEL_SCENES.map((item, index) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={index === sceneIndex ? 'active' : ''}
+                      onClick={() => setSceneIndex(index)}
                     >
-                      <FeatureScene scene={scene} />
-                    </motion.div>
-                  </AnimatePresence>
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div className="lp-reel-footer">
-                  <div className="lp-reel-progress">
-                    <span style={{ width: `${((sceneIndex + 1) / FEATURE_REEL_SCENES.length) * 100}%` }} />
-                  </div>
-                  <div className="lp-reel-film">
-                    {FEATURE_REEL_SCENES.map((item, index) => (
-                      <div key={item.id} className={`lp-reel-film-item ${index === sceneIndex ? 'active' : ''}`}>
-                        <span>{String(index + 1).padStart(2, '0')}</span>
-                        <strong>{item.label}</strong>
-                      </div>
-                    ))}
-                  </div>
+              <div className="lp-reel-stage">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={scene.id}
+                    initial={{ opacity: 0, y: 18, scale: 0.985 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -12, scale: 0.985 }}
+                    transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                    className="lp-reel-screen"
+                  >
+                    <FeatureScene scene={scene} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <div className="lp-reel-footer">
+                <div className="lp-reel-progress">
+                  <span style={{ width: `${((sceneIndex + 1) / FEATURE_REEL_SCENES.length) * 100}%` }} />
+                </div>
+                <div className="lp-reel-film">
+                  {FEATURE_REEL_SCENES.map((item, index) => (
+                    <div key={item.id} className={`lp-reel-film-item ${index === sceneIndex ? 'active' : ''}`}>
+                      <span>{String(index + 1).padStart(2, '0')}</span>
+                      <strong>{item.label}</strong>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="lp-propfirms">
-        <div className="lp-prop-head">
-          <strong>Known prop environments traders actually recognize</strong>
-          <span>Shown as examples only, not as endorsements or partnerships.</span>
-        </div>
-        <div className="lp-prop-marquee">
-          {propLoop.map((name, index) => (
-            <div key={name + String(index)} className="lp-prop-item">{name}</div>
-          ))}
-        </div>
-      </div>
-    </>
+      </motion.div>
+    </div>
   );
 }
 
@@ -2623,38 +2885,52 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       </nav>
 
       <section className="lp-hero">
+        <div className="lp-hero-bg" aria-hidden="true">
+          <AnimatedCandleBg />
+          <div className="lp-hero-grid" />
+          <AmbientPropRibbon />
+        </div>
         <div className="lp-hero-inner">
-          <Reveal>
-            <div className="lp-overline">Only live product modules are described here</div>
-          </Reveal>
+          <div className="lp-hero-copy">
+            <Reveal>
+              <div className="lp-overline">Only live product modules are shown here</div>
+            </Reveal>
 
-          <Reveal delay={0.05}>
-            <h1 className="lp-hero-title">
-              MarketFlow Journal for <span>cleaner execution review</span> and real post-trade discipline.
-            </h1>
-          </Reveal>
+            <Reveal delay={0.05}>
+              <h1 className="lp-hero-title">
+                MarketFlow Journal for <span>cleaner execution review</span> and real post-trade discipline.
+              </h1>
+            </Reveal>
 
-          <Reveal delay={0.1}>
-            <p className="lp-hero-sub">
-              MarketFlow is a structured trading journal built around the modules already available in the product today:
-              journal review, dashboard, calendar, starter analytics, pro analytics, psychology, equity, backtest
-              sessions, reports, alerts, and API access by plan.
-            </p>
-          </Reveal>
+            <Reveal delay={0.1}>
+              <p className="lp-hero-sub">
+                Built for traders who want one connected review desk: execution ledger, dashboard, calendar, analytics,
+                psychology, reports, alerts, and plan-based operational tooling.
+              </p>
+            </Reveal>
 
-          <Reveal delay={0.15}>
-            <p className="lp-hero-note">
-              Card-required activation remains explicit. The landing avoids fake proof points, fake tape, and risky
-              competitor comparisons so the site stays aligned with the real journal.
-            </p>
-          </Reveal>
+            <Reveal delay={0.15}>
+              <p className="lp-hero-note">
+                Activation stays explicit: card-backed access, 14-day trial window, and recurring billing managed from
+                the account area. The public copy is kept tied to the modules already live in the journal.
+              </p>
+            </Reveal>
 
-          <Reveal delay={0.2}>
-            <div className="lp-hero-actions">
-              <button className="lp-btn-primary" onClick={onSignup}>Start your 14-day flow</button>
-              <button className="lp-btn-secondary" onClick={() => scrollTo('workspace')}>Explore the workspace</button>
-            </div>
-          </Reveal>
+            <Reveal delay={0.18}>
+              <div className="lp-hero-micro">
+                <div className="lp-hero-micro-item">Starter includes core analytics</div>
+                <div className="lp-hero-micro-item">Card-backed 14-day activation</div>
+                <div className="lp-hero-micro-item">Imports tied to the live journal</div>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.2}>
+              <div className="lp-hero-actions">
+                <button className="lp-btn-primary" onClick={onSignup}>Start your 14-day flow</button>
+                <button className="lp-btn-secondary" onClick={() => scrollTo('workspace')}>Explore the workspace</button>
+              </div>
+            </Reveal>
+          </div>
 
           <HeroPreview />
         </div>
@@ -2663,11 +2939,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       <section className="lp-section" id="features">
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">Features</div></Reveal>
-          <Reveal><h2>Improve the journal, not the fantasy around it.</h2></Reveal>
+          <Reveal><h2>A cleaner review stack for actual trading work.</h2></Reveal>
           <Reveal>
             <p className="lp-section-sub">
-              The landing is back to a more classical structure: features, workspace, modules, pricing, FAQ, and a real footer.
-              The difference is that the messaging is now tighter and closer to the product state.
+              Every section below is written against what is already accessible in MarketFlow today, so the landing,
+              the plan grid, and the product shell stay in sync.
             </p>
           </Reveal>
 
@@ -2690,11 +2966,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       <section className="lp-section" id="workspace" style={{ paddingTop: 24 }}>
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">Workspace</div></Reveal>
-          <Reveal><h2>Structured sections instead of a landing that feels improvised.</h2></Reveal>
+          <Reveal><h2>A product shell that reads like one desk.</h2></Reveal>
           <Reveal>
             <p className="lp-section-sub">
-              This keeps the old landing logic of a real site while upgrading the visual language, the background transitions,
-              and the product previews.
+              The journal pages are meant to work together: dashboard, trade review, calendar, competition, and the
+              operational layer all follow the same product logic.
             </p>
           </Reveal>
 
@@ -2720,10 +2996,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       <section className="lp-section" id="modules" style={{ paddingTop: 24 }}>
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">Modules</div></Reveal>
-          <Reveal><h2>Starter, Pro, and Elite now read more logically.</h2></Reveal>
+          <Reveal><h2>Starter, Pro, and Elite each unlock a real layer.</h2></Reveal>
           <Reveal>
             <p className="lp-section-sub">
-              Starter now gets the basic analytics layer. Pro keeps the deeper review stack. Elite gets extra overlays above that instead of only “more data”.
+              Starter keeps the essentials, Pro opens the deeper review workflow, and Elite adds faster overlays and
+              higher-access operational tooling.
             </p>
           </Reveal>
 
@@ -2778,10 +3055,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       <section className="lp-section" id="pricing">
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">Pricing</div></Reveal>
-          <Reveal><h2>Aligned pricing cards, monthly and annual.</h2></Reveal>
+          <Reveal><h2>Choose the review layer that matches your desk.</h2></Reveal>
           <Reveal>
             <p className="lp-section-sub">
-              The pricing section is back to a more familiar site layout, but now it reflects the real plan structure and annual billing options already wired in the product.
+              Monthly and annual billing stay aligned with the live Stripe plans. Plan access below matches the current
+              product routing and module availability.
             </p>
           </Reveal>
 
@@ -2798,6 +3076,21 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               ))}
             </div>
             {billing === 'annual' && <div className="lp-billing-note">Annual billing active</div>}
+          </div>
+
+          <div className="lp-price-support">
+            <div className="lp-price-rail-item">
+              <span>Activation</span>
+              <strong>Card-backed before journal access opens</strong>
+            </div>
+            <div className="lp-price-rail-item">
+              <span>Trial</span>
+              <strong>14 days before the first paid renewal</strong>
+            </div>
+            <div className="lp-price-rail-item">
+              <span>Management</span>
+              <strong>Plan changes and cancellation from the account area</strong>
+            </div>
           </div>
 
           <div className="lp-pricing-grid">
@@ -2836,6 +3129,14 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                       ))}
                     </ul>
 
+                    <div className="lp-card-foot">
+                      {plan.id === 'starter'
+                        ? 'Best for traders who want the core journal and the first analytics layer.'
+                        : plan.id === 'pro'
+                          ? 'Built for deeper review, psychology, equity, reports, and a fuller analytics stack.'
+                          : 'Adds the highest-access desk modules, extra overlays, and broader account operations.'}
+                    </div>
+
                     <button
                       className={plan.popular ? 'lp-btn-primary' : 'lp-btn-plan'}
                       style={{ width: '100%' }}
@@ -2854,7 +3155,12 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       <section className="lp-section" id="faq" style={{ paddingTop: 24 }}>
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">FAQ</div></Reveal>
-          <Reveal><h2>Common questions.</h2></Reveal>
+          <Reveal><h2>Common questions before activation.</h2></Reveal>
+          <Reveal>
+            <p className="lp-section-sub">
+              Short answers on imports, billing, analytics access, and what the public site is actually promising.
+            </p>
+          </Reveal>
 
           <div className="lp-faq-list">
             {FAQS.map((faq, index) => (
@@ -2876,11 +3182,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
 
       <section className="lp-cta">
         <div className="lp-cta-inner">
-          <Reveal><h2>Use the landing as an honest front door to the journal.</h2></Reveal>
+          <Reveal><h2>Open the same journal desk the landing is describing.</h2></Reveal>
           <Reveal delay={0.06}>
             <p>
-              The structure is back to something more familiar, the previews are more product-native, and the claims are tighter.
-              From here we can keep polishing the site without drifting back into fake signals.
+              MarketFlow is built to keep execution review, discipline, and plan-based tooling inside one product flow
+              instead of spreading them across disconnected pages and vague promises.
             </p>
           </Reveal>
           <Reveal delay={0.12}>
@@ -2906,7 +3212,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                 </div>
               </div>
               <p>
-                Structured trading review, clearer daily workflow, plan-based access, and a landing page that no longer tries to sell a fantasy.
+                Structured trading review, clearer daily workflow, and plan-based access kept aligned with the live journal.
               </p>
             </div>
 
@@ -2921,16 +3227,18 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <div className="lp-footer-col">
               <h4>Support</h4>
               <button onClick={() => setModal('support')}>Support</button>
+              <button onClick={() => setModal('billing')}>Billing</button>
               <a href="mailto:marketflowjournal0@gmail.com">Contact</a>
               <button onClick={onLogin}>Log in</button>
               <button onClick={onSignup}>Start trial</button>
             </div>
 
             <div className="lp-footer-col">
-              <h4>Resources</h4>
+              <h4>Legal</h4>
               <button onClick={() => setModal('changelog')}>Changelog</button>
               <button onClick={() => setModal('roadmap')}>Roadmap</button>
               <button onClick={() => setModal('legal')}>Legal</button>
+              <button onClick={() => setModal('privacy')}>Privacy</button>
               <button onClick={() => scrollTo('faq')}>FAQ</button>
             </div>
           </div>
@@ -2949,3 +3257,4 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
     </div>
   );
 }
+

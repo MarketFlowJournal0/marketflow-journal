@@ -341,7 +341,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         {/* Footer note */}
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: '#334566' }}>
           <span style={{ color: '#7A90B8' }}>100% secure payment by Stripe</span>
-          {' · '}Cancel in 1 click
+          {' · '}Manage or cancel online
           {' · '}14-day free trial — one per account
           {' · '}Auto-billing after trial
         </motion.p>
