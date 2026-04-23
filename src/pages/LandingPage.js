@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const PROP_FIRMS = [
   'FTMO',
@@ -190,6 +190,84 @@ const PLANS = [
       'API access',
       '25 backtest sessions',
       'Priority support channel',
+    ],
+  },
+];
+
+const FEATURE_REEL_SCENES = [
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    section: 'Command center',
+    title: 'Daily review, account scope, and execution context.',
+    desc: 'Start in one place, scan the desk state, then move directly into the next action instead of hopping between disconnected widgets.',
+    stats: [
+      { label: 'Net PnL', value: '$8,620', tone: 'positive', sub: '9 trading days in scope' },
+      { label: 'Win rate', value: '68.4%', tone: 'neutral', sub: 'Rolling and cumulative' },
+      { label: 'Max DD', value: '-$920', tone: 'negative', sub: 'Linked to equity' },
+      { label: 'Workflow', value: '3/4', tone: 'accent', sub: 'Daily tasks completed' },
+    ],
+  },
+  {
+    id: 'all-trades',
+    label: 'All Trades',
+    section: 'Execution ledger',
+    title: 'A table-first review flow for real execution work.',
+    desc: 'Import fills, isolate a segment fast, then open the trade details without losing the broader ledger context.',
+    rows: [
+      ['EURUSD', 'London breakout', 'Long', '+$380'],
+      ['BTCUSD', 'NY reclaim', 'Short', '+$650'],
+      ['US30', 'Open drive', 'Long', '+$4,500'],
+      ['GBPUSD', 'Pullback', 'Long', '-$120'],
+    ],
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    section: 'Edge read',
+    title: 'Win rate, drawdown, and timing readouts in one layer.',
+    desc: 'Starter reads the basics, Pro goes deeper, and Elite overlays surface timing edge, setup edge, and confluence density faster.',
+    bars: [46, 58, 52, 64, 49, 72, 61, 74, 68, 78],
+    tags: ['Win rate', 'Setup edge', 'Timing edge', 'Drawdown'],
+  },
+  {
+    id: 'psychology',
+    label: 'Psychology',
+    section: 'Behavior',
+    title: 'Discipline, patience, confidence, and emotional control.',
+    desc: 'The review is not just financial. Session quality and behavioral drift stay visible inside the same product loop.',
+    meters: [
+      { label: 'Discipline', value: 82, tone: 'positive' },
+      { label: 'Patience', value: 76, tone: 'accent' },
+      { label: 'Confidence', value: 71, tone: 'neutral' },
+      { label: 'Risk control', value: 88, tone: 'positive' },
+    ],
+  },
+  {
+    id: 'calendar',
+    label: 'Calendar',
+    section: 'Performance map',
+    title: 'A month view that makes winning and losing clusters obvious.',
+    desc: 'Day selection, monthly flow, and fast context review make the calendar useful instead of decorative.',
+    days: [
+      ['04', '+$2.9k', 'positive'],
+      ['09', '+$4.7k', 'positive'],
+      ['16', '-$1.5k', 'negative'],
+      ['24', '+$123', 'positive'],
+      ['26', '+$608', 'positive'],
+      ['29', '-$337', 'negative'],
+    ],
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    section: 'Operations',
+    title: 'Exports, alerts, and integrations that stay grounded.',
+    desc: 'Operational modules stay available only where they already exist in the product, with exports tied to the current journal state.',
+    cards: [
+      { title: 'Report desk', meta: 'HTML report · CSV ledger · backup snapshot' },
+      { title: 'Alerts', meta: 'Rule-based checks tied to journal data' },
+      { title: 'API desk', meta: 'Live MT sync and market data routes only' },
     ],
   },
 ];
@@ -590,6 +668,336 @@ const STYLES = `
 
   .lp-main {
     padding: 22px;
+  }
+
+  .lp-reel-shell {
+    display: grid;
+    gap: 16px;
+  }
+
+  .lp-reel-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: end;
+  }
+
+  .lp-reel-overline {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--lp-text-3);
+  }
+
+  .lp-reel-head strong {
+    display: block;
+    margin-top: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 28px;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+    color: var(--lp-text);
+    max-width: 560px;
+  }
+
+  .lp-reel-head p {
+    margin: 10px 0 0;
+    max-width: 600px;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--lp-text-2);
+  }
+
+  .lp-reel-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .lp-reel-nav button {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(125, 150, 190, 0.12);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--lp-text-2);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+
+  .lp-reel-nav button.active {
+    border-color: rgba(6, 230, 255, 0.2);
+    background: rgba(6, 230, 255, 0.08);
+    color: #d0fbff;
+  }
+
+  .lp-reel-stage {
+    min-height: 320px;
+    padding: 18px;
+    border-radius: 24px;
+    border: 1px solid rgba(125, 150, 190, 0.12);
+    background:
+      radial-gradient(circle at top right, rgba(6, 230, 255, 0.08), transparent 26%),
+      linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)),
+      rgba(9, 15, 26, 0.9);
+    overflow: hidden;
+  }
+
+  .lp-reel-screen {
+    height: 100%;
+  }
+
+  .lp-scene-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    height: 100%;
+  }
+
+  .lp-scene-grid.analytics {
+    grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
+  }
+
+  .lp-scene-card {
+    min-height: 118px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(125, 150, 190, 0.1);
+    background: rgba(255,255,255,0.025);
+  }
+
+  .lp-scene-card.wide {
+    min-height: 254px;
+  }
+
+  .lp-scene-card.positive {
+    border-color: rgba(18, 227, 155, 0.2);
+    background: linear-gradient(180deg, rgba(18, 227, 155, 0.12), rgba(18, 227, 155, 0.04));
+  }
+
+  .lp-scene-card.negative {
+    border-color: rgba(255, 104, 117, 0.18);
+    background: linear-gradient(180deg, rgba(255, 104, 117, 0.1), rgba(255, 104, 117, 0.03));
+  }
+
+  .lp-scene-card.accent {
+    border-color: rgba(6, 230, 255, 0.18);
+    background: linear-gradient(180deg, rgba(6, 230, 255, 0.1), rgba(6, 230, 255, 0.03));
+  }
+
+  .lp-scene-kicker {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lp-text-3);
+  }
+
+  .lp-scene-value {
+    display: block;
+    margin-top: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--lp-text);
+  }
+
+  .lp-scene-sub {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--lp-text-2);
+  }
+
+  .lp-scene-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .lp-scene-list-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 0.8fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(125, 150, 190, 0.08);
+    color: var(--lp-text-2);
+    font-size: 12px;
+  }
+
+  .lp-scene-list-row strong {
+    color: var(--lp-text);
+  }
+
+  .lp-scene-bars {
+    height: 188px;
+    margin-top: 18px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .lp-scene-bar {
+    flex: 1;
+    border-radius: 10px 10px 3px 3px;
+    background: linear-gradient(180deg, rgba(6, 230, 255, 0.9), rgba(6, 230, 255, 0.16));
+    transform-origin: bottom center;
+    animation: lpBarPulse 2.8s ease-in-out infinite;
+  }
+
+  .lp-scene-bar.negative {
+    background: linear-gradient(180deg, rgba(255, 104, 117, 0.9), rgba(255, 104, 117, 0.16));
+  }
+
+  @keyframes lpBarPulse {
+    0%, 100% { transform: scaleY(0.96); opacity: 0.86; }
+    50% { transform: scaleY(1.04); opacity: 1; }
+  }
+
+  .lp-scene-tag-grid {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .lp-scene-tag {
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(125, 150, 190, 0.1);
+    background: rgba(255,255,255,0.03);
+    color: var(--lp-text);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .lp-scene-meter-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .lp-scene-meter-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--lp-text);
+  }
+
+  .lp-scene-meter {
+    position: relative;
+    margin-top: 18px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+
+  .lp-scene-meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8ae9ff 0%, #06e6ff 54%, #00ff88 100%);
+    box-shadow: 0 0 22px rgba(6, 230, 255, 0.22);
+  }
+
+  .lp-scene-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .lp-scene-calendar-cell {
+    min-height: 92px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(125, 150, 190, 0.1);
+    background: rgba(255,255,255,0.025);
+  }
+
+  .lp-scene-calendar-cell strong {
+    display: block;
+    font-size: 12px;
+    color: var(--lp-text);
+  }
+
+  .lp-scene-calendar-cell span {
+    display: block;
+    margin-top: 18px;
+    font-size: 11px;
+    color: var(--lp-text-2);
+  }
+
+  .lp-scene-calendar-cell.positive {
+    background: linear-gradient(180deg, rgba(18, 227, 155, 0.18), rgba(18, 227, 155, 0.06));
+    border-color: rgba(18, 227, 155, 0.2);
+  }
+
+  .lp-scene-calendar-cell.negative {
+    background: linear-gradient(180deg, rgba(255, 104, 117, 0.16), rgba(255, 104, 117, 0.05));
+    border-color: rgba(255, 104, 117, 0.18);
+  }
+
+  .lp-scene-calendar-cell.neutral {
+    opacity: 0.72;
+  }
+
+  .lp-reel-footer {
+    display: grid;
+    gap: 12px;
+  }
+
+  .lp-reel-progress {
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+
+  .lp-reel-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8ae9ff 0%, #06e6ff 45%, #00ff88 100%);
+    box-shadow: 0 0 18px rgba(6, 230, 255, 0.22);
+    transition: width 0.28s ease;
+  }
+
+  .lp-reel-film {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .lp-reel-film-item {
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(125, 150, 190, 0.08);
+    background: rgba(255,255,255,0.025);
+  }
+
+  .lp-reel-film-item.active {
+    border-color: rgba(6, 230, 255, 0.16);
+    background: rgba(6, 230, 255, 0.06);
+  }
+
+  .lp-reel-film-item span {
+    display: block;
+    font-size: 10px;
+    color: var(--lp-text-3);
+  }
+
+  .lp-reel-film-item strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--lp-text);
   }
 
   .lp-panel {
@@ -1542,6 +1950,12 @@ const STYLES = `
       grid-template-columns: 1fr;
     }
 
+    .lp-reel-head,
+    .lp-scene-grid.analytics,
+    .lp-reel-film {
+      grid-template-columns: 1fr;
+    }
+
     .lp-sidebar {
       border-right: none;
       border-bottom: 1px solid rgba(125, 150, 190, 0.12);
@@ -1586,6 +2000,11 @@ const STYLES = `
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
+    .lp-scene-grid,
+    .lp-scene-calendar {
+      grid-template-columns: 1fr 1fr;
+    }
+
     .lp-footer-top {
       grid-template-columns: 1fr 1fr;
     }
@@ -1604,11 +2023,24 @@ const STYLES = `
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .lp-scene-grid,
+    .lp-scene-calendar {
+      grid-template-columns: 1fr;
+    }
+
     .lp-day {
       min-height: 68px;
     }
 
     .lp-ledger-row {
+      grid-template-columns: 1fr;
+    }
+
+    .lp-reel-stage {
+      min-height: auto;
+    }
+
+    .lp-scene-list-row {
       grid-template-columns: 1fr;
     }
 
@@ -1899,9 +2331,125 @@ function PageModal({ page, onClose }) {
   );
 }
 
+function FeatureScene({ scene }) {
+  if (scene.id === 'dashboard') {
+    return (
+      <div className="lp-scene-grid">
+        {scene.stats.map((stat) => (
+          <div key={stat.label} className={`lp-scene-card ${stat.tone}`}>
+            <span className="lp-scene-kicker">{stat.label}</span>
+            <strong className="lp-scene-value">{stat.value}</strong>
+            <div className="lp-scene-sub">{stat.sub}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (scene.id === 'all-trades') {
+    return (
+      <div className="lp-scene-list">
+        {scene.rows.map((row) => (
+          <div key={row.join('-')} className="lp-scene-list-row">
+            <strong>{row[0]}</strong>
+            <span>{row[1]}</span>
+            <span>{row[2]}</span>
+            <strong className={String(row[3]).startsWith('-') ? 'lp-negative' : 'lp-positive'}>{row[3]}</strong>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (scene.id === 'analytics') {
+    return (
+      <div className="lp-scene-grid analytics">
+        <div className="lp-scene-card wide">
+          <span className="lp-scene-kicker">Animated analytics surface</span>
+          <div className="lp-scene-bars">
+            {scene.bars.map((bar, index) => (
+              <div
+                key={String(bar) + String(index)}
+                className={`lp-scene-bar ${index === 3 || index === 8 ? 'negative' : ''}`}
+                style={{ height: `${bar}%` }}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="lp-scene-card">
+          <span className="lp-scene-kicker">Readouts</span>
+          <div className="lp-scene-tag-grid">
+            {scene.tags.map((tag) => (
+              <div key={tag} className="lp-scene-tag">{tag}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (scene.id === 'psychology') {
+    return (
+      <div className="lp-scene-grid">
+        {scene.meters.map((meter) => (
+          <div key={meter.label} className={`lp-scene-card ${meter.tone}`}>
+            <div className="lp-scene-meter-head">
+              <span className="lp-scene-kicker">{meter.label}</span>
+              <strong className="lp-scene-meter-value">{meter.value}/100</strong>
+            </div>
+            <div className="lp-scene-meter">
+              <span style={{ width: `${meter.value}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (scene.id === 'calendar') {
+    return (
+      <div className="lp-scene-calendar">
+        {Array.from({ length: 14 }, (_, index) => {
+          const hit = scene.days[index % scene.days.length];
+          const active = [1, 4, 8, 10, 11, 13].includes(index);
+          return (
+            <div
+              key={String(index)}
+              className={`lp-scene-calendar-cell ${active ? hit[2] : 'neutral'}`}
+            >
+              <strong>{active ? hit[0] : String(index + 1).padStart(2, '0')}</strong>
+              <span>{active ? hit[1] : '—'}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="lp-scene-grid">
+      {scene.cards.map((card) => (
+        <div key={card.title} className="lp-scene-card">
+          <span className="lp-scene-kicker">{card.title}</span>
+          <strong className="lp-scene-value" style={{ fontSize: 20 }}>{card.meta}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HeroPreview() {
-  const bars = [42, 58, 46, 72, 68, 80, 62, 88, 70, 76];
+  const [sceneIndex, setSceneIndex] = useState(0);
   const propLoop = [...PROP_FIRMS, ...PROP_FIRMS];
+  const scene = FEATURE_REEL_SCENES[sceneIndex];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSceneIndex((current) => (current + 1) % FEATURE_REEL_SCENES.length);
+    }, 3200);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <>
@@ -1960,160 +2508,53 @@ function HeroPreview() {
             </aside>
 
             <div className="lp-main">
-              <div className="lp-panel lp-command">
-                <div className="lp-command-copy">
-                  <span>MarketFlow command center</span>
-                  <strong>Daily review, account scope, and execution context.</strong>
-                </div>
-                <div className="lp-command-pills">
-                  <div className="lp-pill">All accounts</div>
-                  <div className="lp-pill">London</div>
-                  <div className="lp-pill accent">Analytics live</div>
-                </div>
-              </div>
-
-              <div className="lp-kpi-grid">
-                <div className="lp-panel lp-kpi-card">
-                  <div className="lp-kpi-label">Net PnL</div>
-                  <div className="lp-kpi-value">$8,620</div>
-                  <div className="lp-kpi-meta"><span className="lp-positive">9 trading days</span> in scope</div>
-                </div>
-                <div className="lp-panel lp-kpi-card">
-                  <div className="lp-kpi-label">Win rate</div>
-                  <div className="lp-kpi-value">68.4%</div>
-                  <div className="lp-kpi-meta">Rolling and cumulative views</div>
-                </div>
-                <div className="lp-panel lp-kpi-card">
-                  <div className="lp-kpi-label">Max drawdown</div>
-                  <div className="lp-kpi-value">-$920</div>
-                  <div className="lp-kpi-meta">Linked to equity and analytics</div>
-                </div>
-              </div>
-
-              <div className="lp-preview-grid">
-                <div className="lp-calendar-panel">
-                  <div className="lp-calendar-head">
-                    <div className="lp-calendar-title">Calendar review</div>
-                    <div className="lp-calendar-meta">Selected month: April</div>
+              <div className="lp-reel-shell">
+                <div className="lp-reel-head">
+                  <div>
+                    <div className="lp-reel-overline">{scene.section}</div>
+                    <strong>{scene.title}</strong>
+                    <p>{scene.desc}</p>
                   </div>
-                  <div className="lp-calendar-grid">
-                    {[
-                      ['Mon 08', '-', 'No flow', 'muted'],
-                      ['Tue 09', '+$420', '2 trades', 'win'],
-                      ['Wed 10', '+$285', '1 trade', 'win'],
-                      ['Thu 11', '-$96', '1 trade', 'loss'],
-                      ['Fri 12', '+$560', '3 trades', 'win'],
-                      ['Mon 15', '+$380', 'London', 'win'],
-                      ['Tue 16', '-', 'No flow', 'muted'],
-                      ['Wed 17', '+$140', 'US30', 'win'],
-                    ].map(([day, value, caption, state]) => (
-                      <div key={day} className={`lp-day ${state}`}>
-                        <div className="lp-day-number">{day}</div>
-                        <div className="lp-day-value">{value}</div>
-                        <div className="lp-day-caption">{caption}</div>
-                      </div>
+                  <div className="lp-reel-nav">
+                    {FEATURE_REEL_SCENES.map((item, index) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={index === sceneIndex ? 'active' : ''}
+                        onClick={() => setSceneIndex(index)}
+                      >
+                        {item.label}
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="lp-side-stack">
-                  <div className="lp-side-card">
-                    <div className="lp-mini-head">
-                      <strong>Workflow</strong>
-                      <span>Today</span>
-                    </div>
-                    <div className="lp-checklist">
-                      <div className="lp-check-item">
-                        <div className="lp-check-copy">
-                          <div className="lp-check-bullet" />
-                          <div>
-                            <strong>Pre-session notes</strong>
-                            <span>Bias, plan, and invalidation</span>
-                          </div>
-                        </div>
-                        <div className="lp-check-badge">Open</div>
-                      </div>
-                      <div className="lp-check-item">
-                        <div className="lp-check-copy">
-                          <div className="lp-check-bullet" />
-                          <div>
-                            <strong>Import last fills</strong>
-                            <span>Execution review desk</span>
-                          </div>
-                        </div>
-                        <div className="lp-check-badge">Ready</div>
-                      </div>
-                      <div className="lp-check-item">
-                        <div className="lp-check-copy">
-                          <div className="lp-check-bullet" />
-                          <div>
-                            <strong>Rank snapshot</strong>
-                            <span>Leaderboard refresh every 24h</span>
-                          </div>
-                        </div>
-                        <div className="lp-check-badge">Live</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="lp-side-card">
-                    <div className="lp-mini-head">
-                      <strong>Latest execution review</strong>
-                      <span>All trades</span>
-                    </div>
-                    <div className="lp-ledger">
-                      {[
-                        ['EURUSD', 'London breakout', 'Long', '+$380'],
-                        ['BTCUSD', 'NY reclaim', 'Short', '+$650'],
-                        ['US30', 'Open drive', 'Long', '+$4,500'],
-                      ].map((row) => (
-                        <div key={row.join('-')} className="lp-ledger-row">
-                          <strong>{row[0]}</strong>
-                          <span>{row[1]}</span>
-                          <span>{row[2]}</span>
-                          <strong className={String(row[3]).startsWith('-') ? 'lp-negative' : 'lp-positive'}>{row[3]}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="lp-reel-stage">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={scene.id}
+                      initial={{ opacity: 0, y: 18, scale: 0.985 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -12, scale: 0.985 }}
+                      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                      className="lp-reel-screen"
+                    >
+                      <FeatureScene scene={scene} />
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
-              </div>
 
-              <div className="lp-showcase-grid" style={{ marginTop: 16 }}>
-                <div className="lp-showcase-card">
-                  <div className="lp-mini-head">
-                    <strong>Analytics motion</strong>
-                    <span>Hover-ready</span>
+                <div className="lp-reel-footer">
+                  <div className="lp-reel-progress">
+                    <span style={{ width: `${((sceneIndex + 1) / FEATURE_REEL_SCENES.length) * 100}%` }} />
                   </div>
-                  <div className="lp-chart-bars">
-                    {bars.map((bar, index) => (
-                      <div key={String(bar) + String(index)} className={`lp-bar ${index === 2 || index === 6 ? 'negative' : ''}`} style={{ height: `${bar}%` }} />
+                  <div className="lp-reel-film">
+                    {FEATURE_REEL_SCENES.map((item, index) => (
+                      <div key={item.id} className={`lp-reel-film-item ${index === sceneIndex ? 'active' : ''}`}>
+                        <span>{String(index + 1).padStart(2, '0')}</span>
+                        <strong>{item.label}</strong>
+                      </div>
                     ))}
-                  </div>
-                </div>
-
-                <div className="lp-showcase-card">
-                  <div className="lp-mini-head">
-                    <strong>Tiered analytics</strong>
-                    <span>Starter / Pro / Elite</span>
-                  </div>
-                  <div className="lp-mini-grid">
-                    <div className="lp-mini-box">
-                      <span>Starter</span>
-                      <strong>Core view</strong>
-                    </div>
-                    <div className="lp-mini-box">
-                      <span>Pro</span>
-                      <strong>Deep stack</strong>
-                    </div>
-                    <div className="lp-mini-box">
-                      <span>Elite</span>
-                      <strong>Boosted overlays</strong>
-                    </div>
-                    <div className="lp-mini-box">
-                      <span>Data model</span>
-                      <strong>Shared stream</strong>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -2182,7 +2623,6 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       </nav>
 
       <section className="lp-hero">
-        <AnimatedCandleBg />
         <div className="lp-hero-inner">
           <Reveal>
             <div className="lp-overline">Only live product modules are described here</div>

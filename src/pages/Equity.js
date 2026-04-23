@@ -725,7 +725,7 @@ const MonthlyHeatmap = ({ s }) => {
         </table>
       </div>
       <div style={{ display: 'flex', gap: 14, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 7.5, color: C.t4 }}>Hover = details · click = zoom (coming soon)</span>
+        <span style={{ fontSize: 7.5, color: C.t4 }}>Hover for monthly detail.</span>
         {[{ c: C.green, l: metric === 'wr' ? 'WR ≥ 50%' : 'Positive' }, { c: C.danger, l: metric === 'wr' ? 'WR < 50%' : 'Negative' }].map(({ c, l }) => (
           <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: `${shade(c,'30')}`, border: `1px solid ${shade(c,'60')}` }} />
