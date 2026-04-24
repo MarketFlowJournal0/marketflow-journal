@@ -27,21 +27,21 @@ import {
 } from '../lib/tradeCopier';
 
 const C = {
-  bg: 'var(--mf-bg,#030508)',
-  bgCard: 'var(--mf-card,#0C1422)',
-  bgHigh: 'var(--mf-high,#111B2E)',
-  cyan: 'var(--mf-accent,#06E6FF)',
-  green: 'var(--mf-green,#00FF88)',
+  bg: 'var(--mf-bg,#01040A)',
+  bgCard: 'var(--mf-card,#060D18)',
+  bgHigh: 'var(--mf-high,#0B1525)',
+  cyan: 'var(--mf-accent,#14C9E5)',
+  green: 'var(--mf-green,#00D2B8)',
   purple: 'var(--mf-purple,#A78BFA)',
   blue: 'var(--mf-blue,#4D7CFF)',
-  gold: 'var(--mf-gold,#FFD700)',
+  gold: 'var(--mf-gold,#D7B36A)',
   danger: 'var(--mf-danger,#FF3D57)',
   warn: 'var(--mf-warn,#FFB31A)',
   t0: 'var(--mf-text-0,#FFFFFF)',
   t1: 'var(--mf-text-1,#E8EEFF)',
   t2: 'var(--mf-text-2,#7A90B8)',
   t3: 'var(--mf-text-3,#334566)',
-  brd: 'var(--mf-border,#162034)',
+  brd: 'var(--mf-border,#142033)',
 };
 
 const BROKERS = [
@@ -49,7 +49,7 @@ const BROKERS = [
     id: 'mt4',
     name: 'MetaTrader 4',
     short: 'MT4',
-    color: 'var(--mf-accent,#06E6FF)',
+    color: 'var(--mf-accent,#14C9E5)',
     desc: 'Real-time sync through the MarketFlow EA and token handshake.',
     features: ['EA sync', 'Multi-account', 'Retry-safe'],
     setup: [
@@ -63,7 +63,7 @@ const BROKERS = [
     id: 'mt5',
     name: 'MetaTrader 5',
     short: 'MT5',
-    color: 'var(--mf-green,#00FF88)',
+    color: 'var(--mf-green,#00D2B8)',
     desc: 'Live MT5 synchronization with hedge-aware position handling.',
     features: ['Live sync', 'Hedging', 'Netting'],
     setup: [
@@ -119,7 +119,7 @@ const BROKERS = [
     id: 'webhook',
     name: 'Webhook / API',
     short: 'API',
-    color: 'var(--mf-gold,#FFD700)',
+    color: 'var(--mf-gold,#D7B36A)',
     desc: 'Universal bridge for any platform capable of posting trade payloads.',
     features: ['Any platform', 'REST', 'Custom routing'],
     setup: [

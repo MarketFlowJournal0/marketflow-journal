@@ -28,26 +28,26 @@ import { CHART_AXIS_SMALL, CHART_GRID, CHART_MOTION, CHART_MOTION_SOFT, chartAct
 // 🎨 DESIGN SYSTEM
 // ═══════════════════════════════════════════════════════════════════
 const C={
-  bg0:'var(--mf-bg,#030508)',bg1:'#070C14',bg2:'#0A1020',bg3:'#0F1828',bg4:'#141E30',
-  bgCard:'var(--mf-card,#0C1422)',bgHigh:'var(--mf-high,#121C2E)',bgHover:'#0F1A2E',
-  cyan:'var(--mf-accent,#06E6FF)',   cyanGlow:  'rgba(var(--mf-accent-rgb, 6, 230, 255),0.35)',
-  teal:'var(--mf-teal,#00F5D4)',   tealGlow:  'rgba(var(--mf-teal-rgb, 0, 245, 212),0.3)',
-  green:'var(--mf-green,#00FF88)',  greenGlow: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.35)',
+  bg0:'var(--mf-bg,#01040A)',bg1:'#040B13',bg2:'#060D18',bg3:'#0B1525',bg4:'#101D30',
+  bgCard:'var(--mf-card,#060D18)',bgHigh:'var(--mf-high,#0B1525)',bgHover:'rgba(var(--mf-high-rgb,11,21,37),0.86)',
+  cyan:'var(--mf-accent,#14C9E5)',   cyanGlow:  'rgba(var(--mf-accent-rgb, 20, 201, 229),0.24)',
+  teal:'var(--mf-teal,#00D2B8)',   tealGlow:  'rgba(var(--mf-teal-rgb, 0, 210, 184),0.22)',
+  green:'var(--mf-green,#00D2B8)',  greenGlow: 'rgba(var(--mf-green-rgb, 0, 210, 184),0.24)',
   danger:'var(--mf-danger,#FF3D57)', dangerGlow:'rgba(var(--mf-danger-rgb, 255, 61, 87),0.35)',
   warn:'var(--mf-warn,#FFB31A)',   warnGlow:  'rgba(var(--mf-warn-rgb, 255, 179, 26),0.35)',
   orange:'var(--mf-orange,#FF6B35)',
   purple:'var(--mf-purple,#A78BFA)', purpleGlow:'rgba(var(--mf-purple-rgb, 176, 110, 255),0.35)',
   blue:'var(--mf-blue,#4D7CFF)',   blueGlow:  'rgba(var(--mf-blue-rgb, 77, 124, 255),0.3)',
   pink:'var(--mf-pink,#FB7185)',   pinkGlow:  'rgba(var(--mf-pink-rgb, 255, 77, 196),0.3)',
-  gold:'var(--mf-gold,#FFD700)',
+  gold:'var(--mf-gold,#D7B36A)',
   t0:'var(--mf-text-0,#FFFFFF)',t1:'var(--mf-text-1,#E8EEFF)',t2:'var(--mf-text-2,#7A90B8)',t3:'var(--mf-text-3,#334566)',t4:'var(--mf-text-4,#1E2E45)',
-  brd:'var(--mf-border,#162034)',brdHi:'var(--mf-border-hi,#1E2E48)',
-  gradCyan:  'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  brd:'var(--mf-border,#142033)',brdHi:'var(--mf-border-hi,#1F2F47)',
+  gradCyan:  'linear-gradient(135deg,#DCE4EF,var(--mf-accent,#14C9E5) 46%,var(--mf-green,#00D2B8))',
   gradPurple:'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-blue,#4D7CFF))',
   gradWarm:  'linear-gradient(135deg,var(--mf-warn,#FFB31A),var(--mf-orange,#FF6B35))',
   gradDanger:'linear-gradient(135deg,var(--mf-danger,#FF3D57),var(--mf-orange,#FF6B35))',
   gradPink:  'linear-gradient(135deg,var(--mf-pink,#FB7185),var(--mf-purple,#A78BFA))',
-  gradGold:  'linear-gradient(135deg,var(--mf-gold,#FFD700),var(--mf-gold,#FFB31A))',
+  gradGold:  'linear-gradient(135deg,var(--mf-gold,#D7B36A),var(--mf-gold,#FFB31A))',
 };
 
 const fadeUp={

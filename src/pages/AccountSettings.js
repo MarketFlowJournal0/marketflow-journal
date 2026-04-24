@@ -17,19 +17,19 @@ import {
 } from '../lib/journalTheme';
 
 const C = {
-  bg: 'var(--mf-bg,#030508)',
-  bgCard: 'var(--mf-card,#0C1422)',
-  bgHigh: 'var(--mf-high,#111B2E)',
-  cyan: 'var(--mf-accent,#06E6FF)',
+  bg: 'var(--mf-bg,#01040A)',
+  bgCard: 'var(--mf-card,#060D18)',
+  bgHigh: 'var(--mf-high,#0B1525)',
+  cyan: 'var(--mf-accent,#14C9E5)',
   secondary: 'var(--mf-accent-secondary,#66F0FF)',
-  green: 'var(--mf-green,#00FF88)',
+  green: 'var(--mf-green,#00D2B8)',
   danger: 'var(--mf-danger,#FF3D57)',
   t0: 'var(--mf-text-0,#FFFFFF)',
   t1: 'var(--mf-text-1,#E8EEFF)',
   t2: 'var(--mf-text-2,#7A90B8)',
   t3: 'var(--mf-text-3,#334566)',
-  brd: 'var(--mf-border,#162034)',
-  brdHi: 'var(--mf-border-hi,#1E2E48)',
+  brd: 'var(--mf-border,#142033)',
+  brdHi: 'var(--mf-border-hi,#1F2F47)',
 };
 
 const THEME_ENABLED_PLANS = ['pro', 'elite'];
@@ -213,7 +213,7 @@ const ThemePreviewPanel = ({ label }) => (
             <svg viewBox="0 0 320 112" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
               <defs>
                 <linearGradient id="theme-preview-line" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="var(--mf-accent,#06E6FF)" />
+                  <stop offset="0%" stopColor="var(--mf-accent,#14C9E5)" />
                   <stop offset="55%" stopColor="var(--mf-accent-secondary,#66F0FF)" />
                   <stop offset="100%" stopColor="var(--mf-blue,#4D7CFF)" />
                 </linearGradient>
@@ -266,10 +266,10 @@ export default function AccountSettings({ user, onBack }) {
   const isElite = plan === 'elite';
 
   const PLAN_LABELS = {
-    starter: { label: 'Starter', color: 'var(--mf-teal,#00F5D4)' },
-    pro: { label: 'Pro', color: 'var(--mf-accent,#06E6FF)' },
-    elite: { label: 'Elite', color: 'var(--mf-gold,#FFD700)' },
-    trial: { label: 'Free Trial', color: 'var(--mf-green,#00FF88)' },
+    starter: { label: 'Starter', color: 'var(--mf-teal,#00D2B8)' },
+    pro: { label: 'Pro', color: 'var(--mf-accent,#14C9E5)' },
+    elite: { label: 'Elite', color: 'var(--mf-gold,#D7B36A)' },
+    trial: { label: 'Free Trial', color: 'var(--mf-green,#00D2B8)' },
   };
 
   const planInfo = PLAN_LABELS[plan] || PLAN_LABELS.trial;
@@ -325,7 +325,7 @@ export default function AccountSettings({ user, onBack }) {
       });
       if (error) throw error;
       toast.success('Profile updated', {
-        style: { background: '#0D1627', color: 'var(--mf-green,#00FF88)', borderRadius: '10px' },
+        style: { background: '#0D1627', color: 'var(--mf-green,#00D2B8)', borderRadius: '10px' },
       });
     } catch (error) {
       toast.error(error.message || 'Error during update');
@@ -351,7 +351,7 @@ export default function AccountSettings({ user, onBack }) {
       setNewPassword('');
       setConfirmPw('');
       toast.success('Password updated', {
-        style: { background: '#0D1627', color: 'var(--mf-green,#00FF88)', borderRadius: '10px' },
+        style: { background: '#0D1627', color: 'var(--mf-green,#00D2B8)', borderRadius: '10px' },
       });
     } catch (error) {
       toast.error(error.message || 'Error changing password');
@@ -452,7 +452,7 @@ export default function AccountSettings({ user, onBack }) {
                 justifyContent: 'center',
                 fontSize: 20,
                 fontWeight: 800,
-                color: 'var(--mf-bg,#030508)',
+                color: 'var(--mf-bg,#01040A)',
               }}
             >
               {(fname || email).slice(0, 2).toUpperCase()}

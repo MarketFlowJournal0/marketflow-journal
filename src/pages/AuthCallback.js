@@ -6,9 +6,9 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const C = {
-  bg:   '#030508',
-  cyan: '#06E6FF',
-  green:'#00FF88',
+  bg:   '#01040A',
+  cyan: '#14C9E5',
+  green:'#00D2B8',
   t0:   '#FFFFFF',
   t2:   '#7A90B8',
   red:  '#FF4D6A',
@@ -119,8 +119,8 @@ export default function AuthCallback() {
       padding: '24px',
     },
     card: {
-      background: '#0C1422',
-      border: '1px solid #162034',
+      background: '#060D18',
+      border: '1px solid #142033',
       borderRadius: '20px',
       padding: '48px 40px',
       maxWidth: '420px',
@@ -148,7 +148,7 @@ export default function AuthCallback() {
       width: '100%',
       padding: '14px',
       borderRadius: '12px',
-      background: `linear-gradient(135deg, ${C.cyan}, #00F5D4)`,
+      background: `linear-gradient(135deg, ${C.cyan}, #00D2B8)`,
       color: '#000',
       fontWeight: '700',
       fontSize: '14px',
@@ -160,7 +160,7 @@ export default function AuthCallback() {
       width: '100%',
       padding: '12px 16px',
       background: 'rgba(255,255,255,0.04)',
-      border: '1px solid #162034',
+      border: '1px solid #142033',
       borderRadius: '10px',
       color: C.t0,
       fontSize: '14px',

@@ -66,7 +66,7 @@ const PLANS = [
     noAnnualDiscount: true,
     priceMonthly: 'price_1T9t9L2Ouddv7uendIMAR6IP',
     priceAnnual: 'price_1TDQ7w2Ouddv7ueno5CuaNTH',
-    accent: '#00F5D4',
+    accent: '#00D2B8',
     desc: 'Perfect to start tracking your trades',
     features: ['Unlimited trading journal', 'Dashboard & basic statistics', 'CSV import', 'Performance calendar', '1 trading account'],
     Icon: Ic.Starter,
@@ -76,7 +76,7 @@ const PLANS = [
     monthly: 22, annual: 15,
     priceMonthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
     priceAnnual: 'price_1T9t9U2Ouddv7uenK6oT1O13',
-    accent: '#06E6FF',
+    accent: '#14C9E5',
     desc: 'For serious traders who want to improve',
     features: ['Everything in Starter plan', 'Advanced Pro analytics', 'Psychology & mental tracking', 'Equity curve & drawdown', 'Strategy backtesting', '3 trading accounts', 'PDF report export'],
     Icon: Ic.Pro,
@@ -86,7 +86,7 @@ const PLANS = [
     monthly: 38, annual: 27,
     priceMonthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
     priceAnnual: 'price_1T9t9K2Ouddv7uennnWOJ44p',
-    accent: '#FFD700',
+    accent: '#D7B36A',
     desc: 'For pros who want the best tool',
     features: ['Everything in Pro plan', 'AI Trading Coach (GPT-4)', 'Unlimited accounts', 'Alerts & notifications', 'API access', '24/7 priority support', 'Beta features access'],
     Icon: Ic.Elite,
@@ -159,7 +159,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const planLabel = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030508', fontFamily: "'Inter',sans-serif", position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: '#01040A', fontFamily: "'Inter',sans-serif", position: 'relative', overflow: 'hidden' }}>
       <PlanBg />
 
       {/* Top glow */}
@@ -177,7 +177,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
 
         {/* Success */}
         {successMsg && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(6,230,255,0.06))', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: '12px 20px', color: '#00FF88', fontSize: 13.5, fontWeight: 600, textAlign: 'center', marginBottom: 20 }}>{successMsg}</motion.div>
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(6,230,255,0.06))', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: '12px 20px', color: '#00D2B8', fontSize: 13.5, fontWeight: 600, textAlign: 'center', marginBottom: 20 }}>{successMsg}</motion.div>
         )}
 
         {/* Trial banner */}
@@ -185,11 +185,11 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
             <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.08em', color: '#D7B36A' }}>TRIAL</span>
             <div style={{ flex: 1 }}>
-              <strong style={{ color: '#FFD700' }}>Free trial — {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
+              <strong style={{ color: '#D7B36A' }}>Free trial — {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
               <span style={{ color: 'rgba(255,255,255,0.5)' }}> · Your card will be charged at the end of the trial</span>
             </div>
             {user.stripeCustomerId && (
-              <button onClick={handleManage} disabled={portalLoading} style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 7, color: '#FFD700', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{portalLoading ? '…' : 'Manage card'}</button>
+              <button onClick={handleManage} disabled={portalLoading} style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 7, color: '#D7B36A', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{portalLoading ? '…' : 'Manage card'}</button>
             )}
           </motion.div>
         )}
@@ -206,19 +206,19 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={{ textAlign: 'center', marginBottom: 40 }}>
           {!user ? (
             <>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 50, padding: '5px 14px', marginBottom: 16, fontSize: 11, fontWeight: 600, color: '#00FF88', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 6px #00FF88', animation: 'pulse 2s ease-in-out infinite' }} />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 50, padding: '5px 14px', marginBottom: 16, fontSize: 11, fontWeight: 600, color: '#00D2B8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00D2B8', boxShadow: '0 0 6px #00D2B8', animation: 'pulse 2s ease-in-out infinite' }} />
                 Step 2 of 2 — Choose your plan
               </div>
               <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-1px' }}>
-                Start your <span style={{ background: 'linear-gradient(135deg, #06E6FF, #00FF88)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>free trial</span><br />of 14 days
+                Start your <span style={{ background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>free trial</span><br />of 14 days
               </h1>
               <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Enter your card now, nothing is charged for 14 days. Your card will be automatically billed when the trial ends. One free trial per account.</p>
             </>
           ) : (
             <>
               <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-1px' }}>
-                {needsPayment ? 'Choose your plan' : <>Your <span style={{ background: 'linear-gradient(135deg, #06E6FF, #00FF88)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>subscription</span></>}
+                {needsPayment ? 'Choose your plan' : <>Your <span style={{ background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>subscription</span></>}
               </h1>
               <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>
                 {subStatus === 'active' ? `Active plan · ${planLabel}` : isTrialing ? `Free trial in progress · ${daysLeft}d remaining` : subStatus === 'canceled' ? 'Subscription canceled — Reactivate a plan' : 'Manage or change your subscription below'}
@@ -231,12 +231,12 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 50, padding: 3 }}>
             {['monthly', 'annual'].map(t => (
-              <button key={t} onClick={() => setBilling(t)} style={{ padding: '7px 18px', borderRadius: 50, border: 'none', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: 12.5, fontWeight: 600, transition: 'all 0.2s', background: billing === t ? '#06E6FF' : 'transparent', color: billing === t ? '#030508' : '#7A90B8' }}>
+              <button key={t} onClick={() => setBilling(t)} style={{ padding: '7px 18px', borderRadius: 50, border: 'none', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: 12.5, fontWeight: 600, transition: 'all 0.2s', background: billing === t ? '#14C9E5' : 'transparent', color: billing === t ? '#01040A' : '#7A90B8' }}>
                 {t === 'monthly' ? 'Monthly' : 'Annual'}
               </button>
             ))}
           </div>
-          {billing === 'annual' && <span style={{ background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.2)', color: '#00FF88', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 50, letterSpacing: '0.04em' }}>-30% on Pro & Elite</span>}
+          {billing === 'annual' && <span style={{ background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.2)', color: '#00D2B8', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 50, letterSpacing: '0.04em' }}>-30% on Pro & Elite</span>}
         </motion.div>
 
         {/* Plans Grid */}
@@ -275,7 +275,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                   </div>
                 )}
                 {plan.id === 'starter' && !isCurrent && (
-                  <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 50, background: 'linear-gradient(135deg, #06E6FF, #00FF88)', fontSize: 9, fontWeight: 800, color: '#030508', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 50, background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', fontSize: 9, fontWeight: 800, color: '#01040A', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     14 days free
                   </div>
                 )}
@@ -299,7 +299,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                     <span style={{ fontSize: 13, color: '#7A90B8' }}>/mo</span>
                   </div>
                   {billing === 'annual' && !plan.noAnnualDiscount && (
-                    <div style={{ fontSize: 11, color: '#334566' }}>Billed ${plan.annual * 12}/yr — <span style={{ color: '#00FF88', fontWeight: 600 }}>save ${annualSave}/yr</span></div>
+                    <div style={{ fontSize: 11, color: '#334566' }}>Billed ${plan.annual * 12}/yr — <span style={{ color: '#00D2B8', fontWeight: 600 }}>save ${annualSave}/yr</span></div>
                   )}
                   {billing === 'annual' && plan.noAnnualDiscount && (
                     <div style={{ fontSize: 11, color: '#334566' }}>Billed ${plan.annual * 12}/yr</div>
@@ -313,7 +313,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                   {plan.features.map((f, j) => (
                     <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: '#E8EEFF' }}>
-                      <span style={{ color: '#00FF88', marginTop: 1, flexShrink: 0 }}><Ic.Check /></span>
+                      <span style={{ color: '#00D2B8', marginTop: 1, flexShrink: 0 }}><Ic.Check /></span>
                       {f}
                     </li>
                   ))}
@@ -329,7 +329,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                     Current plan
                   </button>
                 ) : (
-                  <button onClick={() => handleSelect(plan)} disabled={!!loading} style={{ width: '100%', padding: 12, borderRadius: 10, border: plan.popular ? 'none' : '1px solid rgba(255,255,255,0.06)', background: plan.popular ? 'linear-gradient(135deg, #06E6FF, #00FF88)' : 'rgba(255,255,255,0.03)', color: plan.popular ? '#030508' : '#E8EEFF', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', boxShadow: plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (!loading) { if (plan.popular) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } else { e.currentTarget.style.borderColor = plan.accent; e.currentTarget.style.color = plan.accent; } } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none'; e.currentTarget.style.borderColor = plan.popular ? 'none' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = plan.popular ? '#030508' : '#E8EEFF'; }}>
+                  <button onClick={() => handleSelect(plan)} disabled={!!loading} style={{ width: '100%', padding: 12, borderRadius: 10, border: plan.popular ? 'none' : '1px solid rgba(255,255,255,0.06)', background: plan.popular ? 'linear-gradient(135deg, #14C9E5, #00D2B8)' : 'rgba(255,255,255,0.03)', color: plan.popular ? '#01040A' : '#E8EEFF', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', boxShadow: plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (!loading) { if (plan.popular) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } else { e.currentTarget.style.borderColor = plan.accent; e.currentTarget.style.color = plan.accent; } } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none'; e.currentTarget.style.borderColor = plan.popular ? 'none' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = plan.popular ? '#01040A' : '#E8EEFF'; }}>
                     {loading === plan.id ? 'Loading...' : plan.id === 'starter' ? 'Start free trial' : `Upgrade to ${plan.name}`}
                   </button>
                 )}

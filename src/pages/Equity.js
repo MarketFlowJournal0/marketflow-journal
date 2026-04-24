@@ -33,27 +33,27 @@ import {
 // 🎨 DESIGN SYSTEM — same MarketFlow DA
 // ══════════════════════════════════════════════════════
 const C = {
-  bg:      'var(--mf-bg,#030508)',
-  bgCard:  'var(--mf-card,#0C1422)',
-  bgHigh:  'var(--mf-high,#121C2E)',
+  bg:      'var(--mf-bg,#01040A)',
+  bgCard:  'var(--mf-card,#060D18)',
+  bgHigh:  'var(--mf-high,#0B1525)',
   bgDeep:  'var(--mf-deep,#07090F)',
-  cyan:    'var(--mf-accent,#06E6FF)', cyanGlow:   'rgba(var(--mf-accent-rgb, 6, 230, 255),0.35)',
-  teal:    'var(--mf-teal,#00F5D4)', tealGlow:   'rgba(var(--mf-teal-rgb, 0, 245, 212),0.3)',
-  green:   'var(--mf-green,#00FF88)', greenGlow:  'rgba(var(--mf-green-rgb, 0, 255, 136),0.35)',
+  cyan:    'var(--mf-accent,#14C9E5)', cyanGlow:   'rgba(var(--mf-accent-rgb, 6, 230, 255),0.35)',
+  teal:    'var(--mf-teal,#00D2B8)', tealGlow:   'rgba(var(--mf-teal-rgb, 0, 245, 212),0.3)',
+  green:   'var(--mf-green,#00D2B8)', greenGlow:  'rgba(var(--mf-green-rgb, 0, 255, 136),0.35)',
   danger:  'var(--mf-danger,#FF3D57)', dangerGlow: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.35)',
   warn:    'var(--mf-warn,#FFB31A)', warnGlow:   'rgba(var(--mf-warn-rgb, 255, 179, 26),0.35)',
   orange:  'var(--mf-orange,#FF6B35)',
   purple:  'var(--mf-purple,#A78BFA)', purpleGlow: 'rgba(var(--mf-purple-rgb, 176, 110, 255),0.35)',
   blue:    'var(--mf-blue,#4D7CFF)', blueGlow:   'rgba(var(--mf-blue-rgb, 77, 124, 255),0.3)',
   pink:    'var(--mf-pink,#FB7185)',
-  gold:    'var(--mf-gold,#FFD700)', goldGlow:   'rgba(var(--mf-gold-rgb, 255, 215, 0),0.3)',
+  gold:    'var(--mf-gold,#D7B36A)', goldGlow:   'rgba(var(--mf-gold-rgb, 255, 215, 0),0.3)',
   t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)', t4: 'var(--mf-text-4,#1E2E45)',
-  brd: 'var(--mf-border,#162034)', brdHi: 'var(--mf-border-hi,#1E2E48)',
-  gradCyan:   'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  brd: 'var(--mf-border,#142033)', brdHi: 'var(--mf-border-hi,#1F2F47)',
+  gradCyan:   'linear-gradient(135deg,var(--mf-accent,#14C9E5),var(--mf-green,#00D2B8))',
   gradPurple: 'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-blue,#4D7CFF))',
   gradWarm:   'linear-gradient(135deg,var(--mf-warn,#FFB31A),var(--mf-orange,#FF6B35))',
   gradDanger: 'linear-gradient(135deg,var(--mf-danger,#FF3D57),var(--mf-orange,#FF6B35))',
-  gradGold:   'linear-gradient(135deg,var(--mf-gold,#FFD700),var(--mf-gold,#FFB31A))',
+  gradGold:   'linear-gradient(135deg,var(--mf-gold,#D7B36A),var(--mf-gold,#FFB31A))',
 };
 
 const NOISE = 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")';

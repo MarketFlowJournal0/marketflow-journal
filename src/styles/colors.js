@@ -6,50 +6,50 @@
 export const C = {
 
   // ── BACKGROUNDS ────────────────────────────────────────
-  bgDeep:      '#0D1117',   // ultra dark background (body, sidebar)
-  bgPrimary:   '#131B2E',   // main pages background
-  bgCard:      '#1A2235',   // cards / panels background
-  bgElevated:  '#1F2A40',   // elevated background (modals, dropdowns)
-  bgHover:     '#243047',   // hover on rows/items
-  bgInput:     '#0D1117',   // inputs background
+  bgDeep:      '#01040A',   // landing baseline background
+  bgPrimary:   '#040B13',   // main pages background
+  bgCard:      '#060D18',   // cards / panels background
+  bgElevated:  '#0B1525',   // elevated background (modals, dropdowns)
+  bgHover:     '#101D30',   // hover on rows/items
+  bgInput:     'rgba(255,255,255,0.025)',   // inputs background
 
   // ── MAIN ACCENTS ───────────────────────────────────────
-  cyan:        '#00D4FF',   // vivid cyan — "FLOW" in the logo
-  cyanDim:     '#0EA5E9',   // moderate cyan — main actions
-  cyanDeep:    '#0369A1',   // deep cyan — button hover
+  cyan:        '#14C9E5',   // metallic cyan from the landing DA
+  cyanDim:     '#1DC9FF',   // moderate cyan
+  cyanDeep:    '#0B7EA0',   // deep cyan hover
 
-  teal:        '#00C9A7',   // teal — middle logo gradient
-  green:       '#00E676',   // vivid green — logo arrow, gains
-  greenDim:    '#10B981',   // moderate green — success, Long
-  greenDeep:   '#065F46',   // deep green — gain badges bg
+  teal:        '#00D2B8',   // teal from the MF mark
+  green:       '#00D2B8',   // gains/success within the current DA
+  greenDim:    '#0BAE9E',   // moderate teal
+  greenDeep:   '#064E48',   // deep gain badges bg
 
   // ── SIGNATURE GRADIENT ─────────────────────────────────
-  gradMain:    'linear-gradient(135deg, #00D4FF, #00E676)',
-  gradSubtle:  'linear-gradient(135deg, #0EA5E9, #10B981)',
-  gradCard:    'linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,230,118,0.08))',
+  gradMain:    'linear-gradient(135deg, #DCE4EF, #14C9E5 46%, #00D2B8)',
+  gradSubtle:  'linear-gradient(135deg, #14C9E5, #00D2B8)',
+  gradCard:    'linear-gradient(145deg, rgba(13,23,38,0.68), rgba(4,9,18,0.82))',
 
   // ── FUNCTIONAL STATES ──────────────────────────────────
-  success:     '#00E676',   // gains / wins
-  successBg:   '#003320',   // gain badge bg
+  success:     '#00D2B8',   // gains / wins
+  successBg:   '#032F2C',   // gain badge bg
   danger:      '#FF4757',   // losses
   dangerBg:    '#2D0A0F',   // loss badge bg
-  warning:     '#FFB300',   // alerts
+  warning:     '#D7B36A',   // alerts
   warningBg:   '#2D1F00',   // alert badge bg
 
   // ── TEXTS ──────────────────────────────────────────────
-  textPrimary:   '#E8EEFF',   // warm white
-  textSecondary: '#8B9BB4',   // "JOURNAL" in the logo
-  textMuted:     '#4A5568',   // very subtle
-  textAccent:    '#00D4FF',   // cyan text
+  textPrimary:   '#DCE7F2',   // warm white
+  textSecondary: '#8EA0B8',   // secondary copy
+  textMuted:     '#46566E',   // very subtle
+  textAccent:    '#14C9E5',   // cyan text
 
   // ── BORDERS ────────────────────────────────────────────
-  border:      '#1E2D45',   // subtle border
-  borderLight: '#243454',   // slightly visible border
-  borderAccent:'#00D4FF33', // cyan border 20% opacity
+  border:      '#142033',   // subtle border
+  borderLight: '#1F2F47',   // slightly visible border
+  borderAccent:'#14C9E533', // cyan border 20% opacity
 
   // ── MISC ───────────────────────────────────────────────
-  shadow:      '0 4px 24px rgba(0, 212, 255, 0.08)',
-  shadowCard:  '0 2px 12px rgba(0, 0, 0, 0.4)',
+  shadow:      '0 18px 58px rgba(0, 0, 0, 0.30)',
+  shadowCard:  '0 28px 80px rgba(0, 0, 0, 0.44)',
 };
 
 // Inline style helpers

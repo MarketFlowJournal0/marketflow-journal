@@ -230,7 +230,7 @@ function AppInner() {
       doRefresh();
       setTimeout(() => toast.success('Welcome to MarketFlow Journal. Your access is active.', {
         duration: 8000,
-        style: { background: '#0D1627', color: '#00FF88', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', fontSize: '15px' },
+        style: { background: '#0D1627', color: '#00D2B8', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', fontSize: '15px' },
       }), 500);
     }
     if (params.get('payment') === 'cancelled') {

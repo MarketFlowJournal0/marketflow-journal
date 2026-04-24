@@ -37,13 +37,13 @@ import {
 } from '../lib/journalTheme';
 
 const C = {
-  accent: 'var(--mf-accent,#06E6FF)',
-  accentSoft: 'var(--mf-accent-secondary,#66F0FF)',
-  green: 'var(--mf-green,#00FF88)',
-  blue: 'var(--mf-blue,#4D7CFF)',
-  teal: 'var(--mf-teal,#00F5D4)',
-  purple: 'var(--mf-purple,#A78BFA)',
-  gold: 'var(--mf-gold,#FFD700)',
+  accent: 'var(--mf-accent,#14C9E5)',
+  accentSoft: 'var(--mf-accent-secondary,#DCE4EF)',
+  green: 'var(--mf-green,#00D2B8)',
+  blue: 'var(--mf-blue,#1DC9FF)',
+  teal: 'var(--mf-teal,#00D2B8)',
+  purple: 'var(--mf-purple,#6885FF)',
+  gold: 'var(--mf-gold,#D7B36A)',
   warn: 'var(--mf-warn,#FFB31A)',
   danger: 'var(--mf-danger,#FF3D57)',
   orange: 'var(--mf-orange,#FF6B35)',
@@ -51,8 +51,8 @@ const C = {
   text1: 'var(--mf-text-1,#E8EEFF)',
   text2: 'var(--mf-text-2,#7A90B8)',
   text3: 'var(--mf-text-3,#334566)',
-  border: 'var(--mf-border,#162034)',
-  borderHi: 'var(--mf-border-hi,#1E2E48)',
+  border: 'var(--mf-border,#142033)',
+  borderHi: 'var(--mf-border-hi,#1F2F47)',
 };
 
 const ROUTES = {
@@ -1313,7 +1313,7 @@ function EquityPanel({ stats }) {
             <AreaChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
               <defs>
                 <linearGradient id="mfDashboardEquityStroke" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="var(--mf-accent,#06E6FF)" />
+                  <stop offset="0%" stopColor="var(--mf-accent,#14C9E5)" />
                   <stop offset="100%" stopColor="var(--mf-accent-secondary,#66F0FF)" />
                 </linearGradient>
                 <linearGradient id="mfDashboardEquityFill" x1="0" y1="0" x2="0" y2="1">

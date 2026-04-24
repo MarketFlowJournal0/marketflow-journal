@@ -4,23 +4,23 @@
 
 /* ─── VARIABLES DARK (défaut) ───────────────────────────────────────────────── */
 :root {
-  --bg:           #030508;
+  --bg:           #01040A;
   --bg-sidebar:   #060D1A;
-  --bg-card:      #0C1422;
-  --bg-high:      #111B2E;
+  --bg-card:      #060D18;
+  --bg-high:      #0B1525;
   --bg-input:     rgba(255,255,255,0.04);
-  --accent:       #06E6FF;
-  --teal:         #00F5D4;
-  --green:        #00FF88;
+  --accent:       #14C9E5;
+  --teal:         #00D2B8;
+  --green:        #00D2B8;
   --red:          #FF3D57;
-  --gold:         #FFD700;
+  --gold:         #D7B36A;
   --t0:           #FFFFFF;
   --t1:           #E8EEFF;
   --t2:           #7A90B8;
   --t3:           #334566;
   --t4:           #1A2440;
-  --brd:          #162034;
-  --brd-hi:       #1E2E48;
+  --brd:          #142033;
+  --brd-hi:       #1F2F47;
 }
 
 /* ─── VARIABLES LIGHT ───────────────────────────────────────────────────────── */
@@ -85,11 +85,11 @@ html, body {
 [data-theme="light"] .mf-main [style*="background:'#0B0F1A'"],
 [data-theme="light"] .mf-main [style*="background: '#0B0F1A'"],
 [data-theme="light"] .mf-main [style*='background:"#0B0F1A"'],
-[data-theme="light"] .mf-main [style*="background:'#030508'"],
-[data-theme="light"] .mf-main [style*="background:'#0C1422'"],
+[data-theme="light"] .mf-main [style*="background:'#01040A'"],
+[data-theme="light"] .mf-main [style*="background:'#060D18'"],
 [data-theme="light"] .mf-main [style*="background:'#0E1525'"],
-[data-theme="light"] .mf-main [style*="background:'#111B2E'"],
-[data-theme="light"] .mf-main [style*="background:'#121C2E'"],
+[data-theme="light"] .mf-main [style*="background:'#0B1525'"],
+[data-theme="light"] .mf-main [style*="background:'#0B1525'"],
 [data-theme="light"] .mf-main [style*="background:'#0D1627'"],
 [data-theme="light"] .mf-main [style*="background:'#131D30'"],
 [data-theme="light"] .mf-main [style*="background:'#0F1420'"],
@@ -149,6 +149,6 @@ html, body {
 [data-theme="light"] ::-webkit-scrollbar-thumb { background: #BCC8E0; }
 
 /* ─── BADGES PLANS ──────────────────────────────────────────────────────────── */
-.mf-badge-trial { background: rgba(0,255,136,0.10); color: #00FF88; border: 1px solid rgba(0,255,136,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
-.mf-badge-pro   { background: rgba(6,230,255,0.12); color: #06E6FF; border: 1px solid rgba(6,230,255,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
-.mf-badge-elite { background: rgba(255,215,0,0.12); color: #FFD700; border: 1px solid rgba(255,215,0,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mf-badge-trial { background: rgba(0,255,136,0.10); color: #00D2B8; border: 1px solid rgba(0,255,136,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mf-badge-pro   { background: rgba(6,230,255,0.12); color: #14C9E5; border: 1px solid rgba(6,230,255,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mf-badge-elite { background: rgba(255,215,0,0.12); color: #D7B36A; border: 1px solid rgba(255,215,0,0.25); border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }

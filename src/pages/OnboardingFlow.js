@@ -194,7 +194,7 @@ export default function OnboardingFlow({ onComplete }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030508', fontFamily: "'Inter',sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: '#01040A', fontFamily: "'Inter',sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
       <ObBg />
 
       {/* Top glow */}
@@ -231,17 +231,17 @@ export default function OnboardingFlow({ onComplete }) {
 
         {/* Progress */}
         <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 3, marginBottom: 28, overflow: 'hidden' }}>
-          <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', background: 'linear-gradient(90deg, #06E6FF, #00FF88)', borderRadius: 3 }} />
+          <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', background: 'linear-gradient(90deg, #14C9E5, #00D2B8)', borderRadius: 3 }} />
         </div>
 
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#06E6FF', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Step {step + 1} of {total}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#14C9E5', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Step {step + 1} of {total}</span>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.04)' }} />
         </div>
 
         {/* Icon */}
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(6,230,255,0.06)', border: '1px solid rgba(6,230,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#06E6FF', marginBottom: 16 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(6,230,255,0.06)', border: '1px solid rgba(6,230,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#14C9E5', marginBottom: 16 }}>
           <current.Icon />
         </div>
 
@@ -275,7 +275,7 @@ export default function OnboardingFlow({ onComplete }) {
               onMouseEnter={e => { if (!isSelected(opt.id)) { e.currentTarget.style.borderColor = 'rgba(6,230,255,0.15)'; e.currentTarget.style.background = 'rgba(6,230,255,0.03)'; } }}
               onMouseLeave={e => { if (!isSelected(opt.id)) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.background = 'rgba(255,255,255,0.015)'; } }}
             >
-              <div style={{ width: 36, height: 36, borderRadius: 9, background: isSelected(opt.id) ? 'rgba(6,230,255,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isSelected(opt.id) ? 'rgba(6,230,255,0.15)' : 'rgba(255,255,255,0.04)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isSelected(opt.id) ? '#06E6FF' : 'rgba(255,255,255,0.2)', flexShrink: 0, transition: 'all 0.18s' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: isSelected(opt.id) ? 'rgba(6,230,255,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isSelected(opt.id) ? 'rgba(6,230,255,0.15)' : 'rgba(255,255,255,0.04)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isSelected(opt.id) ? '#14C9E5' : 'rgba(255,255,255,0.2)', flexShrink: 0, transition: 'all 0.18s' }}>
                 <opt.Icon />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -285,9 +285,9 @@ export default function OnboardingFlow({ onComplete }) {
               <div style={{
                 width: 18, height: 18, borderRadius: '50%',
                 border: `1.5px solid ${isSelected(opt.id) ? 'transparent' : 'rgba(255,255,255,0.08)'}`,
-                background: isSelected(opt.id) ? 'linear-gradient(135deg, #06E6FF, #00FF88)' : 'transparent',
+                background: isSelected(opt.id) ? 'linear-gradient(135deg, #14C9E5, #00D2B8)' : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 9, fontWeight: 900, color: isSelected(opt.id) ? '#030508' : 'transparent',
+                fontSize: 9, fontWeight: 900, color: isSelected(opt.id) ? '#01040A' : 'transparent',
                 flexShrink: 0, transition: 'all 0.18s',
               }}>✓</div>
             </motion.button>
@@ -299,7 +299,7 @@ export default function OnboardingFlow({ onComplete }) {
           {step > 0 ? (
             <button onClick={goPrev} style={{ padding: '11px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: '#7A90B8', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s', display: 'flex', alignItems: 'center', gap: 6 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#E8EEFF'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#7A90B8'; }}>← Back</button>
           ) : <div />}
-          <button onClick={goNext} disabled={!canNext} style={{ flex: 1, padding: '13px 24px', borderRadius: 11, border: 'none', background: canNext ? 'linear-gradient(135deg, #06E6FF, #00FF88)' : 'rgba(255,255,255,0.04)', color: canNext ? '#030508' : 'rgba(255,255,255,0.15)', fontSize: 14, fontWeight: 800, cursor: canNext ? 'pointer' : 'not-allowed', fontFamily: 'inherit', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: canNext ? '0 0 24px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (canNext) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = canNext ? '0 0 24px rgba(6,230,255,0.2)' : 'none'; }}>
+          <button onClick={goNext} disabled={!canNext} style={{ flex: 1, padding: '13px 24px', borderRadius: 11, border: 'none', background: canNext ? 'linear-gradient(135deg, #14C9E5, #00D2B8)' : 'rgba(255,255,255,0.04)', color: canNext ? '#01040A' : 'rgba(255,255,255,0.15)', fontSize: 14, fontWeight: 800, cursor: canNext ? 'pointer' : 'not-allowed', fontFamily: 'inherit', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: canNext ? '0 0 24px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (canNext) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = canNext ? '0 0 24px rgba(6,230,255,0.2)' : 'none'; }}>
             {step === total - 1 ? 'View plans →' : 'Continue →'}
           </button>
         </div>

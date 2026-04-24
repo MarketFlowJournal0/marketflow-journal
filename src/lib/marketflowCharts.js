@@ -47,7 +47,7 @@ export const CHART_AXIS_SMALL = {
   },
 };
 
-export function chartCursor(color = 'var(--mf-accent,#06E6FF)') {
+export function chartCursor(color = 'var(--mf-accent,#14C9E5)') {
   return {
     stroke: shade(color, 0.24),
     strokeWidth: 1,
@@ -55,7 +55,7 @@ export function chartCursor(color = 'var(--mf-accent,#06E6FF)') {
   };
 }
 
-export function chartTooltipStyle(color = 'var(--mf-accent,#06E6FF)') {
+export function chartTooltipStyle(color = 'var(--mf-accent,#14C9E5)') {
   return {
     background: 'linear-gradient(180deg, rgba(10,16,28,0.96), rgba(6,10,18,0.99))',
     border: `1px solid ${shade(color, 0.14)}`,
@@ -66,7 +66,7 @@ export function chartTooltipStyle(color = 'var(--mf-accent,#06E6FF)') {
   };
 }
 
-export function chartActiveDot(color = 'var(--mf-accent,#06E6FF)', radius = 5, stroke = 'var(--mf-deep,#07090F)') {
+export function chartActiveDot(color = 'var(--mf-accent,#14C9E5)', radius = 5, stroke = 'var(--mf-deep,#07090F)') {
   return {
     r: radius + 0.5,
     fill: color,

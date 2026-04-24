@@ -204,7 +204,7 @@ function Analytics() {
           <div className="bg-[#1E2536] rounded-xl p-5 border border-[rgba(6,230,255,0.18)]">
             <div className="text-[#A0AEC0] text-sm mb-1">Elite timing edge</div>
             <div className="text-xl font-bold text-white">{eliteInsights.bestWindow?.time || '—'}</div>
-            <div className="text-[#06E6FF] text-sm mt-2">
+            <div className="text-[#14C9E5] text-sm mt-2">
               {eliteInsights.bestWindow ? `${eliteInsights.bestWindow.pnl >= 0 ? '+' : ''}$${eliteInsights.bestWindow.pnl.toFixed(0)} best P&L window` : 'Waiting for enough trades'}
             </div>
           </div>

@@ -277,7 +277,7 @@ export default function OnboardingStats({ onBack }) {
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {Object.entries(answers).map(([key, value]) => (
-                        <span key={key} style={{ padding: '6px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: '1px solid #162034', fontSize: 11, color: '#C0D8F8' }}>
+                        <span key={key} style={{ padding: '6px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: '1px solid #142033', fontSize: 11, color: '#C0D8F8' }}>
                           <strong style={{ color: '#14C9E5' }}>{key}</strong>: {Array.isArray(value) ? value.join(', ') : value}
                         </span>
                       ))}

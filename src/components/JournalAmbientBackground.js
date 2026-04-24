@@ -41,15 +41,16 @@ export default function JournalAmbientBackground() {
     let palette = getPalette();
     const particles = [];
     const lines = [];
+    const candles = [];
 
     const readPalette = () => {
       palette = getPalette();
     };
 
     const getSceneCounts = () => {
-      if (window.innerWidth < 720) return { particleCount: 18, lineCount: 4 };
-      if (window.innerWidth < 1200) return { particleCount: 28, lineCount: 6 };
-      return { particleCount: 38, lineCount: 8 };
+      if (window.innerWidth < 720) return { particleCount: 18, lineCount: 4, candleCount: 10 };
+      if (window.innerWidth < 1200) return { particleCount: 28, lineCount: 6, candleCount: 16 };
+      return { particleCount: 38, lineCount: 8, candleCount: 24 };
     };
 
     const resize = () => {
@@ -91,13 +92,24 @@ export default function JournalAmbientBackground() {
       color: Math.random() > 0.78 ? 'secondary' : 'accent',
     });
 
+    const createCandle = (startX = Math.random() * width) => ({
+      x: startX,
+      y: Math.random() * height,
+      wick: 34 + Math.random() * 118,
+      body: 12 + Math.random() * 38,
+      up: Math.random() > 0.42,
+      speed: 0.08 + Math.random() * 0.18,
+      opacity: 0.018 + Math.random() * 0.04,
+    });
+
     const initialize = () => {
       resize();
       readPalette();
       particles.length = 0;
       lines.length = 0;
+      candles.length = 0;
 
-      const { particleCount, lineCount } = getSceneCounts();
+      const { particleCount, lineCount, candleCount } = getSceneCounts();
 
       for (let index = 0; index < particleCount; index += 1) {
         particles.push(createParticle());
@@ -106,6 +118,31 @@ export default function JournalAmbientBackground() {
       for (let index = 0; index < lineCount; index += 1) {
         lines.push(createLine());
       }
+
+      for (let index = 0; index < candleCount; index += 1) {
+        candles.push(createCandle(Math.random() * width));
+      }
+    };
+
+    const drawCandles = () => {
+      candles.forEach((candle, index) => {
+        const tone = candle.up ? palette.secondary : [223, 95, 122];
+        candle.x -= candle.speed;
+
+        if (candle.x < -42) {
+          candles[index] = createCandle(width + Math.random() * 180);
+          return;
+        }
+
+        context.strokeStyle = rgba(tone, candle.opacity);
+        context.fillStyle = rgba(tone, candle.opacity);
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(candle.x, candle.y - (candle.wick / 2));
+        context.lineTo(candle.x, candle.y + (candle.wick / 2));
+        context.stroke();
+        context.fillRect(candle.x - 4, candle.y - (candle.body / 2), 8, candle.body);
+      });
     };
 
     const drawLines = () => {
@@ -183,6 +220,7 @@ export default function JournalAmbientBackground() {
       if (frame % 24 === 0) readPalette();
 
       context.clearRect(0, 0, width, height);
+      drawCandles();
       drawLines();
       drawParticles();
       drawConnections();
@@ -226,7 +264,7 @@ export default function JournalAmbientBackground() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.62,
+        opacity: 0.74,
       }}
     />
   );

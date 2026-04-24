@@ -8,11 +8,11 @@ import { useAuth } from '../context/AuthContext';
    ═══════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: 'var(--mf-bg,#030508)', bgCard: 'var(--mf-card,#0C1422)', bgHigh: 'var(--mf-high,#111B2E)',
-  cyan: 'var(--mf-accent,#06E6FF)', green: 'var(--mf-green,#00FF88)', purple: 'var(--mf-purple,#B06EFF)',
-  blue: 'var(--mf-blue,#4D7CFF)', gold: 'var(--mf-gold,#FFD700)', pink: 'var(--mf-pink,#FF4DC4)', danger: 'var(--mf-danger,#FF3D57)',
+  bg: 'var(--mf-bg,#01040A)', bgCard: 'var(--mf-card,#060D18)', bgHigh: 'var(--mf-high,#0B1525)',
+  cyan: 'var(--mf-accent,#14C9E5)', green: 'var(--mf-green,#00D2B8)', purple: 'var(--mf-purple,#B06EFF)',
+  blue: 'var(--mf-blue,#4D7CFF)', gold: 'var(--mf-gold,#D7B36A)', pink: 'var(--mf-pink,#FF4DC4)', danger: 'var(--mf-danger,#FF3D57)',
   t0: 'var(--mf-text-0,#FFFFFF)', t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#7A90B8)', t3: 'var(--mf-text-3,#334566)',
-  brd: 'var(--mf-border,#162034)',
+  brd: 'var(--mf-border,#142033)',
 };
 
 // ─── SVG Icons ─────────────────────────────────────────────────────────────
@@ -312,8 +312,8 @@ Some things I can help with:
               disabled={!input.trim() || isTyping}
               style={{
                 padding: '11px 16px', borderRadius: 10, border: 'none',
-                background: input.trim() && !isTyping ? 'linear-gradient(135deg, var(--mf-accent,#06E6FF), var(--mf-green,#00FF88))' : 'rgba(255,255,255,0.04)',
-                color: input.trim() && !isTyping ? 'var(--mf-bg,#030508)' : C.t3,
+                background: input.trim() && !isTyping ? 'linear-gradient(135deg, var(--mf-accent,#14C9E5), var(--mf-green,#00D2B8))' : 'rgba(255,255,255,0.04)',
+                color: input.trim() && !isTyping ? 'var(--mf-bg,#01040A)' : C.t3,
                 cursor: input.trim() && !isTyping ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'inherit', transition: 'all 0.2s',

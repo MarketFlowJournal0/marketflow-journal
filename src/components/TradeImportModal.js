@@ -12,9 +12,9 @@ const UI = {
   text: 'var(--mf-text-1, #E8EEFF)',
   sub: 'var(--mf-text-2, #8B9BB4)',
   muted: 'var(--mf-text-3, #64748B)',
-  accent: 'var(--mf-accent, #06E6FF)',
+  accent: 'var(--mf-accent, #14C9E5)',
   accentSoft: 'rgba(var(--mf-accent-rgb, 6, 230, 255), 0.1)',
-  success: 'var(--mf-green, #00FF88)',
+  success: 'var(--mf-green, #00D2B8)',
   successSoft: 'rgba(var(--mf-green-rgb, 0, 255, 136), 0.1)',
   danger: 'var(--mf-danger, #FF3D57)',
 };
@@ -371,7 +371,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                   <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 16, border: `1px solid ${UI.line}`, background: UI.card, color: UI.sub, fontSize: 13 }}>
                     Review the mapping, then import.
                   </div>
-                  <button type="button" onClick={loadRows} disabled={mode === 'upload' ? !file : !text.trim()} style={{ marginTop: 18, width: '100%', padding: '14px 16px', borderRadius: 16, border: 'none', background: 'linear-gradient(135deg, var(--mf-accent, #06E6FF), rgba(var(--mf-accent-rgb, 6, 230, 255), 0.82))', color: '#031018', fontSize: 13, fontWeight: 800, cursor: mode === 'upload' ? (!file ? 'not-allowed' : 'pointer') : (!text.trim() ? 'not-allowed' : 'pointer'), opacity: mode === 'upload' ? (file ? 1 : 0.55) : (text.trim() ? 1 : 0.55) }}>Review import</button>
+                  <button type="button" onClick={loadRows} disabled={mode === 'upload' ? !file : !text.trim()} style={{ marginTop: 18, width: '100%', padding: '14px 16px', borderRadius: 16, border: 'none', background: 'linear-gradient(135deg, var(--mf-accent, #14C9E5), rgba(var(--mf-accent-rgb, 6, 230, 255), 0.82))', color: '#031018', fontSize: 13, fontWeight: 800, cursor: mode === 'upload' ? (!file ? 'not-allowed' : 'pointer') : (!text.trim() ? 'not-allowed' : 'pointer'), opacity: mode === 'upload' ? (file ? 1 : 0.55) : (text.trim() ? 1 : 0.55) }}>Review import</button>
                 </div>
               </div>
             )}
@@ -414,7 +414,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                         </div>
                       )}
                     </div>
-                    <button type="button" onClick={handleImport} disabled={importing} style={{ padding: '14px 18px', borderRadius: 16, border: 'none', background: importing ? UI.card : 'linear-gradient(135deg, var(--mf-accent, #06E6FF), rgba(var(--mf-accent-rgb, 6, 230, 255), 0.82))', color: importing ? UI.sub : '#031018', fontSize: 13, fontWeight: 800, cursor: importing ? 'wait' : 'pointer' }}>{importing ? `Importing ${Math.min(progress.processed, progress.total)}/${progress.total || rows.length}` : `Import ${rows.length} trade(s)`}</button>
+                    <button type="button" onClick={handleImport} disabled={importing} style={{ padding: '14px 18px', borderRadius: 16, border: 'none', background: importing ? UI.card : 'linear-gradient(135deg, var(--mf-accent, #14C9E5), rgba(var(--mf-accent-rgb, 6, 230, 255), 0.82))', color: importing ? UI.sub : '#031018', fontSize: 13, fontWeight: 800, cursor: importing ? 'wait' : 'pointer' }}>{importing ? `Importing ${Math.min(progress.processed, progress.total)}/${progress.total || rows.length}` : `Import ${rows.length} trade(s)`}</button>
                   </div>
                 </div>
               </div>

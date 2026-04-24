@@ -482,7 +482,7 @@ export function TradingProvider({ children }) {
     const sessionData = Object.values(sessionMap).sort((a,b)=>b.pnl-a.pnl);
 
     const pairMap = {};
-    const COLORS = ['#06E6FF','#00F5D4','#FFD700','#B06EFF','#FF4DC4','#4D7CFF'];
+    const COLORS = ['#14C9E5','#00D2B8','#D7B36A','#B06EFF','#FF4DC4','#4D7CFF'];
     closed.forEach(t => {
       const p = t.symbol || 'Other';
       if (!pairMap[p]) pairMap[p] = { p, n:0, wins:0, pnl:0 };
@@ -498,7 +498,7 @@ export function TradingProvider({ children }) {
     const shorts = closed.filter(t => t.direction === 'Short');
     const total  = closed.length || 1;
     const biaisData = [
-      { name:'Bullish', value:Math.round((longs.length/total)*100),  color:'#00FF88', pnl: fmt(longs.reduce((a,t)=>a+(t.profit_loss||0),0)) },
+      { name:'Bullish', value:Math.round((longs.length/total)*100),  color:'#00D2B8', pnl: fmt(longs.reduce((a,t)=>a+(t.profit_loss||0),0)) },
       { name:'Bearish', value:Math.round((shorts.length/total)*100), color:'#FF3D57', pnl: fmt(shorts.reduce((a,t)=>a+(t.profit_loss||0),0)) },
     ].filter(b=>b.value>0);
 

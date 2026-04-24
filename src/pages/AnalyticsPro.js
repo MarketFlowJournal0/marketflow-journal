@@ -49,16 +49,16 @@ import {
 // 🎨 PALETTE
 // ─────────────────────────────────────────────────────────────────────────────
 const C = {
-  bgPage: '#0F1420', bgCard: 'var(--mf-card,#161D2E)', bgDeep: 'var(--mf-deep,#0D1117)',
-  bgHigh: '#1C2540', bgHov:  '#1F2B42',
-  cyan: 'var(--mf-accent,#06E6FF)',   cyanGlow: 'rgba(var(--mf-accent-rgb, 6, 230, 255),0.3)',
-  teal: 'var(--mf-teal,#00F5D4)',   green: 'var(--mf-green,#00FF88)', greenGlow: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.3)',
+  bgPage: 'var(--mf-bg,#01040A)', bgCard: 'var(--mf-card,#060D18)', bgDeep: 'var(--mf-deep,#02050B)',
+  bgHigh: 'var(--mf-high,#0B1525)', bgHov:  'rgba(var(--mf-high-rgb,11,21,37),0.86)',
+  cyan: 'var(--mf-accent,#14C9E5)',   cyanGlow: 'rgba(var(--mf-accent-rgb, 20, 201, 229),0.24)',
+  teal: 'var(--mf-teal,#00D2B8)',   green: 'var(--mf-green,#00D2B8)', greenGlow: 'rgba(var(--mf-green-rgb, 0, 210, 184),0.24)',
   danger: 'var(--mf-danger,#FF3D57)', dangerGlow: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.3)',
   warn: 'var(--mf-warn,#FFB31A)',   orange: 'var(--mf-orange,#FF6B35)',
   purple: 'var(--mf-purple,#A78BFA)', blue: 'var(--mf-blue,#4D7CFF)',
   t1: 'var(--mf-text-1,#E8EEFF)', t2: 'var(--mf-text-2,#8B9BB4)', t3: 'var(--mf-text-3,#3D4F6B)', t4: 'var(--mf-text-3,#64748B)',
   brd: 'var(--mf-border,#1E2D45)', brdSoft: 'var(--mf-border-hi,#243454)', brdBright: 'var(--mf-border-hi,#334155)',
-  grad:       'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+  grad:       'linear-gradient(135deg,#DCE4EF,var(--mf-accent,#14C9E5) 46%,var(--mf-green,#00D2B8))',
   gradBlue:   'linear-gradient(135deg,var(--mf-blue,#4D7CFF),var(--mf-blue,#4D7CFF))',
   gradPurple: 'linear-gradient(135deg,var(--mf-purple,#A78BFA),var(--mf-purple,#8B5CF6))',
   gradOrange: 'linear-gradient(135deg,var(--mf-orange,#FF6B35),var(--mf-orange,#FF8C00))',
@@ -1636,7 +1636,7 @@ export default function AnalyticsPro() {
                 <div style={{ maxWidth: 760, display: 'grid', gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
                     <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 3.6vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.06em', color: C.t1 }}>
-                      Analytics <span style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, var(--mf-accent,#06E6FF) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pro</span>
+                      Analytics <span style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, var(--mf-accent,#14C9E5) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pro</span>
                     </h1>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

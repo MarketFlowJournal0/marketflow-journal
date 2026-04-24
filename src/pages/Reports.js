@@ -5,19 +5,19 @@ import { useAuth } from '../context/AuthContext';
 import { shade } from '../lib/colorAlpha';
 
 const C = {
-  bg: 'var(--mf-bg,#030508)',
-  bgCard: 'var(--mf-card,#0C1422)',
-  cyan: 'var(--mf-accent,#06E6FF)',
-  green: 'var(--mf-green,#00FF88)',
+  bg: 'var(--mf-bg,#01040A)',
+  bgCard: 'var(--mf-card,#060D18)',
+  cyan: 'var(--mf-accent,#14C9E5)',
+  green: 'var(--mf-green,#00D2B8)',
   purple: 'var(--mf-purple,#B06EFF)',
   blue: 'var(--mf-blue,#4D7CFF)',
   danger: 'var(--mf-danger,#FF3D57)',
-  gold: 'var(--mf-gold,#FFD700)',
+  gold: 'var(--mf-gold,#D7B36A)',
   t0: 'var(--mf-text-0,#FFFFFF)',
   t1: 'var(--mf-text-1,#E8EEFF)',
   t2: 'var(--mf-text-2,#7A90B8)',
   t3: 'var(--mf-text-3,#334566)',
-  brd: 'var(--mf-border,#162034)',
+  brd: 'var(--mf-border,#142033)',
 };
 
 const Ic = {
@@ -481,7 +481,7 @@ function generateHtmlReport({ type, dateRange, stats, trades, user }) {
       <td>${escapeHtml(trade.symbol || trade.pair || '—')}</td>
       <td>${escapeHtml(trade.direction || '—')}</td>
       <td>${escapeHtml(trade.setup || trade.session || '—')}</td>
-      <td style="color:${Number(trade.profit_loss ?? trade.pnl ?? 0) >= 0 ? '#00FF88' : '#FF3D57'};font-weight:700">${escapeHtml(money(trade.profit_loss ?? trade.pnl ?? 0))}</td>
+      <td style="color:${Number(trade.profit_loss ?? trade.pnl ?? 0) >= 0 ? '#00D2B8' : '#FF3D57'};font-weight:700">${escapeHtml(money(trade.profit_loss ?? trade.pnl ?? 0))}</td>
     </tr>
   `).join('');
 

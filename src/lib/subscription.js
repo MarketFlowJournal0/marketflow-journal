@@ -18,7 +18,7 @@ export const PLAN_DETAILS = {
   starter: {
     id: 'starter',
     label: 'Starter',
-    accent: '#00F5D4',
+    accent: '#00D2B8',
     description: 'A focused workspace for consistent journaling and review.',
     entryRoute: 'dashboard',
     features: [
@@ -34,7 +34,7 @@ export const PLAN_DETAILS = {
   pro: {
     id: 'pro',
     label: 'Pro',
-    accent: '#06E6FF',
+    accent: '#14C9E5',
     description: 'Advanced review tools for serious traders who want to improve.',
     entryRoute: 'dashboard',
     features: [
@@ -51,7 +51,7 @@ export const PLAN_DETAILS = {
   elite: {
     id: 'elite',
     label: 'Elite',
-    accent: '#FFD700',
+    accent: '#D7B36A',
     description: 'Full MarketFlow access with AI, alerts, API, and Elite execution infrastructure.',
     entryRoute: 'dashboard',
     features: [

@@ -58,14 +58,14 @@ function ContactForm({ user }) {
     <div style={{ textAlign: 'center', padding: '48px 24px' }}>
       <div style={{
         width: 64, height: 64, borderRadius: '50%',
-        background: 'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+        background: 'linear-gradient(135deg,var(--mf-accent,#14C9E5),var(--mf-green,#00D2B8))',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 28, margin: '0 auto 20px',
         boxShadow: '0 0 30px rgba(0,255,136,0.4)',
       }}>OK</div>
       <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Message sent!</div>
       <div style={{ fontSize: 14, color: 'var(--mf-text-2,#7A90B8)', lineHeight: 1.7 }}>
-        Thank you! We\'ll get back to you within 24h at <span style={{ color: 'var(--mf-accent,#06E6FF)' }}>{form.email}</span>.
+        Thank you! We\'ll get back to you within 24h at <span style={{ color: 'var(--mf-accent,#14C9E5)' }}>{form.email}</span>.
       </div>
     </div>
   );
@@ -78,7 +78,7 @@ function ContactForm({ user }) {
           <input style={inputStyle} placeholder="Your name" value={form.name} onChange={set('name')} />
         </div>
         <div>
-          <label style={labelStyle}>Email <span style={{ color: 'var(--mf-accent,#06E6FF)' }}>*</span></label>
+          <label style={labelStyle}>Email <span style={{ color: 'var(--mf-accent,#14C9E5)' }}>*</span></label>
           <input style={inputStyle} type="email" placeholder="you@email.com" value={form.email} onChange={set('email')} required />
         </div>
       </div>
@@ -97,7 +97,7 @@ function ContactForm({ user }) {
         <input style={inputStyle} placeholder="Summary of your request..." value={form.subject} onChange={set('subject')} />
       </div>
       <div>
-        <label style={labelStyle}>Message <span style={{ color: 'var(--mf-accent,#06E6FF)' }}>*</span></label>
+        <label style={labelStyle}>Message <span style={{ color: 'var(--mf-accent,#14C9E5)' }}>*</span></label>
         <textarea
           style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, minHeight: 120 }}
           placeholder="Describe your request in detail..."
@@ -119,7 +119,7 @@ function ContactForm({ user }) {
         disabled={sending}
         style={{
           padding: '14px', borderRadius: 11, border: 'none',
-          background: 'linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88))',
+          background: 'linear-gradient(135deg,var(--mf-accent,#14C9E5),var(--mf-green,#00D2B8))',
           color: '#060912', fontSize: 14, fontWeight: 800,
           cursor: sending ? 'not-allowed' : 'pointer',
           opacity: sending ? 0.6 : 1,
@@ -148,7 +148,7 @@ export default function SupportPage({ user, onBack }) {
       <style>{`
         .sp-faq-item { border: 1px solid #142038; border-radius: 12px; overflow: hidden; background: rgba(13,21,38,0.7); }
         .sp-faq-q { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--mf-text-1,#E8EEFF); user-select: none; transition: color 0.2s; }
-        .sp-faq-q:hover { color: var(--mf-accent,#06E6FF); }
+        .sp-faq-q:hover { color: var(--mf-accent,#14C9E5); }
         .sp-faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
         .sp-faq-a.open { max-height: 200px; }
         .sp-faq-a-inner { padding: 0 22px 18px; font-size: 14px; color: #8BA3CC; line-height: 1.75; }
@@ -189,7 +189,7 @@ export default function SupportPage({ user, onBack }) {
 
           {/* Contact info */}
           <div className="sp-card">
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mf-accent,#06E6FF)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mf-accent,#14C9E5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>
               Contact Us
             </div>
             {[
@@ -204,7 +204,7 @@ export default function SupportPage({ user, onBack }) {
                 }}>{c.icon}</div>
                 <div>
                   <div style={{ fontSize: 10, color: '#3A5070', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.label}</div>
-                  <a href={c.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--mf-accent,#06E6FF)', textDecoration: 'none', fontWeight: 600 }}>{c.value}</a>
+                  <a href={c.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--mf-accent,#14C9E5)', textDecoration: 'none', fontWeight: 600 }}>{c.value}</a>
                 </div>
               </div>
             ))}

@@ -27,15 +27,15 @@ import TradeImportModal from '../components/TradeImportModal';
 // 🎨 PALETTE
 // ══════════════════════════════════════════════════════════════════════════════
 const C = {
-  bgPage:'#0F1420', bgCard:'var(--mf-card,#161D2E)', bgDeep:'var(--mf-deep,#0D1117)',
-  bgHigh:'#1C2540', bgHov:'#1F2B42', bgGlass:'rgba(22,29,46,0.85)',
-  cyan:'var(--mf-accent,#06E6FF)', cyanGlow:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.35)', teal:'var(--mf-teal,#00F5D4)',
-  green:'var(--mf-green,#00FF88)', greenDim:'#00FF88', greenGlow:'rgba(var(--mf-green-rgb, 0, 255, 136),0.35)',
+  bgPage:'var(--mf-bg,#01040A)', bgCard:'var(--mf-card,#060D18)', bgDeep:'var(--mf-deep,#02050B)',
+  bgHigh:'var(--mf-high,#0B1525)', bgHov:'rgba(var(--mf-high-rgb,11,21,37),0.86)', bgGlass:'rgba(var(--mf-card-rgb,6,13,24),0.78)',
+  cyan:'var(--mf-accent,#14C9E5)', cyanGlow:'rgba(var(--mf-accent-rgb, 20, 201, 229),0.24)', teal:'var(--mf-teal,#00D2B8)',
+  green:'var(--mf-green,#00D2B8)', greenDim:'var(--mf-green,#00D2B8)', greenGlow:'rgba(var(--mf-green-rgb, 0, 210, 184),0.24)',
   danger:'var(--mf-danger,#FF3D57)', dangerDim:'var(--mf-danger,#FF3D57)', dangerGlow:'rgba(var(--mf-danger-rgb, 255, 61, 87),0.35)',
   warn:'var(--mf-warn,#FFB31A)', purple:'var(--mf-purple,#A78BFA)', blue:'var(--mf-blue,#4D7CFF)',
   t1:'var(--mf-text-1,#E8EEFF)', t2:'var(--mf-text-2,#8B9BB4)', t3:'var(--mf-text-3,#3D4F6B)', t4:'var(--mf-text-3,#64748B)',
   brd:'var(--mf-border,#1E2D45)', brdSoft:'var(--mf-border-hi,#243454)', brdBright:'var(--mf-border-hi,#334155)',
-  grad:'linear-gradient(135deg, var(--mf-accent,#06E6FF), var(--mf-green,#00FF88))',
+  grad:'linear-gradient(135deg, #DCE4EF, var(--mf-accent,#14C9E5) 46%, var(--mf-green,#00D2B8))',
   gradBlue:'linear-gradient(135deg, var(--mf-blue,#4D7CFF), var(--mf-blue,#4D7CFF))',
   gradDanger:'linear-gradient(135deg, var(--mf-danger,#FF3D57), var(--mf-danger,#FF3D57))',
   gradWarn:'linear-gradient(135deg, var(--mf-warn,#FFB31A), var(--mf-warn,#F59E0B))',

@@ -262,7 +262,7 @@ export default function AIChatBot() {
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mf-text-1,#E8EEFF)' }}>MarketFlow AI</div>
-                <div style={{ fontSize: 10, color: 'var(--mf-green,#00FF88)', fontWeight: 500 }}>Online</div>
+                <div style={{ fontSize: 10, color: 'var(--mf-green,#00D2B8)', fontWeight: 500 }}>Online</div>
               </div>
               <div style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--mf-text-3,#334566)', fontWeight: 500 }}>
                 {trades.length} trades loaded
@@ -375,11 +375,11 @@ export default function AIChatBot() {
                 disabled={!input.trim() || typing}
                 style={{
                   padding: '9px 14px',
-                  background: input.trim() && !typing ? 'linear-gradient(135deg, var(--mf-accent,#06E6FF), var(--mf-green,#00FF88))' : 'rgba(255,255,255,0.04)',
+                  background: input.trim() && !typing ? 'linear-gradient(135deg, var(--mf-accent,#14C9E5), var(--mf-green,#00D2B8))' : 'rgba(255,255,255,0.04)',
                   border: 'none',
                   borderRadius: 9,
                   cursor: input.trim() && !typing ? 'pointer' : 'default',
-                  color: input.trim() && !typing ? 'var(--mf-bg,#030508)' : 'var(--mf-text-3,#334566)',
+                  color: input.trim() && !typing ? 'var(--mf-bg,#01040A)' : 'var(--mf-text-3,#334566)',
                   fontWeight: 600,
                   fontSize: 12,
                   transition: 'all 0.15s ease',

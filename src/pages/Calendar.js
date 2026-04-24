@@ -4,10 +4,10 @@ import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
 
 const C = {
-  accent: 'var(--mf-accent,#06E6FF)',
-  green: 'var(--mf-green,#00FF88)',
+  accent: 'var(--mf-accent,#14C9E5)',
+  green: 'var(--mf-green,#00D2B8)',
   blue: 'var(--mf-blue,#4D7CFF)',
-  teal: 'var(--mf-teal,#00F5D4)',
+  teal: 'var(--mf-teal,#00D2B8)',
   warn: 'var(--mf-warn,#FFB31A)',
   danger: 'var(--mf-danger,#FF3D57)',
   purple: 'var(--mf-purple,#A78BFA)',
@@ -15,8 +15,8 @@ const C = {
   text1: 'var(--mf-text-1,#E8EEFF)',
   text2: 'var(--mf-text-2,#7A90B8)',
   text3: 'var(--mf-text-3,#334566)',
-  border: 'var(--mf-border,#162034)',
-  borderHi: 'var(--mf-border-hi,#1E2E48)',
+  border: 'var(--mf-border,#142033)',
+  borderHi: 'var(--mf-border-hi,#1F2F47)',
 };
 
 const PAGE_STYLES = `

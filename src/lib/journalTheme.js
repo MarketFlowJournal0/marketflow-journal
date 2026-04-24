@@ -38,7 +38,7 @@ export const JOURNAL_THEME_CHOICES = [
   { value: '#FB7185', label: 'Rose' },
   { value: '#FF7A59', label: 'Coral' },
   { value: '#F59E0B', label: 'Amber' },
-  { value: '#FFD700', label: 'Gold' },
+  { value: '#D7B36A', label: 'Gold' },
   { value: '#EF4444', label: 'Crimson' },
 ];
 

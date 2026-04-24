@@ -129,7 +129,7 @@ export default function SupportWidget({ onOpenPage }) {
         .mfw-btn {
           position:fixed; bottom:28px; right:28px; z-index:9000;
           width:56px; height:56px; border-radius:50%;
-          background:#030508;
+          background:#01040A;
           border:1px solid rgba(6,230,255,0.22); cursor:pointer;
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 4px 24px rgba(6,230,255,0.5);
@@ -165,7 +165,7 @@ export default function SupportWidget({ onOpenPage }) {
         }
         .mfw-head::before {
           content:''; position:absolute; top:0; left:0; right:0; height:1px;
-          background:linear-gradient(90deg,transparent,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88),transparent);
+          background:linear-gradient(90deg,transparent,var(--mf-accent,#14C9E5),var(--mf-green,#00D2B8),transparent);
         }
         .mfw-av {
           width:40px; height:40px; border-radius:50%;
@@ -177,7 +177,7 @@ export default function SupportWidget({ onOpenPage }) {
         }
         .mfw-dot {
           width:7px; height:7px; border-radius:50%;
-          background:var(--mf-green,#00FF88); box-shadow:0 0 5px var(--mf-green,#00FF88);
+          background:var(--mf-green,#00D2B8); box-shadow:0 0 5px var(--mf-green,#00D2B8);
           animation:mfw-blink 1.5s ease infinite;
         }
         @keyframes mfw-blink { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
@@ -216,11 +216,11 @@ export default function SupportWidget({ onOpenPage }) {
         }
         .mfw-typing span {
           width:5px; height:5px; border-radius:50%;
-          background:var(--mf-accent,#06E6FF);
+          background:var(--mf-accent,#14C9E5);
           animation:mfw-tb 0.9s ease infinite;
         }
         .mfw-typing span:nth-child(2){animation-delay:0.15s;background:#00DDFF;}
-        .mfw-typing span:nth-child(3){animation-delay:0.3s;background:var(--mf-green,#00FF88);}
+        .mfw-typing span:nth-child(3){animation-delay:0.3s;background:var(--mf-green,#00D2B8);}
         @keyframes mfw-tb{0%,60%,100%{transform:translateY(0);opacity:0.4;}30%{transform:translateY(-5px);opacity:1;}}
         .mfw-quick {
           padding:8px 12px 6px;
@@ -235,7 +235,7 @@ export default function SupportWidget({ onOpenPage }) {
           color:#6AB8CC; font-size:11px; font-weight:600;
           cursor:pointer; transition:all 0.15s; font-family:inherit;
         }
-        .mfw-qbtn:hover{background:rgba(6,230,255,0.12);border-color:rgba(var(--mf-accent-rgb, 6, 230, 255),0.35);color:var(--mf-accent,#06E6FF);}
+        .mfw-qbtn:hover{background:rgba(6,230,255,0.12);border-color:rgba(var(--mf-accent-rgb, 6, 230, 255),0.35);color:var(--mf-accent,#14C9E5);}
         .mfw-foot {
           padding:10px 13px;
           border-top:1px solid rgba(255,255,255,0.05);
@@ -257,7 +257,7 @@ export default function SupportWidget({ onOpenPage }) {
         .mfw-ta::placeholder{color:#2A4060;}
         .mfw-send {
           width:36px; height:36px; border-radius:9px;
-          border:none; background:linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88));
+          border:none; background:linear-gradient(135deg,var(--mf-accent,#14C9E5),var(--mf-green,#00D2B8));
           color:#060912; cursor:pointer; flex-shrink:0;
           display:flex; align-items:center; justify-content:center;
           transition:all 0.2s;
@@ -269,11 +269,11 @@ export default function SupportWidget({ onOpenPage }) {
           font-size:10.5px; color:#2A4060;
         }
         .mfw-link button {
-          background:none; border:none; color:var(--mf-accent,#06E6FF);
+          background:none; border:none; color:var(--mf-accent,#14C9E5);
           font-size:10.5px; cursor:pointer; font-family:inherit;
           text-decoration:underline; padding:0;
         }
-        .mfw-link button:hover{color:var(--mf-green,#00FF88);}
+        .mfw-link button:hover{color:var(--mf-green,#00D2B8);}
         .mfw-x {
           margin-left:auto; background:none; border:none;
           color:#2A4060; cursor:pointer; font-size:17px;

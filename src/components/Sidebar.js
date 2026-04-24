@@ -430,8 +430,8 @@ function Tooltip({ text, children }) {
               left: 'calc(100% + 12px)',
               top: '50%',
               transform: 'translateY(-50%)',
-              background: '#0C1422',
-              border: '1px solid #162034',
+              background: '#060D18',
+              border: '1px solid #142033',
               borderRadius: 8,
               padding: '6px 10px',
               fontSize: 11.5,
@@ -726,7 +726,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
 
               <div style={{ position: 'relative', padding: '12px 12px 14px', borderRadius: 14, background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))', border: '1px solid rgba(255,255,255,0.05)', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, ${planInfo.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#030508', boxShadow: `0 12px 28px ${withAlpha(planInfo.accent, 0.24)}` }}>{initials}</div>
+                  <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, ${planInfo.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#01040A', boxShadow: `0 12px 28px ${withAlpha(planInfo.accent, 0.24)}` }}>{initials}</div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#E8EEFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{firstName}</div>
                     <div style={{ fontSize: 11, color: 'rgba(232,238,255,0.56)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
@@ -764,7 +764,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
           whileTap={{ scale: 0.99 }}
           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10, justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '8px 0' : '10px 11px', borderRadius: 15, border: `1px solid ${panelOpen ? withAlpha(planInfo.accent, 0.22) : 'rgba(255,255,255,0.06)'}`, background: panelOpen ? `linear-gradient(135deg, ${withAlpha(planInfo.accent, 0.12)}, ${withAlpha(planInfo.secondary, 0.03)})` : 'rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'all 0.15s ease' }}
         >
-          <div style={{ width: 34, height: 34, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, ${planInfo.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#030508', boxShadow: `0 10px 20px ${withAlpha(planInfo.accent, 0.2)}` }}>{initials}</div>
+          <div style={{ width: 34, height: 34, borderRadius: 12, flexShrink: 0, background: `linear-gradient(135deg, ${planInfo.accent}, ${planInfo.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#01040A', boxShadow: `0 10px 20px ${withAlpha(planInfo.accent, 0.2)}` }}>{initials}</div>
           <AnimatePresence>
             {!collapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>

@@ -354,7 +354,7 @@ export default function WelcomePage() {
               width: 7,
               height: 7,
               borderRadius: '50%',
-              background: '#00FF88',
+              background: '#00D2B8',
               boxShadow: '0 0 12px rgba(0,255,136,0.7)',
             }}
           />
@@ -458,7 +458,7 @@ export default function WelcomePage() {
               <br />
               <span
                 style={{
-                  background: 'linear-gradient(135deg, #06E6FF, #00FF88)',
+                  background: 'linear-gradient(135deg, #14C9E5, #00D2B8)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
@@ -490,7 +490,7 @@ export default function WelcomePage() {
                     navigate(journalRoute);
                   }}
                   style={{
-                    background: 'linear-gradient(135deg, #00FF88, #06E6FF)',
+                    background: 'linear-gradient(135deg, #00D2B8, #14C9E5)',
                     border: 'none',
                     color: '#02111B',
                     borderRadius: 14,
@@ -567,7 +567,7 @@ export default function WelcomePage() {
               </div>
               <div style={{ display: 'grid', gap: 10 }}>
                 <SnapshotCard title="Plan" value={plan.label} accent={plan.accent} />
-                <SnapshotCard title="Status" value={ready ? 'Journal unlocked' : 'Unlocking'} accent={ready ? '#00FF88' : '#FDBA74'} />
+                <SnapshotCard title="Status" value={ready ? 'Journal unlocked' : 'Unlocking'} accent={ready ? '#00D2B8' : '#FDBA74'} />
                 <SnapshotCard title="Home" value={journalRoute.replace('/', '')} accent="#E8EEFF" />
               </div>
             </div>

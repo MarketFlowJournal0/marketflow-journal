@@ -5,18 +5,18 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 const C = {
-  bgCard: 'var(--mf-card,#0C1422)',
-  cyan: 'var(--mf-accent,#06E6FF)',
-  green: 'var(--mf-green,#00FF88)',
+  bgCard: 'var(--mf-card,#060D18)',
+  cyan: 'var(--mf-accent,#14C9E5)',
+  green: 'var(--mf-green,#00D2B8)',
   purple: 'var(--mf-purple,#B06EFF)',
   danger: 'var(--mf-danger,#FF3D57)',
-  gold: 'var(--mf-gold,#FFD700)',
+  gold: 'var(--mf-gold,#D7B36A)',
   blue: 'var(--mf-blue,#4D7CFF)',
   t0: 'var(--mf-text-0,#FFFFFF)',
   t1: 'var(--mf-text-1,#E8EEFF)',
   t2: 'var(--mf-text-2,#7A90B8)',
   t3: 'var(--mf-text-3,#334566)',
-  brd: 'var(--mf-border,#162034)',
+  brd: 'var(--mf-border,#142033)',
 };
 
 const Ic = {

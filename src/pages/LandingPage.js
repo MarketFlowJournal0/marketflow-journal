@@ -114,7 +114,7 @@ const STYLES = `
   .lp-nav-cta { display:flex;align-items:center;gap:10px; }
   .btn-ghost { padding:8px 18px;border-radius:9px;border:1px solid var(--brd);background:transparent;color:var(--t1);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.18s; }
   .btn-ghost:hover { border-color:var(--cyan);color:var(--cyan); }
-  .btn-primary-nav { padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--green));border:none;color:#030508;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 20px rgba(6,230,255,0.25); }
+  .btn-primary-nav { padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--green));border:none;color:#01040A;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 20px rgba(6,230,255,0.25); }
   .btn-primary-nav:hover { transform:translateY(-1px);box-shadow:0 4px 30px rgba(6,230,255,0.4); }
 
   /* TICKER */
@@ -122,12 +122,17 @@ const STYLES = `
   .lp-ticker { display:inline-flex;gap:0;animation:ticker-scroll 50s linear infinite; }
 
   /* LOGOS TICKER */
-  .lp-logos { padding:30px 0 50px;overflow:hidden;position:relative; }
-  .lp-logos::before { content:'';position:absolute;left:8%;right:8%;top:50%;height:1px;background:linear-gradient(90deg,transparent,rgba(20,201,229,.2),rgba(220,228,239,.12),transparent); }
-  .lp-logos-label { text-align:center;font-size:10px;color:rgba(142,160,184,.68);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:20px; }
-  .lp-logos-track { display:inline-flex;gap:0;animation:ticker-scroll 35s linear infinite; }
-  .lp-logo-item { display:inline-flex;align-items:center;justify-content:center;padding:0 40px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--t0);opacity:0.38;transition:opacity 0.3s,transform .25s;white-space:nowrap;text-shadow:0 0 22px rgba(20,201,229,.12); }
-  .lp-logo-item:hover { opacity:0.82;transform:translateY(-2px); }
+  .lp-logos { padding:34px 0 58px;overflow:hidden;position:relative;isolation:isolate; }
+  .lp-logos::before { content:'';position:absolute;left:8%;right:8%;top:54%;height:1px;background:linear-gradient(90deg,transparent,rgba(20,201,229,.22),rgba(220,228,239,.14),transparent); }
+  .lp-logos::after { content:'';position:absolute;left:20%;right:20%;top:22px;height:120px;background:radial-gradient(circle,rgba(20,201,229,.09),transparent 70%);filter:blur(20px);z-index:-1; }
+  .lp-logos-head { display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:22px; }
+  .lp-logos-label { text-align:center;font-size:10px;color:rgba(220,228,239,.72);letter-spacing:2px;text-transform:uppercase;font-weight:800; }
+  .lp-logos-note { padding:4px 9px;border-radius:999px;border:1px solid rgba(220,228,239,.08);background:rgba(255,255,255,.025);font-size:9px;color:rgba(142,160,184,.7);font-weight:800;letter-spacing:1px;text-transform:uppercase; }
+  .lp-logos-track { display:inline-flex;gap:10px;animation:ticker-scroll 42s linear infinite;will-change:transform; }
+  .lp-logo-item { display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:178px;padding:10px 18px;border-radius:999px;border:1px solid rgba(220,228,239,.075);background:linear-gradient(145deg,rgba(13,23,38,0.42),rgba(4,9,18,0.62));font-family:'Space Grotesk',sans-serif;color:var(--t0);opacity:0.56;transition:opacity 0.3s,transform .25s,border-color .25s,background .25s;white-space:nowrap;text-shadow:0 0 22px rgba(20,201,229,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+  .lp-logo-item strong { font-size:14px;font-weight:800;letter-spacing:-.02em; }
+  .lp-logo-item em { font-style:normal;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(142,160,184,.72);text-transform:uppercase; }
+  .lp-logo-item:hover { opacity:0.94;transform:translateY(-2px);border-color:rgba(20,201,229,.28);background:linear-gradient(145deg,rgba(20,201,229,.09),rgba(4,9,18,.72)); }
 
   /* HERO */
   .lp-hero { min-height:calc(100vh - 72px);padding:136px 48px 82px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden; }
@@ -223,13 +228,13 @@ const STYLES = `
   /* PRICING */
   .lp-pricing-toggle { display:flex;align-items:center;gap:14px;justify-content:center;margin-top:44px;margin-bottom:0; }
   .lp-toggle-btn { padding:8px 20px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--t2);font-family:'Inter',sans-serif;transition:all 0.2s; }
-  .lp-toggle-btn.active { background:var(--cyan);color:#030508; }
+  .lp-toggle-btn.active { background:var(--cyan);color:#01040A; }
   .lp-toggle-badge { background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.25);color:var(--green);font-size:10px;font-weight:700;padding:3px 10px;border-radius:50px;letter-spacing:0.04em; }
   .lp-pricing-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px; }
   .lp-pricing-card { padding:28px 24px;border-radius:18px;border:1px solid var(--brd);background:rgba(12,20,34,0.5);position:relative;overflow:hidden;transition:all 0.3s;display:flex;flex-direction:column; }
   .lp-pricing-card:hover { transform:translateY(-3px); }
   .lp-pricing-card.popular { border-color:rgba(6,230,255,0.35);background:linear-gradient(160deg,rgba(6,230,255,0.04),rgba(0,255,136,0.02),rgba(12,20,34,0.98));box-shadow:0 0 0 1px rgba(6,230,255,0.08),0 24px 48px rgba(0,0,0,0.5); }
-  .lp-popular-badge { position:absolute;top:14px;right:14px;padding:3px 10px;border-radius:50px;background:linear-gradient(135deg,var(--cyan),var(--green));font-size:9px;font-weight:800;color:#030508;letter-spacing:0.5px; }
+  .lp-popular-badge { position:absolute;top:14px;right:14px;padding:3px 10px;border-radius:50px;background:linear-gradient(135deg,var(--cyan),var(--green));font-size:9px;font-weight:800;color:#01040A;letter-spacing:0.5px; }
   .lp-plan { font-size:10px;font-weight:800;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px; }
   .lp-price { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:46px;color:var(--t0);line-height:1;margin-bottom:4px;letter-spacing:-2px; }
   .lp-price sup { font-size:18px;vertical-align:super;letter-spacing:0; }
@@ -241,7 +246,7 @@ const STYLES = `
   .btn-plan { width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;border:none; }
   .btn-plan.outline { background:transparent;border:1px solid var(--brd);color:var(--t1); }
   .btn-plan.outline:hover { border-color:var(--cyan);color:var(--cyan); }
-  .btn-plan.filled { background:linear-gradient(135deg,var(--cyan),var(--green));color:#030508;box-shadow:0 0 20px rgba(6,230,255,0.25); }
+  .btn-plan.filled { background:linear-gradient(135deg,var(--cyan),var(--green));color:#01040A;box-shadow:0 0 20px rgba(6,230,255,0.25); }
   .btn-plan.filled:hover { box-shadow:0 4px 32px rgba(6,230,255,0.4);transform:translateY(-1px); }
 
   /* TESTIMONIALS */
@@ -252,7 +257,7 @@ const STYLES = `
   .lp-testi-text { font-size:13.5px;color:var(--t2);line-height:1.7;margin-bottom:16px;font-style:italic; }
   .lp-testi-text strong { color:var(--cyan);font-style:normal; }
   .lp-testi-author { display:flex;align-items:center;gap:10px; }
-  .lp-avatar { width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#030508;flex-shrink:0; }
+  .lp-avatar { width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#01040A;flex-shrink:0; }
   .lp-testi-name { font-size:12.5px;font-weight:700;color:var(--t0); }
   .lp-testi-role { font-size:10.5px;color:var(--t3); }
   .lp-testi-pnl { display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:var(--green);background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);padding:2px 7px;border-radius:4px;margin-top:4px; }
@@ -346,7 +351,20 @@ function LiveTickerBar() {
     </div>
   );
 }
-const LOGOS = ['FTMO','The5ers','Topstep','FundedNext','Funding Pips','E8 Markets','Alpha Capital','Blue Guardian','MyFundedFX','Apex Trader Funding'];
+const PROP_ENVIRONMENTS = [
+  { name: 'FTMO', type: 'FX' },
+  { name: 'The5ers', type: 'FX' },
+  { name: 'Topstep', type: 'Futures' },
+  { name: 'FundedNext', type: 'CFD' },
+  { name: 'Funding Pips', type: 'CFD' },
+  { name: 'E8 Markets', type: 'CFD' },
+  { name: 'Alpha Capital Group', type: 'CFD' },
+  { name: 'Blue Guardian', type: 'CFD' },
+  { name: 'MyFundedFX', type: 'CFD' },
+  { name: 'Apex Trader Funding', type: 'Futures' },
+  { name: 'Take Profit Trader', type: 'Futures' },
+  { name: 'OneUp Trader', type: 'Futures' },
+];
 
 const FAQS = [
   {q:'How do I import trades?',a:'MarketFlow currently supports CSV, Excel, JSON and pasted tables with column mapping, custom columns and account-aware storage.'},
@@ -357,19 +375,19 @@ const FAQS = [
 ];
 
 const TESTIS = [
-  {i:'01',name:'No invented traction',role:'Public site standard',pnl:'Transparent',stars:5,grad:'linear-gradient(135deg,#06E6FF,#00FF88)',text:'No fake user counters, fake trade volume, invented ratings or synthetic testimonials are used on this landing page.'},
-  {i:'02',name:'Plan-gated product',role:'Subscription standard',pnl:'Starter / Pro / Elite',stars:5,grad:'linear-gradient(135deg,#00F5D4,#4D7CFF)',text:'Modules are presented according to the access model currently used in the journal, including Starter analytics basics and Elite-only tooling.'},
-  {i:'03',name:'Data ownership',role:'Journal standard',pnl:'Exportable',stars:5,grad:'linear-gradient(135deg,#06E6FF,#4D7CFF)',text:'The journal includes backup export, restore flows and full trade deletion controls with confirmation inside the product.'},
+  {i:'01',name:'No invented traction',role:'Public site standard',pnl:'Transparent',stars:5,grad:'linear-gradient(135deg,#14C9E5,#00D2B8)',text:'No fake user counters, fake trade volume, invented ratings or synthetic testimonials are used on this landing page.'},
+  {i:'02',name:'Plan-gated product',role:'Subscription standard',pnl:'Starter / Pro / Elite',stars:5,grad:'linear-gradient(135deg,#00D2B8,#4D7CFF)',text:'Modules are presented according to the access model currently used in the journal, including Starter analytics basics and Elite-only tooling.'},
+  {i:'03',name:'Data ownership',role:'Journal standard',pnl:'Exportable',stars:5,grad:'linear-gradient(135deg,#14C9E5,#4D7CFF)',text:'The journal includes backup export, restore flows and full trade deletion controls with confirmation inside the product.'},
 ];
 const PAGE_CONTENT = {
-  changelog:{title:'Changelog',subtitle:'Update history',color:'#06E6FF',items:[{v:'Current',date:'2026',badge:'LIVE',badgeColor:'#00FF88',items:['Landing page restored to the earlier site structure','New MF logo system across public and app surfaces','Reports, alerts, API access and Elite trade copier surfaces live in the product']}]},
-  roadmap:{title:'Roadmap',subtitle:'Next product priorities',color:'#B06EFF',sections:[{label:'Near term',color:'#00FF88',items:[{icon:'AI',title:'AI workflows',desc:'Sharper assistant flows inside the MarketFlow chatbot'},{icon:'Mobile',title:'Mobile app',desc:'Dedicated mobile experience beyond the current PWA foundation'},{icon:'Broker',title:'Broker execution bridge',desc:'Real broker connectivity requires platform-specific bridges and secure backend routing'}]}]},
+  changelog:{title:'Changelog',subtitle:'Update history',color:'#14C9E5',items:[{v:'Current',date:'2026',badge:'LIVE',badgeColor:'#00D2B8',items:['Landing page restored to the earlier site structure','New MF logo system across public and app surfaces','Reports, alerts, API access and Elite trade copier surfaces live in the product']}]},
+  roadmap:{title:'Roadmap',subtitle:'Next product priorities',color:'#B06EFF',sections:[{label:'Near term',color:'#00D2B8',items:[{icon:'AI',title:'AI workflows',desc:'Sharper assistant flows inside the MarketFlow chatbot'},{icon:'Mobile',title:'Mobile app',desc:'Dedicated mobile experience beyond the current PWA foundation'},{icon:'Broker',title:'Broker execution bridge',desc:'Real broker connectivity requires platform-specific bridges and secure backend routing'}]}]},
   docs:{title:'Documentation',subtitle:'MarketFlow operating guide',color:'#14C9E5',sections:[{label:'Core workflow',color:'#14C9E5',items:[{icon:'01',title:'Import and map trades',desc:'Use All Trades to import CSV, Excel, JSON or pasted tables, then map symbol, side, date, entry, exit, P&L and custom fields.'},{icon:'02',title:'Review by account',desc:'Use account scope so dashboard, analytics, equity and calendar views stay aligned with the selected trading account.'},{icon:'03',title:'Close the day',desc:'Use the daily workflow, psychology review and calendar context to keep the journal actionable instead of noisy.'}]}]},
   import:{title:'Import Guide',subtitle:'Supported trade data flows',color:'#00D2B8',sections:[{label:'Import sources',color:'#00D2B8',items:[{icon:'CSV',title:'CSV and Excel',desc:'Upload broker exports or spreadsheets and create missing columns during mapping when your file has extra fields.'},{icon:'JSON',title:'JSON and raw tables',desc:'Paste structured rows or use JSON-style exports for flexible journal migration.'},{icon:'SAFE',title:'Validation first',desc:'MarketFlow previews detected rows before saving so bad rows can be corrected instead of silently polluting the journal.'}]}]},
   api:{title:'API Reference',subtitle:'Elite automation surface',color:'#4D7CFF',sections:[{label:'Access model',color:'#4D7CFF',items:[{icon:'Elite',title:'Elite-only access',desc:'API access is positioned for Elite users who need automation around journal data and operational workflows.'},{icon:'Auth',title:'Authenticated usage',desc:'Any production API workflow must use authenticated account access and should never expose private journal data publicly.'},{icon:'Road',title:'Implementation note',desc:'The public site describes the current access surface. Deeper endpoint documentation should be published as backend endpoints mature.'}]}]},
   tutoriels:{title:'Tutorials',subtitle:'Short workflow lessons',color:'#DCE4EF',sections:[{label:'Suggested lessons',color:'#DCE4EF',items:[{icon:'Start',title:'First journal setup',desc:'Create the account, confirm plan access, import the first data sample and verify dashboard metrics.'},{icon:'Review',title:'Weekly review',desc:'Use analytics, calendar, psychology and equity together to identify one process improvement for the next week.'},{icon:'Risk',title:'Prop-style discipline',desc:'Track drawdown, account scope, reports and alerts without implying a direct partnership with any prop firm.'}]}]},
   cgu:{title:'Terms of Service',subtitle:'Effective 2026',color:'#8BA3CC',articles:[{title:'Purpose',text:'These terms describe access to MarketFlow Journal, a SaaS trading journal for tracking, reviewing and improving trading activity.'},{title:'Billing',text:'Payments and trials are handled by Stripe. Subscription access depends on the active plan and payment status.'},{title:'Trading disclaimer',text:'MarketFlow is a journaling and analytics product. It does not provide financial advice or guarantee trading results.'}]},
-  rgpd:{title:'Privacy Policy',subtitle:'Data and privacy',color:'#00F5D4',articles:[{title:'Collected data',text:'Account details, journal data and technical data may be stored to operate the service. Payment data is processed by Stripe.'},{title:'User control',text:'Users can export backups and delete journal trades through the product.'},{title:'Contact',text:'For privacy requests, contact marketflowjournal0@gmail.com.'}]},
+  rgpd:{title:'Privacy Policy',subtitle:'Data and privacy',color:'#00D2B8',articles:[{title:'Collected data',text:'Account details, journal data and technical data may be stored to operate the service. Payment data is processed by Stripe.'},{title:'User control',text:'Users can export backups and delete journal trades through the product.'},{title:'Contact',text:'For privacy requests, contact marketflowjournal0@gmail.com.'}]},
   contact:{title:'Contact',subtitle:'Get in touch',color:'#4D7CFF',content:'Email: marketflowjournal0@gmail.com\n\nFor support, use the journal support page or the support widget.'},
 };
 
@@ -528,14 +546,22 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         </Reveal>
       </section>
 
-      {/* LOGOS TICKER */}
+      {/* PROP ENVIRONMENTS TICKER */}
       <div className="lp-logos">
-        <div className="lp-logos-label">Known prop environments traders recognize</div>
+        <div className="lp-logos-head">
+          <div className="lp-logos-label">Prop-style environments traders recognize</div>
+          <div className="lp-logos-note">Examples only - no partnership implied</div>
+        </div>
         <div style={{overflow:'hidden',position:'relative'}}>
-          <div style={{position:'absolute',left:0,top:0,bottom:0,width:120,background:'linear-gradient(90deg,#030508,transparent)',zIndex:2,pointerEvents:'none'}}/>
-          <div style={{position:'absolute',right:0,top:0,bottom:0,width:120,background:'linear-gradient(270deg,#030508,transparent)',zIndex:2,pointerEvents:'none'}}/>
+          <div style={{position:'absolute',left:0,top:0,bottom:0,width:120,background:'linear-gradient(90deg,#01040A,transparent)',zIndex:2,pointerEvents:'none'}}/>
+          <div style={{position:'absolute',right:0,top:0,bottom:0,width:120,background:'linear-gradient(270deg,#01040A,transparent)',zIndex:2,pointerEvents:'none'}}/>
           <div className="lp-logos-track">
-            {[...LOGOS,...LOGOS].map((n,i)=>(<span key={i} className="lp-logo-item">{n}</span>))}
+            {[...PROP_ENVIRONMENTS,...PROP_ENVIRONMENTS].map((firm,i)=>(
+              <span key={`${firm.name}-${i}`} className="lp-logo-item">
+                <strong>{firm.name}</strong>
+                <em>{firm.type}</em>
+              </span>
+            ))}
           </div>
         </div>
       </div>
@@ -624,11 +650,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               <div className="lp-big-visual">
                 <div className="lp-visual-header"><span className="lp-visual-title">AI Coach Analysis</span><span className="lp-visual-badge">ASSISTANT</span></div>
                 <div className="lp-visual-body" style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,lineHeight:1.8}}>
-                  <div style={{color:'#7A90B8',marginBottom:8}}>Signal: <span style={{color:'#06E6FF'}}>Pattern detected</span></div>
+                  <div style={{color:'#7A90B8',marginBottom:8}}>Signal: <span style={{color:'#14C9E5'}}>Pattern detected</span></div>
                   <div style={{color:'#E8EEFF',marginBottom:4}}>Review loss-after-loss behavior with</div>
                   <div style={{color:'#E8EEFF',marginBottom:4}}>your saved trades and notes.</div>
                   <div style={{color:'#334566',marginBottom:12}}>The assistant surfaces the pattern for review.</div>
-                  <div style={{color:'#00FF88',marginBottom:4}}>Action: Recommendation:</div>
+                  <div style={{color:'#00D2B8',marginBottom:4}}>Action: Recommendation:</div>
                   <div style={{color:'#E8EEFF'}}>Add a cooldown rule, note the context,</div>
                   <div style={{color:'#E8EEFF'}}>and compare future sessions against it.</div>
                   <div style={{color:'#334566',marginTop:8}}>Linked to psychology and trade history</div>
@@ -688,7 +714,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                     {billing==='annual' && <div className="lp-save">Save ${annualSave}/year</div>}
                     {billing==='monthly' && <div className="lp-save">14-day trial</div>}
                     <div className="lp-divider"/>
-                    <ul className="lp-price-feats">{plan.features.map((f,j)=><li key={j}><span style={{color:'#00FF88',fontWeight:800,fontSize:11}}>+</span>{f}</li>)}</ul>
+                    <ul className="lp-price-feats">{plan.features.map((f,j)=><li key={j}><span style={{color:'#00D2B8',fontWeight:800,fontSize:11}}>+</span>{f}</li>)}</ul>
                     <button className={`btn-plan ${plan.popular?'filled':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan():onSignup?.()}>{plan.popular?'Start 14-day trial':'Upgrade to '+plan.name}</button>
                   </div>
                 </Reveal>
