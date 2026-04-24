@@ -19,10 +19,10 @@ const flowGradient = {
 export function MarketFlowMark({
   size = 38,
   radius = 11,
-  padding = 2,
-  border = '1px solid rgba(68, 214, 255, 0.2)',
-  background = 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0)), rgba(5, 12, 20, 0.88)',
-  shadow = '0 14px 34px rgba(0, 0, 0, 0.32)',
+  padding = 0,
+  border = '0',
+  background = 'transparent',
+  shadow = '0 16px 36px rgba(0, 0, 0, 0.34), 0 0 34px rgba(20, 201, 229, 0.12)',
   style = {},
   imageStyle = {},
   alt = 'MarketFlow',
@@ -49,7 +49,7 @@ export function MarketFlowMark({
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'contain',
+          objectFit: 'cover',
           padding,
           ...imageStyle,
         }}

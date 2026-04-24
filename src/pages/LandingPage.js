@@ -23,7 +23,7 @@ function AnimatedBg() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let animId, w, h;
-    const particles = [], lines = [];
+    const particles = [], lines = [], candles = [];
     const PC = 50, LC = 10;
 
     function resize() {
@@ -33,17 +33,19 @@ function AnimatedBg() {
     }
     function init() {
       resize();
-      particles.length = 0; lines.length = 0;
+      particles.length = 0; lines.length = 0; candles.length = 0;
       for (let i = 0; i < PC; i++) particles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25, r: Math.random() * 1.5 + 0.5, o: Math.random() * 0.25 + 0.05 });
       for (let i = 0; i < LC; i++) {
         const pts = []; let x = Math.random() * (w / devicePixelRatio), y = Math.random() * (h / devicePixelRatio);
         for (let j = 0; j < 8; j++) { pts.push({ x, y }); x += (Math.random() - 0.3) * 120; y += (Math.random() - 0.5) * 80; }
         lines.push({ pts, o: Math.random() * 0.05 + 0.02, speed: Math.random() * 0.12 + 0.04 });
       }
+      for (let i = 0; i < 26; i++) candles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), h: 34 + Math.random() * 120, body: 12 + Math.random() * 42, up: Math.random() > 0.42, speed: 0.12 + Math.random() * 0.28, o: 0.035 + Math.random() * 0.08 });
     }
     function draw() {
       const rw = w / devicePixelRatio, rh = h / devicePixelRatio;
       ctx.clearRect(0, 0, rw, rh);
+      candles.forEach(c => { c.x -= c.speed; if (c.x < -40) { c.x = rw + Math.random() * 180; c.y = Math.random() * rh; c.h = 34 + Math.random() * 120; c.body = 12 + Math.random() * 42; c.up = Math.random() > 0.42; c.o = 0.035 + Math.random() * 0.08; } const color = c.up ? `rgba(0,210,184,${c.o})` : `rgba(223,95,122,${c.o})`; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c.x, c.y - c.h / 2); ctx.lineTo(c.x, c.y + c.h / 2); ctx.stroke(); ctx.fillRect(c.x - 4, c.y - c.body / 2, 8, c.body); });
       lines.forEach(l => { l.pts.forEach(p => { p.x += l.speed * 0.3; if (p.x > rw + 50) { p.x = -50; p.y = Math.random() * rh; } }); ctx.beginPath(); ctx.moveTo(l.pts[0].x, l.pts[0].y); for (let i = 1; i < l.pts.length; i++) { const pv = l.pts[i - 1], c = l.pts[i]; ctx.quadraticCurveTo(pv.x, pv.y, (pv.x + c.x) / 2, (pv.y + c.y) / 2); } ctx.strokeStyle = `rgba(6,230,255,${l.o})`; ctx.lineWidth = 0.7; ctx.stroke(); });
       particles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > rw) p.vx *= -1; if (p.y < 0 || p.y > rh) p.vy *= -1; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(6,230,255,${p.o})`; ctx.fill(); });
       for (let i = 0; i < particles.length; i++) for (let j = i + 1; j < particles.length; j++) { const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y, d = Math.sqrt(dx * dx + dy * dy); if (d < 120) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(6,230,255,${0.03 * (1 - d / 120)})`; ctx.lineWidth = 0.5; ctx.stroke(); } }
@@ -75,19 +77,36 @@ function Counter({ end, suffix = '', prefix = '', duration = 2 }) {
 // --- Styles ----------------------------------------------------------------
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
-  :root { --cyan:#06E6FF;--green:#00FF88;--purple:#B06EFF;--blue:#4D7CFF;--gold:#FFD700;--pink:#FF4DC4;--danger:#FF3D57;--t0:#FFFFFF;--t1:#E8EEFF;--t2:#7A90B8;--t3:#334566;--bg:#030508;--brd:#162034; }
+  :root { --cyan:#14C9E5;--green:#00D2B8;--silver:#DCE4EF;--steel:#95A2B5;--purple:#6885FF;--blue:#1DC9FF;--gold:#D7B36A;--pink:#DF5F7A;--danger:#FF4D6A;--t0:#F7FAFC;--t1:#DCE7F2;--t2:#8EA0B8;--t3:#46566E;--bg:#02060D;--brd:#162235; }
   * { box-sizing:border-box;margin:0;padding:0; }
   html { scroll-behavior:smooth; }
   body { background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;overflow-x:hidden; }
   @keyframes flowgrad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-  .flow-text { background:linear-gradient(90deg,#06E6FF,#00FF88,#06E6FF);background-size:200% 200%;animation:flowgrad 4s ease infinite;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+  .flow-text { background:linear-gradient(105deg,#F7FAFC 0%,#DCE4EF 24%,#14C9E5 58%,#00D2B8 100%);background-size:220% 220%;animation:flowgrad 5s ease infinite;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
   @keyframes ticker-scroll { from{transform:translateX(0)}to{transform:translateX(-50%)} }
+  @keyframes mf-shimmer { 0%{transform:translateX(-120%) skewX(-18deg)} 55%,100%{transform:translateX(160%) skewX(-18deg)} }
+  @keyframes mf-float { 0%,100%{transform:translate3d(0,0,0)} 50%{transform:translate3d(0,-10px,0)} }
+  @keyframes mf-pulse-line { 0%,100%{opacity:.35;transform:scaleX(.82)} 50%{opacity:1;transform:scaleX(1)} }
+  @keyframes mf-scan { 0%{transform:translateY(-20%);opacity:0} 20%,80%{opacity:.55} 100%{transform:translateY(320%);opacity:0} }
+  .lp-shell { background:
+    radial-gradient(circle at 72% 8%, rgba(20,201,229,0.18), transparent 34%),
+    radial-gradient(circle at 8% 92%, rgba(0,210,184,0.12), transparent 30%),
+    linear-gradient(135deg,#02060D 0%,#06111D 46%,#02060D 100%);
+    min-height:100vh;overflow-x:hidden;position:relative;
+  }
+  .lp-shell::before { content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:
+    linear-gradient(115deg,transparent 0 30%,rgba(255,255,255,0.035) 31%,transparent 32% 100%),
+    repeating-linear-gradient(90deg,rgba(148,163,184,0.035) 0 1px,transparent 1px 120px);
+    opacity:.36;mix-blend-mode:screen;
+  }
+  .lp-logo-img { width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 16px 28px rgba(0,0,0,.42)); }
 
   /* NAV */
-  .lp-nav { position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 48px;height:68px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,5,8,0.7);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,0.03);transition:all 0.3s; }
-  .lp-nav.scrolled { background:rgba(3,5,8,0.95);border-bottom-color:var(--brd); }
+  .lp-nav { position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 48px;height:72px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(2,6,13,0.86),rgba(2,6,13,0.58));backdrop-filter:blur(26px) saturate(160%);border-bottom:1px solid rgba(220,228,239,0.06);transition:all 0.3s; }
+  .lp-nav.scrolled { background:rgba(2,6,13,0.94);border-bottom-color:rgba(20,201,229,0.12);box-shadow:0 18px 50px rgba(0,0,0,.28); }
   .lp-nav-logo { display:flex;align-items:center;gap:10px;cursor:pointer; }
-  .lp-nav-logo-icon { width:36px;height:36px;border-radius:10px;overflow:hidden;border:1px solid rgba(6,230,255,0.15);box-shadow:0 0 16px rgba(6,230,255,0.1); }
+  .lp-nav-logo-icon { width:40px;height:40px;border-radius:12px;overflow:hidden;border:0;background:transparent;box-shadow:0 18px 38px rgba(0,0,0,.38),0 0 30px rgba(20,201,229,.12);position:relative; }
+  .lp-nav-logo-icon::after { content:'';position:absolute;inset:-18px;background:radial-gradient(circle,rgba(20,201,229,.16),transparent 62%);z-index:-1; }
   .lp-nav-logo-text { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--t0);letter-spacing:-0.5px; }
   .lp-nav-links { display:flex;align-items:center;gap:4px; }
   .lp-nav-links a { padding:8px 16px;border-radius:8px;color:var(--t2);text-decoration:none;font-size:13.5px;font-weight:500;transition:all 0.18s; }
@@ -99,30 +118,34 @@ const STYLES = `
   .btn-primary-nav:hover { transform:translateY(-1px);box-shadow:0 4px 30px rgba(6,230,255,0.4); }
 
   /* TICKER */
-  .lp-ticker-wrap { overflow:hidden;background:rgba(3,5,8,0.95);border-top:1px solid rgba(6,230,255,0.05);border-bottom:1px solid rgba(255,255,255,0.03);padding:11px 0;white-space:nowrap;margin-top:68px;position:relative; }
+  .lp-ticker-wrap { overflow:hidden;background:rgba(2,6,13,0.74);border-top:1px solid rgba(20,201,229,0.05);border-bottom:1px solid rgba(220,228,239,0.04);padding:11px 0;white-space:nowrap;margin-top:72px;position:relative;backdrop-filter:blur(18px); }
   .lp-ticker { display:inline-flex;gap:0;animation:ticker-scroll 50s linear infinite; }
 
   /* LOGOS TICKER */
-  .lp-logos { padding:40px 0;border-top:1px solid rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.03);overflow:hidden; }
-  .lp-logos-label { text-align:center;font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:20px; }
+  .lp-logos { padding:30px 0 50px;overflow:hidden;position:relative; }
+  .lp-logos::before { content:'';position:absolute;left:8%;right:8%;top:50%;height:1px;background:linear-gradient(90deg,transparent,rgba(20,201,229,.2),rgba(220,228,239,.12),transparent); }
+  .lp-logos-label { text-align:center;font-size:10px;color:rgba(142,160,184,.68);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:20px; }
   .lp-logos-track { display:inline-flex;gap:0;animation:ticker-scroll 35s linear infinite; }
-  .lp-logo-item { display:inline-flex;align-items:center;justify-content:center;padding:0 40px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--t0);opacity:0.35;transition:opacity 0.3s;white-space:nowrap; }
-  .lp-logo-item:hover { opacity:0.7; }
+  .lp-logo-item { display:inline-flex;align-items:center;justify-content:center;padding:0 40px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--t0);opacity:0.38;transition:opacity 0.3s,transform .25s;white-space:nowrap;text-shadow:0 0 22px rgba(20,201,229,.12); }
+  .lp-logo-item:hover { opacity:0.82;transform:translateY(-2px); }
 
   /* HERO */
-  .lp-hero { min-height:100vh;padding:140px 48px 80px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden; }
-  .lp-hero-badge { display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:50px;border:1px solid rgba(6,230,255,0.25);background:rgba(6,230,255,0.06);font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:0.5px;margin-bottom:28px; }
+  .lp-hero { min-height:calc(100vh - 72px);padding:136px 48px 82px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden; }
+  .lp-hero::before { content:'';position:absolute;top:11%;left:50%;width:min(760px,70vw);height:min(760px,70vw);transform:translateX(-50%);background:radial-gradient(circle,rgba(20,201,229,.13),rgba(0,210,184,.05) 34%,transparent 68%);filter:blur(8px);opacity:.72;animation:mf-float 8s ease-in-out infinite; }
+  .lp-hero-badge { display:inline-flex;align-items:center;gap:8px;padding:7px 17px;border-radius:50px;border:1px solid rgba(220,228,239,0.12);background:linear-gradient(135deg,rgba(220,228,239,0.08),rgba(20,201,229,0.05));font-size:11px;font-weight:700;color:#bfefff;letter-spacing:0.5px;margin-bottom:28px;position:relative;overflow:hidden; }
+  .lp-hero-badge::after { content:'';position:absolute;inset:0;width:42%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);animation:mf-shimmer 4.8s ease-in-out infinite; }
   .lp-badge-dot { width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:lp-blink 1.5s ease infinite; }
   @keyframes lp-blink{0%,100%{opacity:1}50%{opacity:0.2}}
   .lp-hero h1 { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:clamp(44px,6vw,82px);line-height:1.05;color:var(--t0);letter-spacing:-2px;margin-bottom:22px;max-width:900px; }
   .lp-hero-sub { font-size:18px;color:var(--t2);max-width:640px;line-height:1.7;margin-bottom:36px; }
   .lp-hero-actions { display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:14px; }
-  .btn-hero-primary { padding:15px 32px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--green));border:none;color:#030508;font-size:15px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 40px rgba(6,230,255,0.3);display:flex;align-items:center;gap:8px; }
-  .btn-hero-primary:hover { transform:translateY(-2px);box-shadow:0 8px 50px rgba(6,230,255,0.45); }
+  .btn-hero-primary { padding:15px 32px;border-radius:12px;background:linear-gradient(135deg,#DCE4EF 0%,#14C9E5 46%,#00D2B8 100%);border:none;color:#02060D;font-size:15px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 42px rgba(20,201,229,0.28);display:flex;align-items:center;gap:8px;position:relative;overflow:hidden; }
+  .btn-hero-primary::after { content:'';position:absolute;inset:0;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);animation:mf-shimmer 5s ease-in-out infinite; }
+  .btn-hero-primary:hover { transform:translateY(-2px);box-shadow:0 8px 55px rgba(20,201,229,0.42); }
   .btn-hero-secondary { padding:15px 30px;border-radius:12px;border:1px solid var(--brd);background:rgba(255,255,255,0.03);color:var(--t1);font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:8px; }
   .btn-hero-secondary:hover { border-color:var(--cyan);color:var(--cyan);background:rgba(6,230,255,0.04); }
   .lp-hero-note { font-size:11.5px;color:var(--t3); }
-  .lp-hero-stats { display:flex;gap:0;margin-top:60px;border:1px solid var(--brd);border-radius:16px;background:rgba(12,20,34,0.6);backdrop-filter:blur(20px);overflow:hidden; }
+  .lp-hero-stats { display:flex;gap:0;margin-top:60px;border:1px solid rgba(220,228,239,0.08);border-radius:18px;background:linear-gradient(145deg,rgba(12,20,34,0.68),rgba(3,8,16,0.72));backdrop-filter:blur(24px);overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.34); }
   .lp-hero-stat { padding:24px 44px;flex:1;text-align:center;border-right:1px solid var(--brd);position:relative; }
   .lp-hero-stat:last-child { border-right:none; }
   .lp-hero-stat::after { content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0;transition:opacity 0.3s; }
@@ -139,8 +162,10 @@ const STYLES = `
 
   /* FEATURES */
   .lp-features-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:60px; }
-  .lp-feature-card { padding:28px;border-radius:16px;border:1px solid var(--brd);background:rgba(12,20,34,0.5);position:relative;overflow:hidden;transition:all 0.25s; }
-  .lp-feature-card:hover { border-color:rgba(6,230,255,0.2);transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,0.4); }
+  .lp-feature-card { padding:28px;border-radius:18px;border:1px solid rgba(220,228,239,0.08);background:linear-gradient(145deg,rgba(13,23,38,0.68),rgba(4,9,18,0.82));position:relative;overflow:hidden;transition:all 0.25s; }
+  .lp-feature-card::before { content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent,rgba(220,228,239,.045),transparent);transform:translateX(-120%);transition:transform .7s ease; }
+  .lp-feature-card:hover::before { transform:translateX(120%); }
+  .lp-feature-card:hover { border-color:rgba(20,201,229,0.22);transform:translateY(-4px);box-shadow:0 18px 58px rgba(0,0,0,0.46); }
   .lp-feature-icon { width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--cyan);margin-bottom:14px;background:rgba(6,230,255,0.06);border:1px solid rgba(6,230,255,0.1); }
   .lp-feature-title { font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:var(--t0);margin-bottom:6px; }
   .lp-feature-desc { font-size:13.5px;color:var(--t2);line-height:1.65; }
@@ -154,11 +179,36 @@ const STYLES = `
   .lp-check-list { list-style:none;display:flex;flex-direction:column;gap:8px; }
   .lp-check-list li { display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--t2); }
   .lp-check-ico { color:var(--green);font-weight:800;font-size:10px;width:18px;height:18px;border-radius:4px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px; }
-  .lp-big-visual { border-radius:18px;overflow:hidden;border:1px solid var(--brd);box-shadow:0 24px 64px rgba(0,0,0,0.5);background:var(--bg); }
+  .lp-big-visual { border-radius:22px;overflow:hidden;border:1px solid rgba(220,228,239,0.08);box-shadow:0 28px 80px rgba(0,0,0,0.54),inset 0 1px 0 rgba(255,255,255,.04);background:linear-gradient(155deg,rgba(8,16,28,.96),rgba(2,6,13,.94));position:relative; }
+  .lp-big-visual::before { content:'';position:absolute;inset:0;background:radial-gradient(circle at 78% 10%,rgba(20,201,229,.14),transparent 34%);pointer-events:none; }
   .lp-visual-header { padding:10px 14px;background:rgba(6,9,18,0.9);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px; }
   .lp-visual-title { font-size:10px;font-weight:700;color:var(--t2);letter-spacing:0.5px; }
   .lp-visual-badge { margin-left:auto;padding:2px 8px;border-radius:4px;font-size:8px;font-weight:800;background:rgba(6,230,255,0.1);border:1px solid rgba(6,230,255,0.2);color:var(--cyan); }
   .lp-visual-body { padding:16px; }
+  .lp-analytics-console { display:grid;grid-template-columns:168px 1fr;gap:14px;min-height:322px;position:relative; }
+  .lp-module-rail { display:flex;flex-direction:column;gap:7px; }
+  .lp-module-pill { border:1px solid rgba(220,228,239,0.08);background:rgba(255,255,255,0.025);border-radius:12px;padding:9px 10px;text-align:left;cursor:pointer;color:var(--t2);transition:all .24s ease;font-family:'Inter',sans-serif; }
+  .lp-module-pill:hover { color:var(--t1);border-color:rgba(20,201,229,.22);background:rgba(20,201,229,.055); }
+  .lp-module-pill.active { color:var(--t0);border-color:rgba(20,201,229,.42);background:linear-gradient(135deg,rgba(20,201,229,.12),rgba(0,210,184,.055));box-shadow:0 14px 32px rgba(0,0,0,.28); }
+  .lp-module-pill span { display:block;font-size:9px;text-transform:uppercase;letter-spacing:1.1px;color:rgba(142,160,184,.68);margin-bottom:4px;font-weight:800; }
+  .lp-module-pill strong { display:block;font-size:12.5px;letter-spacing:-.02em; }
+  .lp-module-screen { border:1px solid rgba(220,228,239,0.08);border-radius:18px;background:radial-gradient(circle at 78% 8%,rgba(20,201,229,.13),transparent 34%),linear-gradient(160deg,rgba(8,17,30,.92),rgba(2,6,13,.86));padding:16px;position:relative;overflow:hidden; }
+  .lp-module-screen::after { content:'';position:absolute;left:0;right:0;top:0;height:44%;background:linear-gradient(180deg,rgba(220,228,239,.06),transparent);opacity:.7;pointer-events:none; }
+  .lp-scanline { position:absolute;left:16px;right:16px;height:1px;background:linear-gradient(90deg,transparent,rgba(20,201,229,.7),transparent);animation:mf-scan 3.6s linear infinite;z-index:2; }
+  .lp-module-top { position:relative;z-index:3;display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px; }
+  .lp-module-kicker { font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(142,160,184,.72);font-weight:800;margin-bottom:6px; }
+  .lp-module-title { font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800;letter-spacing:-.05em;color:var(--t0);line-height:1; }
+  .lp-module-copy { position:relative;z-index:3;max-width:460px;font-size:12.5px;line-height:1.7;color:var(--t2);margin-bottom:16px; }
+  .lp-module-tags { position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px; }
+  .lp-module-tag { font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:#bfefff;border:1px solid rgba(20,201,229,.18);background:rgba(20,201,229,.065);border-radius:999px;padding:5px 8px; }
+  .lp-module-chart { position:relative;z-index:3;height:118px;display:flex;align-items:flex-end;gap:8px;padding:16px;border:1px solid rgba(220,228,239,0.07);border-radius:15px;background:rgba(255,255,255,0.025);overflow:hidden; }
+  .lp-module-chart::before { content:'';position:absolute;left:16px;right:16px;top:50%;height:1px;background:linear-gradient(90deg,transparent,rgba(220,228,239,.12),transparent); }
+  .lp-module-bar { flex:1;border-radius:8px 8px 3px 3px;min-height:18px;background:linear-gradient(180deg,rgba(220,228,239,.88),rgba(20,201,229,.48),rgba(0,210,184,.18));box-shadow:0 0 24px rgba(20,201,229,.16);transition:height .55s cubic-bezier(.2,.8,.2,1); }
+  .lp-module-orbit { width:78px;height:78px;border-radius:50%;border:1px solid rgba(20,201,229,.28);background:radial-gradient(circle,rgba(20,201,229,.2),transparent 62%);position:relative;animation:mf-float 5.5s ease-in-out infinite;flex-shrink:0; }
+  .lp-module-orbit::before,.lp-module-orbit::after { content:'';position:absolute;border-radius:50%;inset:12px;border:1px dashed rgba(220,228,239,.18); }
+  .lp-module-orbit::after { inset:28px;background:linear-gradient(135deg,rgba(220,228,239,.6),rgba(20,201,229,.5));border:0;box-shadow:0 0 22px rgba(20,201,229,.42); }
+  .lp-feature-progress { position:absolute;left:16px;right:16px;bottom:12px;height:2px;background:rgba(220,228,239,.08);border-radius:99px;overflow:hidden; }
+  .lp-feature-progress span { display:block;height:100%;background:linear-gradient(90deg,#DCE4EF,#14C9E5,#00D2B8);animation:mf-pulse-line 2.4s ease-in-out infinite;transform-origin:left center; }
 
   /* COMPARE */
   .lp-compare { margin-top:60px;overflow-x:auto; }
@@ -236,7 +286,7 @@ const STYLES = `
   .lp-footer-bottom { padding-top:20px;border-top:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px; }
   .lp-footer-bottom p { font-size:11.5px;color:var(--t3); }
   .lp-social-row { display:flex;gap:6px; }
-  .lp-social-btn { width:30px;height:30px;border-radius:7px;border:1px solid var(--brd);background:transparent;color:var(--t3);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.18s;text-decoration:none; }
+  .lp-social-btn { min-width:30px;height:30px;padding:0 10px;border-radius:7px;border:1px solid var(--brd);background:transparent;color:var(--t3);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.18s;text-decoration:none; }
   .lp-social-btn:hover { border-color:var(--cyan);color:var(--cyan); }
 
   /* MODAL */
@@ -246,16 +296,24 @@ const STYLES = `
   .lp-modal-close { width:32px;height:32px;border-radius:8px;border:1px solid var(--brd);background:transparent;color:var(--t2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0; }
   .lp-modal-close:hover { border-color:var(--cyan);color:var(--cyan); }
   .lp-modal-body { padding:24px 28px; }
+  .lp-footer-mark { width:42px;height:42px;border-radius:13px;overflow:hidden;border:0;background:transparent;box-shadow:0 0 38px rgba(20,201,229,.16),0 16px 34px rgba(0,0,0,.38);position:relative; }
+  .lp-footer-mark::after { content:'';position:absolute;inset:-22px;background:radial-gradient(circle,rgba(20,201,229,.18),transparent 62%);z-index:-1; }
+  .lp-footer-brand-row { display:flex;align-items:center;gap:11px; }
+  .lp-resource-link { display:flex!important;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(220,228,239,.035);padding-bottom:7px;margin-bottom:7px!important; }
+  .lp-resource-link span { color:rgba(20,201,229,.62);font-size:10px;letter-spacing:.08em;text-transform:uppercase; }
 
   @media (max-width:900px) {
     .lp-features-grid,.lp-pricing-grid,.lp-testi-grid { grid-template-columns:1fr; }
     .lp-big-feat { grid-template-columns:1fr; }
+    .lp-analytics-console { grid-template-columns:1fr; }
+    .lp-module-rail { display:grid;grid-template-columns:repeat(2,1fr); }
     .lp-hero-stats { flex-direction:column; }
     .lp-hero-stat { border-right:none!important;border-bottom:1px solid var(--brd); }
     .lp-footer-top { grid-template-columns:1fr 1fr; }
     .lp-nav { padding:0 20px; }
     .lp-nav-links { display:none; }
     .lp-section { padding:60px 20px; }
+    .lp-module-top { flex-direction:column; }
   }
 `;
 
@@ -306,10 +364,89 @@ const TESTIS = [
 const PAGE_CONTENT = {
   changelog:{title:'Changelog',subtitle:'Update history',color:'#06E6FF',items:[{v:'Current',date:'2026',badge:'LIVE',badgeColor:'#00FF88',items:['Landing page restored to the earlier site structure','New MF logo system across public and app surfaces','Reports, alerts, API access and Elite trade copier surfaces live in the product']}]},
   roadmap:{title:'Roadmap',subtitle:'Next product priorities',color:'#B06EFF',sections:[{label:'Near term',color:'#00FF88',items:[{icon:'AI',title:'AI workflows',desc:'Sharper assistant flows inside the MarketFlow chatbot'},{icon:'Mobile',title:'Mobile app',desc:'Dedicated mobile experience beyond the current PWA foundation'},{icon:'Broker',title:'Broker execution bridge',desc:'Real broker connectivity requires platform-specific bridges and secure backend routing'}]}]},
+  docs:{title:'Documentation',subtitle:'MarketFlow operating guide',color:'#14C9E5',sections:[{label:'Core workflow',color:'#14C9E5',items:[{icon:'01',title:'Import and map trades',desc:'Use All Trades to import CSV, Excel, JSON or pasted tables, then map symbol, side, date, entry, exit, P&L and custom fields.'},{icon:'02',title:'Review by account',desc:'Use account scope so dashboard, analytics, equity and calendar views stay aligned with the selected trading account.'},{icon:'03',title:'Close the day',desc:'Use the daily workflow, psychology review and calendar context to keep the journal actionable instead of noisy.'}]}]},
+  import:{title:'Import Guide',subtitle:'Supported trade data flows',color:'#00D2B8',sections:[{label:'Import sources',color:'#00D2B8',items:[{icon:'CSV',title:'CSV and Excel',desc:'Upload broker exports or spreadsheets and create missing columns during mapping when your file has extra fields.'},{icon:'JSON',title:'JSON and raw tables',desc:'Paste structured rows or use JSON-style exports for flexible journal migration.'},{icon:'SAFE',title:'Validation first',desc:'MarketFlow previews detected rows before saving so bad rows can be corrected instead of silently polluting the journal.'}]}]},
+  api:{title:'API Reference',subtitle:'Elite automation surface',color:'#4D7CFF',sections:[{label:'Access model',color:'#4D7CFF',items:[{icon:'Elite',title:'Elite-only access',desc:'API access is positioned for Elite users who need automation around journal data and operational workflows.'},{icon:'Auth',title:'Authenticated usage',desc:'Any production API workflow must use authenticated account access and should never expose private journal data publicly.'},{icon:'Road',title:'Implementation note',desc:'The public site describes the current access surface. Deeper endpoint documentation should be published as backend endpoints mature.'}]}]},
+  tutoriels:{title:'Tutorials',subtitle:'Short workflow lessons',color:'#DCE4EF',sections:[{label:'Suggested lessons',color:'#DCE4EF',items:[{icon:'Start',title:'First journal setup',desc:'Create the account, confirm plan access, import the first data sample and verify dashboard metrics.'},{icon:'Review',title:'Weekly review',desc:'Use analytics, calendar, psychology and equity together to identify one process improvement for the next week.'},{icon:'Risk',title:'Prop-style discipline',desc:'Track drawdown, account scope, reports and alerts without implying a direct partnership with any prop firm.'}]}]},
   cgu:{title:'Terms of Service',subtitle:'Effective 2026',color:'#8BA3CC',articles:[{title:'Purpose',text:'These terms describe access to MarketFlow Journal, a SaaS trading journal for tracking, reviewing and improving trading activity.'},{title:'Billing',text:'Payments and trials are handled by Stripe. Subscription access depends on the active plan and payment status.'},{title:'Trading disclaimer',text:'MarketFlow is a journaling and analytics product. It does not provide financial advice or guarantee trading results.'}]},
   rgpd:{title:'Privacy Policy',subtitle:'Data and privacy',color:'#00F5D4',articles:[{title:'Collected data',text:'Account details, journal data and technical data may be stored to operate the service. Payment data is processed by Stripe.'},{title:'User control',text:'Users can export backups and delete journal trades through the product.'},{title:'Contact',text:'For privacy requests, contact marketflowjournal0@gmail.com.'}]},
   contact:{title:'Contact',subtitle:'Get in touch',color:'#4D7CFF',content:'Email: marketflowjournal0@gmail.com\n\nFor support, use the journal support page or the support widget.'},
 };
+
+const ANALYTICS_SHOWCASE = [
+  {
+    id: 'dashboard',
+    title: 'Command Dashboard',
+    label: 'Daily control room',
+    copy: 'Account scope, workflow, P&L, risk, calendar context and leaderboard signals in one calm opening view.',
+    meta: ['Account scope', 'Daily workflow', 'Rank snapshot'],
+    bars: [62, 46, 72, 58, 84, 68, 92],
+    gradient: 'linear-gradient(135deg,#d7e2ee,#14c9e5)',
+  },
+  {
+    id: 'trades',
+    title: 'All Trades',
+    label: 'Execution ledger',
+    copy: 'Import CSV, Excel, JSON or pasted tables, map columns, create missing fields and keep every trade reviewable.',
+    meta: ['Column mapping', 'Custom fields', 'Account-aware'],
+    bars: [38, 64, 54, 76, 48, 70, 58],
+    gradient: 'linear-gradient(135deg,#9ce9f5,#00d2b8)',
+  },
+  {
+    id: 'analytics',
+    title: 'Analytics Pro',
+    label: 'Real journal intelligence',
+    copy: 'Win rate, expectancy, drawdown, sessions, setups, confluences, long vs short and heatmaps from the same trade stream.',
+    meta: ['Winrate depth', 'Drawdown reality', 'Confluences'],
+    bars: [44, 55, 71, 63, 88, 79, 95],
+    gradient: 'linear-gradient(135deg,#dce4ef,#22d3ee)',
+  },
+  {
+    id: 'psychology',
+    title: 'Psychology',
+    label: 'Behavior layer',
+    copy: 'Mood, discipline, confidence, patience and routine tracking connect mental performance to actual trading results.',
+    meta: ['Mental score', 'Bias patterns', 'Routine review'],
+    bars: [78, 66, 52, 69, 57, 81, 74],
+    gradient: 'linear-gradient(135deg,#95a2b5,#15c7d7)',
+  },
+  {
+    id: 'equity',
+    title: 'Equity Curve',
+    label: 'Capital path',
+    copy: 'Track cumulative performance, drawdown zones, recovery behavior and account-by-account equity development.',
+    meta: ['Curve', 'Drawdown', 'Recovery'],
+    bars: [31, 42, 39, 55, 70, 66, 86],
+    gradient: 'linear-gradient(135deg,#cfd8e3,#00d2b8)',
+  },
+  {
+    id: 'backtest',
+    title: 'Backtest Sessions',
+    label: 'Replay discipline',
+    copy: 'Plan-gated sessions help traders review strategy ideas without mixing practice data with live journal results.',
+    meta: ['1 Starter', '5 Pro', '25 Elite'],
+    bars: [22, 34, 48, 41, 63, 58, 73],
+    gradient: 'linear-gradient(135deg,#c8d3df,#4db7ff)',
+  },
+  {
+    id: 'reports',
+    title: 'Reports, Alerts and API',
+    label: 'Operational stack',
+    copy: 'Export reports, configure risk alerts and open Elite API surfaces when the workflow needs more automation.',
+    meta: ['Reports', 'Alerts', 'Elite API'],
+    bars: [55, 47, 68, 72, 59, 83, 77],
+    gradient: 'linear-gradient(135deg,#f1f5f9,#14c9e5)',
+  },
+  {
+    id: 'broker',
+    title: 'Broker and Copier Desk',
+    label: 'Elite infrastructure',
+    copy: 'Broker sync and Elite trade copier surfaces are organized for multi-account review and risk visibility.',
+    meta: ['Broker sync', 'Accounts', 'Elite copier'],
+    bars: [28, 52, 45, 69, 61, 88, 80],
+    gradient: 'linear-gradient(135deg,#aab7c5,#00d2b8)',
+  },
+];
 function PageModal({ page, onClose }) {
   const c = PAGE_CONTENT[page];
   if (!c) return null;
@@ -334,8 +471,17 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const [openFaq, setOpenFaq] = useState(null);
   const [modal, setModal] = useState(null);
   const [billing, setBilling] = useState('monthly');
+  const [activeModule, setActiveModule] = useState(0);
 
   useEffect(() => { const h = () => setScrolled(window.scrollY > 40); window.addEventListener('scroll', h, { passive: true }); return () => window.removeEventListener('scroll', h); }, []);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveModule((current) => (current + 1) % ANALYTICS_SHOWCASE.length);
+    }, 3200);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeShowcase = ANALYTICS_SHOWCASE[activeModule];
 
   const PLANS = [
     { id:'starter', name:'Starter', monthly:15, annual:11, desc:'Core journal and review workflow', features:['Unlimited trade journal','Dashboard and daily workflow','CSV, Excel and JSON import','Performance calendar','1 backtest session'] },
@@ -344,14 +490,14 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   ];
 
   return (
-    <div style={{background:'#030508',minHeight:'100vh',overflowX:'hidden'}}>
+    <div className="lp-shell">
       <style>{STYLES}</style>
       <AnimatedBg />
 
       {/* NAV */}
       <nav className={`lp-nav ${scrolled?'scrolled':''}`}>
         <div className="lp-nav-logo" onClick={()=>window.scrollTo({top:0,behavior:'smooth'})}>
-          <div className="lp-nav-logo-icon"><img src="/logo-mark.png" alt="" style={{width:'100%',height:'100%',objectFit:'contain',padding:2}}/></div>
+          <div className="lp-nav-logo-icon"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div>
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
         <div className="lp-nav-links"><a href="#features">Features</a><a href="#analytics">Analytics</a><a href="#pricing">Pricing</a><a href="#reviews">Trust</a><a href="#faq">FAQ</a></div>
@@ -362,9 +508,9 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
 
       {/* HERO */}
       <section className="lp-hero">
-        <div className="lp-hero-badge"><div className="lp-badge-dot"/>Built for structured trade review</div>
-        <Reveal><h1>MarketFlow Journal.<br/><span className="flow-text">Review every trade.</span></h1></Reveal>
-        <Reveal delay={0.1}><p className="lp-hero-sub">A professional trading journal for execution review, account-aware analytics, psychology tracking, backtest sessions, reports and disciplined daily workflow.</p></Reveal>
+        <div className="lp-hero-badge"><div className="lp-badge-dot"/>Professional journal. Real execution discipline.</div>
+        <Reveal><h1>MarketFlow Journal.<br/><span className="flow-text">Turn execution into a system.</span></h1></Reveal>
+        <Reveal delay={0.1}><p className="lp-hero-sub">A premium trading workspace built to make every import, review, psychology check, equity read and report feel connected, serious and repeatable.</p></Reveal>
         <Reveal delay={0.2}>
           <div className="lp-hero-actions">
             <button className="btn-hero-primary" onClick={onSignup}>Start your 14-day trial</button>
@@ -398,8 +544,8 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
       <section className="lp-section" id="features">
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">MarketFlow Features</div></Reveal>
-          <Reveal><h2>A cleaner workspace for<br/><em>serious review</em></h2></Reveal>
-          <Reveal><p className="lp-section-sub">MarketFlow keeps the journal simple on the surface, while connecting trades, accounts, analytics, psychology and reports underneath.</p></Reveal>
+          <Reveal><h2>A calmer workspace for<br/><em>high-standard traders</em></h2></Reveal>
+          <Reveal><p className="lp-section-sub">MarketFlow keeps the interface focused, then lets the data work underneath: trades, accounts, analytics, psychology, equity and reports stay connected.</p></Reveal>
           <div className="lp-features-grid">
             {[
               {Icon:Ic.Journal,title:'Smart Trade Journal',desc:'Import CSV, Excel, JSON or pasted tables, then map base fields and custom columns into a clean execution ledger.'},
@@ -420,18 +566,48 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <div className="lp-big-feat">
               <div>
                 <div className="lp-section-tag">MarketFlow Analytics</div>
-                <h3>Read your edge<br/><em>without the noise</em></h3>
-                <p>Go beyond basic win rate. MarketFlow connects performance by session, pair, setup, account, emotional state and time of day.</p>
-                <ul className="lp-check-list">{['Equity curve with drawdown analysis','Performance by session, pair & setup','Hour by day heatmap for optimal timing','Risk-adjusted returns (Sharpe, Sortino, Calmar)'].map((t,i)=><li key={i}><span className="lp-check-ico">+</span>{t}</li>)}</ul>
+                <h3>Every module, one<br/><em>connected review system</em></h3>
+                <p>MarketFlow is not a dashboard full of random widgets. It is a daily review engine where trades, accounts, psychology, equity, reports and alerts speak the same language.</p>
+                <ul className="lp-check-list">{['Interactive module preview across the live product stack','Analytics tied to the same imported trade stream','Plan-aware access without fake counters or invented proof','Professional review flow for solo traders, prop traders and teams'].map((t,i)=><li key={i}><span className="lp-check-ico">+</span>{t}</li>)}</ul>
               </div>
               <div className="lp-big-visual">
-                <div className="lp-visual-header"><span className="lp-visual-title">Analytics Pro</span><span className="lp-visual-badge">JOURNAL DATA</span></div>
+                <div className="lp-visual-header"><span className="lp-visual-title">MarketFlow Analytics Preview</span><span className="lp-visual-badge">INTERACTIVE</span></div>
                 <div className="lp-visual-body">
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
-                    {[{l:'Win Rate',v:'68%',c:'#00FF88'},{l:'Profit Factor',v:'2.34',c:'#06E6FF'},{l:'Sharpe',v:'1.87',c:'#B06EFF'},{l:'Max DD',v:'-4.2%',c:'#FF3D57'}].map((m,i)=>(<div key={i} style={{padding:'10px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:'1px solid #162034'}}><div style={{fontSize:8,color:'#334566',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:3}}>{m.l}</div><div style={{fontSize:16,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:m.c}}>{m.v}</div></div>))}
-                  </div>
-                  <div style={{padding:'10px',borderRadius:8,background:'rgba(255,255,255,0.02)',border:'1px solid #162034',height:120,display:'flex',alignItems:'flex-end',gap:3}}>
-                    {[35,45,30,55,65,50,70,60,75,85,70,80,90,85,95].map((h,i)=>(<div key={i} style={{flex:1,height:`${h}%`,borderRadius:'3px 3px 0 0',background:h>70?'rgba(0,255,136,0.3)':h>50?'rgba(6,230,255,0.2)':'rgba(255,255,255,0.06)'}}/>))}
+                  <div className="lp-analytics-console">
+                    <div className="lp-module-rail">
+                      {ANALYTICS_SHOWCASE.map((item, index) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`lp-module-pill ${activeModule === index ? 'active' : ''}`}
+                          onMouseEnter={() => setActiveModule(index)}
+                          onFocus={() => setActiveModule(index)}
+                        >
+                          <span>{item.label}</span>
+                          <strong>{item.title}</strong>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="lp-module-screen">
+                      <div className="lp-scanline" />
+                      <div className="lp-module-top">
+                        <div>
+                          <div className="lp-module-kicker">{activeShowcase.label}</div>
+                          <div className="lp-module-title">{activeShowcase.title}</div>
+                        </div>
+                        <div className="lp-module-orbit" style={{ background: activeShowcase.gradient }} />
+                      </div>
+                      <div className="lp-module-copy">{activeShowcase.copy}</div>
+                      <div className="lp-module-tags">
+                        {activeShowcase.meta.map((item) => <span key={item} className="lp-module-tag">{item}</span>)}
+                      </div>
+                      <div className="lp-module-chart">
+                        {activeShowcase.bars.map((height, index) => (
+                          <div key={`${activeShowcase.id}-${index}`} className="lp-module-bar" style={{ height: `${height}%` }} />
+                        ))}
+                      </div>
+                      <div className="lp-feature-progress"><span /></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -561,11 +737,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <div className="lp-footer-inner">
           <div className="lp-footer-top">
             <div className="lp-footer-brand">
-              <div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:28,height:28,borderRadius:8,overflow:'hidden',border:'1px solid rgba(6,230,255,0.15)'}}><img src="/logo-mark.png" alt="" style={{width:'100%',height:'100%',objectFit:'contain',padding:2}}/></div><span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:16,color:'#fff'}}>Market<span className="flow-text">Flow</span></span></div>
+              <div className="lp-footer-brand-row"><div className="lp-footer-mark"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div><span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:17,color:'#fff'}}>Market<span className="flow-text">Flow</span></span></div>
               <p>A structured trading journal for professional execution review, analytics and accountability.</p>
             </div>
             <div className="lp-footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#" onClick={e=>{e.preventDefault();setModal('changelog')}}>Changelog</a><a href="#" onClick={e=>{e.preventDefault();setModal('roadmap')}}>Roadmap</a></div>
-            <div className="lp-footer-col"><h4>Resources</h4><a href="#" onClick={e=>{e.preventDefault();setModal('docs')}}>Documentation</a><a href="#" onClick={e=>{e.preventDefault();setModal('api')}}>API Reference</a><a href="#" onClick={e=>{e.preventDefault();setModal('tutoriels')}}>Tutorials</a></div>
+            <div className="lp-footer-col"><h4>Resources</h4><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('docs')}}>Documentation <span>Guide</span></a><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('import')}}>Import Guide <span>CSV</span></a><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('api')}}>API Reference <span>Elite</span></a><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('tutoriels')}}>Tutorials <span>Workflows</span></a></div>
             <div className="lp-footer-col"><h4>Legal</h4><a href="#" onClick={e=>{e.preventDefault();setModal('cgu')}}>Terms of Service</a><a href="#" onClick={e=>{e.preventDefault();setModal('rgpd')}}>Privacy Policy</a><a href="#" onClick={e=>{e.preventDefault();setModal('contact')}}>Contact</a></div>
           </div>
           <div className="lp-footer-bottom">

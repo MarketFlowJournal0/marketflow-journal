@@ -1,23 +1,23 @@
 const BASE_THEME = {
-  bg: '#030508',
-  card: '#0C1422',
-  high: '#111B2E',
-  deep: '#07090F',
-  text0: '#FFFFFF',
-  text1: '#E8EEFF',
-  text2: '#7A90B8',
-  text3: '#334566',
-  text4: '#1E2E45',
-  border: '#162034',
-  borderHi: '#1E2E48',
-  accent: '#06E6FF',
-  secondary: '#66F0FF',
-  teal: '#36EEFF',
-  green: '#00FF88',
-  blue: '#33B8FF',
-  purple: '#5EA7FF',
-  pink: '#7BD4FF',
-  gold: '#FFD700',
+  bg: '#02060D',
+  card: '#08111E',
+  high: '#0E1A2C',
+  deep: '#03070E',
+  text0: '#F7FAFC',
+  text1: '#DCE7F2',
+  text2: '#8EA0B8',
+  text3: '#46566E',
+  text4: '#26364C',
+  border: '#162235',
+  borderHi: '#22324B',
+  accent: '#14C9E5',
+  secondary: '#DCE4EF',
+  teal: '#00D2B8',
+  green: '#00D2B8',
+  blue: '#1DC9FF',
+  purple: '#6885FF',
+  pink: '#DF5F7A',
+  gold: '#D7B36A',
   warn: '#FFB31A',
   orange: '#FF8B3D',
   danger: '#FF3D57',
@@ -26,13 +26,13 @@ const BASE_THEME = {
 export const JOURNAL_THEME_KEY = 'mfj_elite_sidebar_accent';
 export const JOURNAL_THEME_CUSTOM_KEY = 'mfj_elite_custom_accent';
 export const JOURNAL_THEME_CUSTOM_VALUE = 'custom';
-export const DEFAULT_JOURNAL_THEME_VALUE = '#06E6FF';
+export const DEFAULT_JOURNAL_THEME_VALUE = '#14C9E5';
 export const DEFAULT_JOURNAL_CUSTOM_ACCENT = '#4C4CDD';
 
 export const JOURNAL_THEME_CHOICES = [
   { value: '#D7DBE4', label: 'Mono', neutral: true },
-  { value: '#06E6FF', label: 'Aqua' },
-  { value: '#00FF88', label: 'Mint' },
+  { value: '#14C9E5', label: 'Aqua' },
+  { value: '#00D2B8', label: 'Teal' },
   { value: '#4D7CFF', label: 'Cobalt' },
   { value: '#8B5CF6', label: 'Iris' },
   { value: '#FB7185', label: 'Rose' },
@@ -227,13 +227,13 @@ export function getJournalTheme(plan, storedValue, customAccent) {
   if (normalizedPlan === 'starter') {
     return {
       ...BASE_THEME,
-      accent: '#00F5D4',
-      secondary: '#59F7E1',
-      teal: '#26F9E5',
-      blue: '#4DD4FF',
-      purple: '#6AC8FF',
-      pink: '#89E4FF',
-      orange: '#2ED7C8',
+      accent: '#14C9E5',
+      secondary: '#DCE4EF',
+      teal: '#00D2B8',
+      blue: '#1DC9FF',
+      purple: '#6885FF',
+      pink: '#7FBFCE',
+      orange: '#5ACEC6',
       choice: null,
     };
   }

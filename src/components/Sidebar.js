@@ -572,9 +572,11 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
             <MarketFlowMark
               size={38}
               radius={12}
-              padding={4}
+              padding={0}
               alt=""
-              shadow="0 10px 26px rgba(0, 0, 0, 0.24)"
+              border="0"
+              background="transparent"
+              shadow="0 16px 34px rgba(0, 0, 0, 0.32), 0 0 34px rgba(20, 201, 229, 0.12)"
               style={{ flexShrink: 0 }}
             />
             <AnimatePresence>
