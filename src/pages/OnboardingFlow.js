@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import MarketFlowBrand from '../components/MarketFlowBrand';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW ONBOARDING — Premium v2
@@ -220,12 +221,13 @@ export default function OnboardingFlow({ onComplete }) {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(6,230,255,0.3), rgba(0,255,136,0.2), transparent)', borderRadius: '24px 24px 0 0' }} />
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, overflow: 'hidden', border: '1px solid rgba(6,230,255,0.15)' }}>
-            <img src="/logo192.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
-          </div>
-          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 14, color: '#fff', letterSpacing: '-0.3px' }}>Market<span style={{ color: '#06E6FF' }}>Flow</span></span>
-        </div>
+        <MarketFlowBrand
+          gap={8}
+          subtitle=""
+          style={{ marginBottom: 28 }}
+          markProps={{ size: 32, radius: 9, padding: 3, alt: '' }}
+          wordmarkProps={{ titleSize: 14, titleWeight: 700, titleLetterSpacing: '-0.3px' }}
+        />
 
         {/* Progress */}
         <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 3, marginBottom: 28, overflow: 'hidden' }}>

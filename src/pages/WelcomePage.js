@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import MarketFlowBrand from '../components/MarketFlowBrand';
 import { getEntryRoute, getPlanDetails, normalizePlan } from '../lib/subscription';
 
 const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
@@ -401,35 +402,25 @@ export default function WelcomePage() {
                 marginBottom: 18,
               }}
             >
-              <div
-                style={{
-                  width: 43,
-                  height: 43,
-                  borderRadius: 14,
+              <MarketFlowBrand
+                gap={12}
+                subtitle="Trading Journal"
+                markProps={{
+                  size: 43,
+                  radius: 14,
+                  padding: 4,
                   border: '1px solid rgba(6,230,255,0.18)',
                   background: 'rgba(255,255,255,0.03)',
-                  padding: 4,
                 }}
-              >
-                <img src="/logo192.png" alt="MarketFlow" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontFamily: "'Space Grotesk',sans-serif",
-                    fontSize: 30,
-                    lineHeight: 1,
-                    letterSpacing: '-0.06em',
-                    fontWeight: 700,
-                    color: '#F0F5FF',
-                  }}
-                >
-                  Market<span style={{ color: '#06E6FF' }}>Flow</span>
-                </div>
-                <div style={{ marginTop: 3, fontSize: 11, color: '#6B86B0', letterSpacing: '0.11em', textTransform: 'uppercase' }}>
-                  Trading Journal
-                </div>
-              </div>
+                wordmarkProps={{
+                  titleSize: 30,
+                  titleWeight: 700,
+                  titleLetterSpacing: '-0.06em',
+                  subtitleSize: 11,
+                  subtitleLetterSpacing: '0.11em',
+                  subtitleStyle: { color: '#6B86B0', marginTop: 3 },
+                }}
+              />
             </div>
 
             <div

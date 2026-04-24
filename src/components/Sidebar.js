@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { hasRouteAccess, normalizePlan } from '../lib/subscription';
+import { MarketFlowMark, MarketFlowWordmark } from './MarketFlowBrand';
 import {
   JOURNAL_THEME_KEY,
   JOURNAL_THEME_CUSTOM_KEY,
@@ -12,7 +13,6 @@ import {
   applyJournalTheme,
 } from '../lib/journalTheme';
 
-const MARKETFLOW_LOGO = '/logo192.png';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 const Ic = {
@@ -569,19 +569,26 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
       <div style={{ padding: collapsed ? '16px 10px 14px' : '18px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', minWidth: 0 }} onClick={() => go('dashboard')}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, overflow: 'hidden', flexShrink: 0, border: `1px solid ${withAlpha(planInfo.accent, 0.2)}`, background: 'linear-gradient(180deg, rgba(7,14,26,0.96), rgba(11,22,38,0.92))', boxShadow: `0 10px 26px ${withAlpha(planInfo.accent, 0.16)}` }}>
-              <img src={MARKETFLOW_LOGO} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
-            </div>
+            <MarketFlowMark
+              size={38}
+              radius={12}
+              padding={4}
+              alt=""
+              shadow="0 10px 26px rgba(0, 0, 0, 0.24)"
+              style={{ flexShrink: 0 }}
+            />
             <AnimatePresence>
               {!collapsed && (
                 <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: 0.16 }} style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 800, letterSpacing: '-0.05em', lineHeight: 1, color: '#FFFFFF' }}>
-                    Market
-                    <span style={{ display: 'inline-block', background: `linear-gradient(90deg, ${planInfo.accent}, ${planInfo.secondary}, ${planInfo.accent})`, backgroundSize: '200% 100%', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>
-                      Flow
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(122,144,184,0.62)', marginTop: 4 }}>Trading Journal</div>
+                  <MarketFlowWordmark
+                    subtitle="Trading Journal"
+                    titleSize={18}
+                    titleLetterSpacing="-0.05em"
+                    subtitleSize={9}
+                    subtitleLetterSpacing="0.18em"
+                    titleStyle={{ lineHeight: 1 }}
+                    subtitleStyle={{ color: 'rgba(122,144,184,0.62)', marginTop: 4 }}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
