@@ -21,7 +21,7 @@
   "start_url": "/dashboard",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#030508",
-  "background_color": "#030508",
+  "theme_color": "#01040A",
+  "background_color": "#01040A",
   "categories": ["finance", "productivity", "business"]
 }
