@@ -183,7 +183,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         {/* Trial banner */}
         {user && isTrialing && daysLeft > 0 && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
-            <span style={{ fontSize: 16 }}>⏱</span>
+            <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.08em', color: '#D7B36A' }}>TRIAL</span>
             <div style={{ flex: 1 }}>
               <strong style={{ color: '#FFD700' }}>Free trial — {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
               <span style={{ color: 'rgba(255,255,255,0.5)' }}> · Your card will be charged at the end of the trial</span>
@@ -197,7 +197,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         {/* Payment required */}
         {needsPayment && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,61,87,0.06)', border: '1px solid rgba(255,61,87,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
-            <span style={{ fontSize: 16 }}>⚠️</span>
+            <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.16em' }}>PAY</span>
             <div><strong style={{ color: '#FF5570' }}>Payment required</strong><span style={{ color: 'rgba(255,255,255,0.5)' }}> — Your trial has ended. Choose a plan to continue.</span></div>
           </motion.div>
         )}

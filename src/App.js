@@ -5,7 +5,6 @@ import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import AllTrades from './pages/AllTrades';
-import Analytics from './pages/Analytics';
 import AnalyticsPro from './pages/AnalyticsPro';
 import Backtest from './pages/Backtest';
 import Calendar from './pages/Calendar';
@@ -62,22 +61,22 @@ function rememberCheckoutPlan(planId) {
 function LoadingScreen() {
   return (
     <div className="mfj-loading-screen" style={{
-      position: 'fixed', inset: 0, background: '#030508',
+      position: 'fixed', inset: 0, background: '#01040A',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       flexDirection: 'column', gap: 20, zIndex: 9999,
     }}>
       <style>{`
         @keyframes mf-pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.75;transform:scale(.97)} }
         @keyframes mf-shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
-        @keyframes mf-glow    { 0%,100%{filter:drop-shadow(0 0 18px rgba(6,230,255,.18))} 50%{filter:drop-shadow(0 0 34px rgba(6,230,255,.32))} }
+        @keyframes mf-glow    { 0%,100%{filter:drop-shadow(0 0 18px rgba(20,201,229,.14))} 50%{filter:drop-shadow(0 0 34px rgba(20,201,229,.24))} }
         .mfj-loading-screen::before {
           content: '';
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 20% 18%, rgba(6,230,255,.18), transparent 32%),
-            radial-gradient(circle at 78% 72%, rgba(0,255,136,.16), transparent 34%),
-            linear-gradient(135deg, rgba(255,255,255,.025), transparent 45%);
+            radial-gradient(circle at 20% 18%, rgba(20,201,229,.10), transparent 32%),
+            radial-gradient(circle at 78% 72%, rgba(0,210,184,.08), transparent 34%),
+            linear-gradient(135deg, rgba(220,228,239,.018), transparent 45%);
           pointer-events: none;
         }
       `}</style>
@@ -86,10 +85,10 @@ function LoadingScreen() {
           <MarketFlowMark
             size={72}
             radius={20}
-            padding={6}
-            border="1px solid rgba(76, 220, 255, 0.22)"
-            background="linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0)), rgba(5, 12, 20, 0.92)"
-            shadow="0 18px 44px rgba(0, 0, 0, 0.42)"
+            padding={0}
+            border="0"
+            background="transparent"
+            shadow="0 18px 44px rgba(0, 0, 0, 0.42), 0 0 42px rgba(20, 201, 229, 0.14)"
           />
         </div>
         <MarketFlowWordmark
@@ -104,7 +103,7 @@ function LoadingScreen() {
         />
       </div>
       <div style={{ width: 100, height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginTop: 8 }}>
-        <div style={{ width: '35%', height: '100%', background: 'linear-gradient(90deg,transparent,#06E6FF,#00FF88,transparent)', borderRadius: 2, animation: 'mf-shimmer 1.6s ease-in-out infinite' }} />
+        <div style={{ width: '35%', height: '100%', background: 'linear-gradient(90deg,transparent,#DCE4EF,#14C9E5,#00D2B8,transparent)', borderRadius: 2, animation: 'mf-shimmer 1.6s ease-in-out infinite' }} />
       </div>
     </div>
   );
@@ -164,7 +163,7 @@ function AppLayout({ user, onLogout }) {
             <Routes>
               <Route path="/dashboard" element={renderProtectedRoute('dashboard', <Dashboard />)} />
               <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />
-              <Route path="/analytics" element={renderProtectedRoute('analytics', <Analytics />)} />
+              <Route path="/analytics" element={<Navigate to="/analytics-pro" replace />} />
               <Route path="/analytics-pro" element={renderProtectedRoute('analytics-pro', <AnalyticsPro />)} />
               <Route path="/backtest" element={renderProtectedRoute('backtest', <Backtest />)} />
               <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />

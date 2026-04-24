@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
 const FAQS = [
-  { q: 'How do I import my MetaTrader trades?', a: 'Go to File → Export CSV in MT4/MT5, then drag and drop the file into MarketFlow. Import takes less than 30 seconds. We automatically recognize MT4, MT5 and cTrader formats.' },
+  { q: 'How do I import my MetaTrader trades?', a: 'Export CSV from MT4/MT5, then import it in MarketFlow through All Trades. The import desk supports CSV, Excel, JSON and pasted tables with column mapping.' },
   { q: 'Is the AI Coach really useful for beginners?', a: 'Yes, that\'s actually where it\'s most effective. For beginners, it guides you on risk management and identifying the most costly mistakes. For advanced traders, it detects subtle patterns.' },
-  { q: 'Can I use MarketFlow with a prop firm?', a: 'Absolutely. MarketFlow is designed for prop traders — FTMO, The5ers, Topstep, E8, and Funding Pips. The exportable PDF report is formatted to be sent directly to prop firms.' },
+  { q: 'Can I use MarketFlow with a prop firm?', a: 'Yes. MarketFlow is designed for prop-style workflows: accounts, drawdown context, reports, alerts and discipline review. Firm names are examples, not partnerships.' },
   { q: 'Is my data secure?', a: 'Account, subscription, and journal data are used to operate the product. Export and deletion controls are available from the journal flow.' },
-  { q: 'How do I cancel my subscription?', a: 'You can cancel at any time from Settings → Manage Subscription. Access remains active until the end of the current period.' },
+  { q: 'How do I cancel my subscription?', a: 'You can cancel at any time from Settings > Manage Subscription. Access follows the active Stripe subscription and trial status.' },
 ];
 
 const inputStyle = {
@@ -62,7 +62,7 @@ function ContactForm({ user }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 28, margin: '0 auto 20px',
         boxShadow: '0 0 30px rgba(0,255,136,0.4)',
-      }}>✓</div>
+      }}>OK</div>
       <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Message sent!</div>
       <div style={{ fontSize: 14, color: 'var(--mf-text-2,#7A90B8)', lineHeight: 1.7 }}>
         Thank you! We\'ll get back to you within 24h at <span style={{ color: 'var(--mf-accent,#06E6FF)' }}>{form.email}</span>.
@@ -112,7 +112,7 @@ function ContactForm({ user }) {
           padding: '10px 14px', borderRadius: 8,
           background: 'rgba(255,61,87,0.08)', border: '1px solid rgba(255,61,87,0.25)',
           color: '#FF5570', fontSize: 13,
-        }}>⚠️ {error}</div>
+        }}>Error: {error}</div>
       )}
       <button
         type="submit"
@@ -126,7 +126,7 @@ function ContactForm({ user }) {
           transition: 'all 0.2s', fontFamily: 'inherit',
         }}
       >
-        {sending ? '⏳ Sending...' : '✉️ Send message'}
+        {sending ? 'Sending...' : 'Send message'}
       </button>
     </form>
   );
@@ -137,7 +137,7 @@ export default function SupportPage({ user, onBack }) {
 
   const plan = user?.user_metadata?.plan || 'starter';
   const responseTime = plan === 'elite' ? '< 2h' : plan === 'pro' ? '< 12h' : '< 24h';
-  const priority = plan === 'elite' ? '🔴 Priority' : plan === 'pro' ? '🟡 Standard' : '🟢 Normal';
+  const priority = plan === 'elite' ? 'Priority' : plan === 'pro' ? 'Standard' : 'Normal';
 
   return (
     <div style={{
@@ -169,14 +169,14 @@ export default function SupportPage({ user, onBack }) {
             fontFamily: 'inherit', transition: 'all 0.18s',
           }}
         >
-          ← Back
+          Back
         </button>
         <div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
             Support Center
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#3A5070' }}>
-            {priority} · Estimated response {responseTime}
+            {priority} - Estimated response {responseTime}
           </p>
         </div>
       </div>
@@ -193,8 +193,8 @@ export default function SupportPage({ user, onBack }) {
               Contact Us
             </div>
             {[
-              { icon: '📧', label: 'Support email', value: 'marketflowjournal0@gmail.com', href: 'mailto:marketflowjournal0@gmail.com' },
-              { icon: '💬', label: 'Community Discord', value: 'discord.gg/Cvh6H8yK8m', href: 'https://discord.gg/Cvh6H8yK8m' },
+              { icon: '@', label: 'Support email', value: 'marketflowjournal0@gmail.com', href: 'mailto:marketflowjournal0@gmail.com' },
+              { icon: '#', label: 'Community Discord', value: 'discord.gg/Cvh6H8yK8m', href: 'https://discord.gg/Cvh6H8yK8m' },
             ].map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i === 0 ? 12 : 0 }}>
                 <div style={{
@@ -213,7 +213,7 @@ export default function SupportPage({ user, onBack }) {
               background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.15)',
               fontSize: 12, color: 'var(--mf-text-2,#7A90B8)', lineHeight: 1.6,
             }}>
-              ⏱ Estimated response: <strong style={{ color: 'var(--mf-green,#00FF88)' }}>{responseTime}</strong> — <strong style={{ color: '#fff', textTransform: 'capitalize' }}>{plan}</strong> plan
+              Estimated response: <strong style={{ color: 'var(--mf-green,#00D2B8)' }}>{responseTime}</strong> - <strong style={{ color: '#fff', textTransform: 'capitalize' }}>{plan}</strong> plan
             </div>
           </div>
 

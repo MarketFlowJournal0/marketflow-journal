@@ -5,61 +5,61 @@ import { getOnboardingAnswers, getOnboardingMeta } from '../lib/onboarding';
 const QUESTIONS = {
   experience: {
     label: 'Trading Level',
-    emoji: '📊',
+    emoji: 'LVL',
     options: {
-      beginner:     { label: 'Beginner',       emoji: '🌱' },
-      intermediate: { label: 'Intermediate',  emoji: '📈' },
-      advanced:     { label: 'Advanced',         emoji: '🎯' },
-      professional: { label: 'Professional',  emoji: '👑' },
+      beginner:     { label: 'Beginner',       emoji: 'B' },
+      intermediate: { label: 'Intermediate',   emoji: 'I' },
+      advanced:     { label: 'Advanced',       emoji: 'A' },
+      professional: { label: 'Professional',   emoji: 'P' },
     },
   },
   market: {
     label: 'Traded Markets',
-    emoji: '🌍',
+    emoji: 'MKT',
     options: {
-      forex:   { label: 'Forex',    emoji: '💱' },
-      indices: { label: 'Indices',  emoji: '📉' },
-      crypto:  { label: 'Crypto',   emoji: '₿'  },
-      stocks:  { label: 'Stocks',  emoji: '🏦' },
-      futures: { label: 'Futures',  emoji: '⚡' },
-      options: { label: 'Options',  emoji: '🔧' },
+      forex:   { label: 'Forex',   emoji: 'FX' },
+      indices: { label: 'Indices', emoji: 'IDX' },
+      crypto:  { label: 'Crypto',  emoji: 'CRY' },
+      stocks:  { label: 'Stocks',  emoji: 'STK' },
+      futures: { label: 'Futures', emoji: 'FUT' },
+      options: { label: 'Options', emoji: 'OPT' },
     },
   },
   style: {
     label: 'Trading Style',
-    emoji: '⏱',
+    emoji: 'STY',
     options: {
-      scalping:   { label: 'Scalping',     emoji: '⚡' },
-      daytrading: { label: 'Day Trading',  emoji: '☀️' },
-      swing:      { label: 'Swing',        emoji: '🌊' },
-      position:   { label: 'Position',     emoji: '🏔️' },
+      scalping:   { label: 'Scalping',    emoji: 'SCL' },
+      daytrading: { label: 'Day Trading', emoji: 'DAY' },
+      swing:      { label: 'Swing',       emoji: 'SWG' },
+      position:   { label: 'Position',    emoji: 'POS' },
     },
   },
   goal: {
     label: 'Main Goal',
-    emoji: '🎯',
+    emoji: 'GOAL',
     options: {
-      improve:    { label: 'Improve Performance', emoji: '🚀' },
-      prop:       { label: 'Prop Firm Challenge',    emoji: '🏆' },
-      consistent: { label: 'Become Consistent',     emoji: '🎯' },
-      manage:     { label: 'Manage Multiple Accounts',emoji: '💼' },
+      improve:    { label: 'Improve Performance',     emoji: 'IMP' },
+      prop:       { label: 'Prop Firm Challenge',     emoji: 'PROP' },
+      consistent: { label: 'Become Consistent',       emoji: 'CONS' },
+      manage:     { label: 'Manage Multiple Accounts',emoji: 'MULTI' },
     },
   },
   platform: {
     label: 'Platform Used',
-    emoji: '💻',
+    emoji: 'PLAT',
     options: {
-      mt4:         { label: 'MetaTrader 4',  emoji: '📟' },
-      mt5:         { label: 'MetaTrader 5',  emoji: '📟' },
-      ctrader:     { label: 'cTrader',       emoji: '💹' },
-      tradingview: { label: 'TradingView',   emoji: '📊' },
-      ninjatrader: { label: 'NinjaTrader',   emoji: '🥷' },
-      other:       { label: 'Other',         emoji: '🔧' },
+      mt4:         { label: 'MetaTrader 4', emoji: 'MT4' },
+      mt5:         { label: 'MetaTrader 5', emoji: 'MT5' },
+      ctrader:     { label: 'cTrader',      emoji: 'CTR' },
+      tradingview: { label: 'TradingView',  emoji: 'TV' },
+      ninjatrader: { label: 'NinjaTrader',  emoji: 'NT' },
+      other:       { label: 'Other',        emoji: 'OTH' },
     },
   },
 };
 
-const COLORS = ['#06E6FF', '#00FF88', '#B06EFF', '#FF4DC4', '#FFD700', '#FF6B35'];
+const COLORS = ['#14C9E5', '#00D2B8', '#DCE4EF', '#6885FF', '#D7B36A', '#DF5F7A'];
 
 function BarChart({ data, total, colors }) {
   const max = Math.max(...data.map(d => d.count), 1);
@@ -152,7 +152,7 @@ export default function OnboardingStats({ onBack }) {
               id,
               count,
               label: q.options[id]?.label || id,
-              emoji: q.options[id]?.emoji || '•',
+              emoji: q.options[id]?.emoji || '-',
             }))
             .sort((a, b) => b.count - a.count);
         });
@@ -170,13 +170,13 @@ export default function OnboardingStats({ onBack }) {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#060912',
+      minHeight: '100vh', background: '#01040A',
       fontFamily: "'Inter', sans-serif", color: '#E8EEFF',
       padding: '0 24px 60px',
     }}>
       <style>{`
         .os-card {
-          background: linear-gradient(145deg, rgba(13,21,38,0.95), rgba(10,15,28,0.98));
+          background: linear-gradient(145deg, rgba(6,13,24,0.95), rgba(2,5,11,0.98));
           border: 1px solid #142038;
           border-radius: 18px;
           padding: 24px;
@@ -186,7 +186,7 @@ export default function OnboardingStats({ onBack }) {
         .os-card::before {
           content: '';
           position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(6,230,255,0.3), transparent);
+          background: linear-gradient(90deg, transparent, rgba(20,201,229,0.25), transparent);
         }
         @media (max-width: 768px) { .os-grid { grid-template-columns: 1fr !important; } }
       `}</style>
@@ -198,11 +198,9 @@ export default function OnboardingStats({ onBack }) {
           borderRadius: 10, color: '#7A90B8', cursor: 'pointer',
           padding: '8px 16px', fontSize: 13, fontWeight: 600,
           fontFamily: 'inherit', transition: 'all 0.18s',
-        }}>← Back</button>
+        }}>Back</button>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>
-            📋 Onboarding Data
-          </h1>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>Onboarding Data</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#3A5070' }}>
             {loading ? 'Loading...' : `${total} response${total > 1 ? 's' : ''} collected`}
           </p>
@@ -211,12 +209,10 @@ export default function OnboardingStats({ onBack }) {
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: '#3A5070' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
           Loading data...
         </div>
       ) : total === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: '#3A5070' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
           <div style={{ fontSize: 16, color: '#7A90B8', fontWeight: 600 }}>No onboarding data yet</div>
           <div style={{ fontSize: 13, marginTop: 8 }}>Responses will appear here after the first sign-ups.</div>
         </div>
@@ -231,8 +227,8 @@ export default function OnboardingStats({ onBack }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                   <div style={{
                     width: 36, height: 36, borderRadius: 10,
-                    background: `rgba(${qi % 2 === 0 ? '6,230,255' : '0,255,136'},0.1)`,
-                    border: `1px solid rgba(${qi % 2 === 0 ? '6,230,255' : '0,255,136'},0.2)`,
+                    background: `rgba(${qi % 2 === 0 ? '20,201,229' : '0,210,184'},0.1)`,
+                    border: `1px solid rgba(${qi % 2 === 0 ? '20,201,229' : '0,210,184'},0.2)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 16, flexShrink: 0,
                   }}>{q.emoji}</div>
@@ -257,7 +253,7 @@ export default function OnboardingStats({ onBack }) {
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Latest onboarding responses</div>
                 <div style={{ fontSize: 12, color: '#3A5070', marginTop: 4 }}>Recent submissions currently stored in the database.</div>
               </div>
-              <div style={{ padding: '6px 10px', borderRadius: 999, background: 'rgba(6,230,255,0.08)', border: '1px solid rgba(6,230,255,0.16)', fontSize: 11, color: '#06E6FF', fontWeight: 700 }}>
+              <div style={{ padding: '6px 10px', borderRadius: 999, background: 'rgba(20,201,229,0.08)', border: '1px solid rgba(20,201,229,0.16)', fontSize: 11, color: '#14C9E5', fontWeight: 700 }}>
                 {recentResponses.length} shown
               </div>
             </div>
@@ -274,7 +270,7 @@ export default function OnboardingStats({ onBack }) {
                         <span style={{ padding: '4px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', border: '1px solid #1B2A44', fontSize: 10.5, color: '#7A90B8' }}>
                           {response.plan}
                         </span>
-                        <span style={{ padding: '4px 8px', borderRadius: 999, background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.16)', fontSize: 10.5, color: '#00FF88' }}>
+                        <span style={{ padding: '4px 8px', borderRadius: 999, background: 'rgba(0,210,184,0.08)', border: '1px solid rgba(0,210,184,0.16)', fontSize: 10.5, color: '#00D2B8' }}>
                           {meta.completedAt ? new Date(meta.completedAt).toLocaleDateString('fr-FR') : 'No date'}
                         </span>
                       </div>
@@ -282,7 +278,7 @@ export default function OnboardingStats({ onBack }) {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {Object.entries(answers).map(([key, value]) => (
                         <span key={key} style={{ padding: '6px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.03)', border: '1px solid #162034', fontSize: 11, color: '#C0D8F8' }}>
-                          <strong style={{ color: '#06E6FF' }}>{key}</strong>: {Array.isArray(value) ? value.join(', ') : value}
+                          <strong style={{ color: '#14C9E5' }}>{key}</strong>: {Array.isArray(value) ? value.join(', ') : value}
                         </span>
                       ))}
                     </div>

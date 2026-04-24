@@ -36,23 +36,23 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
 
   const handleReset = () => {
     const defaultColumns = [
-      { key: 'select', label: '☑️ Select', visible: true, locked: true },
-      { key: 'date', label: '📅 Date', visible: true, sortable: true },
-      { key: 'symbol', label: '💱 Symbol', visible: true, sortable: false },
-      { key: 'type', label: '📊 Type', visible: true, sortable: false },
-      { key: 'session', label: '🌐 Session', visible: true, sortable: false },
-      { key: 'bias', label: '📈 Bias', visible: true, sortable: false },
-      { key: 'news', label: '📰 News', visible: true, sortable: false },
-      { key: 'entry', label: '🔵 Entry', visible: true, sortable: false },
-      { key: 'exit', label: '🔴 Exit', visible: true, sortable: false },
-      { key: 'tpPercent', label: '🎯 TP %', visible: true, sortable: true },
-      { key: 'rr', label: '⚡ RR', visible: true, sortable: true },
-      { key: 'setup', label: '⚙️ Setup', visible: true, sortable: false },
-      { key: 'psychology', label: '🧠 Psychology', visible: true, sortable: true },
-      { key: 'pnl', label: '💰 P&L', visible: true, sortable: true },
+      { key: 'select', label: 'Select', visible: true, locked: true },
+      { key: 'date', label: 'Date', visible: true, sortable: true },
+      { key: 'symbol', label: 'Symbol', visible: true, sortable: false },
+      { key: 'type', label: 'Type', visible: true, sortable: false },
+      { key: 'session', label: 'Session', visible: true, sortable: false },
+      { key: 'bias', label: 'Bias', visible: true, sortable: false },
+      { key: 'news', label: 'News', visible: true, sortable: false },
+      { key: 'entry', label: 'Entry', visible: true, sortable: false },
+      { key: 'exit', label: 'Exit', visible: true, sortable: false },
+      { key: 'tpPercent', label: 'TP %', visible: true, sortable: true },
+      { key: 'rr', label: 'RR', visible: true, sortable: true },
+      { key: 'setup', label: 'Setup', visible: true, sortable: false },
+      { key: 'psychology', label: 'Psychology', visible: true, sortable: true },
+      { key: 'pnl', label: 'P&L', visible: true, sortable: true },
     ];
     setLocalColumns(defaultColumns);
-    toast.success('Column order reset to default! 🔄');
+    toast.success('Column order reset to default');
   };
 
   const handleApply = () => {
@@ -63,7 +63,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
     }
 
     onApply(localColumns);
-    toast.success('Column preferences saved! ✅');
+    toast.success('Column preferences saved');
     onClose();
   };
 
@@ -93,17 +93,17 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
             <div className="sticky top-0 bg-gradient-to-r from-cyan-600 to-blue-600 p-6 rounded-t-2xl z-10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <span className="text-4xl">🎨</span>
+                  <span className="text-[11px] font-black tracking-[0.18em] text-cyan-100">COL</span>
                   <div>
                     <h3 className="text-2xl font-black text-white">Customize Columns</h3>
-                    <p className="text-cyan-100 text-sm">Drag to reorder • Toggle visibility • Save preferences</p>
+                    <p className="text-cyan-100 text-sm">Drag to reorder - Toggle visibility - Save preferences</p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
                   className="text-white hover:text-[#E2E8F0] text-3xl transition"
                 >
-                  ×
+                  x
                 </button>
               </div>
             </div>
@@ -122,7 +122,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
                     onClick={handleSelectAll}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-[#047857] transition"
                   >
-                    👁️ Show All
+                    Show All
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -130,7 +130,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
                     onClick={handleDeselectAll}
                     className="px-4 py-2 bg-[#252D42] text-white rounded-lg font-bold text-sm hover:bg-[#2D3548] transition"
                   >
-                    🙈 Hide All
+                    Hide All
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -138,7 +138,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
                     onClick={handleReset}
                     className="px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700 transition"
                   >
-                    🔄 Reset
+                    Reset
                   </motion.button>
                 </div>
               </div>
@@ -146,14 +146,14 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
               {/* Instructions */}
               <div className="bg-blue-900 bg-opacity-20 rounded-xl p-4 border-2 border-[#3B82F6]">
                 <div className="flex items-start space-x-3">
-                  <span className="text-3xl">💡</span>
+                  <span className="w-8 h-8 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200 text-xs font-black flex items-center justify-center">i</span>
                   <div>
                     <div className="text-[#93C5FD] font-bold mb-2">How to use:</div>
                     <ul className="text-[#CBD5E0] text-sm space-y-1">
-                      <li>• <strong>Drag</strong> rows to reorder columns</li>
-                      <li>• <strong>Toggle</strong> visibility with checkbox</li>
-                      <li>• <strong>Locked columns</strong> (like Select) cannot be hidden or moved</li>
-                      <li>• Your preferences are saved automatically</li>
+                      <li><strong>Drag</strong> rows to reorder columns</li>
+                      <li><strong>Toggle</strong> visibility with checkbox</li>
+                      <li><strong>Locked columns</strong> cannot be hidden or moved</li>
+                      <li>Your preferences are saved automatically</li>
                     </ul>
                   </div>
                 </div>
@@ -201,7 +201,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
                                       whileHover={{ scale: 1.2 }}
                                       className="text-[#718096] text-2xl cursor-move"
                                     >
-                                      ⋮⋮
+                                      ::
                                     </motion.div>
                                   )}
 
@@ -228,7 +228,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
                                     )}
                                     {column.locked && (
                                       <span className="px-2 py-1 bg-[#DC2626] bg-opacity-30 text-[#F87171] rounded text-xs font-bold border border-[#DC2626]">
-                                        🔒 Locked
+                                        Locked
                                       </span>
                                     )}
                                   </div>
@@ -251,7 +251,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
 
               {/* Preview */}
               <div className="bg-cyan-900 bg-opacity-20 rounded-xl p-4 border-2 border-cyan-600">
-                <div className="text-cyan-400 font-bold mb-3">📋 Column Order Preview</div>
+                <div className="text-cyan-400 font-bold mb-3">Column Order Preview</div>
                 <div className="flex flex-wrap gap-2">
                   {localColumns
                     .filter(col => col.visible)
@@ -284,7 +284,7 @@ function ColumnManager({ isOpen, onClose, columns, onApply }) {
                 onClick={handleApply}
                 className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-black shadow-xl"
               >
-                💾 Save Column Preferences
+                Save Column Preferences
               </motion.button>
             </div>
           </motion.div>

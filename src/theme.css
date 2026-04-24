@@ -4,14 +4,14 @@
 
 /* ─── VARIABLES DARK (défaut) ───────────────────────────────────────────────── */
 :root {
-  --bg:           #030508;
-  --bg-sidebar:   #060D1A;
-  --bg-card:      #0C1422;
-  --bg-high:      #111B2E;
+  --bg:           #01040A;
+  --bg-sidebar:   #02050B;
+  --bg-card:      #060D18;
+  --bg-high:      #0B1525;
   --bg-input:     rgba(255,255,255,0.04);
-  --accent:       #06E6FF;
-  --teal:         #00F5D4;
-  --green:        #00FF88;
+  --accent:       #14C9E5;
+  --teal:         #00D2B8;
+  --green:        #00D2B8;
   --red:          #FF3D57;
   --gold:         #FFD700;
   --t0:           #FFFFFF;
@@ -19,16 +19,16 @@
   --t2:           #7A90B8;
   --t3:           #334566;
   --t4:           #1A2440;
-  --brd:          #162034;
-  --brd-hi:       #1E2E48;
-  --mf-bg:        #030508;
-  --mf-card:      #0C1422;
-  --mf-high:      #111B2E;
-  --mf-deep:      #07090F;
-  --mf-bg-rgb:    3, 5, 8;
-  --mf-card-rgb:  12, 20, 34;
-  --mf-high-rgb:  17, 27, 46;
-  --mf-deep-rgb:  7, 9, 15;
+  --brd:          #142033;
+  --brd-hi:       #1F2F47;
+  --mf-bg:        #01040A;
+  --mf-card:      #060D18;
+  --mf-high:      #0B1525;
+  --mf-deep:      #02050B;
+  --mf-bg-rgb:    1, 4, 10;
+  --mf-card-rgb:  6, 13, 24;
+  --mf-high-rgb:  11, 21, 37;
+  --mf-deep-rgb:  2, 5, 11;
   --mf-text-0:    #FFFFFF;
   --mf-text-1:    #E8EEFF;
   --mf-text-2:    #7A90B8;
@@ -39,29 +39,29 @@
   --mf-text-2-rgb: 122, 144, 184;
   --mf-text-3-rgb: 51, 69, 102;
   --mf-text-4-rgb: 30, 46, 69;
-  --mf-border:    #162034;
-  --mf-border-hi: #1E2E48;
-  --mf-border-rgb: 22, 32, 52;
-  --mf-border-hi-rgb: 30, 46, 72;
-  --mf-accent:    #06E6FF;
-  --mf-accent-secondary: #00FF88;
-  --mf-teal:      #00F5D4;
-  --mf-green:     #00FF88;
-  --mf-blue:      #4D7CFF;
-  --mf-purple:    #A78BFA;
-  --mf-pink:      #FB7185;
-  --mf-gold:      #FFD700;
+  --mf-border:    #142033;
+  --mf-border-hi: #1F2F47;
+  --mf-border-rgb: 20, 32, 51;
+  --mf-border-hi-rgb: 31, 47, 71;
+  --mf-accent:    #14C9E5;
+  --mf-accent-secondary: #00D2B8;
+  --mf-teal:      #00D2B8;
+  --mf-green:     #00D2B8;
+  --mf-blue:      #1DC9FF;
+  --mf-purple:    #6885FF;
+  --mf-pink:      #DF5F7A;
+  --mf-gold:      #D7B36A;
   --mf-warn:      #FFB31A;
   --mf-orange:    #FF6B35;
   --mf-danger:    #FF3D57;
-  --mf-accent-rgb: 6, 230, 255;
-  --mf-accent-secondary-rgb: 0, 255, 136;
-  --mf-teal-rgb: 0, 245, 212;
-  --mf-green-rgb: 0, 255, 136;
-  --mf-blue-rgb: 77, 124, 255;
-  --mf-purple-rgb: 167, 139, 250;
-  --mf-pink-rgb: 251, 113, 133;
-  --mf-gold-rgb: 255, 215, 0;
+  --mf-accent-rgb: 20, 201, 229;
+  --mf-accent-secondary-rgb: 0, 210, 184;
+  --mf-teal-rgb: 0, 210, 184;
+  --mf-green-rgb: 0, 210, 184;
+  --mf-blue-rgb: 29, 201, 255;
+  --mf-purple-rgb: 104, 133, 255;
+  --mf-pink-rgb: 223, 95, 122;
+  --mf-gold-rgb: 215, 179, 106;
   --mf-warn-rgb: 255, 179, 26;
   --mf-orange-rgb: 255, 107, 53;
   --mf-danger-rgb: 255, 61, 87;
@@ -165,8 +165,8 @@ html, body {
 /* ─── MAIN CONTENT ──────────────────────────────────────────────────────────── */
 .mf-main {
   background:
-    radial-gradient(circle at top, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.045) 0%, transparent 24%),
-    linear-gradient(180deg, rgba(5,8,14,0.94) 0%, rgba(3,5,8,0.98) 56%, rgba(2,4,7,1) 100%) !important;
+    radial-gradient(circle at top, rgba(var(--mf-accent-rgb, 20, 201, 229), 0.028) 0%, transparent 24%),
+    linear-gradient(180deg, rgba(3,7,13,0.96) 0%, rgba(1,4,10,0.99) 56%, rgba(1,3,7,1) 100%) !important;
   color: var(--t0) !important;
   isolation: isolate;
 }
@@ -182,23 +182,23 @@ html, body {
 
 .mf-main::before {
   background:
-    radial-gradient(circle at 16% 0%, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.032) 0%, transparent 26%),
-    radial-gradient(circle at 86% 10%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255), 0.018) 0%, transparent 22%),
+    radial-gradient(circle at 16% 0%, rgba(var(--mf-accent-rgb, 20, 201, 229), 0.022) 0%, transparent 26%),
+    radial-gradient(circle at 86% 10%, rgba(var(--mf-accent-secondary-rgb, 0, 210, 184), 0.012) 0%, transparent 22%),
     linear-gradient(rgba(255,255,255,0.005) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.005) 1px, transparent 1px);
   background-size: auto, auto, 84px 84px, 84px 84px;
-  opacity: 0.72;
+  opacity: 0.55;
 }
 
 .mf-main::after {
   inset: -8% -4%;
   background:
-    radial-gradient(circle at 22% 16%, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.022) 0%, transparent 36%),
-    radial-gradient(circle at 78% 78%, rgba(var(--mf-accent-secondary-rgb, 102, 240, 255), 0.016) 0%, transparent 32%),
-    linear-gradient(115deg, transparent 0%, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.009) 46%, transparent 54%);
+    radial-gradient(circle at 22% 16%, rgba(var(--mf-accent-rgb, 20, 201, 229), 0.014) 0%, transparent 36%),
+    radial-gradient(circle at 78% 78%, rgba(var(--mf-accent-secondary-rgb, 0, 210, 184), 0.01) 0%, transparent 32%),
+    linear-gradient(115deg, transparent 0%, rgba(var(--mf-accent-rgb, 20, 201, 229), 0.006) 46%, transparent 54%);
   filter: blur(34px);
   animation: mf-journal-ambient-drift 22s ease-in-out infinite, mf-journal-ambient-sweep 20s linear infinite;
-  opacity: 0.44;
+  opacity: 0.32;
 }
 
 .mf-main-content {

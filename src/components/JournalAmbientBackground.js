@@ -18,8 +18,8 @@ function getPalette() {
   const style = getComputedStyle(document.documentElement);
 
   return {
-    accent: parseRgb(style.getPropertyValue('--mf-accent-rgb'), [6, 230, 255]),
-    secondary: parseRgb(style.getPropertyValue('--mf-accent-secondary-rgb'), [0, 255, 136]),
+    accent: parseRgb(style.getPropertyValue('--mf-accent-rgb'), [20, 201, 229]),
+    secondary: parseRgb(style.getPropertyValue('--mf-accent-secondary-rgb'), [0, 210, 184]),
   };
 }
 
@@ -76,7 +76,7 @@ export default function JournalAmbientBackground() {
       return {
         points,
         drift: 0.03 + Math.random() * 0.08,
-        opacity: 0.02 + Math.random() * 0.035,
+        opacity: 0.012 + Math.random() * 0.026,
         color: Math.random() > 0.72 ? 'secondary' : 'accent',
       };
     };
@@ -87,7 +87,7 @@ export default function JournalAmbientBackground() {
       vx: (Math.random() - 0.5) * 0.16,
       vy: (Math.random() - 0.5) * 0.14,
       radius: 0.8 + Math.random() * 1.4,
-      opacity: 0.06 + Math.random() * 0.12,
+      opacity: 0.04 + Math.random() * 0.08,
       color: Math.random() > 0.78 ? 'secondary' : 'accent',
     });
 
@@ -170,7 +170,7 @@ export default function JournalAmbientBackground() {
           context.beginPath();
           context.moveTo(particles[left].x, particles[left].y);
           context.lineTo(particles[right].x, particles[right].y);
-          context.strokeStyle = rgba(tone, 0.028 * (1 - (distance / 118)));
+          context.strokeStyle = rgba(tone, 0.018 * (1 - (distance / 118)));
           context.lineWidth = 0.45;
           context.stroke();
         }
@@ -226,7 +226,7 @@ export default function JournalAmbientBackground() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.9,
+        opacity: 0.62,
       }}
     />
   );

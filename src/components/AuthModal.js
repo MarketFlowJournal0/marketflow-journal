@@ -184,7 +184,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                   <AnimatePresence>
                     {error && (
                       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 12, background: 'rgba(255,61,87,0.06)', border: '1px solid rgba(255,61,87,0.15)', borderRadius: 8, fontSize: 12, color: '#FF7088' }}>
-                        <span style={{ fontSize: 13 }}>⚠</span> {error}
+                        <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em' }}>ERR</span> {error}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -193,7 +193,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                     <form onSubmit={handleForgot} noValidate>
                       {forgotSent ? (
                         <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(6,230,255,0.1)', border: '1px solid rgba(6,230,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 20 }}>📧</div>
+                          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(20,201,229,0.10)', border: '1px solid rgba(20,201,229,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 12, fontWeight: 900, letterSpacing: '0.12em' }}>MAIL</div>
                           <h3 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Email sent!</h3>
                           <p style={{ fontSize: 12, color: 'rgba(139,163,204,0.9)', marginBottom: 14 }}>Check your inbox to reset your password.</p>
                           <button type="button" onClick={() => { setForgotMode(false); setForgotSent(false); }} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg, #06E6FF, #00FF88)', border: 'none', borderRadius: 10, fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 700, color: '#030508', cursor: 'pointer' }}>Back to Sign In</button>

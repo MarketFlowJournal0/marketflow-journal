@@ -34,18 +34,18 @@ function AnimatedBg() {
     function init() {
       resize();
       particles.length = 0; lines.length = 0; candles.length = 0;
-      for (let i = 0; i < PC; i++) particles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25, r: Math.random() * 1.5 + 0.5, o: Math.random() * 0.25 + 0.05 });
+      for (let i = 0; i < PC; i++) particles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25, r: Math.random() * 1.5 + 0.5, o: Math.random() * 0.16 + 0.035 });
       for (let i = 0; i < LC; i++) {
         const pts = []; let x = Math.random() * (w / devicePixelRatio), y = Math.random() * (h / devicePixelRatio);
         for (let j = 0; j < 8; j++) { pts.push({ x, y }); x += (Math.random() - 0.3) * 120; y += (Math.random() - 0.5) * 80; }
-        lines.push({ pts, o: Math.random() * 0.05 + 0.02, speed: Math.random() * 0.12 + 0.04 });
+        lines.push({ pts, o: Math.random() * 0.032 + 0.012, speed: Math.random() * 0.12 + 0.04 });
       }
-      for (let i = 0; i < 26; i++) candles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), h: 34 + Math.random() * 120, body: 12 + Math.random() * 42, up: Math.random() > 0.42, speed: 0.12 + Math.random() * 0.28, o: 0.035 + Math.random() * 0.08 });
+      for (let i = 0; i < 26; i++) candles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), h: 34 + Math.random() * 120, body: 12 + Math.random() * 42, up: Math.random() > 0.42, speed: 0.12 + Math.random() * 0.28, o: 0.02 + Math.random() * 0.045 });
     }
     function draw() {
       const rw = w / devicePixelRatio, rh = h / devicePixelRatio;
       ctx.clearRect(0, 0, rw, rh);
-      candles.forEach(c => { c.x -= c.speed; if (c.x < -40) { c.x = rw + Math.random() * 180; c.y = Math.random() * rh; c.h = 34 + Math.random() * 120; c.body = 12 + Math.random() * 42; c.up = Math.random() > 0.42; c.o = 0.035 + Math.random() * 0.08; } const color = c.up ? `rgba(0,210,184,${c.o})` : `rgba(223,95,122,${c.o})`; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c.x, c.y - c.h / 2); ctx.lineTo(c.x, c.y + c.h / 2); ctx.stroke(); ctx.fillRect(c.x - 4, c.y - c.body / 2, 8, c.body); });
+      candles.forEach(c => { c.x -= c.speed; if (c.x < -40) { c.x = rw + Math.random() * 180; c.y = Math.random() * rh; c.h = 34 + Math.random() * 120; c.body = 12 + Math.random() * 42; c.up = Math.random() > 0.42; c.o = 0.02 + Math.random() * 0.045; } const color = c.up ? `rgba(0,210,184,${c.o})` : `rgba(223,95,122,${c.o})`; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c.x, c.y - c.h / 2); ctx.lineTo(c.x, c.y + c.h / 2); ctx.stroke(); ctx.fillRect(c.x - 4, c.y - c.body / 2, 8, c.body); });
       lines.forEach(l => { l.pts.forEach(p => { p.x += l.speed * 0.3; if (p.x > rw + 50) { p.x = -50; p.y = Math.random() * rh; } }); ctx.beginPath(); ctx.moveTo(l.pts[0].x, l.pts[0].y); for (let i = 1; i < l.pts.length; i++) { const pv = l.pts[i - 1], c = l.pts[i]; ctx.quadraticCurveTo(pv.x, pv.y, (pv.x + c.x) / 2, (pv.y + c.y) / 2); } ctx.strokeStyle = `rgba(6,230,255,${l.o})`; ctx.lineWidth = 0.7; ctx.stroke(); });
       particles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > rw) p.vx *= -1; if (p.y < 0 || p.y > rh) p.vy *= -1; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(6,230,255,${p.o})`; ctx.fill(); });
       for (let i = 0; i < particles.length; i++) for (let j = i + 1; j < particles.length; j++) { const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y, d = Math.sqrt(dx * dx + dy * dy); if (d < 120) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(6,230,255,${0.03 * (1 - d / 120)})`; ctx.lineWidth = 0.5; ctx.stroke(); } }
@@ -77,7 +77,7 @@ function Counter({ end, suffix = '', prefix = '', duration = 2 }) {
 // --- Styles ----------------------------------------------------------------
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
-  :root { --cyan:#14C9E5;--green:#00D2B8;--silver:#DCE4EF;--steel:#95A2B5;--purple:#6885FF;--blue:#1DC9FF;--gold:#D7B36A;--pink:#DF5F7A;--danger:#FF4D6A;--t0:#F7FAFC;--t1:#DCE7F2;--t2:#8EA0B8;--t3:#46566E;--bg:#02060D;--brd:#162235; }
+  :root { --cyan:#14C9E5;--green:#00D2B8;--silver:#DCE4EF;--steel:#95A2B5;--purple:#6885FF;--blue:#1DC9FF;--gold:#D7B36A;--pink:#DF5F7A;--danger:#FF4D6A;--t0:#F7FAFC;--t1:#DCE7F2;--t2:#8EA0B8;--t3:#46566E;--bg:#01040A;--brd:#142033; }
   * { box-sizing:border-box;margin:0;padding:0; }
   html { scroll-behavior:smooth; }
   body { background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;overflow-x:hidden; }
@@ -89,15 +89,15 @@ const STYLES = `
   @keyframes mf-pulse-line { 0%,100%{opacity:.35;transform:scaleX(.82)} 50%{opacity:1;transform:scaleX(1)} }
   @keyframes mf-scan { 0%{transform:translateY(-20%);opacity:0} 20%,80%{opacity:.55} 100%{transform:translateY(320%);opacity:0} }
   .lp-shell { background:
-    radial-gradient(circle at 72% 8%, rgba(20,201,229,0.18), transparent 34%),
-    radial-gradient(circle at 8% 92%, rgba(0,210,184,0.12), transparent 30%),
-    linear-gradient(135deg,#02060D 0%,#06111D 46%,#02060D 100%);
+    radial-gradient(circle at 72% 8%, rgba(20,201,229,0.12), transparent 34%),
+    radial-gradient(circle at 8% 92%, rgba(0,210,184,0.08), transparent 30%),
+    linear-gradient(135deg,#01040A 0%,#040B13 46%,#01040A 100%);
     min-height:100vh;overflow-x:hidden;position:relative;
   }
   .lp-shell::before { content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:
     linear-gradient(115deg,transparent 0 30%,rgba(255,255,255,0.035) 31%,transparent 32% 100%),
     repeating-linear-gradient(90deg,rgba(148,163,184,0.035) 0 1px,transparent 1px 120px);
-    opacity:.36;mix-blend-mode:screen;
+    opacity:.26;mix-blend-mode:screen;
   }
   .lp-logo-img { width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 16px 28px rgba(0,0,0,.42)); }
 

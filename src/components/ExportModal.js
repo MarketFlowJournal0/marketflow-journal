@@ -75,7 +75,7 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     
     toast.dismiss(loadingToast);
-    toast.success(`${filteredTrades.length} trades exported to CSV! 📄`);
+    toast.success(`${filteredTrades.length} trades exported to CSV`);
     
     saveAs(blob, `MarketFlow_Export_${new Date().toISOString().split('T')[0]}.csv`);
     onClose();
@@ -143,7 +143,7 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
     XLSX.writeFile(wb, `MarketFlow_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
     
     toast.dismiss(loadingToast);
-    toast.success(`${filteredTrades.length} trades exported to Excel! 📊`);
+    toast.success(`${filteredTrades.length} trades exported to Excel`);
     onClose();
   };
 
@@ -205,7 +205,7 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
       `$${trade.pnl}`,
       `${trade.metrics?.tpPercent}%`,
       `1:${trade.metrics?.rrReel}`,
-      trade.win ? '✓' : '✗',
+      trade.win ? 'Yes' : 'No',
     ]);
 
     doc.autoTable({
@@ -224,7 +224,7 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
     doc.save(`MarketFlow_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     
     toast.dismiss(loadingToast);
-    toast.success(`PDF report generated with ${filteredTrades.length} trades! 📄`);
+    toast.success(`PDF report generated with ${filteredTrades.length} trades`);
     onClose();
   };
 
@@ -268,7 +268,7 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <span className="text-4xl">📤</span>
+                  <span className="text-[11px] font-black tracking-[0.18em] text-blue-100">EXP</span>
                   <div>
                     <h3 className="text-2xl font-black text-white">Export Trades</h3>
                     <p className="text-blue-100 text-sm">Download your trading data</p>
@@ -278,7 +278,7 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
                   onClick={onClose}
                   className="text-white hover:text-[#E2E8F0] text-3xl transition"
                 >
-                  ×
+                  x
                 </button>
               </div>
             </div>
@@ -290,9 +290,9 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
                 <label className="block text-white font-bold mb-3 text-lg">Export Format</label>
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { value: 'csv', label: 'CSV', icon: '📄', desc: 'Excel compatible' },
-                    { value: 'excel', label: 'Excel', icon: '📊', desc: 'Multi-sheet workbook' },
-                    { value: 'pdf', label: 'PDF', icon: '📕', desc: 'Professional report' },
+                    { value: 'csv', label: 'CSV', icon: 'CSV', desc: 'Excel compatible' },
+                    { value: 'excel', label: 'Excel', icon: 'XLS', desc: 'Multi-sheet workbook' },
+                    { value: 'pdf', label: 'PDF', icon: 'PDF', desc: 'Professional report' },
                   ].map((format) => (
                     <motion.button
                       key={format.value}
@@ -402,7 +402,7 @@ function ExportModal({ isOpen, onClose, trades, filters }) {
                 disabled={getFilteredTrades().length === 0}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-black shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                📤 Export {getFilteredTrades().length} Trades
+                Export {getFilteredTrades().length} Trades
               </motion.button>
             </div>
           </motion.div>
