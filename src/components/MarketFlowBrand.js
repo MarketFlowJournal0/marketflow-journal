@@ -44,7 +44,7 @@ export function MarketFlowMark({
       }}
     >
       <img
-        src="/logo192.png"
+        src="/logo-mark.png"
         alt={alt}
         style={{
           width: '100%',

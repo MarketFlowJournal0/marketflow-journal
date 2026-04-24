@@ -1,71 +1,71 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const LOGO_SIMPLE = '/logo192.png';
-const LOGO_FULL = '/logo192.png';
+const LOGO_SIMPLE = '/logo-mark.png';
+const LOGO_FULL = '/logo-mark.png';
 
 const FAQ_ANSWERS = [
   {
-    keywords: ['import', 'mt4', 'mt5', 'ctrader', 'csv', 'metatrader'],
-    answer: "📥 **Trade Import**\n\nYou can import your trades in 3 ways:\n• **MT4/MT5** → File > Export as CSV > drag and drop into MFJ\n• **cTrader** → History > Export CSV\n• **Excel/CSV** → Direct import from the Dashboard\n\nImport takes less than 30 seconds ✅",
+    keywords: ['import', 'mt4', 'mt5', 'ctrader', 'csv', 'metatrader', 'excel', 'json'],
+    answer: "**Trade Import**\n\nYou can import trades with CSV, Excel, JSON or pasted tables. Use the All Trades import desk, map your base fields, create missing columns when needed, then validate the import before saving.",
   },
   {
     keywords: ['price', 'pricing', 'subscription', 'plan', 'starter', 'pro', 'elite', 'cost', 'how much'],
-    answer: "💳 **Our Plans**\n\n• **Starter** — $15/month (or $11 annually)\n• **Pro** — $22/month (or $15 annually) ⭐\n• **Elite** — $38/month (or $27 annually)\n\nAll plans use a card-backed 14-day activation flow before the first paid renewal.",
+    answer: "**Plans**\n\nStarter is $15/month, Pro is $22/month, and Elite is $38/month. Annual billing is available from the pricing page. Every plan uses a card-backed 14-day activation flow through Stripe.",
   },
   {
     keywords: ['ai', 'coach', 'intelligence', 'artificial', 'analysis'],
-    answer: "🧠 **AI Trade Coach**\n\nOur AI analyzes your trades after each session and:\n• Detects your recurring biases (FOMO, revenge trading…)\n• Correlates your emotional state with your P&L\n• Generates personalized recommendations every week\n\nAvailable on **Pro** and **Elite** plans.",
+    answer: "**AI Assistant**\n\nMarketFlow AI helps review your saved trades, spot repeated behavior, and turn your journal data into clearer review actions. Availability depends on your plan.",
   },
   {
     keywords: ['backtest', 'backtesting', 'strategy', 'history'],
-    answer: "🔄 **Visual Backtesting**\n\nThe Backtest module lets you:\n• Test your strategies on historical data\n• Visualize the simulated equity curve\n• Calculate Sharpe, max drawdown, CAGR\n\nAvailable on **Pro** and **Elite** plans.",
+    answer: "**Backtesting**\n\nBacktest sessions are plan-gated: Starter includes 1 session, Pro includes 5 sessions, and Elite includes 25 sessions.",
   },
   {
     keywords: ['cancel', 'cancellation', 'unsubscribe', 'unsubscription', 'refund'],
-    answer: "❌ **Cancellation**\n\nYou can cancel your subscription at any time from **Settings > Manage Subscription**.\n\nAccess remains active until the end of the current period. No refunds for periods already started.",
+    answer: "**Cancellation**\n\nYou can manage or cancel your subscription from Account Settings. Access follows the active Stripe subscription and trial status.",
   },
   {
     keywords: ['security', 'data', 'gdpr', 'privacy', 'encryption'],
-    answer: "🔒 **Security & Privacy**\n\nAccount, subscription, and journal data are used to operate the product. Export and deletion controls are available from the journal flow.",
+    answer: "**Security and Privacy**\n\nAccount, subscription and journal data are used to operate the product. Export and deletion controls are available inside the journal flow.",
   },
   {
     keywords: ['prop', 'ftmo', 'funded', 'challenge', 'pdf', 'report'],
-    answer: "📄 **Prop Firms**\n\nMarketFlow is perfect for prop traders!\n• **PDF report** export formatted for prop firms\n• Real-time drawdown rule tracking\n• Performance analysis by session\n\nCompatible with FTMO, The5%ers, E8, TopStep and more.",
+    answer: "**Prop Firm Workflows**\n\nMarketFlow is designed for prop-style review workflows: accounts, reports, drawdown context, alerts and performance review. Firm names shown on the site are examples, not partnerships.",
   },
   {
-    keywords: ['trial', 'free', 'free', 'trial', 'test'],
-    answer: "🎁 **Free Trial**\n\nAll plans use a **14-day trial window** with billing details shown before activation.\n\nYou get access to all features of your chosen plan during the trial period 🚀",
+    keywords: ['trial', 'free', 'test'],
+    answer: "**Trial**\n\nAll plans use a 14-day trial window with card activation through Stripe. You get access to the modules included in the plan you selected.",
   },
   {
-    keywords: ['bug', 'problem', 'error', 'not working', 'not working', 'bug'],
-    answer: "🐛 **Report a Bug**\n\nTo help us resolve issues quickly:\n1. Describe the problem in detail\n2. Specify the steps to reproduce it\n3. Indicate your browser and OS\n\nSend all that to **marketflowjournal0@gmail.com** or use the form below 👇",
+    keywords: ['bug', 'problem', 'error', 'not working'],
+    answer: "**Report a Bug**\n\nSend the issue, steps to reproduce, browser, operating system and screenshots if possible to **marketflowjournal0@gmail.com**.",
   },
   {
-    keywords: ['received', 'receive', 'receive', 'journal', 'email', 'mail', 'newsletter', 'receive', 'send', 'sent'],
-    answer: "📬 **Delivery Issue**\n\nIf you haven't received an email from us:\n1. Check your **spam / junk folder**\n2. Add **marketflowjournal0@gmail.com** to your contacts\n3. Verify that your account email address is correct\n\nIf the issue persists, contact us directly 👇",
+    keywords: ['received', 'receive', 'journal', 'email', 'mail', 'newsletter', 'send', 'sent'],
+    answer: "**Email or Access Issue**\n\nCheck spam, confirm the email used at checkout, then contact **marketflowjournal0@gmail.com** if access still does not restore.",
   },
   {
-    keywords: ['account', 'password', 'login', 'connect', 'login', 'access', 'forgotten'],
-    answer: "🔑 **Login Issue**\n\nIf you can't log in:\n1. Click **\"Forgot Password\"** on the login page\n2. Check your spam for the reset email\n3. Make sure you're using the correct email address\n\nStill stuck? Email us at **marketflowjournal0@gmail.com**.",
+    keywords: ['account', 'password', 'login', 'connect', 'access', 'forgotten'],
+    answer: "**Login Issue**\n\nUse Forgot Password on the login page, check spam for the reset email, and make sure you use the same email that activated the plan.",
   },
   {
-    keywords: ['payment', 'invoice', 'card', 'credit card', 'billing', 'billing', 'charge'],
-    answer: "💳 **Payment & Billing**\n\nPayments are securely processed via **Stripe**.\n\n• Invoices are automatically sent by email\n• You can download your invoices from **Settings > Subscription**\n• For any payment disputes, contact us at **marketflowjournal0@gmail.com**",
+    keywords: ['payment', 'invoice', 'card', 'credit card', 'billing', 'charge'],
+    answer: "**Payment and Billing**\n\nPayments are processed by Stripe. For invoice or payment questions, contact **marketflowjournal0@gmail.com**.",
   },
 ];
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
   role: 'bot',
-  text: "👋 Hi! I'm the **MarketFlow** assistant.\n\nI can help you with:\n• 📊 Features & Analytics\n• 💳 Subscriptions & Pricing\n• 📥 Trade Import\n• 🔒 Security & Privacy\n• 📬 Delivery Issues\n• 🔑 Login & Account\n\nHow can I help you?",
+  text: "Hi, I am the **MarketFlow** assistant.\n\nI can help with features, pricing, trade import, security, email access, login and billing questions.\n\nHow can I help you?",
   time: new Date(),
 };
 
 const QUICK_QUESTIONS = [
-  '💳 See pricing',
-  '📥 Import my trades',
-  '📬 Email not received',
-  '🎁 Free trial?',
+  'See pricing',
+  'Import my trades',
+  'Email not received',
+  'Trial access',
 ];
 
 function formatText(text) {
@@ -91,7 +91,7 @@ function getBotAnswer(input) {
       return faq.answer;
     }
   }
-  return "I don't have a precise answer to that question 🤔\n\nBut our team is here for you! Send us an email at **marketflowjournal0@gmail.com**.\n\n⏱ Guaranteed response within **24 business hours**.";
+  return "I don't have a precise answer to that question yet. Send us an email at **marketflowjournal0@gmail.com** and we will help you.";
 }
 
 export default function SupportWidget({ onOpenPage }) {
@@ -129,8 +129,8 @@ export default function SupportWidget({ onOpenPage }) {
         .mfw-btn {
           position:fixed; bottom:28px; right:28px; z-index:9000;
           width:56px; height:56px; border-radius:50%;
-          background:linear-gradient(135deg,var(--mf-accent,#06E6FF),var(--mf-green,#00FF88));
-          border:none; cursor:pointer;
+          background:#030508;
+          border:1px solid rgba(6,230,255,0.22); cursor:pointer;
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 4px 24px rgba(6,230,255,0.5);
           transition:transform 0.2s, box-shadow 0.2s;
@@ -293,9 +293,7 @@ export default function SupportWidget({ onOpenPage }) {
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
         ) : (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#060912" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
+          <img src={LOGO_SIMPLE} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         )}
       </button>
 
@@ -305,9 +303,7 @@ export default function SupportWidget({ onOpenPage }) {
           {/* Header */}
           <div className="mfw-head">
             <div className="mfw-av">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--mf-accent,#06E6FF)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
+              <img src={LOGO_FULL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
@@ -315,10 +311,10 @@ export default function SupportWidget({ onOpenPage }) {
               </div>
               <div style={{ fontSize: 10.5, color: '#6AB8CC', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                 <div className="mfw-dot" />
-                Online · Replies instantly
+                Online - Replies instantly
               </div>
             </div>
-            <button className="mfw-x" onClick={() => setOpen(false)}>✕</button>
+            <button className="mfw-x" onClick={() => setOpen(false)}>x</button>
           </div>
 
           {/* Messages */}
@@ -351,7 +347,7 @@ export default function SupportWidget({ onOpenPage }) {
                 <textarea
                   ref={inputRef}
                   className="mfw-ta"
-                  placeholder="Ask your question…"
+                  placeholder="Ask your question..."
                   value={input}
                   rows={1}
                   onChange={e => setInput(e.target.value)}
@@ -370,7 +366,7 @@ export default function SupportWidget({ onOpenPage }) {
             <div className="mfw-link">
               Need human help?{' '}
               <button onClick={() => { setOpen(false); onOpenPage?.('support'); }}>
-                Full support →
+                Full support
               </button>
             </div>
           </div>
