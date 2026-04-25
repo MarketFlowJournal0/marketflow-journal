@@ -498,7 +498,7 @@ function PageModal({ page, onClose }) {
 }
 
 // --- Main ------------------------------------------------------------------
-export default function LandingPage({ onLogin, onSignup, onSignupWithPlan, currentUser = null }) {
+export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [modal, setModal] = useState(null);
@@ -514,9 +514,6 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan, curre
   }, []);
 
   const activeShowcase = ANALYTICS_SHOWCASE[activeModule];
-  const isSignedIn = Boolean(currentUser?.id);
-  const authPrimaryLabel = isSignedIn ? 'Choose a plan' : 'Start 14-day trial';
-  const authSecondaryLabel = isSignedIn ? 'Plans' : 'Log in';
 
   const PLANS = [
     { id:'starter', name:'Starter', monthly:15, annual:11, priceMonthly:'price_1T9t9L2Ouddv7uendIMAR6IP', priceAnnual:'price_1TDQ7w2Ouddv7ueno5CuaNTH', desc:'Core journal and review workflow', features:['Unlimited trade journal','Dashboard and daily workflow','CSV, Excel and JSON import','Performance calendar','1 backtest session'] },
@@ -536,7 +533,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan, curre
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
         <div className="lp-nav-links"><a href="#features">Product</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="/changelog">Changelog</a><a href="/roadmap">Roadmap</a><a href="/docs">Resources</a></div>
-        <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>{authSecondaryLabel}</button><button className="btn-primary-nav" onClick={onSignup}>{authPrimaryLabel}</button></div>
+        <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>Log in</button><button className="btn-primary-nav" onClick={onSignup}>Start 14-day trial</button></div>
       </nav>
 
       <LiveTickerBar />
@@ -548,7 +545,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan, curre
         <Reveal delay={0.1}><p className="lp-hero-sub">A premium trading workspace built to make every import, review, psychology check, equity read and report feel connected, serious and repeatable.</p></Reveal>
         <Reveal delay={0.2}>
           <div className="lp-hero-actions">
-            <button className="btn-hero-primary" onClick={onSignup}>{isSignedIn ? 'Choose your plan' : 'Start your 14-day trial'}</button>
+            <button className="btn-hero-primary" onClick={onSignup}>Start your 14-day trial</button>
             <button className="btn-hero-secondary" onClick={()=>document.getElementById('features')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
           </div>
         </Reveal>
@@ -769,8 +766,8 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan, curre
         <Reveal delay={0.1}><p>Build a daily review system that stays connected to your trades, accounts and discipline.</p></Reveal>
         <Reveal delay={0.2}>
           <div className="lp-cta-actions">
-            <button className="btn-hero-primary" onClick={onSignup}>{isSignedIn ? 'Choose your plan' : 'Start your 14-day trial'}</button>
-            <button className="btn-hero-secondary" onClick={onLogin}>{authSecondaryLabel}</button>
+            <button className="btn-hero-primary" onClick={onSignup}>Start your 14-day trial</button>
+            <button className="btn-hero-secondary" onClick={onLogin}>Log in</button>
           </div>
         </Reveal>
         <Reveal delay={0.3}><p className="lp-cta-note">14-day trial - billing starts after the trial unless cancelled</p></Reveal>

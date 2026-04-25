@@ -442,24 +442,6 @@ function AppInner() {
   );
   const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
   const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
-  if (needsPlan && ['/', '/home'].includes(location.pathname)) {
-    return (
-      <>
-        <Routes>
-          <Route path="*" element={
-            <LandingPage
-              currentUser={user}
-              onLogin={() => navigate('/plan')}
-              onSignup={() => navigate('/plan')}
-              onSignupWithPlan={(priceId) => launchCheckout(priceId, user?.email)}
-            />
-          } />
-        </Routes>
-        <SupportWidget onOpenPage={() => { window.location.href = '/contact'; }} />
-      </>
-    );
-  }
-
   if (needsPlan) {
     return (
       <>
@@ -467,12 +449,12 @@ function AppInner() {
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onSkip={() => navigate('/')}
+              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = '/'; }, 300); }}
             />
           } />
           <Route path="*" element={<Navigate to="/plan" replace />} />
         </Routes>
-        <SupportWidget onOpenPage={() => { window.location.href = '/contact'; }} />
+        <SupportWidget onOpenPage={() => { navigate('/support'); }} />
       </>
     );
   }
