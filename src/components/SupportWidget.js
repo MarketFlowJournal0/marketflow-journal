@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 const LOGO_SIMPLE = '/logo-mark.png';
 const LOGO_FULL = '/logo-mark.png';
+const SUPPORT_EMAIL = 'support@marketflowjournal.com';
 
 const FAQ_ANSWERS = [
   {
@@ -10,7 +11,7 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['price', 'pricing', 'subscription', 'plan', 'starter', 'pro', 'elite', 'cost', 'how much'],
-    answer: "**Plans**\n\nStarter is $15/month, Pro is $22/month, and Elite is $38/month. Annual billing is available from the pricing page. Every plan uses a card-backed 14-day activation flow through Stripe.",
+    answer: "**Plans**\n\nStarter is $15/month, Pro is $22/month, and Elite is $38/month. Annual billing is available from the pricing page. Every plan starts with a 14-day trial through Stripe.",
   },
   {
     keywords: ['ai', 'coach', 'intelligence', 'artificial', 'analysis'],
@@ -34,15 +35,15 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['trial', 'free', 'test'],
-    answer: "**Trial**\n\nAll plans use a 14-day trial window with card activation through Stripe. You get access to the modules included in the plan you selected.",
+    answer: "**Trial**\n\nAll plans use a 14-day trial window through Stripe. Billing starts after the trial unless cancelled, and access follows the plan you selected.",
   },
   {
     keywords: ['bug', 'problem', 'error', 'not working'],
-    answer: "**Report a Bug**\n\nSend the issue, steps to reproduce, browser, operating system and screenshots if possible to **marketflowjournal0@gmail.com**.",
+    answer: `**Report a Bug**\n\nSend the issue, steps to reproduce, browser, operating system and screenshots if possible to **${SUPPORT_EMAIL}**.`,
   },
   {
     keywords: ['received', 'receive', 'journal', 'email', 'mail', 'newsletter', 'send', 'sent'],
-    answer: "**Email or Access Issue**\n\nCheck spam, confirm the email used at checkout, then contact **marketflowjournal0@gmail.com** if access still does not restore.",
+    answer: `**Email or Access Issue**\n\nCheck spam, confirm the email used at checkout, then contact **${SUPPORT_EMAIL}** if access still does not restore.`,
   },
   {
     keywords: ['account', 'password', 'login', 'connect', 'access', 'forgotten'],
@@ -50,7 +51,7 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['payment', 'invoice', 'card', 'credit card', 'billing', 'charge'],
-    answer: "**Payment and Billing**\n\nPayments are processed by Stripe. For invoice or payment questions, contact **marketflowjournal0@gmail.com**.",
+    answer: `**Payment and Billing**\n\nPayments are processed by Stripe. For invoice, trial or refund questions, contact **${SUPPORT_EMAIL}**.`,
   },
 ];
 
@@ -91,7 +92,7 @@ function getBotAnswer(input) {
       return faq.answer;
     }
   }
-  return "I don't have a precise answer to that question yet. Send us an email at **marketflowjournal0@gmail.com** and we will help you.";
+  return `I don't have a precise answer to that question yet. Send us an email at **${SUPPORT_EMAIL}** and we will help you.`;
 }
 
 export default function SupportWidget({ onOpenPage }) {
@@ -365,7 +366,11 @@ export default function SupportWidget({ onOpenPage }) {
             </form>
             <div className="mfw-link">
               Need human help?{' '}
-              <button onClick={() => { setOpen(false); onOpenPage?.('support'); }}>
+              <button onClick={() => {
+                setOpen(false);
+                if (onOpenPage) onOpenPage('support');
+                else window.location.href = '/contact';
+              }}>
                 Full support
               </button>
             </div>

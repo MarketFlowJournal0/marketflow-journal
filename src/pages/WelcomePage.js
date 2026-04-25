@@ -1,13 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import MarketFlowBrand from '../components/MarketFlowBrand';
 import { getEntryRoute, getPlanDetails, normalizePlan } from '../lib/subscription';
 
-const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
-const FORCE_JOURNAL_ACCESS_PREFIX = 'mfj_force_journal_access_';
-const FORCE_JOURNAL_PLAN_PREFIX = 'mfj_force_journal_plan_';
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
 
 function FeatureTile({ text, accent, index }) {
@@ -123,11 +120,8 @@ export default function WelcomePage() {
     return params.get('plan_id') || sessionStorage.getItem(CHECKOUT_PLAN_KEY) || localStorage.getItem(CHECKOUT_PLAN_KEY) || null;
   });
 
-  const forceAccessKey = user?.id ? FORCE_JOURNAL_ACCESS_PREFIX + user.id : null;
-  const forcePlanKey = user?.id ? FORCE_JOURNAL_PLAN_PREFIX + user.id : null;
-  const forcedPlanId = forcePlanKey ? localStorage.getItem(forcePlanKey) : null;
   const profilePlanId = normalizePlan(user?.plan || user?.user_metadata?.plan);
-  const planId = profilePlanId !== 'trial' ? profilePlanId : normalizePlan(checkoutPlanId || forcedPlanId || profilePlanId);
+  const planId = profilePlanId !== 'trial' ? profilePlanId : normalizePlan(checkoutPlanId || profilePlanId);
   const plan = getPlanDetails(planId);
   const journalRoute = '/' + getEntryRoute(planId);
   const firstName = user?.firstName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
@@ -139,20 +133,10 @@ export default function WelcomePage() {
     return params.get('session_id') || null;
   }, []);
 
-  const unlockJournalNow = useCallback(() => {
-    sessionStorage.setItem(POST_WELCOME_ACCESS_KEY, '1');
-    if (forceAccessKey) localStorage.setItem(forceAccessKey, '1');
-    if (forcePlanKey) localStorage.setItem(forcePlanKey, planId);
-  }, [forceAccessKey, forcePlanKey, planId]);
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session_id');
     const urlPlanId = params.get('plan_id');
-    const alreadyUnlocked = Boolean(
-      sessionStorage.getItem(POST_WELCOME_ACCESS_KEY) === '1' ||
-      (forceAccessKey && localStorage.getItem(forceAccessKey) === '1')
-    );
 
     if (sessionId) {
       setHasSessionId(true);
@@ -161,28 +145,30 @@ export default function WelcomePage() {
         sessionStorage.setItem(CHECKOUT_PLAN_KEY, urlPlanId);
         localStorage.setItem(CHECKOUT_PLAN_KEY, urlPlanId);
       }
-      unlockJournalNow();
       return;
     }
 
-    if (alreadyUnlocked) {
+    if (isActivated) {
       navigate(journalRoute, { replace: true });
       return;
     }
 
     navigate('/plan', { replace: true });
-  }, [forceAccessKey, journalRoute, navigate, unlockJournalNow]);
+  }, [isActivated, journalRoute, navigate]);
 
   useEffect(() => {
     if (!hasSessionId) return undefined;
 
     const timer = window.setTimeout(() => {
-      unlockJournalNow();
-      setReady(true);
-    }, 2500);
+      if (!isActivated) setSyncHint(true);
+    }, 4500);
 
     return () => window.clearTimeout(timer);
-  }, [hasSessionId, unlockJournalNow]);
+  }, [hasSessionId, isActivated]);
+
+  useEffect(() => {
+    if (isActivated) setReady(true);
+  }, [isActivated]);
 
   useEffect(() => {
     if (!hasSessionId) return undefined;
@@ -358,7 +344,7 @@ export default function WelcomePage() {
               boxShadow: '0 0 12px rgba(0,255,136,0.7)',
             }}
           />
-          {ready ? 'Payment Confirmed' : 'Final Check'}
+          {ready ? 'Access Confirmed' : 'Final Check'}
         </motion.div>
 
         <div
@@ -440,7 +426,7 @@ export default function WelcomePage() {
                 marginBottom: 16,
               }}
             >
-              {ready ? `${plan.label} Access Unlocked` : 'Access Secured'}
+              {ready ? `${plan.label} Access Unlocked` : 'Syncing Stripe Access'}
             </div>
 
             <h1
@@ -476,7 +462,9 @@ export default function WelcomePage() {
                 lineHeight: 1.8,
               }}
             >
-              Your payment for {email} is confirmed. In a few seconds this page turns green and opens your journal button with your {plan.label} access.
+              {ready
+                ? `Your ${plan.label} access for ${email} is confirmed. You can open the journal now.`
+                : `Your 14-day trial for ${email} is being confirmed with Stripe. The journal opens as soon as the subscription is synced.`}
             </p>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -486,7 +474,6 @@ export default function WelcomePage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.22 }}
                   onClick={() => {
-                    unlockJournalNow();
                     navigate(journalRoute);
                   }}
                   style={{
@@ -534,8 +521,8 @@ export default function WelcomePage() {
 
             <div style={{ color: syncHint && !isActivated ? '#FDBA74' : '#7E98C2', fontSize: 12.5, lineHeight: 1.7 }}>
               {ready
-                ? 'Your access is saved. You can return to the journal anytime with this account.'
-                : 'Your journal access is being unlocked now.'}
+                ? 'Your access is saved through your Stripe subscription. You can return to the journal anytime with this account.'
+                : syncHint ? 'Still waiting on Stripe sync. If this does not resolve, open Manage Plan or contact support.' : 'Your journal access is being synced now.'}
             </div>
           </motion.div>
 
@@ -606,7 +593,7 @@ export default function WelcomePage() {
                 {plan.description}
               </div>
               <div style={{ color: '#8AA3CB', fontSize: 14, lineHeight: 1.7 }}>
-                {ready ? 'Access is open right now. Your plan modules are already applied to sidebar and route permissions.' : 'The journal button appears automatically in under 3 seconds.'}
+                {ready ? 'Access is open right now. Your plan modules are already applied to sidebar and route permissions.' : 'The journal button appears automatically once Stripe confirms the subscription.'}
               </div>
             </div>
           </motion.div>
@@ -665,7 +652,7 @@ export default function WelcomePage() {
                 maxWidth: 440,
               }}
             >
-              {ready ? 'One click opens your journal now. Your access stays saved for this account.' : 'The journal opens as soon as the green access state appears.'}
+              {ready ? 'One click opens your journal now. Your access stays saved for this account.' : 'The journal opens as soon as Stripe confirms the access state.'}
             </div>
           </div>
 

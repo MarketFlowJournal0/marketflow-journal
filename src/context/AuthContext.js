@@ -228,7 +228,7 @@ export function AuthProvider({ children }) {
     isActive:             subStatus === 'active',
     isPastDue:            subStatus === 'past_due',
     isCanceled:           subStatus === 'canceled',
-    needsPayment:         subStatus === 'past_due',
+    needsPayment:         ['past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired'].includes(subStatus),
     trialDaysLeft,
     trialEnd,
     stripeCustomerId:     profile?.stripe_customer_id     || null,

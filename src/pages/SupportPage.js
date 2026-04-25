@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const SUPPORT_EMAIL = 'support@marketflowjournal.com';
+
 const FAQS = [
   { q: 'How do I import my MetaTrader trades?', a: 'Export CSV from MT4/MT5, then import it in MarketFlow through All Trades. The import desk supports CSV, Excel, JSON and pasted tables with column mapping.' },
   { q: 'Is the AI Coach really useful for beginners?', a: 'Yes, that\'s actually where it\'s most effective. For beginners, it guides you on risk management and identifying the most costly mistakes. For advanced traders, it detects subtle patterns.' },
@@ -43,7 +45,7 @@ function ContactForm({ user }) {
       const res = await fetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, plan: user?.user_metadata?.plan || 'unknown' }),
+    body: JSON.stringify({ ...form, plan: user?.plan || user?.user_metadata?.plan || 'unknown' }),
       });
       if (!res.ok) throw new Error();
       setSent(true);
@@ -193,7 +195,7 @@ export default function SupportPage({ user, onBack }) {
               Contact Us
             </div>
             {[
-              { icon: '@', label: 'Support email', value: 'marketflowjournal0@gmail.com', href: 'mailto:marketflowjournal0@gmail.com' },
+              { icon: '@', label: 'Support email', value: SUPPORT_EMAIL, href: `mailto:${SUPPORT_EMAIL}` },
               { icon: '#', label: 'Community Discord', value: 'discord.gg/Cvh6H8yK8m', href: 'https://discord.gg/Cvh6H8yK8m' },
             ].map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i === 0 ? 12 : 0 }}>

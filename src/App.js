@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import { MarketFlowMark, MarketFlowWordmark } from './components/MarketFlowBrand';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
+import PublicInfoPage from './pages/PublicInfoPage';
 import Dashboard from './pages/Dashboard';
 import AllTrades from './pages/AllTrades';
 import AnalyticsPro from './pages/AnalyticsPro';
@@ -36,11 +37,27 @@ import './App.css';
 import './theme.css';
 
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
-const POST_WELCOME_ACCESS_KEY = 'mfj_post_welcome_journal_access';
-const FORCE_JOURNAL_ACCESS_PREFIX = 'mfj_force_journal_access_';
-const FORCE_JOURNAL_PLAN_PREFIX = 'mfj_force_journal_plan_';
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
+
+const PUBLIC_INFO_ROUTES = {
+  '/changelog': 'changelog',
+  '/roadmap': 'roadmap',
+  '/docs': 'docs',
+  '/documentation': 'docs',
+  '/guide': 'docs',
+  '/import-guide': 'import',
+  '/csv': 'import',
+  '/api-reference': 'api',
+  '/elite': 'api',
+  '/tutorials': 'tutorials',
+  '/workflows': 'tutorials',
+  '/terms': 'terms',
+  '/terms-of-service': 'terms',
+  '/privacy': 'privacy',
+  '/privacy-policy': 'privacy',
+  '/contact': 'contact',
+};
 
 const PRICE_PLAN_MAP = {
   price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
@@ -116,9 +133,8 @@ function AppLayout({ user, onLogout }) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const profilePlan = normalizePlan(user?.plan || 'trial');
-  const forcedPlan = user?.id ? localStorage.getItem(FORCE_JOURNAL_PLAN_PREFIX + user.id) : null;
   const checkoutPlan = sessionStorage.getItem(CHECKOUT_PLAN_KEY) || localStorage.getItem(CHECKOUT_PLAN_KEY);
-  const plan = profilePlan !== 'trial' ? profilePlan : normalizePlan(forcedPlan || checkoutPlan || profilePlan);
+  const plan = profilePlan !== 'trial' ? profilePlan : normalizePlan(checkoutPlan || profilePlan);
   const effectiveUser = user ? { ...user, plan } : user;
   const entryRoute = getEntryRoute(plan);
   const fallbackRoute = '/' + entryRoute;
@@ -329,6 +345,16 @@ function AppInner() {
   // ── Loading ──
   if (loading && !profileLoaded) return <LoadingScreen />;
 
+  const publicInfoPage = PUBLIC_INFO_ROUTES[location.pathname];
+  if (publicInfoPage) {
+    return (
+      <>
+        <PublicInfoPage page={publicInfoPage} />
+        <SupportWidget onOpenPage={() => { window.location.href = '/contact'; }} />
+      </>
+    );
+  }
+
   // ── Non connecté ──
   if (!user) {
     return (
@@ -338,7 +364,7 @@ function AppInner() {
             <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
           } />
         </Routes>
-        <SupportWidget onOpenPage={() => {}} />
+        <SupportWidget onOpenPage={() => { window.location.href = '/contact'; }} />
         {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
     );
@@ -363,12 +389,8 @@ function AppInner() {
       || (user.subStatus === 'trialing' && trialStillValid)
     )
   );
-  const postWelcomeAccess = sessionStorage.getItem(POST_WELCOME_ACCESS_KEY) === '1';
-  const forceJournalAccess = Boolean(
-    user?.id && localStorage.getItem(FORCE_JOURNAL_ACCESS_PREFIX + user.id) === '1'
-  );
   const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
-  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid && !postWelcomeAccess && !forceJournalAccess;
+  const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
   if (needsPlan) {
     return (
       <>
@@ -381,7 +403,7 @@ function AppInner() {
           } />
           <Route path="*" element={<Navigate to="/plan" replace />} />
         </Routes>
-        <SupportWidget onOpenPage={() => {}} />
+        <SupportWidget onOpenPage={() => { navigate('/support'); }} />
       </>
     );
   }

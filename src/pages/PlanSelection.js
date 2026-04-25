@@ -185,11 +185,11 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
             <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.08em', color: '#D7B36A' }}>TRIAL</span>
             <div style={{ flex: 1 }}>
-              <strong style={{ color: '#D7B36A' }}>Free trial — {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
-              <span style={{ color: 'rgba(255,255,255,0.5)' }}> · Your card will be charged at the end of the trial</span>
+              <strong style={{ color: '#D7B36A' }}>Free trial - {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}> - Billing starts after the trial unless cancelled</span>
             </div>
             {user.stripeCustomerId && (
-              <button onClick={handleManage} disabled={portalLoading} style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 7, color: '#D7B36A', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{portalLoading ? '…' : 'Manage card'}</button>
+              <button onClick={handleManage} disabled={portalLoading} style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 7, color: '#D7B36A', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{portalLoading ? '...' : 'Manage card'}</button>
             )}
           </motion.div>
         )}
@@ -198,7 +198,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         {needsPayment && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,61,87,0.06)', border: '1px solid rgba(255,61,87,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
             <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.16em' }}>PAY</span>
-            <div><strong style={{ color: '#FF5570' }}>Payment required</strong><span style={{ color: 'rgba(255,255,255,0.5)' }}> — Your trial has ended. Choose a plan to continue.</span></div>
+            <div><strong style={{ color: '#FF5570' }}>Payment required</strong><span style={{ color: 'rgba(255,255,255,0.5)' }}> - Your trial has ended. Choose a plan to continue.</span></div>
           </motion.div>
         )}
 
@@ -208,12 +208,12 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
             <>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 50, padding: '5px 14px', marginBottom: 16, fontSize: 11, fontWeight: 600, color: '#00D2B8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00D2B8', boxShadow: '0 0 6px #00D2B8', animation: 'pulse 2s ease-in-out infinite' }} />
-                Step 2 of 2 — Choose your plan
+                Step 2 of 2 - Choose your plan
               </div>
               <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-1px' }}>
                 Start your <span style={{ background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>free trial</span><br />of 14 days
               </h1>
-              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Enter your card now, nothing is charged for 14 days. Your card will be automatically billed when the trial ends. One free trial per account.</p>
+              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Start with 14 days to test the journal. Billing starts after the trial unless cancelled. One free trial per account.</p>
             </>
           ) : (
             <>
@@ -341,9 +341,9 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         {/* Footer note */}
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: '#334566' }}>
           <span style={{ color: '#7A90B8' }}>100% secure payment by Stripe</span>
-          {' · '}Manage or cancel online
-          {' · '}14-day free trial — one per account
-          {' · '}Auto-billing after trial
+          {' - '}Manage or cancel online
+          {' - '}14-day free trial - one per account
+          {' - '}Billing starts after trial unless cancelled
         </motion.p>
       </div>
     </div>

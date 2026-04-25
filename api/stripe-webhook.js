@@ -3,14 +3,30 @@
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
-const { Resend } = require('resend');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@marketflowjournal.com';
+
+async function sendEmail(payload) {
+  if (!process.env.RESEND_API_KEY) return null;
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Unable to send email.');
+  }
+  return data;
+}
 
 const PRICE_PLAN_MAP = {
   price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
@@ -102,10 +118,11 @@ module.exports = async (req, res) => {
         const customerName = session.customer_details?.name || customerEmail?.split('@')[0] || 'Trader';
         let userId = session.metadata?.supabase_user_id || null;
         let planId = session.metadata?.plan_id || null;
+        let subscription = null;
 
-        if ((!userId || !planId) && subscriptionId) {
+        if (subscriptionId) {
           try {
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            subscription = await stripe.subscriptions.retrieve(subscriptionId);
             userId = userId || subscription.metadata?.supabase_user_id || null;
             planId = planId || getPlanIdFromSubscription(subscription);
           } catch (subErr) {
@@ -120,9 +137,9 @@ module.exports = async (req, res) => {
         });
 
         if (targetUserId && subscriptionId) {
-          const trialEnd = session.subscription?.trial_end
-            ? new Date(session.subscription.trial_end * 1000).toISOString()
-            : new Date(Date.now() + 14 * 86400000).toISOString();
+          const trialEnd = subscription?.trial_end
+            ? new Date(subscription.trial_end * 1000).toISOString()
+            : null;
 
           await supabase
             .from('profiles')
@@ -131,26 +148,25 @@ module.exports = async (req, res) => {
               email: customerEmail || null,
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
-              subscription_status: 'trialing',
+              subscription_status: subscription?.status || 'trialing',
               trial_end: trialEnd,
               plan: planId || null,
             }, { onConflict: 'id' });
 
           // Send welcome email
           try {
-            await resend.emails.send({
-              from: 'MarketFlow Journal <welcome@marketflowjournal.com>',
+            await sendEmail({
+              from: `MarketFlow Support <${SUPPORT_EMAIL}>`,
               to: customerEmail,
-              subject: `Welcome to MarketFlow Journal, ${customerName}! 🎉`,
+              subject: `Welcome to MarketFlow Journal, ${customerName}`,
               html: `
                 <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0C1422;border-radius:16px;border:1px solid #162034;color:#E8EEFF;">
                   <div style="text-align:center;margin-bottom:28px;">
-                    <div style="font-size:40px;margin-bottom:12px;">🚀</div>
                     <h1 style="color:#FFFFFF;margin:0 0 8px;font-size:24px;font-weight:800;">Welcome to MarketFlow, ${customerName}!</h1>
                     <p style="color:#7A90B8;margin:0;font-size:14px;">Your 14-day free trial has started. Let's make it count.</p>
                   </div>
                   <div style="background:rgba(6,230,255,0.06);border:1px solid rgba(6,230,255,0.15);border-radius:12px;padding:16px;margin-bottom:24px;">
-                    <p style="color:#06E6FF;margin:0;font-size:13px;font-weight:600;">✅ Your trial is active</p>
+                    <p style="color:#06E6FF;margin:0;font-size:13px;font-weight:600;">Your trial is active</p>
                     <p style="color:#E8EEFF;margin:8px 0 0;font-size:13px;">You have full access to all features for the next 14 days. No charge until your trial ends.</p>
                   </div>
                   <div style="background:rgba(255,255,255,0.03);border:1px solid #162034;border-radius:12px;padding:18px;margin-bottom:24px;">
@@ -163,11 +179,11 @@ module.exports = async (req, res) => {
                     </ol>
                   </div>
                   <div style="text-align:center;margin-bottom:24px;">
-                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Go to Dashboard →</a>
+                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Go to Dashboard</a>
                   </div>
                   <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
-                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal — Trade smarter, not harder.</p>
-                    <p style="color:#334566;margin:8px 0 0;font-size:11px;">Questions? Reply to this email or visit our <a href="https://marketflowjournal.com/support" style="color:#06E6FF;text-decoration:none;">Support Center</a>.</p>
+                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal - Trade smarter, not harder.</p>
+                    <p style="color:#334566;margin:8px 0 0;font-size:11px;">Questions? Reply to this email or contact <a href="mailto:${SUPPORT_EMAIL}" style="color:#06E6FF;text-decoration:none;">${SUPPORT_EMAIL}</a>.</p>
                   </div>
                 </div>
               `,
@@ -178,14 +194,13 @@ module.exports = async (req, res) => {
 
           // Send marketing email (delayed)
           try {
-            await resend.emails.send({
-              from: 'MarketFlow Journal <hello@marketflowjournal.com>',
+            await sendEmail({
+              from: `MarketFlow Support <${SUPPORT_EMAIL}>`,
               to: customerEmail,
-              subject: '3 tips to get the most out of MarketFlow Journal 💡',
+              subject: '3 tips to get the most out of MarketFlow Journal',
               html: `
                 <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0C1422;border-radius:16px;border:1px solid #162034;color:#E8EEFF;">
                   <div style="text-align:center;margin-bottom:28px;">
-                    <div style="font-size:36px;margin-bottom:12px;">💡</div>
                     <h2 style="color:#FFFFFF;margin:0 0 8px;font-size:20px;font-weight:800;">3 Tips to Master Your Trading Journal</h2>
                     <p style="color:#7A90B8;margin:0;font-size:14px;">Here's how top traders use MarketFlow to level up.</p>
                   </div>
@@ -213,10 +228,10 @@ module.exports = async (req, res) => {
                     </div>
                   </div>
                   <div style="text-align:center;margin-bottom:24px;">
-                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Start Trading Smarter →</a>
+                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Start Trading Smarter</a>
                   </div>
                   <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
-                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal — Trade smarter, not harder.</p>
+                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal - Trade smarter, not harder.</p>
                     <p style="color:#334566;margin:8px 0 0;font-size:11px;">You're receiving this because you signed up for MarketFlow Journal. <a href="https://marketflowjournal.com" style="color:#06E6FF;text-decoration:none;">Unsubscribe</a> anytime.</p>
                   </div>
                 </div>
@@ -307,14 +322,13 @@ module.exports = async (req, res) => {
             .eq('id', profile.id);
 
           try {
-            await resend.emails.send({
-              from: 'MarketFlow Journal <noreply@marketflowjournal.com>',
+            await sendEmail({
+              from: `MarketFlow Support <${SUPPORT_EMAIL}>`,
               to: profile.email,
-              subject: 'Payment Failed — Your MarketFlow Journal Subscription',
+              subject: 'Payment Failed - Your MarketFlow Journal Subscription',
               html: `
                 <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0C1422;border-radius:16px;border:1px solid #162034;color:#E8EEFF;">
                   <div style="text-align:center;margin-bottom:24px;">
-                    <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
                     <h2 style="color:#FFFFFF;margin:0 0 8px;font-size:20px;">Payment Failed</h2>
                     <p style="color:#7A90B8;margin:0;font-size:14px;">We couldn't process your subscription payment</p>
                   </div>
@@ -332,7 +346,7 @@ module.exports = async (req, res) => {
                     <a href="https://app.marketflowjournal.com/plan" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Update Payment Method</a>
                   </div>
                   <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
-                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal — Trade smarter.</p>
+                    <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal - Trade smarter.</p>
                   </div>
                 </div>
               `,

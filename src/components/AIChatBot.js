@@ -38,7 +38,7 @@ const KNOWLEDGE = {
   },
   support: {
     keywords: ['support', 'help', 'problem', 'bug', 'error', 'issue', 'contact', 'email'],
-    response: "I can help with most questions! For specific issues:\n\n\u2022 Technical bugs or feature requests: use the Support page\n\u2022 Account issues: check Account Settings\n\u2022 General questions: just ask me!\n\nYou can also reach us at marketflowjournal0@gmail.com",
+    response: "I can help with most questions! For specific issues:\n\n\u2022 Technical bugs or feature requests: use the Support page\n\u2022 Account issues: check Account Settings\n\u2022 General questions: just ask me!\n\nYou can also reach us at support@marketflowjournal.com",
   },
   prop: {
     keywords: ['prop', 'ftmo', 'the5%ers', 'topstep', 'funding', 'funded', 'firm', 'challenge'],

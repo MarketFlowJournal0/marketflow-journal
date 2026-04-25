@@ -15,6 +15,8 @@ const Ic = {
   Prop: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2l2.5 6H18l-4.5 3.5 1.5 5.5L10 13.5 4.5 17l1.5-5.5L1.5 8h5.5z"/></svg>,
 };
 
+const SUPPORT_EMAIL = 'support@marketflowjournal.com';
+
 // --- Animated Canvas Background --------------------------------------------
 function AnimatedBg() {
   const canvasRef = useRef(null);
@@ -23,8 +25,8 @@ function AnimatedBg() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let animId, w, h;
-    const particles = [], lines = [], candles = [];
-    const PC = 50, LC = 10;
+    const particles = [], lines = [], orbs = [];
+    const PC = 58, LC = 9, OC = 5;
 
     function resize() {
       w = canvas.width = canvas.offsetWidth * devicePixelRatio;
@@ -33,19 +35,31 @@ function AnimatedBg() {
     }
     function init() {
       resize();
-      particles.length = 0; lines.length = 0; candles.length = 0;
-      for (let i = 0; i < PC; i++) particles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25, r: Math.random() * 1.5 + 0.5, o: Math.random() * 0.16 + 0.035 });
+      particles.length = 0; lines.length = 0; orbs.length = 0;
+      for (let i = 0; i < PC; i++) particles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18, r: Math.random() * 1.3 + 0.35, o: Math.random() * 0.13 + 0.025 });
       for (let i = 0; i < LC; i++) {
         const pts = []; let x = Math.random() * (w / devicePixelRatio), y = Math.random() * (h / devicePixelRatio);
-        for (let j = 0; j < 8; j++) { pts.push({ x, y }); x += (Math.random() - 0.3) * 120; y += (Math.random() - 0.5) * 80; }
-        lines.push({ pts, o: Math.random() * 0.032 + 0.012, speed: Math.random() * 0.12 + 0.04 });
+        for (let j = 0; j < 7; j++) { pts.push({ x, y }); x += (Math.random() - 0.36) * 150; y += (Math.random() - 0.5) * 94; }
+        lines.push({ pts, o: Math.random() * 0.026 + 0.008, speed: Math.random() * 0.08 + 0.025 });
       }
-      for (let i = 0; i < 26; i++) candles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), h: 34 + Math.random() * 120, body: 12 + Math.random() * 42, up: Math.random() > 0.42, speed: 0.12 + Math.random() * 0.28, o: 0.02 + Math.random() * 0.045 });
+      for (let i = 0; i < OC; i++) orbs.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), r: 180 + Math.random() * 260, vx: (Math.random() - 0.5) * 0.08, vy: (Math.random() - 0.5) * 0.08, hue: i % 2 ? '0,210,184' : '20,201,229', o: 0.025 + Math.random() * 0.035 });
     }
     function draw() {
       const rw = w / devicePixelRatio, rh = h / devicePixelRatio;
       ctx.clearRect(0, 0, rw, rh);
-      candles.forEach(c => { c.x -= c.speed; if (c.x < -40) { c.x = rw + Math.random() * 180; c.y = Math.random() * rh; c.h = 34 + Math.random() * 120; c.body = 12 + Math.random() * 42; c.up = Math.random() > 0.42; c.o = 0.02 + Math.random() * 0.045; } const color = c.up ? `rgba(0,210,184,${c.o})` : `rgba(223,95,122,${c.o})`; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c.x, c.y - c.h / 2); ctx.lineTo(c.x, c.y + c.h / 2); ctx.stroke(); ctx.fillRect(c.x - 4, c.y - c.body / 2, 8, c.body); });
+      orbs.forEach(o => {
+        o.x += o.vx; o.y += o.vy;
+        if (o.x < -o.r || o.x > rw + o.r) o.vx *= -1;
+        if (o.y < -o.r || o.y > rh + o.r) o.vy *= -1;
+        const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+        g.addColorStop(0, `rgba(${o.hue},${o.o})`);
+        g.addColorStop(0.48, `rgba(${o.hue},${o.o * 0.28})`);
+        g.addColorStop(1, `rgba(${o.hue},0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
       lines.forEach(l => { l.pts.forEach(p => { p.x += l.speed * 0.3; if (p.x > rw + 50) { p.x = -50; p.y = Math.random() * rh; } }); ctx.beginPath(); ctx.moveTo(l.pts[0].x, l.pts[0].y); for (let i = 1; i < l.pts.length; i++) { const pv = l.pts[i - 1], c = l.pts[i]; ctx.quadraticCurveTo(pv.x, pv.y, (pv.x + c.x) / 2, (pv.y + c.y) / 2); } ctx.strokeStyle = `rgba(6,230,255,${l.o})`; ctx.lineWidth = 0.7; ctx.stroke(); });
       particles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > rw) p.vx *= -1; if (p.y < 0 || p.y > rh) p.vy *= -1; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(6,230,255,${p.o})`; ctx.fill(); });
       for (let i = 0; i < particles.length; i++) for (let j = i + 1; j < particles.length; j++) { const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y, d = Math.sqrt(dx * dx + dy * dy); if (d < 120) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(6,230,255,${0.03 * (1 - d / 120)})`; ctx.lineWidth = 0.5; ctx.stroke(); } }
@@ -89,9 +103,9 @@ const STYLES = `
   @keyframes mf-pulse-line { 0%,100%{opacity:.35;transform:scaleX(.82)} 50%{opacity:1;transform:scaleX(1)} }
   @keyframes mf-scan { 0%{transform:translateY(-20%);opacity:0} 20%,80%{opacity:.55} 100%{transform:translateY(320%);opacity:0} }
   .lp-shell { background:
-    radial-gradient(circle at 72% 8%, rgba(20,201,229,0.12), transparent 34%),
-    radial-gradient(circle at 8% 92%, rgba(0,210,184,0.08), transparent 30%),
-    linear-gradient(135deg,#01040A 0%,#040B13 46%,#01040A 100%);
+    radial-gradient(circle at 72% 8%, rgba(20,201,229,0.10), transparent 34%),
+    radial-gradient(circle at 8% 92%, rgba(0,210,184,0.07), transparent 30%),
+    linear-gradient(135deg,#000308 0%,#030914 42%,#01040A 100%);
     min-height:100vh;overflow-x:hidden;position:relative;
   }
   .lp-shell::before { content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:
@@ -123,16 +137,16 @@ const STYLES = `
 
   /* LOGOS TICKER */
   .lp-logos { padding:34px 0 58px;overflow:hidden;position:relative;isolation:isolate; }
-  .lp-logos::before { content:'';position:absolute;left:8%;right:8%;top:54%;height:1px;background:linear-gradient(90deg,transparent,rgba(20,201,229,.22),rgba(220,228,239,.14),transparent); }
+  .lp-logos::before { content:none; }
   .lp-logos::after { content:'';position:absolute;left:20%;right:20%;top:22px;height:120px;background:radial-gradient(circle,rgba(20,201,229,.09),transparent 70%);filter:blur(20px);z-index:-1; }
   .lp-logos-head { display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:22px; }
   .lp-logos-label { text-align:center;font-size:10px;color:rgba(220,228,239,.72);letter-spacing:2px;text-transform:uppercase;font-weight:800; }
   .lp-logos-note { padding:4px 9px;border-radius:999px;border:1px solid rgba(220,228,239,.08);background:rgba(255,255,255,.025);font-size:9px;color:rgba(142,160,184,.7);font-weight:800;letter-spacing:1px;text-transform:uppercase; }
   .lp-logos-track { display:inline-flex;gap:10px;animation:ticker-scroll 42s linear infinite;will-change:transform; }
-  .lp-logo-item { display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:178px;padding:10px 18px;border-radius:999px;border:1px solid rgba(220,228,239,.075);background:linear-gradient(145deg,rgba(13,23,38,0.42),rgba(4,9,18,0.62));font-family:'Space Grotesk',sans-serif;color:var(--t0);opacity:0.56;transition:opacity 0.3s,transform .25s,border-color .25s,background .25s;white-space:nowrap;text-shadow:0 0 22px rgba(20,201,229,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
-  .lp-logo-item strong { font-size:14px;font-weight:800;letter-spacing:-.02em; }
+  .lp-logo-item { display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:180px;padding:11px 18px;border-radius:999px;border:1px solid transparent;background:transparent;font-family:'Space Grotesk',sans-serif;color:var(--t0);opacity:0.62;transition:opacity 0.3s,transform .25s,text-shadow .25s;white-space:nowrap;text-shadow:0 0 24px rgba(20,201,229,.12); }
+  .lp-logo-item strong { font-size:16px;font-weight:800;letter-spacing:-.03em; }
   .lp-logo-item em { font-style:normal;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(142,160,184,.72);text-transform:uppercase; }
-  .lp-logo-item:hover { opacity:0.94;transform:translateY(-2px);border-color:rgba(20,201,229,.28);background:linear-gradient(145deg,rgba(20,201,229,.09),rgba(4,9,18,.72)); }
+  .lp-logo-item:hover { opacity:0.96;transform:translateY(-2px);text-shadow:0 0 30px rgba(20,201,229,.26); }
 
   /* HERO */
   .lp-hero { min-height:calc(100vh - 72px);padding:136px 48px 82px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden; }
@@ -368,10 +382,11 @@ const PROP_ENVIRONMENTS = [
 
 const FAQS = [
   {q:'How do I import trades?',a:'MarketFlow currently supports CSV, Excel, JSON and pasted tables with column mapping, custom columns and account-aware storage.'},
-  {q:'Is a card required for the trial?',a:'Yes. The activation flow uses Stripe so the trial and subscription can be restored when you reconnect.'},
+  {q:'How does the 14-day trial work?',a:'Choose a plan, start the 14-day trial through Stripe, and keep access while your subscription status is trialing or active. Billing starts after the trial unless cancelled.'},
   {q:'Can I use MarketFlow with a prop firm?',a:'Yes. MarketFlow is built for prop-style review workflows, account tracking, reports, alerts and risk discipline. Firm names shown are examples, not partnerships.'},
   {q:'Are my data secure?',a:'Your journal data stays attached to your authenticated account. You can export backups and delete your trades from the journal.'},
   {q:'What is actually available today?',a:'The public page describes live product modules only: journal, dashboard, analytics, psychology, equity, backtest sessions, reports, alerts, API access and Elite broker tooling.'},
+  {q:'What is the refund policy?',a:'Refund requests are handled by support within a 7-day window after the first paid charge. Contact support with the account email and invoice context.'},
 ];
 
 const TESTIS = [
@@ -386,9 +401,9 @@ const PAGE_CONTENT = {
   import:{title:'Import Guide',subtitle:'Supported trade data flows',color:'#00D2B8',sections:[{label:'Import sources',color:'#00D2B8',items:[{icon:'CSV',title:'CSV and Excel',desc:'Upload broker exports or spreadsheets and create missing columns during mapping when your file has extra fields.'},{icon:'JSON',title:'JSON and raw tables',desc:'Paste structured rows or use JSON-style exports for flexible journal migration.'},{icon:'SAFE',title:'Validation first',desc:'MarketFlow previews detected rows before saving so bad rows can be corrected instead of silently polluting the journal.'}]}]},
   api:{title:'API Reference',subtitle:'Elite automation surface',color:'#4D7CFF',sections:[{label:'Access model',color:'#4D7CFF',items:[{icon:'Elite',title:'Elite-only access',desc:'API access is positioned for Elite users who need automation around journal data and operational workflows.'},{icon:'Auth',title:'Authenticated usage',desc:'Any production API workflow must use authenticated account access and should never expose private journal data publicly.'},{icon:'Road',title:'Implementation note',desc:'The public site describes the current access surface. Deeper endpoint documentation should be published as backend endpoints mature.'}]}]},
   tutoriels:{title:'Tutorials',subtitle:'Short workflow lessons',color:'#DCE4EF',sections:[{label:'Suggested lessons',color:'#DCE4EF',items:[{icon:'Start',title:'First journal setup',desc:'Create the account, confirm plan access, import the first data sample and verify dashboard metrics.'},{icon:'Review',title:'Weekly review',desc:'Use analytics, calendar, psychology and equity together to identify one process improvement for the next week.'},{icon:'Risk',title:'Prop-style discipline',desc:'Track drawdown, account scope, reports and alerts without implying a direct partnership with any prop firm.'}]}]},
-  cgu:{title:'Terms of Service',subtitle:'Effective 2026',color:'#8BA3CC',articles:[{title:'Purpose',text:'These terms describe access to MarketFlow Journal, a SaaS trading journal for tracking, reviewing and improving trading activity.'},{title:'Billing',text:'Payments and trials are handled by Stripe. Subscription access depends on the active plan and payment status.'},{title:'Trading disclaimer',text:'MarketFlow is a journaling and analytics product. It does not provide financial advice or guarantee trading results.'}]},
-  rgpd:{title:'Privacy Policy',subtitle:'Data and privacy',color:'#00D2B8',articles:[{title:'Collected data',text:'Account details, journal data and technical data may be stored to operate the service. Payment data is processed by Stripe.'},{title:'User control',text:'Users can export backups and delete journal trades through the product.'},{title:'Contact',text:'For privacy requests, contact marketflowjournal0@gmail.com.'}]},
-  contact:{title:'Contact',subtitle:'Get in touch',color:'#4D7CFF',content:'Email: marketflowjournal0@gmail.com\n\nFor support, use the journal support page or the support widget.'},
+  cgu:{title:'Terms of Service',subtitle:'Effective 2026',color:'#8BA3CC',articles:[{title:'Purpose',text:'These terms describe access to MarketFlow Journal, a SaaS trading journal for tracking, reviewing and improving trading activity.'},{title:'Billing',text:'Payments and trials are handled by Stripe. Subscription access depends on the active plan and payment status. Billing starts after the 14-day trial unless cancelled.'},{title:'Refunds',text:'Refund requests are handled by support within a 7-day window after the first paid charge.'},{title:'Trading disclaimer',text:'MarketFlow is a journaling and analytics product. It does not provide financial advice or guarantee trading results.'}]},
+  rgpd:{title:'Privacy Policy',subtitle:'Data and privacy',color:'#00D2B8',articles:[{title:'Collected data',text:'Account details, journal data and technical data may be stored to operate the service. Payment data is processed by Stripe.'},{title:'User control',text:'Users can export backups and delete journal trades through the product.'},{title:'Contact',text:`For privacy requests, contact ${SUPPORT_EMAIL}.`}]},
+  contact:{title:'Contact',subtitle:'Get in touch',color:'#4D7CFF',content:`Email: ${SUPPORT_EMAIL}\n\nFor support, use the journal support page or the support widget.`},
 };
 
 const ANALYTICS_SHOWCASE = [
@@ -502,9 +517,9 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const activeShowcase = ANALYTICS_SHOWCASE[activeModule];
 
   const PLANS = [
-    { id:'starter', name:'Starter', monthly:15, annual:11, desc:'Core journal and review workflow', features:['Unlimited trade journal','Dashboard and daily workflow','CSV, Excel and JSON import','Performance calendar','1 backtest session'] },
-    { id:'pro', name:'Pro', monthly:22, annual:15, desc:'Deeper review stack for active traders', features:['Everything in Starter','Advanced Pro analytics','Psychology tracker','Equity curve and drawdown','Broker desk access','5 backtest sessions','Report exports'], popular:true },
-    { id:'elite', name:'Elite', monthly:38, annual:27, desc:'Highest-access MarketFlow workspace', features:['Everything in Pro','AI assistant access','Unlimited accounts','Alerts and notifications','API access','25 backtest sessions','Elite trade copier desk'] },
+    { id:'starter', name:'Starter', monthly:15, annual:11, priceMonthly:'price_1T9t9L2Ouddv7uendIMAR6IP', priceAnnual:'price_1TDQ7w2Ouddv7ueno5CuaNTH', desc:'Core journal and review workflow', features:['Unlimited trade journal','Dashboard and daily workflow','CSV, Excel and JSON import','Performance calendar','1 backtest session'] },
+    { id:'pro', name:'Pro', monthly:22, annual:15, priceMonthly:'price_1T9t9U2Ouddv7uenfg38PRZ2', priceAnnual:'price_1T9t9U2Ouddv7uenK6oT1O13', desc:'Deeper review stack for active traders', features:['Everything in Starter','Advanced Pro analytics','Psychology tracker','Equity curve and drawdown','Broker desk access','5 backtest sessions','Report exports'], popular:true },
+    { id:'elite', name:'Elite', monthly:38, annual:27, priceMonthly:'price_1T9t9L2Ouddv7uen4DXuOatj', priceAnnual:'price_1T9t9K2Ouddv7uennnWOJ44p', desc:'Highest-access MarketFlow workspace', features:['Everything in Pro','AI assistant access','Unlimited accounts','Alerts and notifications','API access','25 backtest sessions','Elite trade copier desk'] },
   ];
 
   return (
@@ -518,7 +533,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <div className="lp-nav-logo-icon"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div>
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
-        <div className="lp-nav-links"><a href="#features">Features</a><a href="#analytics">Analytics</a><a href="#pricing">Pricing</a><a href="#reviews">Trust</a><a href="#faq">FAQ</a></div>
+        <div className="lp-nav-links"><a href="#features">Product</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="/changelog">Changelog</a><a href="/roadmap">Roadmap</a><a href="/docs">Resources</a></div>
         <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>Log in</button><button className="btn-primary-nav" onClick={onSignup}>Start 14-day trial</button></div>
       </nav>
 
@@ -535,7 +550,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <button className="btn-hero-secondary" onClick={()=>document.getElementById('features')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
           </div>
         </Reveal>
-        <Reveal delay={0.3}><p className="lp-hero-note">14-day trial with card activation - cancel anytime</p></Reveal>
+        <Reveal delay={0.3}><p className="lp-hero-note">14-day trial - billing starts after the trial unless cancelled</p></Reveal>
         <Reveal delay={0.4}>
           <div className="lp-hero-stats">
             <div className="lp-hero-stat"><div className="lp-stat-val">14</div><div className="lp-stat-label">Trial days</div></div>
@@ -694,7 +709,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">MarketFlow Pricing</div></Reveal>
           <Reveal><h2>Start with a trial. Scale<br/><em>when you're ready</em></h2></Reveal>
-          <Reveal><p className="lp-section-sub">14-day trial on every plan. Card activation is required through Stripe. Cancel anytime.</p></Reveal>
+          <Reveal><p className="lp-section-sub">14-day trial on every plan. Billing starts after the trial unless cancelled. Refund requests are handled by support within 7 days after the first paid charge.</p></Reveal>
           <div className="lp-pricing-toggle">
             <button className={`lp-toggle-btn ${billing==='monthly'?'active':''}`} onClick={()=>setBilling('monthly')}>Monthly</button>
             <button className={`lp-toggle-btn ${billing==='annual'?'active':''}`} onClick={()=>setBilling('annual')}>Annual</button>
@@ -703,6 +718,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <div className="lp-pricing-grid">
             {PLANS.map((plan,i) => {
               const price = billing === 'monthly' ? plan.monthly : plan.annual;
+              const priceId = billing === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
               const annualSave = (plan.monthly - plan.annual) * 12;
               return (
                 <Reveal key={plan.id} delay={i*0.1}>
@@ -715,7 +731,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                     {billing==='monthly' && <div className="lp-save">14-day trial</div>}
                     <div className="lp-divider"/>
                     <ul className="lp-price-feats">{plan.features.map((f,j)=><li key={j}><span style={{color:'#00D2B8',fontWeight:800,fontSize:11}}>+</span>{f}</li>)}</ul>
-                    <button className={`btn-plan ${plan.popular?'filled':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan():onSignup?.()}>{plan.popular?'Start 14-day trial':'Upgrade to '+plan.name}</button>
+                    <button className={`btn-plan ${plan.popular?'filled':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan(priceId):onSignup?.()}>{plan.popular?'Start 14-day trial':'Start '+plan.name}</button>
                   </div>
                 </Reveal>
               );
@@ -755,7 +771,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <button className="btn-hero-secondary" onClick={onLogin}>Log in</button>
           </div>
         </Reveal>
-        <Reveal delay={0.3}><p className="lp-cta-note">14-day trial with card activation - cancel anytime</p></Reveal>
+        <Reveal delay={0.3}><p className="lp-cta-note">14-day trial - billing starts after the trial unless cancelled</p></Reveal>
       </section>
 
       {/* FOOTER */}
@@ -766,9 +782,9 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               <div className="lp-footer-brand-row"><div className="lp-footer-mark"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div><span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:17,color:'#fff'}}>Market<span className="flow-text">Flow</span></span></div>
               <p>A structured trading journal for professional execution review, analytics and accountability.</p>
             </div>
-            <div className="lp-footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#" onClick={e=>{e.preventDefault();setModal('changelog')}}>Changelog</a><a href="#" onClick={e=>{e.preventDefault();setModal('roadmap')}}>Roadmap</a></div>
-            <div className="lp-footer-col"><h4>Resources</h4><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('docs')}}>Documentation <span>Guide</span></a><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('import')}}>Import Guide <span>CSV</span></a><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('api')}}>API Reference <span>Elite</span></a><a className="lp-resource-link" href="#" onClick={e=>{e.preventDefault();setModal('tutoriels')}}>Tutorials <span>Workflows</span></a></div>
-            <div className="lp-footer-col"><h4>Legal</h4><a href="#" onClick={e=>{e.preventDefault();setModal('cgu')}}>Terms of Service</a><a href="#" onClick={e=>{e.preventDefault();setModal('rgpd')}}>Privacy Policy</a><a href="#" onClick={e=>{e.preventDefault();setModal('contact')}}>Contact</a></div>
+            <div className="lp-footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="/changelog">Changelog</a><a href="/roadmap">Roadmap</a></div>
+            <div className="lp-footer-col"><h4>Resources</h4><a className="lp-resource-link" href="/docs">Documentation <span>Guide</span></a><a className="lp-resource-link" href="/import-guide">Import Guide <span>CSV</span></a><a className="lp-resource-link" href="/api-reference">API Reference <span>Elite</span></a><a className="lp-resource-link" href="/tutorials">Tutorials <span>Workflows</span></a></div>
+            <div className="lp-footer-col"><h4>Legal</h4><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/contact">Contact</a><a href={`mailto:${SUPPORT_EMAIL}`}>Support</a></div>
           </div>
           <div className="lp-footer-bottom">
             <p>Copyright 2026 MarketFlow Journal. All rights reserved.</p>
