@@ -121,6 +121,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const isTrialing = user?.user_metadata?.isTrialing ?? user?.isTrialing ?? (currentPlan === 'trial');
   const daysLeft = user?.user_metadata?.trialDaysLeft ?? user?.trialDaysLeft ?? 14;
   const needsPayment = user?.user_metadata?.needsPayment || user?.needsPayment || false;
+  const trialUsed = Boolean(user?.user_metadata?.trialEnd || user?.trialEnd);
 
   const handleSelect = async (plan) => {
     const priceId = billing === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
@@ -274,7 +275,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                     {isTrialing ? `Trial · ${daysLeft}d left` : 'Current plan'}
                   </div>
                 )}
-                {plan.id === 'starter' && !isCurrent && (
+                {plan.id === 'starter' && !isCurrent && !trialUsed && (
                   <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 50, background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', fontSize: 9, fontWeight: 800, color: '#01040A', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     14 days free
                   </div>
@@ -330,7 +331,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                   </button>
                 ) : (
                   <button onClick={() => handleSelect(plan)} disabled={!!loading} style={{ width: '100%', padding: 12, borderRadius: 10, border: plan.popular ? 'none' : '1px solid rgba(255,255,255,0.06)', background: plan.popular ? 'linear-gradient(135deg, #14C9E5, #00D2B8)' : 'rgba(255,255,255,0.03)', color: plan.popular ? '#01040A' : '#E8EEFF', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', boxShadow: plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (!loading) { if (plan.popular) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } else { e.currentTarget.style.borderColor = plan.accent; e.currentTarget.style.color = plan.accent; } } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = plan.popular ? '0 0 20px rgba(6,230,255,0.2)' : 'none'; e.currentTarget.style.borderColor = plan.popular ? 'none' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = plan.popular ? '#01040A' : '#E8EEFF'; }}>
-                    {loading === plan.id ? 'Loading...' : plan.id === 'starter' ? 'Start free trial' : `Upgrade to ${plan.name}`}
+                    {loading === plan.id ? 'Loading...' : plan.id === 'starter' && !trialUsed ? 'Start free trial' : `Start ${plan.name}`}
                   </button>
                 )}
               </motion.div>
@@ -342,7 +343,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: '#334566' }}>
           <span style={{ color: '#7A90B8' }}>100% secure payment by Stripe</span>
           {' - '}Manage or cancel online
-          {' - '}14-day free trial - one per account
+          {' - '}{trialUsed ? 'Trial already used on this account' : '14-day free trial - one per account'}
           {' - '}Billing starts after trial unless cancelled
         </motion.p>
       </div>

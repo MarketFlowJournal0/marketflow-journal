@@ -249,9 +249,7 @@ function buildProfilePatch({ currentProfile, userId, email, customer, subscripti
     patch.stripe_subscription_id = subscription.id;
     patch.trial_end = subscription.trial_end
       ? new Date(subscription.trial_end * 1000).toISOString()
-      : subscription.status === 'trialing'
-        ? currentProfile?.trial_end || null
-        : null;
+      : currentProfile?.trial_end || null;
   } else if (customer?.id) {
     const trialExpired = currentProfile?.trial_end && new Date(currentProfile.trial_end) <= new Date();
     patch.subscription_status = trialExpired

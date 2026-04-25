@@ -156,6 +156,7 @@ export default function OnboardingFlow({ onComplete }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [direction, setDirection] = useState(0);
+  const [finishing, setFinishing] = useState(false);
 
   const current = STEPS[step];
   const total = STEPS.length;
@@ -164,6 +165,7 @@ export default function OnboardingFlow({ onComplete }) {
   const canNext = current.type === 'multi' ? selected.length > 0 : selected !== null;
 
   const toggleOption = (optId) => {
+    if (finishing) return;
     if (current.type === 'single') {
       setAnswers(a => ({ ...a, [current.id]: optId }));
     } else {
@@ -178,12 +180,22 @@ export default function OnboardingFlow({ onComplete }) {
     return selected === optId;
   };
 
-  const goNext = () => {
+  const goNext = async () => {
+    if (finishing || !canNext) return;
     if (step < total - 1) { setDirection(1); setStep(s => s + 1); }
-    else onComplete(answers);
+    else {
+      setFinishing(true);
+      try {
+        await onComplete?.(answers);
+      } catch (error) {
+        console.error('Onboarding completion failed:', error);
+        setFinishing(false);
+      }
+    }
   };
 
   const goPrev = () => {
+    if (finishing) return;
     if (step > 0) { setDirection(-1); setStep(s => s - 1); }
   };
 
@@ -289,7 +301,7 @@ export default function OnboardingFlow({ onComplete }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 9, fontWeight: 900, color: isSelected(opt.id) ? '#01040A' : 'transparent',
                 flexShrink: 0, transition: 'all 0.18s',
-              }}>✓</div>
+              }}>{isSelected(opt.id) ? 'OK' : ''}</div>
             </motion.button>
           ))}
         </div>
@@ -297,10 +309,10 @@ export default function OnboardingFlow({ onComplete }) {
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           {step > 0 ? (
-            <button onClick={goPrev} style={{ padding: '11px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: '#7A90B8', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s', display: 'flex', alignItems: 'center', gap: 6 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#E8EEFF'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#7A90B8'; }}>← Back</button>
+            <button onClick={goPrev} disabled={finishing} style={{ padding: '11px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: '#7A90B8', fontSize: 13, fontWeight: 600, cursor: finishing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.18s', display: 'flex', alignItems: 'center', gap: 6, opacity: finishing ? 0.55 : 1 }} onMouseEnter={e => { if (!finishing) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#E8EEFF'; } }} onMouseLeave={e => { if (!finishing) { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#7A90B8'; } }}>{'<- Back'}</button>
           ) : <div />}
-          <button onClick={goNext} disabled={!canNext} style={{ flex: 1, padding: '13px 24px', borderRadius: 11, border: 'none', background: canNext ? 'linear-gradient(135deg, #14C9E5, #00D2B8)' : 'rgba(255,255,255,0.04)', color: canNext ? '#01040A' : 'rgba(255,255,255,0.15)', fontSize: 14, fontWeight: 800, cursor: canNext ? 'pointer' : 'not-allowed', fontFamily: 'inherit', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: canNext ? '0 0 24px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (canNext) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = canNext ? '0 0 24px rgba(6,230,255,0.2)' : 'none'; }}>
-            {step === total - 1 ? 'View plans →' : 'Continue →'}
+          <button onClick={goNext} disabled={!canNext || finishing} style={{ flex: 1, padding: '13px 24px', borderRadius: 11, border: 'none', background: canNext && !finishing ? 'linear-gradient(135deg, #14C9E5, #00D2B8)' : 'rgba(255,255,255,0.04)', color: canNext && !finishing ? '#01040A' : 'rgba(255,255,255,0.15)', fontSize: 14, fontWeight: 800, cursor: canNext && !finishing ? 'pointer' : 'not-allowed', fontFamily: 'inherit', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: canNext && !finishing ? '0 0 24px rgba(6,230,255,0.2)' : 'none' }} onMouseEnter={e => { if (canNext && !finishing) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = canNext && !finishing ? '0 0 24px rgba(6,230,255,0.2)' : 'none'; }}>
+            {finishing ? 'Saving...' : step === total - 1 ? 'View plans ->' : 'Continue ->'}
           </button>
         </div>
       </motion.div>

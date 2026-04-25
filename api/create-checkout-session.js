@@ -16,6 +16,7 @@ const PRICE_PLAN_MAP = {
 };
 
 const VALID_PLAN_IDS = new Set(['starter', 'pro', 'elite']);
+const TRIAL_DAYS = 14;
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -38,19 +39,23 @@ module.exports = async (req, res) => {
 
   try {
     let customerId = null;
+    let profile = null;
+    let customerMetadata = {};
 
     if (userId) {
-      const { data: profile } = await supabase
+      const { data } = await supabase
         .from('profiles')
-        .select('stripe_customer_id')
+        .select('stripe_customer_id, stripe_subscription_id, subscription_status, trial_end, email')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+      profile = data || null;
       customerId = profile?.stripe_customer_id || null;
     }
 
     if (customerId) {
       try {
-        await stripe.customers.retrieve(customerId);
+        const customer = await stripe.customers.retrieve(customerId);
+        customerMetadata = customer?.metadata || {};
       } catch (err) {
         customerId = null;
         if (userId) {
@@ -67,6 +72,7 @@ module.exports = async (req, res) => {
           || null;
         if (matchedCustomer) {
           customerId = matchedCustomer.id;
+          customerMetadata = matchedCustomer.metadata || {};
           if (userId) {
             await stripe.customers.update(customerId, {
               metadata: {
@@ -93,22 +99,8 @@ module.exports = async (req, res) => {
       }
     }
 
-    // Check if user already had a trial before
-    let trialDays = 14;
-    if (userId) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('trial_end')
-        .eq('id', userId)
-        .single();
-      if (profile?.trial_end) {
-        const trialEndDate = new Date(profile.trial_end);
-        if (trialEndDate < new Date()) {
-          // Trial already used and expired — no more trial
-          trialDays = 0;
-        }
-      }
-    }
+    // One free trial per account/customer. If it was ever started, future checkouts are paid immediately.
+    let trialDays = profile?.trial_end || customerMetadata?.mfj_trial_used === 'true' ? 0 : TRIAL_DAYS;
 
     if (customerId) {
       try {
@@ -126,14 +118,18 @@ module.exports = async (req, res) => {
     }
 
     const subscriptionData = {
-      trial_period_days: trialDays,
-      trial_settings: {
-        end_behavior: { missing_payment_method: 'cancel' },
-      },
       metadata: {
         ...sessionMetadata,
+        mfj_trial_grant: trialDays > 0 ? 'initial_14_day' : 'none',
       },
     };
+
+    if (trialDays > 0) {
+      subscriptionData.trial_period_days = trialDays;
+      subscriptionData.trial_settings = {
+        end_behavior: { missing_payment_method: 'cancel' },
+      };
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

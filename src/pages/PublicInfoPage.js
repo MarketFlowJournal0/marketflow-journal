@@ -93,21 +93,6 @@ const PAGE_DATA = {
       },
     ],
   },
-  api: {
-    eyebrow: 'Resources',
-    title: 'API Reference',
-    subtitle: 'Elite automation surface for advanced workflows.',
-    sections: [
-      {
-        title: 'Access model',
-        items: [
-          'API access is positioned for Elite users who need automation around journal data and operational workflows.',
-          'Every production API workflow must be authenticated and scoped to the user account.',
-          'Private journal data should never be exposed publicly or through unauthenticated endpoints.',
-        ],
-      },
-    ],
-  },
   tutorials: {
     eyebrow: 'Resources',
     title: 'Tutorials',

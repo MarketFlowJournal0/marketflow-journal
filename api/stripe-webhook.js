@@ -140,18 +140,38 @@ module.exports = async (req, res) => {
           const trialEnd = subscription?.trial_end
             ? new Date(subscription.trial_end * 1000).toISOString()
             : null;
+          const checkoutProfilePatch = {
+            id: targetUserId,
+            email: customerEmail || null,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            subscription_status: subscription?.status || 'trialing',
+            plan: planId || null,
+          };
+
+          if (customerId && trialEnd) {
+            try {
+              const customer = await stripe.customers.retrieve(customerId);
+              await stripe.customers.update(customerId, {
+                metadata: {
+                  ...(customer?.metadata || {}),
+                  supabase_user_id: targetUserId,
+                  mfj_trial_used: 'true',
+                  mfj_trial_started_at: subscription?.trial_start
+                    ? new Date(subscription.trial_start * 1000).toISOString()
+                    : new Date().toISOString(),
+                  mfj_trial_end: trialEnd,
+                },
+              });
+            } catch (metadataErr) {
+              console.error('Failed to mark trial as used:', metadataErr.message);
+            }
+            checkoutProfilePatch.trial_end = trialEnd;
+          }
 
           await supabase
             .from('profiles')
-            .upsert({
-              id: targetUserId,
-              email: customerEmail || null,
-              stripe_customer_id: customerId,
-              stripe_subscription_id: subscriptionId,
-              subscription_status: subscription?.status || 'trialing',
-              trial_end: trialEnd,
-              plan: planId || null,
-            }, { onConflict: 'id' });
+            .upsert(checkoutProfilePatch, { onConflict: 'id' });
 
           // Send welcome email
           try {
@@ -257,16 +277,38 @@ module.exports = async (req, res) => {
         });
 
         if (targetUserId) {
+          const profilePatch = {
+            id: targetUserId,
+            subscription_status: sub.status,
+            stripe_subscription_id: sub.id,
+            stripe_customer_id: customerId,
+            plan: planId || sub.metadata?.plan_id || null,
+          };
+
+          if (sub.trial_end) {
+            const trialEnd = new Date(sub.trial_end * 1000).toISOString();
+            profilePatch.trial_end = trialEnd;
+
+            try {
+              await stripe.customers.update(customerId, {
+                metadata: {
+                  ...(customer?.metadata || {}),
+                  supabase_user_id: targetUserId,
+                  mfj_trial_used: 'true',
+                  mfj_trial_started_at: sub.trial_start
+                    ? new Date(sub.trial_start * 1000).toISOString()
+                    : customer?.metadata?.mfj_trial_started_at || new Date().toISOString(),
+                  mfj_trial_end: trialEnd,
+                },
+              });
+            } catch (metadataErr) {
+              console.error('Failed to persist trial metadata:', metadataErr.message);
+            }
+          }
+
           await supabase
             .from('profiles')
-            .upsert({
-              id: targetUserId,
-              subscription_status: sub.status,
-              stripe_subscription_id: sub.id,
-              stripe_customer_id: customerId,
-              plan: planId || sub.metadata?.plan_id || null,
-              trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
-            }, { onConflict: 'id' });
+            .upsert(profilePatch, { onConflict: 'id' });
         }
         break;
       }
@@ -283,14 +325,19 @@ module.exports = async (req, res) => {
         });
 
         if (targetUserId) {
+          const profilePatch = {
+            id: targetUserId,
+            subscription_status: 'canceled',
+            stripe_subscription_id: null,
+          };
+
+          if (sub.trial_end) {
+            profilePatch.trial_end = new Date(sub.trial_end * 1000).toISOString();
+          }
+
           await supabase
             .from('profiles')
-            .upsert({
-              id: targetUserId,
-              subscription_status: 'canceled',
-              stripe_subscription_id: null,
-              trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
-            }, { onConflict: 'id' });
+            .upsert(profilePatch, { onConflict: 'id' });
         }
         break;
       }
@@ -383,7 +430,6 @@ module.exports = async (req, res) => {
                   stripe_customer_id: customerId,
                   stripe_subscription_id: sub.id,
                   plan: getPlanIdFromSubscription(sub),
-                  trial_end: null,
                 }, { onConflict: 'id' });
             }
           } catch (stripeErr) {

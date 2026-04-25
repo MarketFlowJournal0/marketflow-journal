@@ -103,6 +103,7 @@ export default function OnboardingStats({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [total,   setTotal]   = useState(0);
   const [recentResponses, setRecentResponses] = useState([]);
+  const [insights, setInsights] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -120,6 +121,9 @@ export default function OnboardingStats({ onBack }) {
             plan: row.plan || 'trial',
             answers: getOnboardingAnswers(row.onboarding),
             meta: getOnboardingMeta(row.onboarding),
+            classified: row.onboarding?.classified || {},
+            analytics: row.onboarding?.analytics || {},
+            recommendations: row.onboarding?.recommendations || {},
           }))
           .filter((row) => Object.values(row.answers || {}).some((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value))));
         setTotal(responses.length);
@@ -128,6 +132,35 @@ export default function OnboardingStats({ onBack }) {
             .sort((left, right) => new Date(right.meta?.completedAt || 0) - new Date(left.meta?.completedAt || 0))
             .slice(0, 8)
         );
+
+        const segments = {};
+        const recommendedPlans = {};
+        let complexityTotal = 0;
+        let complexityCount = 0;
+        let professionalSignalTotal = 0;
+
+        responses.forEach((row) => {
+          const segment = row.analytics?.traderSegment || 'unclassified';
+          const recommendedPlan = row.recommendations?.initialPlan || row.meta?.summary?.recommendedPlan || 'starter';
+          segments[segment] = (segments[segment] || 0) + 1;
+          recommendedPlans[recommendedPlan] = (recommendedPlans[recommendedPlan] || 0) + 1;
+          if (typeof row.analytics?.complexityScore === 'number') {
+            complexityTotal += row.analytics.complexityScore;
+            complexityCount += 1;
+          }
+          professionalSignalTotal += row.analytics?.professionalSignals || 0;
+        });
+
+        const sortEntries = (source) => Object.entries(source)
+          .map(([id, count]) => ({ id, label: id.replace(/_/g, ' '), count, emoji: 'MF' }))
+          .sort((a, b) => b.count - a.count);
+
+        setInsights({
+          avgComplexity: complexityCount ? Math.round(complexityTotal / complexityCount) : 0,
+          professionalSignalTotal,
+          segments: sortEntries(segments),
+          recommendedPlans: sortEntries(recommendedPlans),
+        });
 
         // Calculate stats for each question
         const computed = {};
@@ -218,6 +251,34 @@ export default function OnboardingStats({ onBack }) {
         </div>
       ) : (
         <div className="os-grid" style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          <div className="os-card" style={{ gridColumn: '1 / -1' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div style={{ padding: 16, borderRadius: 14, background: 'rgba(20,201,229,0.06)', border: '1px solid rgba(20,201,229,0.14)' }}>
+                <div style={{ fontSize: 10, color: '#7A90B8', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 800 }}>Average complexity</div>
+                <div style={{ marginTop: 8, fontSize: 30, color: '#14C9E5', fontWeight: 900 }}>{insights?.avgComplexity || 0}/100</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 14, background: 'rgba(0,210,184,0.06)', border: '1px solid rgba(0,210,184,0.14)' }}>
+                <div style={{ fontSize: 10, color: '#7A90B8', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 800 }}>Top segment</div>
+                <div style={{ marginTop: 10, fontSize: 15, color: '#E8EEFF', fontWeight: 800, textTransform: 'capitalize' }}>{insights?.segments?.[0]?.label || 'No segment'}</div>
+                <div style={{ marginTop: 4, fontSize: 12, color: '#00D2B8' }}>{insights?.segments?.[0]?.count || 0} trader profiles</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 14, background: 'rgba(215,179,106,0.06)', border: '1px solid rgba(215,179,106,0.14)' }}>
+                <div style={{ fontSize: 10, color: '#7A90B8', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 800 }}>Professional signals</div>
+                <div style={{ marginTop: 8, fontSize: 30, color: '#D7B36A', fontWeight: 900 }}>{insights?.professionalSignalTotal || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="os-card">
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Trader segments</div>
+            <BarChart data={insights?.segments || []} total={total} colors={COLORS} />
+          </div>
+
+          <div className="os-card">
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Plan recommendations</div>
+            <BarChart data={insights?.recommendedPlans || []} total={total} colors={COLORS} />
+          </div>
+
           {Object.entries(QUESTIONS).map(([qKey, q], qi) => {
             const data = stats?.[qKey] || [];
             const qTotal = data.reduce((s, d) => s + d.count, 0);
