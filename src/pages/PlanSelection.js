@@ -122,6 +122,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const daysLeft = user?.user_metadata?.trialDaysLeft ?? user?.trialDaysLeft ?? 14;
   const needsPayment = user?.user_metadata?.needsPayment || user?.needsPayment || false;
   const trialUsed = Boolean(user?.user_metadata?.trialEnd || user?.trialEnd);
+  const backAction = onSkip || onLogout;
 
   const handleSelect = async (plan) => {
     const priceId = billing === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
@@ -167,10 +168,10 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       <div style={{ position: 'absolute', top: -100, left: '50%', transform: 'translateX(-50%)', width: 600, height: 300, background: 'radial-gradient(ellipse, rgba(6,230,255,0.06), transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0 }} />
 
       {/* Back button */}
-      {onLogout && (
-        <motion.button initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} onClick={onLogout} style={{ position: 'fixed', top: 24, left: 24, zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: '#7A90B8', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(6,230,255,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#7A90B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
+      {backAction && (
+        <motion.button initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} onClick={backAction} style={{ position: 'fixed', top: 24, left: 24, zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: '#7A90B8', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(6,230,255,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#7A90B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3L5 8L10 13"/></svg>
-          Back
+          Back to site
         </motion.button>
       )}
 

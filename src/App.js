@@ -408,7 +408,11 @@ function AppInner() {
       <>
         <Routes>
           <Route path="*" element={
-            <LandingPage onLogin={openLogin} onSignup={openSignup} onSignupWithPlan={openSignupWithPlan} />
+            <LandingPage
+              onLogin={openLogin}
+              onSignup={openSignup}
+              onSignupWithPlan={openSignupWithPlan}
+            />
           } />
         </Routes>
         <SupportWidget onOpenPage={() => { window.location.href = '/contact'; }} />
@@ -438,6 +442,24 @@ function AppInner() {
   );
   const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
   const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
+  if (needsPlan && ['/', '/home'].includes(location.pathname)) {
+    return (
+      <>
+        <Routes>
+          <Route path="*" element={
+            <LandingPage
+              currentUser={user}
+              onLogin={() => navigate('/plan')}
+              onSignup={() => navigate('/plan')}
+              onSignupWithPlan={(priceId) => launchCheckout(priceId, user?.email)}
+            />
+          } />
+        </Routes>
+        <SupportWidget onOpenPage={() => { window.location.href = '/contact'; }} />
+      </>
+    );
+  }
+
   if (needsPlan) {
     return (
       <>
@@ -445,12 +467,12 @@ function AppInner() {
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = '/'; }, 300); }}
+              onSkip={() => navigate('/')}
             />
           } />
           <Route path="*" element={<Navigate to="/plan" replace />} />
         </Routes>
-        <SupportWidget onOpenPage={() => { navigate('/support'); }} />
+        <SupportWidget onOpenPage={() => { window.location.href = '/contact'; }} />
       </>
     );
   }
