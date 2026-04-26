@@ -462,11 +462,13 @@ function buildSessionMetrics(sessionDetails = []) {
 
 function TradingViewEmbed({ symbol, interval, height = 640 }) {
   const containerRef = useRef(null);
+  const [widgetFailed, setWidgetFailed] = useState(false);
 
   useEffect(() => {
     const host = containerRef.current;
     if (!host || typeof window === 'undefined') return undefined;
 
+    setWidgetFailed(false);
     host.innerHTML = '';
     const widget = document.createElement('div');
     widget.className = 'tradingview-widget-container__widget';
@@ -498,18 +500,47 @@ function TradingViewEmbed({ symbol, interval, height = 640 }) {
       studies: ['Volume@tv-basicstudies'],
       support_host: 'https://www.tradingview.com',
     });
+    script.onerror = () => setWidgetFailed(true);
 
     host.appendChild(widget);
     host.appendChild(script);
 
+    const fallbackTimer = window.setTimeout(() => {
+      if (host && !host.querySelector('iframe')) setWidgetFailed(true);
+    }, 7000);
+
     return () => {
+      window.clearTimeout(fallbackTimer);
       host.innerHTML = '';
     };
   }, [symbol, interval]);
 
   return (
-    <div style={{ height, width: '100%', overflow: 'hidden', borderRadius: 20, border: `1px solid ${shade(C.borderHi, 0.75)}`, background: '#0A0F18' }}>
+    <div style={{ height, width: '100%', overflow: 'hidden', borderRadius: 20, border: `1px solid ${shade(C.borderHi, 0.75)}`, background: '#0A0F18', position: 'relative' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      {widgetFailed ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 22,
+            background: 'linear-gradient(180deg, rgba(5,10,18,0.76), rgba(5,10,18,0.94))',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ maxWidth: 420 }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: C.text0, marginBottom: 8 }}>
+              Market chart temporarily unavailable
+            </div>
+            <div style={{ fontSize: 12.5, color: C.text2, lineHeight: 1.7 }}>
+              TradingView did not answer in this browser session. The replay, trade tape, equity curve and win-rate analytics still work from your imported journal data.
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -949,6 +980,7 @@ export default function Backtest() {
   const [search, setSearch] = useState('');
   const [sortMode, setSortMode] = useState('recent');
   const [savedSessions, setSavedSessions] = useState([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [replayIndex, setReplayIndex] = useState(0);
@@ -959,17 +991,22 @@ export default function Backtest() {
   const [form, setForm] = useState(() => createDefaultForm(tradeUniverse, activeAccount));
 
   useEffect(() => {
+    setSessionsLoaded(false);
     const loaded = loadBacktestSessions(userId)
       .sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0));
     setSavedSessions(loaded);
-    if (loaded.length) {
-      setSelectedSessionId(loaded[0].id);
-    }
+    setSelectedSessionId((current) => (
+      loaded.some((session) => session.id === current)
+        ? current
+        : loaded[0]?.id || ''
+    ));
+    setSessionsLoaded(true);
   }, [userId]);
 
   useEffect(() => {
+    if (!sessionsLoaded) return;
     saveBacktestSessions(userId, savedSessions);
-  }, [savedSessions, userId]);
+  }, [savedSessions, sessionsLoaded, userId]);
 
   useEffect(() => {
     setForm(createDefaultForm(tradeUniverse, activeAccount));
@@ -1018,6 +1055,25 @@ export default function Backtest() {
     () => sessionDetails.find((session) => session.id === selectedSessionId) || null,
     [selectedSessionId, sessionDetails]
   );
+
+  useEffect(() => {
+    if (!sessionsLoaded) return;
+    if (!sessionDetails.length) {
+      if (selectedSessionId) setSelectedSessionId('');
+      if (view === 'replay') setView('dashboard');
+      return;
+    }
+    if (selectedSessionId && !sessionDetails.some((session) => session.id === selectedSessionId)) {
+      setSelectedSessionId(sessionDetails[0].id);
+    }
+  }, [sessionDetails, selectedSessionId, sessionsLoaded, view]);
+
+  useEffect(() => {
+    if (view === 'replay' && sessionsLoaded && !selectedSession) {
+      setIsPlaying(false);
+      setView('dashboard');
+    }
+  }, [selectedSession, sessionsLoaded, view]);
 
   const replayTrades = useMemo(() => {
     if (!selectedSession) return [];
@@ -1099,12 +1155,20 @@ export default function Backtest() {
   }, [clampedReplayIndex, isPlaying, playbackSpeed, replayTrades.length, view]);
 
   const handleCreateSession = () => {
+    if (!tradeUniverse.length) {
+      toast.error('Import trades first, then create a backtest session.');
+      return;
+    }
     if (!form.name.trim()) {
       toast.error('Session name is required.');
       return;
     }
     if (!form.assets.length) {
       toast.error('Choose at least one asset.');
+      return;
+    }
+    if (form.startDate && form.endDate && new Date(`${form.startDate}T00:00:00`) > new Date(`${form.endDate}T23:59:59`)) {
+      toast.error('The start date must be before the end date.');
       return;
     }
     if (savedSessions.length >= sessionLimit) {
@@ -1148,6 +1212,11 @@ export default function Backtest() {
     };
 
     const filteredTrades = filterTradesForSession(tradeUniverse, sessionSeed);
+    if (!filteredTrades.length) {
+      toast.error('No trades match this asset, account and date range.');
+      return;
+    }
+
     const session = createBacktestSession({
       ...sessionSeed,
       name: form.name.trim(),
@@ -1239,14 +1308,13 @@ export default function Backtest() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <GhostButton onClick={() => setCreateOpen(true)} icon={<Ic.Plus />} tone={C.accent}>Backtesting session</GhostButton>
-              <GhostButton onClick={() => {
+              <GhostButton onClick={() => setCreateOpen(true)} icon={<Ic.Plus />} tone={C.accent} disabled={!tradeUniverse.length}>Backtesting session</GhostButton>
+              <GhostButton disabled={!tradeUniverse.length} onClick={() => {
                 setForm((current) => ({ ...current, mode: plan === 'starter' ? 'backtesting' : 'prop-firm' }));
                 setCreateOpen(true);
               }}>
                 Prop firm session
               </GhostButton>
-              <GhostButton onClick={() => toast('Use a date range + asset list to build a replay set, then open the session from the list.')}>Tutorials</GhostButton>
             </div>
           </div>
 
@@ -1632,14 +1700,14 @@ export default function Backtest() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: C.text0 }}>Replay analytics</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <GhostButton onClick={() => { setIsPlaying(false); setReplayIndex((value) => Math.max(0, value - 1)); }} icon={<Ic.Back />}>Prev</GhostButton>
-                  <GhostButton onClick={() => {
+                  <GhostButton disabled={!replayTrades.length || clampedReplayIndex <= 0} onClick={() => { setIsPlaying(false); setReplayIndex((value) => Math.max(0, value - 1)); }} icon={<Ic.Back />}>Prev</GhostButton>
+                  <GhostButton disabled={!replayTrades.length} onClick={() => {
                     if (clampedReplayIndex >= replayTrades.length - 1) setReplayIndex(0);
                     setIsPlaying((value) => !value);
                   }} icon={isPlaying ? <Ic.Pause /> : <Ic.Play />} tone={C.accent}>
                     {isPlaying ? 'Pause' : 'Play'}
                   </GhostButton>
-                  <GhostButton onClick={() => { setIsPlaying(false); setReplayIndex((value) => Math.min(replayTrades.length - 1, value + 1)); }} icon={<Ic.Forward />}>Next</GhostButton>
+                  <GhostButton disabled={!replayTrades.length || clampedReplayIndex >= replayTrades.length - 1} onClick={() => { setIsPlaying(false); setReplayIndex((value) => Math.min(Math.max(replayTrades.length - 1, 0), value + 1)); }} icon={<Ic.Forward />}>Next</GhostButton>
                 </div>
               </div>
 

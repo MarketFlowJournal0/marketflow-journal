@@ -1436,9 +1436,8 @@ function PerformanceCalendarPanel({ trades, navigate }) {
 
   useEffect(() => {
     const available = calendar.days.find((day) => day.key === selectedKey && day.trades > 0);
-    if (available) return;
-    const fallback = calendar.days.find((day) => day.inMonth && day.trades > 0);
-    setSelectedKey(fallback ? fallback.key : null);
+    if (!selectedKey || available) return;
+    setSelectedKey(null);
   }, [calendar.days, selectedKey]);
 
   const selectedDay = calendar.days.find((day) => day.key === selectedKey) || null;
@@ -2102,12 +2101,11 @@ function CompactCalendarPanel({ trades, navigate }) {
 
   useEffect(() => {
     const available = calendar.days.find((day) => day.key === selectedKey && day.trades > 0);
-    if (available) return;
-    const fallback = calendar.days.find((day) => day.inMonth && day.trades > 0);
-    setSelectedKey(fallback ? fallback.key : null);
+    if (!selectedKey || available) return;
+    setSelectedKey(null);
   }, [calendar.days, selectedKey]);
 
-  const selectedDay = calendar.days.find((day) => day.key === selectedKey) || null;
+  const selectedDay = calendar.days.find((day) => day.key === selectedKey && day.trades > 0) || null;
   const activeDayCount = calendar.positiveDays + calendar.negativeDays + calendar.flatDays;
   const monthlyTone = calendar.totalPnl >= 0 ? C.green : C.danger;
 
@@ -2268,81 +2266,145 @@ function CompactCalendarPanel({ trades, navigate }) {
                 );
               })}
 
-              <AnimatePresence mode="wait">
-                {selectedDay ? (
-                  <motion.div
-                    key={selectedDay.key}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-                    style={{
-                      borderRadius: 22,
-                      padding: '15px 15px 14px',
-                      border: `1px solid ${shade(C.accent, 0.12)}`,
-                      background: 'linear-gradient(180deg, rgba(12,18,29,0.96), rgba(8,13,22,0.98))',
-                    }}
-                  >
-                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>
-                      Selected day
-                    </div>
-                    <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: '-0.05em', color: C.text0, marginBottom: 4 }}>
-                      {formatLongDate(selectedDay.date)}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: C.text2, marginBottom: 12 }}>
-                      {selectedDay.trades} trade{selectedDay.trades > 1 ? 's' : ''} / {selectedDay.winRate}% win rate
-                    </div>
-
-                    <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-                      <MiniMetric
-                        label="Day P&L"
-                        value={formatCurrency(selectedDay.pnl, true)}
-                        tone={selectedDay.pnl >= 0 ? C.green : C.danger}
-                        caption={`${formatCurrency(selectedDay.avgTrade, true)} average`}
-                      />
-                      <MiniMetric
-                        label="Lead session"
-                        value={selectedDay.sessionLeader ? selectedDay.sessionLeader.label : 'n/a'}
-                        tone={C.teal}
-                        caption={selectedDay.sessionLeader ? `${selectedDay.sessionLeader.count} trade${selectedDay.sessionLeader.count > 1 ? 's' : ''}` : 'No session edge'}
-                      />
-                      <MiniMetric
-                        label="Lead pair"
-                        value={selectedDay.pairLeader ? selectedDay.pairLeader.label : 'n/a'}
-                        tone={C.blue}
-                        caption={selectedDay.pairLeader ? formatCurrency(selectedDay.pairLeader.pnl, true) : 'No pair lead'}
-                      />
-                    </div>
-
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {selectedDay.records.slice(0, 3).map((record) => {
-                        const pnlTone = record.pnl >= 0 ? C.green : C.danger;
-                        return (
-                          <div key={record.id} style={{ padding: '10px 11px', borderRadius: 14, border: `1px solid ${shade(pnlTone, 0.14)}`, background: 'rgba(255,255,255,0.025)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 5 }}>
-                              <span style={{ fontSize: 12, fontWeight: 800, color: C.text0 }}>{record.symbol}</span>
-                              <span style={{ fontSize: 11, fontWeight: 800, color: pnlTone }}>{formatCurrency(record.pnl, true)}</span>
-                            </div>
-                            <div style={{ fontSize: 10.5, color: C.text2, lineHeight: 1.55 }}>
-                              {record.direction} / {record.session}
-                            </div>
-                            <div style={{ fontSize: 10.5, color: C.text3, marginTop: 4 }}>
-                              {record.setup}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
             </div>
           </div>
+
+          <CalendarDayDetailModal day={selectedDay} onClose={() => setSelectedKey(null)} />
         </div>
       ) : (
         <EmptyState title="No trading calendar yet" body="Import trades in All Trades to unlock the monthly view." action={<GhostButton onClick={() => navigate(ROUTES.trades)}>Open All Trades</GhostButton>} />
       )}
     </SectionCard>
+  );
+}
+
+function CalendarDayDetailModal({ day, onClose }) {
+  if (!day) return null;
+
+  const dayTone = day.pnl >= 0 ? C.green : C.danger;
+  const bestRecord = [...day.records].sort((left, right) => right.pnl - left.pnl)[0] || null;
+  const worstRecord = [...day.records].sort((left, right) => left.pnl - right.pnl)[0] || null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="calendar-day-detail"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 240,
+          background: 'rgba(0, 4, 10, 0.72)',
+          backdropFilter: 'blur(14px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 14, scale: 0.98 }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          onClick={(event) => event.stopPropagation()}
+          style={{
+            width: 'min(920px, 100%)',
+            maxHeight: 'min(760px, calc(100vh - 48px))',
+            overflow: 'hidden',
+            borderRadius: 28,
+            border: `1px solid ${shade(dayTone, 0.2)}`,
+            background: 'linear-gradient(180deg, rgba(11,17,28,0.98), rgba(5,9,16,0.99))',
+            boxShadow: `0 34px 120px rgba(0,0,0,0.46), 0 0 80px ${shade(dayTone, 0.08)}`,
+            position: 'relative',
+          }}
+        >
+          <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at top right, ${shade(dayTone, 0.14)}, transparent 42%)`, pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1, padding: '22px 22px 18px', borderBottom: `1px solid ${shade(C.borderHi, 0.74)}` }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.16em', textTransform: 'uppercase', color: dayTone, marginBottom: 8 }}>
+                  Selected day
+                </div>
+                <div style={{ fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: 950, letterSpacing: '-0.07em', color: C.text0, marginBottom: 8 }}>
+                  {formatLongDate(day.date)}
+                </div>
+                <div style={{ fontSize: 12.5, color: C.text2 }}>
+                  {day.trades} trade{day.trades > 1 ? 's' : ''} / {day.winRate}% win rate / {formatCurrency(day.avgTrade, true)} average trade
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 14,
+                  border: `1px solid ${shade(C.borderHi, 0.85)}`,
+                  background: 'rgba(255,255,255,0.035)',
+                  color: C.text1,
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  fontWeight: 800,
+                  fontFamily: 'inherit',
+                }}
+                aria-label="Close selected day details"
+              >
+                x
+              </button>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 1, padding: 22, overflow: 'auto', maxHeight: 'calc(min(760px, 100vh - 48px) - 132px)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 16 }}>
+              <MiniMetric label="Day P&L" value={formatCurrency(day.pnl, true)} tone={dayTone} />
+              <MiniMetric label="Lead session" value={day.sessionLeader ? day.sessionLeader.label : 'n/a'} tone={C.teal} caption={day.sessionLeader ? `${day.sessionLeader.count} trade${day.sessionLeader.count > 1 ? 's' : ''}` : 'No session edge'} />
+              <MiniMetric label="Lead pair" value={day.pairLeader ? day.pairLeader.label : 'n/a'} tone={C.blue} caption={day.pairLeader ? formatCurrency(day.pairLeader.pnl, true) : 'No pair lead'} />
+              <MiniMetric label="Best trade" value={bestRecord ? formatCurrency(bestRecord.pnl, true) : '$0'} tone={C.green} caption={bestRecord ? bestRecord.symbol : 'No winner'} />
+              <MiniMetric label="Worst trade" value={worstRecord ? formatCurrency(worstRecord.pnl, true) : '$0'} tone={C.danger} caption={worstRecord ? worstRecord.symbol : 'No loser'} />
+            </div>
+
+            <div style={{ display: 'grid', gap: 9 }}>
+              {day.records.map((record) => {
+                const pnlTone = record.pnl >= 0 ? C.green : C.danger;
+                return (
+                  <div
+                    key={record.id}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(110px, 0.8fr) minmax(90px, 0.6fr) minmax(130px, 1fr) minmax(90px, 0.6fr)',
+                      gap: 12,
+                      alignItems: 'center',
+                      padding: '12px 13px',
+                      borderRadius: 16,
+                      border: `1px solid ${shade(pnlTone, 0.13)}`,
+                      background: 'rgba(255,255,255,0.026)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 900, color: C.text0, marginBottom: 4 }}>{record.symbol}</div>
+                      <div style={{ fontSize: 10.5, color: C.text3 }}>{record.time || 'No time'}</div>
+                    </div>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: C.text2 }}>{record.direction}</div>
+                    <div>
+                      <div style={{ fontSize: 11.5, fontWeight: 800, color: C.text1, marginBottom: 4 }}>{record.setup}</div>
+                      <div style={{ fontSize: 10.5, color: C.text3 }}>{record.session}</div>
+                    </div>
+                    <div style={{ justifySelf: 'end', fontSize: 12.5, fontWeight: 900, color: pnlTone }}>
+                      {formatCurrency(record.pnl, true)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
