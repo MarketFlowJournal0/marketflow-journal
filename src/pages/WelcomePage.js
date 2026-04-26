@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import MarketFlowBrand from '../components/MarketFlowBrand';
-import { getEntryRoute, getPlanDetails, normalizePlan } from '../lib/subscription';
+import { getEntryRoute, getPlanDetails, hasJournalAccess, normalizePlan } from '../lib/subscription';
 
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
 
@@ -126,7 +126,7 @@ export default function WelcomePage() {
   const journalRoute = '/' + getEntryRoute(planId);
   const firstName = user?.firstName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Trader';
   const email = user?.email || '';
-  const isActivated = Boolean(user?.stripeSubscriptionId && ['active', 'trialing'].includes(user?.subStatus));
+  const isActivated = hasJournalAccess(user);
   const featureList = useMemo(() => plan.features.slice(0, 6), [plan.features]);
   const sessionId = useMemo(() => {
     const params = new URLSearchParams(window.location.search);

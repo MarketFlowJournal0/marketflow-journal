@@ -125,3 +125,18 @@ export function hasRouteAccess(plan, route) {
 export function getEntryRoute(plan) {
   return getPlanDetails(plan).entryRoute;
 }
+
+export function hasJournalAccess(user) {
+  if (!user) return false;
+
+  const status = String(user.subStatus || user.subscription_status || '').toLowerCase();
+  if (status === 'active') return true;
+
+  if (status === 'trialing') {
+    const trialEnd = user.trialEnd || user.trial_end || null;
+    if (!trialEnd) return true;
+    return new Date(trialEnd) > new Date();
+  }
+
+  return false;
+}

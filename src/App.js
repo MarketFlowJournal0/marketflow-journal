@@ -30,7 +30,7 @@ import AlertsPage from './pages/Alerts';
 import ApiAccessPage from './pages/ApiAccess';
 import Competition from './pages/Competition';
 import WelcomePage from './pages/WelcomePage';
-import { getEntryRoute, hasRouteAccess, normalizePlan } from './lib/subscription';
+import { getEntryRoute, hasJournalAccess, hasRouteAccess, normalizePlan } from './lib/subscription';
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
 import { buildOnboardingRecord } from './lib/onboarding';
 import { appUrl, publicSiteUrl, isPublicSiteHost, hasDedicatedAppDomain } from './lib/appUrls';
@@ -512,14 +512,7 @@ function AppInner() {
   }
 
   // ── Pas d'abonnement → /plan ──
-  const trialStillValid = !user?.trialEnd || new Date(user.trialEnd) > new Date();
-  const hasValidSub = Boolean(
-    user?.stripeSubscriptionId
-    && (
-      user.subStatus === 'active'
-      || (user.subStatus === 'trialing' && trialStillValid)
-    )
-  );
+  const hasValidSub = hasJournalAccess(user);
   const justPaid = location.pathname === '/welcome' || location.search.includes('session_id');
   const needsPlan = !hasValidSub && !forceLoggedOut && !justPaid;
   if (needsPlan) {
