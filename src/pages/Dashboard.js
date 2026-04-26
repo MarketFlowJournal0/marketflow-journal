@@ -26,16 +26,6 @@ import {
   buildMarketFlowRank,
   getCompetitionDayStamp,
 } from '../lib/marketflowCompetition';
-import {
-  applyJournalTheme,
-  DEFAULT_JOURNAL_CUSTOM_ACCENT,
-  DEFAULT_JOURNAL_THEME_VALUE,
-  getJournalTheme,
-  JOURNAL_THEME_CHOICES,
-  JOURNAL_THEME_CUSTOM_KEY,
-  JOURNAL_THEME_KEY,
-} from '../lib/journalTheme';
-
 const C = {
   accent: 'var(--mf-accent,#14C9E5)',
   accentSoft: 'var(--mf-accent-secondary,#DCE4EF)',
@@ -1088,7 +1078,7 @@ function DailyRoutinePanel({ items, onToggle, onTitleChange, navigate, overview 
   const [editing, setEditing] = useState(false);
   const completed = items.filter((item) => item.done).length;
   const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
-  const progressTone = progress >= 100 ? C.green : progress >= 50 ? C.accent : C.warn;
+  const progressTone = C.text1;
 
   return (
     <SectionCard tone={progressTone} index={1} style={{ padding: '18px 18px 16px', marginBottom: 16 }}>
@@ -1105,13 +1095,13 @@ function DailyRoutinePanel({ items, onToggle, onTitleChange, navigate, overview 
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.62fr) minmax(0, 1fr)', gap: 14 }}>
-        <div style={{ padding: '15px 15px 13px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}` }}>
+        <div style={{ padding: '15px 15px 13px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
             <TinyBadge tone={progressTone}>{completed}/{items.length} done</TinyBadge>
             <span style={{ fontSize: 11, color: C.text2 }}>MF score</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: progressTone }}>
+            <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: C.text1 }}>
               {progress}%
             </div>
             <div style={{ fontSize: 12, color: C.text2 }}>
@@ -1119,7 +1109,7 @@ function DailyRoutinePanel({ items, onToggle, onTitleChange, navigate, overview 
             </div>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 12 }}>
-            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(progressTone, 0.58)}, ${progressTone})` }} />
+            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, rgba(232,238,255,0.42), rgba(232,238,255,0.82))' }} />
           </div>
           <div style={{ display: 'grid', gap: 8 }}>
             <MiniMetric label="Current focus" value={overview.rank.focus} tone={toneColor(overview.rank.tone)} caption={overview.rank.note} />
@@ -1712,7 +1702,7 @@ function CompactRoutinePanel({ items, onToggle, onTitleChange, navigate, overvie
   const [editing, setEditing] = useState(false);
   const completed = items.filter((item) => item.done).length;
   const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
-  const progressTone = progress >= 100 ? C.green : progress >= 50 ? C.accent : C.warn;
+  const progressTone = C.text1;
 
   return (
     <SectionCard tone={progressTone} index={1} style={{ padding: '18px 18px 16px', marginBottom: 16 }}>
@@ -1729,13 +1719,13 @@ function CompactRoutinePanel({ items, onToggle, onTitleChange, navigate, overvie
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.62fr) minmax(0, 1fr)', gap: 14 }}>
-        <div style={{ padding: '15px 15px 13px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}` }}>
+        <div style={{ padding: '15px 15px 13px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
             <TinyBadge tone={progressTone}>{completed}/{items.length} done</TinyBadge>
             <span style={{ fontSize: 11, color: C.text2 }}>MF score</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: progressTone }}>
+            <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: C.text1 }}>
               {progress}%
             </div>
             <div style={{ fontSize: 12, color: C.text2 }}>
@@ -1743,7 +1733,7 @@ function CompactRoutinePanel({ items, onToggle, onTitleChange, navigate, overvie
             </div>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 12 }}>
-            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(progressTone, 0.58)}, ${progressTone})` }} />
+            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, rgba(232,238,255,0.42), rgba(232,238,255,0.82))' }} />
           </div>
           <MiniMetric label="Current focus" value={overview.rank.focus} tone={toneColor(overview.rank.tone)} caption={overview.rank.note} />
         </div>
@@ -1811,38 +1801,12 @@ function CompactRoutinePanel({ items, onToggle, onTitleChange, navigate, overvie
 function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan = 'trial' }) {
   const [editing, setEditing] = useState(false);
   const [open, setOpen] = useState(false);
-  const [themeChoice, setThemeChoice] = useState(() => {
-    try {
-      return window.localStorage.getItem(JOURNAL_THEME_KEY) || DEFAULT_JOURNAL_THEME_VALUE;
-    } catch {
-      return DEFAULT_JOURNAL_THEME_VALUE;
-    }
-  });
-  const [customAccent, setCustomAccent] = useState(() => {
-    try {
-      return window.localStorage.getItem(JOURNAL_THEME_CUSTOM_KEY) || DEFAULT_JOURNAL_CUSTOM_ACCENT;
-    } catch {
-      return DEFAULT_JOURNAL_CUSTOM_ACCENT;
-    }
-  });
   const completed = items.filter((item) => item.done).length;
   const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
-  const progressTone = progress >= 100 ? C.green : progress >= 50 ? C.accent : C.warn;
-  const canTheme = ['pro', 'elite'].includes(String(plan || '').toLowerCase());
-  const quickChoices = JOURNAL_THEME_CHOICES.slice(0, 6);
-  const currentToneLabel = themeChoice === 'custom'
-    ? 'Custom'
-    : (JOURNAL_THEME_CHOICES.find((choice) => choice.value === themeChoice)?.label || 'Theme');
-
-  const handleToneChange = (choiceValue) => {
-    const nextChoice = choiceValue || DEFAULT_JOURNAL_THEME_VALUE;
-    setThemeChoice(nextChoice);
-    try {
-      window.localStorage.setItem(JOURNAL_THEME_KEY, nextChoice);
-      window.localStorage.setItem(JOURNAL_THEME_CUSTOM_KEY, customAccent);
-    } catch {}
-    applyJournalTheme(getJournalTheme(plan, nextChoice, customAccent));
-  };
+  const progressTone = C.text1;
+  const neutralLine = 'rgba(255,255,255,0.10)';
+  const neutralPanel = 'rgba(255,255,255,0.026)';
+  const planLabel = String(plan || 'trial').toUpperCase();
 
   return (
     <div style={{ position: 'relative' }}>
@@ -1864,8 +1828,8 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
               padding: '14px 14px 12px',
               borderRadius: 22,
               background: 'linear-gradient(180deg, rgba(8,13,22,0.98), rgba(7,11,20,0.98))',
-              border: `1px solid ${shade(progressTone, 0.16)}`,
-              boxShadow: `0 28px 60px rgba(0,0,0,0.42), 0 0 0 1px ${shade(progressTone, 0.08)}`,
+              border: `1px solid ${neutralLine}`,
+              boxShadow: '0 28px 60px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.035)',
               backdropFilter: 'blur(20px)',
               zIndex: 20,
             }}
@@ -1889,66 +1853,20 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
               </div>
             </div>
 
-            <div style={{ padding: '12px 12px 11px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(progressTone, 0.14)}`, marginBottom: 12 }}>
+            <div style={{ padding: '12px 12px 11px', borderRadius: 18, background: neutralPanel, border: `1px solid ${neutralLine}`, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-                <TinyBadge tone={progressTone}>{completed}/{items.length} done</TinyBadge>
-                <span style={{ fontSize: 11, fontWeight: 700, color: progressTone }}>{progress}%</span>
+                <TinyBadge tone={C.text2}>{completed}/{items.length} done</TinyBadge>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.text2 }}>{progress}%</span>
               </div>
               <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 10 }}>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(progressTone, 0.54)}, ${progressTone})` }} />
+                <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, rgba(232,238,255,0.42), rgba(232,238,255,0.82))' }} />
               </div>
-              <MiniMetric label="Focus" value={overview.rank.focus} tone={toneColor(overview.rank.tone)} caption={overview.rank.note} />
+              <MiniMetric label="Plan scope" value={planLabel} tone={C.text1} caption={overview.rank.note} />
             </div>
-
-            {canTheme && (
-              <div style={{ padding: '12px 12px 11px', borderRadius: 18, background: 'rgba(255,255,255,0.028)', border: `1px solid ${shade(C.accent, 0.12)}`, marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 26, height: 26, borderRadius: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: shade(C.accent, 0.1), border: `1px solid ${shade(C.accent, 0.18)}`, color: C.accent }}>
-                      <Ic.Palette />
-                    </span>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>Deck tone</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: C.text1 }}>{currentToneLabel}</div>
-                    </div>
-                  </div>
-                  <GhostButton onClick={() => navigate('/account-settings')} icon={<Ic.ArrowRight />}>
-                    More
-                  </GhostButton>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 8 }}>
-                  {quickChoices.map((choice) => {
-                    const active = choice.value === themeChoice;
-                    return (
-                      <button
-                        key={choice.value}
-                        type="button"
-                        onClick={() => handleToneChange(choice.value)}
-                        style={{
-                          height: 36,
-                          borderRadius: 12,
-                          border: `1px solid ${active ? shade(choice.value, 0.48) : C.border}`,
-                          background: `linear-gradient(135deg, ${shade(choice.value, active ? 0.28 : 0.18)}, ${shade(choice.value, active ? 0.12 : 0.08)})`,
-                          boxShadow: active ? `0 0 0 1px ${shade(choice.value, 0.16)}, 0 10px 24px ${shade(choice.value, 0.14)}` : 'none',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        title={choice.label}
-                      >
-                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: choice.value, boxShadow: `0 0 14px ${shade(choice.value, 0.5)}` }} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             <div style={{ display: 'grid', gap: 8 }}>
               {items.map((item) => (
-                <div key={item.id} style={{ padding: '11px 11px 10px', borderRadius: 16, border: `1px solid ${item.done ? shade(C.green, 0.18) : shade(C.accent, 0.12)}`, background: item.done ? 'rgba(var(--mf-green-rgb, 0, 255, 136),0.07)' : 'rgba(255,255,255,0.025)' }}>
+                <div key={item.id} style={{ padding: '11px 11px 10px', borderRadius: 16, border: `1px solid ${neutralLine}`, background: item.done ? 'rgba(255,255,255,0.045)' : 'rgba(255,255,255,0.025)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <button
                       onClick={() => onToggle(item.id)}
@@ -1956,9 +1874,9 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
                         width: 22,
                         height: 22,
                         borderRadius: 7,
-                        border: `1px solid ${item.done ? shade(C.green, 0.24) : C.border}`,
-                        background: item.done ? shade(C.green, 0.16) : 'rgba(255,255,255,0.02)',
-                        color: item.done ? C.green : C.text3,
+                        border: `1px solid ${item.done ? 'rgba(255,255,255,0.22)' : C.border}`,
+                        background: item.done ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.02)',
+                        color: item.done ? C.text1 : C.text3,
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -2014,23 +1932,23 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
           height: 58,
           padding: '10px 11px',
           borderRadius: 18,
-          border: `1px solid ${shade(progressTone, 0.18)}`,
+          border: `1px solid ${neutralLine}`,
           background: 'linear-gradient(180deg, rgba(9,14,24,0.98), rgba(7,11,20,0.96))',
           color: C.text1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: `0 18px 42px rgba(0,0,0,0.28), 0 0 0 1px ${shade(progressTone, 0.08)}`,
+          boxShadow: '0 18px 42px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.035)',
           cursor: 'pointer',
           backdropFilter: 'blur(18px)',
           position: 'relative',
         }}
         title="Open workflow"
       >
-        <span style={{ width: 34, height: 34, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${shade(progressTone, 0.2)}, ${shade(progressTone, 0.08)})`, border: `1px solid ${shade(progressTone, 0.2)}`, color: progressTone, boxShadow: `0 0 18px ${shade(progressTone, 0.16)}` }}>
+        <span style={{ width: 34, height: 34, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.028))', border: `1px solid ${neutralLine}`, color: C.text1 }}>
           <Ic.Checklist />
         </span>
-        <span style={{ position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 999, padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 900, color: progress >= 100 ? '#061217' : progressTone, background: progress >= 100 ? C.green : shade(progressTone, 0.16), border: `1px solid ${shade(progressTone, 0.22)}`, letterSpacing: '-0.02em' }}>
+        <span style={{ position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 999, padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 900, color: C.text1, background: 'rgba(255,255,255,0.075)', border: `1px solid ${neutralLine}`, letterSpacing: '-0.02em' }}>
           {completed}
         </span>
       </motion.button>

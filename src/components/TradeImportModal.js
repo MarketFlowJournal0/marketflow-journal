@@ -2,6 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
+import {
+  CREATE_COLUMN_VALUE,
+  IMPORT_FIELD_OPTIONS,
+  TRADE_IMPORT_SOURCE_OPTIONS,
+  autoMapImportHeaders,
+  slugifyTradeFieldKey,
+} from '../lib/tradeSchema';
 
 const UI = {
   bg: 'rgba(7, 11, 19, 0.76)',
@@ -18,46 +25,6 @@ const UI = {
   successSoft: 'rgba(var(--mf-green-rgb, 0, 255, 136), 0.1)',
   danger: 'var(--mf-danger, #FF3D57)',
 };
-
-const FIELD_OPTIONS = [
-  ['symbol', 'Pair'],
-  ['_ignore', 'Ignore'],
-  ['date', 'Date'],
-  ['type', 'Direction'],
-  ['entry', 'Entry'],
-  ['exit', 'Exit'],
-  ['pnl', 'P&L'],
-  ['size', 'Size'],
-  ['session', 'Session'],
-  ['setup', 'Setup'],
-  ['notes', 'Notes'],
-  ['_create', 'Create column'],
-];
-
-const FIELD_ALIASES = {
-  date: ['date', 'open_date', 'entry_date', 'opened', 'created'],
-  time: ['time', 'hour', 'open_time'],
-  symbol: ['symbol', 'pair', 'instrument', 'ticker', 'market'],
-  type: ['type', 'direction', 'side', 'dir', 'position'],
-  session: ['session'],
-  bias: ['bias'],
-  entry: ['entry', 'entryprice', 'entry_price', 'open', 'openprice', 'buyprice'],
-  exit: ['exit', 'exitprice', 'exit_price', 'close', 'closeprice', 'sellprice'],
-  sl: ['sl', 'stoploss', 'stop_loss', 'stop'],
-  tp: ['tp', 'takeprofit', 'take_profit', 'target'],
-  pnl: ['pnl', 'profitloss', 'profit_loss', 'profit', 'net', 'result', 'gainloss'],
-  size: ['size', 'quantity', 'qty', 'lots', 'lotsize', 'volume'],
-  setup: ['setup', 'strategy', 'playbook', 'pattern'],
-  notes: ['notes', 'note', 'comment', 'comments', 'journal'],
-  commission: ['commission', 'fee', 'fees', 'cost'],
-  psychologyScore: ['psychology', 'psychologyscore', 'discipline', 'confidence'],
-};
-
-const SOURCE_CARDS = ['CSV / TSV', 'Excel', 'Notion', 'Broker export', 'Journal app', 'JSON'];
-const CREATE_COLUMN_VALUE = '_create';
-
-const normalizeHeader = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-const slugifyFieldKey = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || `field_${Date.now()}`;
 
 const detectDelimiter = (text) => {
   const sample = text.split(/\r?\n/).slice(0, 5).join('\n');
@@ -108,14 +75,6 @@ const extractJsonRows = (value) => {
   const candidate = ['trades', 'data', 'items', 'rows'].find((key) => Array.isArray(value[key]));
   return candidate ? extractJsonRows(value[candidate]) : [value];
 };
-
-const autoMapHeaders = (headers) => headers.reduce((mapping, header) => {
-  const normalized = normalizeHeader(header);
-  const match = Object.entries(FIELD_ALIASES).find(([, aliases]) =>
-    aliases.some((alias) => normalized === alias || normalized.includes(alias) || alias.includes(normalized))
-  );
-  return { ...mapping, [header]: match?.[0] || CREATE_COLUMN_VALUE };
-}, {});
 
 const toNumber = (value) => {
   if (value == null || value === '') return '';
@@ -211,14 +170,14 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
         return;
       }
       setRows(nextRows);
-      setMapping(autoMapHeaders(Object.keys(nextRows[0] || {})));
+      setMapping(autoMapImportHeaders(Object.keys(nextRows[0] || {})));
       setStep(2);
       toast.success(`${nextRows.length} row(s) ready to review.`);
     } catch (error) {
       const fallbackRows = !file && text ? parseTableText(text) : [];
       if (fallbackRows.length) {
         setRows(fallbackRows);
-        setMapping(autoMapHeaders(Object.keys(fallbackRows[0] || {})));
+        setMapping(autoMapImportHeaders(Object.keys(fallbackRows[0] || {})));
         setStep(2);
         toast.success(`${fallbackRows.length} row(s) ready to review.`);
         return;
@@ -238,7 +197,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
     }
     const customColumns = headers
       .filter((header) => mapping[header] === CREATE_COLUMN_VALUE)
-      .map((header) => ({ fieldKey: slugifyFieldKey(header), label: String(header).trim() || 'Created column', dataType: 'text' }));
+      .map((header) => ({ fieldKey: slugifyTradeFieldKey(header), label: String(header).trim() || 'Created column', dataType: 'text' }));
 
     if (customColumns.length) {
       onRegisterCustomColumns?.(customColumns);
@@ -253,15 +212,21 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
         if (raw == null || raw === '') return accumulator;
         return { ...accumulator, [column.fieldKey]: raw };
       }, {});
+      const readText = (field) => String(read(field) || '').trim();
+      const rrValue = toNumber(read('rrActual'));
       return symbol ? {
         date,
         open_date: date,
         time: String(read('time') || '').trim(),
         symbol,
+        account: readText('account'),
+        broker: readText('broker'),
+        exchange: readText('broker'),
         type: normalizeType(read('type')),
         direction: normalizeType(read('type')),
-        session: String(read('session') || '').trim(),
-        bias: String(read('bias') || '').trim(),
+        result: readText('result'),
+        session: readText('session'),
+        bias: readText('bias'),
         entry: toNumber(read('entry')),
         exit: toNumber(read('exit')),
         sl: toNumber(read('sl')),
@@ -269,9 +234,29 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
         pnl: toNumber(read('pnl')),
         size: toNumber(read('size')),
         lots: toNumber(read('size')),
-        setup: String(read('setup') || '').trim(),
-        notes: String(read('notes') || '').trim(),
-        extra: Object.keys(extra).length ? extra : null,
+        commission: toNumber(read('commission')),
+        swap: toNumber(read('swap')),
+        setup: readText('setup'),
+        strategy: readText('setup'),
+        notes: readText('notes'),
+        tags: readText('tags'),
+        screenshots: readText('screenshots'),
+        marketType: readText('marketType'),
+        newsImpact: readText('newsImpact'),
+        psychologyScore: toNumber(read('psychologyScore')),
+        emotion_before: readText('emotion_before'),
+        emotion_during: readText('emotion_during'),
+        emotion_after: readText('emotion_after'),
+        rrActual: rrValue,
+        metrics: rrValue === '' ? undefined : { rrReel: rrValue },
+        extra: Object.keys(extra).length || rrValue !== '' || readText('result') || readText('screenshots')
+          ? {
+              ...extra,
+              ...(rrValue !== '' ? { rr_actual: rrValue } : {}),
+              ...(readText('result') ? { result: readText('result') } : {}),
+              ...(readText('screenshots') ? { screenshots: readText('screenshots') } : {}),
+            }
+          : null,
       } : null;
     }).filter(Boolean);
     if (!normalizedTrades.length) {
@@ -341,7 +326,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
             <div>
               <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: UI.muted, fontWeight: 800 }}>Import trades</div>
               <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginTop: 6 }}>Bring data into MarketFlow</div>
-              <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>CSV, Excel, tables, or JSON.</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>CSV, Excel, Notion export, Google Sheets export, pasted tables, or JSON.</div>
             </div>
             <button type="button" onClick={onClose} style={{ width: 36, height: 36, borderRadius: 12, border: `1px solid ${UI.line}`, background: UI.card, color: UI.sub, cursor: 'pointer', fontSize: 16 }}>×</button>
           </div>
@@ -350,7 +335,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
             {step === 1 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(320px, 0.9fr)', gap: 18 }}>
                 <div style={{ padding: 18, borderRadius: 22, border: `1px solid ${UI.line}`, background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>{SOURCE_CARDS.map((label) => <div key={label} style={pillStyle(false)}>{label}</div>)}</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>{TRADE_IMPORT_SOURCE_OPTIONS.map((label) => <div key={label} style={pillStyle(false)}>{label}</div>)}</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
                     <button type="button" onClick={() => setMode('upload')} style={pillStyle(mode === 'upload')}>Upload file</button>
                     <button type="button" onClick={() => setMode('paste')} style={pillStyle(mode === 'paste')}>Paste data</button>
@@ -358,7 +343,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                   {mode === 'upload' ? (
                     <button type="button" onClick={() => fileInputRef.current?.click()} style={{ width: '100%', minHeight: 220, borderRadius: 24, border: `1px dashed ${UI.lineHi}`, background: 'linear-gradient(180deg, rgba(var(--mf-accent-rgb, 6, 230, 255), 0.06), rgba(255,255,255,0.01))', color: UI.text, cursor: 'pointer', padding: 24, textAlign: 'left' }}>
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{file ? file.name : 'Select an import file'}</div>
-                      <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>Accepted: .csv .tsv .txt .xlsx .xls .json</div>
+                      <div style={{ marginTop: 8, fontSize: 13, color: UI.sub }}>Accepted: .csv .tsv .txt .xlsx .xls .json. Notion and Google Sheets should be exported or pasted as structured rows.</div>
                     </button>
                   ) : (
                     <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Paste a CSV, TSV, copied table, or JSON payload here." style={{ width: '100%', minHeight: 220, resize: 'vertical', borderRadius: 20, border: `1px solid ${UI.line}`, background: UI.card, color: UI.text, padding: 16, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
@@ -386,7 +371,7 @@ export default function TradeImportModal({ isOpen, onClose, onImport, onImportBa
                         <div style={{ fontSize: 12, fontWeight: 700, color: UI.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{header}</div>
                         <div style={{ fontSize: 11, color: UI.muted }}>{String(previewRows[0]?.[header] ?? '').slice(0, 42) || 'Empty sample'}</div>
                       </div>
-                      <select value={mapping[header] || '_ignore'} onChange={(event) => setMapping((current) => ({ ...current, [header]: event.target.value }))} style={{ width: '100%', borderRadius: 12, border: `1px solid ${UI.line}`, background: UI.card, color: UI.text, padding: '10px 12px', outline: 'none', fontFamily: 'inherit', fontSize: 12 }}>{FIELD_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+                      <select value={mapping[header] || '_ignore'} onChange={(event) => setMapping((current) => ({ ...current, [header]: event.target.value }))} style={{ width: '100%', borderRadius: 12, border: `1px solid ${UI.line}`, background: UI.card, color: UI.text, padding: '10px 12px', outline: 'none', fontFamily: 'inherit', fontSize: 12 }}>{IMPORT_FIELD_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
                     </div>
                   ))}</div>
                 </div>

@@ -670,6 +670,9 @@ function buildTradePayload(tradeData = {}, userId) {
     accountNumber: normalizedTrade.account_number,
     exchange: normalizedTrade.exchange,
     broker: normalizedTrade.broker,
+    rrActual: normalizedTrade.rrActual ?? normalizedTrade.rr_actual ?? normalizedTrade.rr ?? normalizedTrade.metrics?.rrReel,
+    result: normalizedTrade.result,
+    screenshots: normalizedTrade.screenshots,
   });
 
   return {
@@ -713,6 +716,9 @@ function buildLegacyTradePayload(tradeData = {}, userId) {
     accountNumber: normalizedTrade.account_number,
     exchange: normalizedTrade.exchange,
     broker: normalizedTrade.broker,
+    rrActual: normalizedTrade.rrActual ?? normalizedTrade.rr_actual ?? normalizedTrade.rr ?? normalizedTrade.metrics?.rrReel,
+    result: normalizedTrade.result,
+    screenshots: normalizedTrade.screenshots,
   });
 
   if (normalizedTrade.session) extra.session = normalizedTrade.session;
@@ -761,7 +767,16 @@ function normalizeTradeRecord(trade = {}) {
   const accountMeta = getTradeAccountMeta({ ...trade, extra, account, exchange });
   const risk = entry && stopLoss ? Math.abs(entry - stopLoss) : 0;
   const reward = entry && exit ? Math.abs(exit - entry) : 0;
-  const rr = risk > 0 ? reward / risk : 0;
+  const importedRR = nullableNumber(
+    trade.metrics?.rrReel
+    ?? trade.rrActual
+    ?? trade.rr_actual
+    ?? trade.rr
+    ?? extra.rr_actual
+    ?? extra.rrActual
+    ?? extra.rr
+  );
+  const rr = importedRR ?? (risk > 0 ? reward / risk : 0);
 
   return {
     ...trade,
@@ -812,7 +827,7 @@ function normalizeTradeRecord(trade = {}) {
     extra,
     metrics: {
       ...(trade.metrics || {}),
-      rrReel: trade.metrics?.rrReel ?? (rr > 0 ? rr : 0),
+      rrReel: rr > 0 ? rr : 0,
     },
   };
 }
@@ -825,6 +840,9 @@ function mapTradeUpdates(tradeData = {}) {
     accountNumber: tradeData.account_number,
     exchange: tradeData.exchange,
     broker: tradeData.broker,
+    rrActual: tradeData.rrActual ?? tradeData.rr_actual ?? tradeData.rr ?? tradeData.metrics?.rrReel,
+    result: tradeData.result,
+    screenshots: tradeData.screenshots,
   });
 
   const payload = {
@@ -1109,6 +1127,9 @@ function normalizeJournalExtra(extra = {}, fallback = {}) {
   if (fallback.accountName) next.account_name = fallback.accountName;
   if (fallback.accountNumber) next.account_number = fallback.accountNumber;
   if (fallback.exchange || fallback.broker) next.exchange = fallback.exchange || fallback.broker;
+  if (fallback.rrActual != null && fallback.rrActual !== '') next.rr_actual = fallback.rrActual;
+  if (fallback.result) next.result = fallback.result;
+  if (fallback.screenshots) next.screenshots = fallback.screenshots;
   return Object.fromEntries(Object.entries(next).filter(([, value]) => value != null && value !== ''));
 }
 

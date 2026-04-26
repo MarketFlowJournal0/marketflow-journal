@@ -56,7 +56,7 @@ const BROKERS = [
     desc: 'Real-time sync through the MarketFlow EA and token handshake.',
     features: ['EA sync', 'Multi-account', 'Retry-safe'],
     setup: [
-      'Create the broker account and copy the generated token.',
+      'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
       'Install the MarketFlow EA inside the MQL4 Experts folder.',
       `Allow WebRequest and whitelist ${SYNC_ENDPOINT}.`,
       'Paste the token inside EA inputs and attach it to a live chart.',
@@ -70,7 +70,7 @@ const BROKERS = [
     desc: 'Live MT5 synchronization with hedge-aware position handling.',
     features: ['Live sync', 'Hedging', 'Netting'],
     setup: [
-      'Create the broker account and copy the generated token.',
+      'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
       'Install the MarketFlow EA in MQL5/Experts and compile it.',
       `Allow WebRequest and whitelist ${SYNC_ENDPOINT}.`,
       'Attach the EA to a chart and paste the token in the inputs panel.',
@@ -126,7 +126,7 @@ const BROKERS = [
     desc: 'Universal bridge for any platform capable of posting trade payloads.',
     features: ['Any platform', 'REST', 'Custom routing'],
     setup: [
-      'Create a webhook account and copy its API token.',
+      'Create a webhook account and copy its API token. Keep it private and rotate it if exposed.',
       'POST your fills to the MarketFlow sync endpoint with the token.',
       'Use the same connection as a master or follower feed inside Elite copier.',
     ],
@@ -243,6 +243,12 @@ function generateToken() {
   const arr = new Uint8Array(32);
   window.crypto.getRandomValues(arr);
   return Array.from(arr).map((value) => value.toString(16).padStart(2, '0')).join('');
+}
+
+function maskToken(token = '') {
+  const clean = String(token || '');
+  if (clean.length <= 14) return clean ? `${clean.slice(0, 4)}...` : '';
+  return `${clean.slice(0, 8)}...${clean.slice(-6)}`;
 }
 
 function timeAgo(date) {
@@ -936,7 +942,7 @@ function BrokerConnect() {
 
                       <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 10, alignItems: 'center' }}>
                         <code style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '11px 12px', borderRadius: 12, background: 'rgba(5,9,16,0.88)', border: `1px solid ${shade(C.t3, 0.16)}`, color: broker.color, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 12.5 }}>
-                          {account.api_token}
+                          {maskToken(account.api_token)}
                         </code>
                         <ActionButton tone="subtle" onClick={() => { copyText(account.api_token, 'Token copied.'); setCopiedToken(account.api_token); setTimeout(() => setCopiedToken(null), 1600); }} style={{ minWidth: 108, justifyContent: 'center' }}>
                           <ICON.Copy />
@@ -948,6 +954,9 @@ function BrokerConnect() {
                         <MetaItem label="Last sync" value={timeAgo(account.last_sync_at)} />
                         <MetaItem label="Trades" value={String(account.total_trades_synced || 0)} />
                         <MetaItem label="Created" value={new Date(account.created_at).toLocaleDateString('en-GB')} />
+                      </div>
+                      <div style={{ marginTop: 12, fontSize: 11.5, lineHeight: 1.55, color: C.t3 }}>
+                        Passwords are never collected here. Broker bridges use scoped API tokens, each tied to one MarketFlow account feed.
                       </div>
                     </div>
 

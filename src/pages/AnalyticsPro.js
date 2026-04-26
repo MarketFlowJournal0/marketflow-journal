@@ -7,7 +7,7 @@
 ╚══════════════════════════════════════════════════════════════════════════════╝
 */
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -287,6 +287,14 @@ const normalizeAnalyticsTrade = (trade = {}) => {
     : rawType.includes('long') || rawType.includes('buy')
       ? 'Long'
       : 'Long';
+  const extra = trade.extra && typeof trade.extra === 'object' ? trade.extra : {};
+  const accountLabel = trade.accountLabel || trade.account || trade.account_name || extra.account || extra.account_name || extra.account_number || 'Main journal';
+  const accountKey = trade.accountKey || `account:${String(accountLabel).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'manual'}`;
+  const broker = trade.broker || trade.exchange || extra.broker || extra.exchange || '--';
+  const tags = [
+    ...(Array.isArray(trade.tags) ? trade.tags : String(trade.tags || '').split(/[;,|]/)),
+    ...(Array.isArray(trade.psychological_tags) ? trade.psychological_tags : String(trade.psychological_tags || '').split(/[;,|]/)),
+  ].map((tag) => String(tag || '').trim()).filter(Boolean);
 
   return {
     ...trade,
@@ -298,12 +306,110 @@ const normalizeAnalyticsTrade = (trade = {}) => {
     pair: trade.pair || trade.symbol || '--',
     session: normalizeSessionLabel(trade.session),
     type: normalizedType,
+    accountKey,
+    accountLabel,
+    broker,
+    setup: trade.setup || trade.strategy || extra.setup || '--',
+    strategy: trade.strategy || trade.setup || extra.strategy || extra.setup || '--',
+    tagsArray: tags,
     metrics: {
       ...(trade.metrics || {}),
       rrReel: rr ?? trade.metrics?.rrReel ?? null,
     },
   };
 };
+
+const uniqueOptions = (items = [], getter, fallbackLabel = 'All') => {
+  const values = [...new Set(items.map(getter).map((value) => String(value || '').trim()).filter((value) => value && value !== '--'))];
+  return [
+    { value: 'all', label: fallbackLabel },
+    ...values.sort((a, b) => a.localeCompare(b)).map((value) => ({ value, label: value })),
+  ];
+};
+
+const AnalyticsFilterSelect = ({ label, value, onChange, options }) => (
+  <label style={{ display: 'grid', gap: 6, minWidth: 150 }}>
+    <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3 }}>
+      {label}
+    </span>
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      style={{
+        height: 38,
+        borderRadius: 12,
+        border: `1px solid ${C.brd}`,
+        background: 'rgba(255,255,255,0.025)',
+        color: C.t1,
+        padding: '0 12px',
+        fontSize: 12,
+        fontWeight: 700,
+        outline: 'none',
+        fontFamily: 'inherit',
+      }}
+    >
+      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+    </select>
+  </label>
+);
+
+const AnalyticsFilterBar = ({ filters, options, onChange, onReset }) => (
+  <motion.div
+    variants={fadeUp}
+    initial="hidden"
+    animate="visible"
+    custom={1}
+    style={{
+      display: 'flex',
+      gap: 10,
+      flexWrap: 'wrap',
+      alignItems: 'end',
+      padding: 14,
+      marginBottom: 18,
+      borderRadius: 18,
+      border: `1px solid ${C.brd}`,
+      background: 'linear-gradient(180deg, rgba(10,17,28,0.70), rgba(8,13,22,0.84))',
+    }}
+  >
+    {[
+      ['account', 'Account', options.accounts],
+      ['broker', 'Broker', options.brokers],
+      ['symbol', 'Symbol', options.symbols],
+      ['strategy', 'Strategy', options.strategies],
+      ['session', 'Session', options.sessions],
+      ['direction', 'Direction', options.directions],
+      ['result', 'Result', options.results],
+      ['tag', 'Tag', options.tags],
+    ].map(([key, label, filterOptions]) => (
+      <AnalyticsFilterSelect
+        key={key}
+        label={label}
+        value={filters[key]}
+        options={filterOptions}
+        onChange={(next) => onChange((current) => ({ ...current, [key]: next }))}
+      />
+    ))}
+    <button
+      type="button"
+      onClick={onReset}
+      style={{
+        height: 38,
+        padding: '0 14px',
+        borderRadius: 12,
+        border: `1px solid ${C.brd}`,
+        background: 'rgba(255,255,255,0.025)',
+        color: C.t2,
+        fontSize: 11,
+        fontWeight: 800,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+      }}
+    >
+      Reset
+    </button>
+  </motion.div>
+);
 
 const SectionShortcutRail = () => (
   <motion.div
@@ -1413,15 +1519,13 @@ const DurationAnalysis = ({ trades }) => {
 // 📡 BLOCK 14 — MAE / MFE SCATTER
 // ─────────────────────────────────────────────────────────────────────────────
 const MaeMfeScatter = ({ trades }) => {
-  const data = useMemo(() => trades.map(t => {
-    const entry = parseFloat(t.entry || 0);
-    const exit  = parseFloat(t.exit  || 0);
-    const sl    = parseFloat(t.sl    || 0);
-    const risk  = sl && entry ? Math.abs(entry - sl) : Math.abs(exit - entry) * 0.5 || 0.001;
-    const mae   = t.mae != null ? parseFloat(t.mae) : -Math.abs(Math.random() * risk * 1.5);
-    const mfe   = t.mfe != null ? parseFloat(t.mfe) :  Math.abs(Math.random() * risk * (parseFloat(t.pnl) >= 0 ? 2.5 : 1));
-    return { mae: +mae.toFixed(5), mfe: +mfe.toFixed(5), pnl: parseFloat(t.pnl || 0), symbol: t.symbol };
-  }), [trades]);
+  const data = useMemo(() => trades.map((trade) => {
+    const extra = trade.extra && typeof trade.extra === 'object' ? trade.extra : {};
+    const mae = toAnalyticsNumber(trade.mae ?? trade.maximum_adverse_excursion ?? extra.mae ?? extra.maximum_adverse_excursion);
+    const mfe = toAnalyticsNumber(trade.mfe ?? trade.maximum_favorable_excursion ?? extra.mfe ?? extra.maximum_favorable_excursion);
+    if (mae == null || mfe == null) return null;
+    return { mae: +mae.toFixed(5), mfe: +mfe.toFixed(5), pnl: getTradePnl(trade), symbol: trade.symbol };
+  }).filter(Boolean), [trades]);
 
   return (
     <Card index={12}>
@@ -1430,30 +1534,36 @@ const MaeMfeScatter = ({ trades }) => {
         <span style={{ color: C.green, fontWeight: 700 }}>MFE</span> = Best favorable move ·{' '}
         <span style={{ color: C.danger, fontWeight: 700 }}>MAE</span> = Worst adverse move
       </div>
-      <ResponsiveContainer width="100%" height={185}>
-        <ScatterChart margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-          <CartesianGrid {...CHART_GRID_FULL} />
-          <XAxis {...CHART_AXIS_SMALL} dataKey="mae" name="MAE" />
-          <YAxis {...CHART_AXIS_SMALL} dataKey="mfe" name="MFE" />
-          <Tooltip content={
-            <ChartTip render={(payload) => {
-              const d = payload[0]?.payload;
-              return (
-                <>
-                  <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{d?.symbol}</div>
-                  <div style={{ color: C.green,  fontSize: 11 }}>MFE: {d?.mfe}</div>
-                  <div style={{ color: C.danger, fontSize: 11 }}>MAE: {d?.mae}</div>
-                  <div style={{ color: d?.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontSize: 11 }}>{fmtPnl(d?.pnl)}</div>
-                </>
-              );
+      {data.length ? (
+        <ResponsiveContainer width="100%" height={185}>
+          <ScatterChart margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+            <CartesianGrid {...CHART_GRID_FULL} />
+            <XAxis {...CHART_AXIS_SMALL} dataKey="mae" name="MAE" />
+            <YAxis {...CHART_AXIS_SMALL} dataKey="mfe" name="MFE" />
+            <Tooltip content={
+              <ChartTip render={(payload) => {
+                const d = payload[0]?.payload;
+                return (
+                  <>
+                    <div style={{ color: C.t1, fontWeight: 800, marginBottom: 4 }}>{d?.symbol}</div>
+                    <div style={{ color: C.green,  fontSize: 11 }}>MFE: {d?.mfe}</div>
+                    <div style={{ color: C.danger, fontSize: 11 }}>MAE: {d?.mae}</div>
+                    <div style={{ color: d?.pnl >= 0 ? C.green : C.danger, fontFamily: 'monospace', fontSize: 11 }}>{fmtPnl(d?.pnl)}</div>
+                  </>
+                );
+              }} />
+            } />
+            <Scatter data={data} {...CHART_MOTION} shape={(props) => {
+              const { cx, cy, payload } = props;
+              return <circle cx={cx} cy={cy} r={5} fill={payload.pnl >= 0 ? C.green : C.danger} fillOpacity={0.65} stroke={C.bgCard} strokeWidth={1} />;
             }} />
-          } />
-          <Scatter data={data} {...CHART_MOTION} shape={(props) => {
-            const { cx, cy, payload } = props;
-            return <circle cx={cx} cy={cy} r={5} fill={payload.pnl >= 0 ? C.green : C.danger} fillOpacity={0.65} stroke={C.bgCard} strokeWidth={1} />;
-          }} />
-        </ScatterChart>
-      </ResponsiveContainer>
+          </ScatterChart>
+        </ResponsiveContainer>
+      ) : (
+        <div style={{ height: 185, display: 'grid', placeItems: 'center', borderRadius: 14, border: `1px dashed ${C.brd}`, background: 'rgba(255,255,255,0.018)', color: C.t2, fontSize: 12, textAlign: 'center', padding: 18, lineHeight: 1.6 }}>
+          Import MAE and MFE columns to unlock this chart. MarketFlow no longer invents excursion data.
+        </div>
+      )}
     </Card>
   );
 };
@@ -1600,19 +1710,69 @@ const BiasAnalysis = ({ trades }) => {
 // 🏠 MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AnalyticsPro() {
-  const { trades }  = useTradingContext();
+  const { trades: scopedTrades = [], allTrades = [], activeAccount = 'all', accountOptions = [] }  = useTradingContext();
   const [period, setPeriod] = useState('ALL');
-  const normalizedTrades = useMemo(() => trades.map(normalizeAnalyticsTrade), [trades]);
+  const [filters, setFilters] = useState({
+    account: activeAccount || 'all',
+    broker: 'all',
+    symbol: 'all',
+    strategy: 'all',
+    session: 'all',
+    direction: 'all',
+    result: 'all',
+    tag: 'all',
+  });
+  const sourceTrades = allTrades.length ? allTrades : scopedTrades;
+  const normalizedTrades = useMemo(() => sourceTrades.map(normalizeAnalyticsTrade), [sourceTrades]);
+
+  useEffect(() => {
+    setFilters((current) => ({ ...current, account: activeAccount || 'all' }));
+  }, [activeAccount]);
+
+  const filterOptions = useMemo(() => ({
+    accounts: [
+      { value: 'all', label: 'All accounts' },
+      ...(accountOptions || []).filter((account) => account.id !== 'all').map((account) => ({ value: account.id, label: account.label })),
+    ],
+    brokers: uniqueOptions(normalizedTrades, (trade) => trade.broker, 'All brokers'),
+    symbols: uniqueOptions(normalizedTrades, (trade) => trade.symbol, 'All symbols'),
+    strategies: uniqueOptions(normalizedTrades, (trade) => trade.strategy || trade.setup, 'All strategies'),
+    sessions: uniqueOptions(normalizedTrades, (trade) => trade.session, 'All sessions'),
+    directions: [
+      { value: 'all', label: 'All sides' },
+      { value: 'Long', label: 'Long' },
+      { value: 'Short', label: 'Short' },
+    ],
+    results: [
+      { value: 'all', label: 'All results' },
+      { value: 'wins', label: 'Wins' },
+      { value: 'losses', label: 'Losses' },
+      { value: 'breakeven', label: 'Breakeven' },
+    ],
+    tags: uniqueOptions(normalizedTrades.flatMap((trade) => trade.tagsArray.map((tag) => ({ tag }))), (item) => item.tag, 'All tags'),
+  }), [accountOptions, normalizedTrades]);
 
   const filtered = useMemo(() => {
-    if (period === 'ALL') return normalizedTrades;
     const days = { '7D': 7, '1M': 30, '3M': 90, '6M': 180 }[period] || 9999;
     const from = new Date(Date.now() - days * 86400000);
     return normalizedTrades.filter((trade) => {
-      const tradeDate = getTradeDateValue(trade);
-      return tradeDate ? tradeDate >= from : false;
+      if (period !== 'ALL') {
+        const tradeDate = getTradeDateValue(trade);
+        if (!tradeDate || tradeDate < from) return false;
+      }
+      if (filters.account !== 'all' && trade.accountKey !== filters.account) return false;
+      if (filters.broker !== 'all' && trade.broker !== filters.broker) return false;
+      if (filters.symbol !== 'all' && trade.symbol !== filters.symbol) return false;
+      if (filters.strategy !== 'all' && (trade.strategy || trade.setup) !== filters.strategy) return false;
+      if (filters.session !== 'all' && trade.session !== filters.session) return false;
+      if (filters.direction !== 'all' && trade.type !== filters.direction) return false;
+      if (filters.result === 'wins' && trade.pnl <= 0) return false;
+      if (filters.result === 'losses' && trade.pnl >= 0) return false;
+      if (filters.result === 'breakeven' && trade.pnl !== 0) return false;
+      if (filters.tag !== 'all' && !trade.tagsArray.includes(filters.tag)) return false;
+      return true;
     });
-  }, [normalizedTrades, period]);
+  }, [filters, normalizedTrades, period]);
 
   const summary = useMemo(() => summarizeTradeSet(filtered), [filtered]);
   const sessionSeries = useMemo(() => buildSessionWinRateSeries(filtered), [filtered]);
@@ -1692,6 +1852,24 @@ export default function AnalyticsPro() {
 
       {/* ── HEADER ── */}
       <SectionShortcutRail />
+      <AnalyticsFilterBar
+        filters={filters}
+        options={filterOptions}
+        onChange={setFilters}
+        onReset={() => {
+          setPeriod('ALL');
+          setFilters({
+            account: 'all',
+            broker: 'all',
+            symbol: 'all',
+            strategy: 'all',
+            session: 'all',
+            direction: 'all',
+            result: 'all',
+            tag: 'all',
+          });
+        }}
+      />
       <motion.div variants={fadeUp} initial="hidden" animate="visible"
         style={{ display: 'none' }}>
         <div>
