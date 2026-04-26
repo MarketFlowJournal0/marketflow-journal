@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTradingContext } from '../context/TradingContext';
 import { supabase } from '../lib/supabase';
 import { shade } from '../lib/colorAlpha';
+import { appUrl } from '../lib/appUrls';
 import {
   ACCOUNT_ROLE_OPTIONS,
   COPY_SIZING_MODES,
@@ -44,6 +45,8 @@ const C = {
   brd: 'var(--mf-border,#142033)',
 };
 
+const SYNC_ENDPOINT = appUrl('/api/mt-sync');
+
 const BROKERS = [
   {
     id: 'mt4',
@@ -55,7 +58,7 @@ const BROKERS = [
     setup: [
       'Create the broker account and copy the generated token.',
       'Install the MarketFlow EA inside the MQL4 Experts folder.',
-      'Allow WebRequest and whitelist https://app.marketflowjournal.com/api/mt-sync.',
+      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}.`,
       'Paste the token inside EA inputs and attach it to a live chart.',
     ],
   },
@@ -69,7 +72,7 @@ const BROKERS = [
     setup: [
       'Create the broker account and copy the generated token.',
       'Install the MarketFlow EA in MQL5/Experts and compile it.',
-      'Allow WebRequest and whitelist https://app.marketflowjournal.com/api/mt-sync.',
+      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}.`,
       'Attach the EA to a chart and paste the token in the inputs panel.',
     ],
   },

@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   const { priceId, email, userId, planId } = req.body;
   if (!priceId) return res.status(400).json({ error: 'priceId required' });
 
-  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.marketflowjournal.com';
+  const BASE_URL = getAppBaseUrl();
   const requestedPlanId = VALID_PLAN_IDS.has(planId) ? planId : '';
   const finalPlanId = requestedPlanId || PRICE_PLAN_MAP[priceId] || '';
   const planParam = finalPlanId ? `&plan_id=${encodeURIComponent(finalPlanId)}` : '';
@@ -152,3 +152,11 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+function getAppBaseUrl() {
+  return String(
+    process.env.NEXT_PUBLIC_APP_URL
+    || process.env.APP_URL
+    || 'https://marketflowjournal.com'
+  ).replace(/\/+$/, '');
+}

@@ -33,7 +33,7 @@ import WelcomePage from './pages/WelcomePage';
 import { getEntryRoute, hasRouteAccess, normalizePlan } from './lib/subscription';
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
 import { buildOnboardingRecord } from './lib/onboarding';
-import { appUrl, publicSiteUrl, isPublicSiteHost } from './lib/appUrls';
+import { appUrl, publicSiteUrl, isPublicSiteHost, hasDedicatedAppDomain } from './lib/appUrls';
 import './App.css';
 import './theme.css';
 
@@ -58,6 +58,28 @@ const PUBLIC_INFO_ROUTES = {
   '/contact': 'contact',
 };
 
+const APP_HOST_ROUTE_PREFIXES = [
+  '/dashboard',
+  '/all-trades',
+  '/analytics',
+  '/analytics-pro',
+  '/backtest',
+  '/calendar',
+  '/equity',
+  '/psychology',
+  '/broker-connect',
+  '/reports',
+  '/alerts',
+  '/api-access',
+  '/competition',
+  '/onboarding-stats',
+  '/subscription',
+  '/account-settings',
+  '/support',
+  '/plan',
+  '/welcome',
+];
+
 const PRICE_PLAN_MAP = {
   price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
   price_1TDQ7w2Ouddv7ueno5CuaNTH: 'starter',
@@ -72,6 +94,12 @@ function rememberCheckoutPlan(planId) {
   if (normalizedPlan === 'trial') return;
   sessionStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
   localStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
+}
+
+function isAppOnlyRoute(pathname) {
+  return APP_HOST_ROUTE_PREFIXES.some((route) => (
+    pathname === route || pathname.startsWith(`${route}/`)
+  ));
 }
 
 function LoadingScreen() {
@@ -282,7 +310,7 @@ function AppInner() {
       || location.pathname === '/auth/callback'
       || Boolean(PUBLIC_INFO_ROUTES[location.pathname]);
 
-    if (!isPublicSiteHost() || isPublicPage) return;
+    if (!hasDedicatedAppDomain() || !isPublicSiteHost() || isPublicPage || !isAppOnlyRoute(location.pathname)) return;
 
     const target = new URL(appUrl(location.pathname));
     target.search = location.search;
@@ -311,11 +339,11 @@ function AppInner() {
   };
 
   const openLogin = () => {
-    if (isPublicSiteHost()) return routeAuthToApp('login');
+    if (hasDedicatedAppDomain() && isPublicSiteHost()) return routeAuthToApp('login');
     return setAuthModal('login');
   };
   const openSignup = () => {
-    if (isPublicSiteHost()) return routeAuthToApp('signup');
+    if (hasDedicatedAppDomain() && isPublicSiteHost()) return routeAuthToApp('signup');
     return setAuthModal('signup');
   };
   const closeAuth          = () => setAuthModal(null);
@@ -324,7 +352,7 @@ function AppInner() {
       sessionStorage.setItem('pending_price_id', priceId);
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
     }
-    if (isPublicSiteHost()) return routeAuthToApp('signup', priceId);
+    if (hasDedicatedAppDomain() && isPublicSiteHost()) return routeAuthToApp('signup', priceId);
     setAuthModal('signup');
   };
 

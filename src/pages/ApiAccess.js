@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { shade } from '../lib/colorAlpha';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { appUrl } from '../lib/appUrls';
 
 const C = {
   bgCard: 'var(--mf-card,#060D18)',
@@ -232,15 +233,15 @@ export default function ApiAccessPage() {
 
 function buildCurlSnippet(routeId, token) {
   if (routeId === 'market-forex') {
-    return `curl "${window.location.origin}/api/market-data?type=forex"`;
+    return `curl "${appUrl('/api/market-data?type=forex')}"`;
   }
 
   if (routeId === 'market-indices') {
-    return `curl "${window.location.origin}/api/market-data?type=indices"`;
+    return `curl "${appUrl('/api/market-data?type=indices')}"`;
   }
 
   const syncToken = token || 'mf_sync_token_from_broker_connect';
-  return `curl -X POST "${window.location.origin}/api/mt-sync" \\
+  return `curl -X POST "${appUrl('/api/mt-sync')}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "api_token": "${syncToken}",

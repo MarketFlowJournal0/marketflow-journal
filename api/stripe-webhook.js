@@ -10,6 +10,20 @@ const supabase = createClient(
 );
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@marketflowjournal.com';
+const PUBLIC_SITE_URL = getBaseUrl(
+  process.env.NEXT_PUBLIC_SITE_URL
+  || process.env.PUBLIC_SITE_URL
+  || 'https://marketflowjournal.com'
+);
+const APP_URL = getBaseUrl(
+  process.env.NEXT_PUBLIC_APP_URL
+  || process.env.APP_URL
+  || PUBLIC_SITE_URL
+);
+
+function getBaseUrl(url) {
+  return String(url || '').replace(/\/+$/, '');
+}
 
 async function sendEmail(payload) {
   if (!process.env.RESEND_API_KEY) return null;
@@ -199,7 +213,7 @@ module.exports = async (req, res) => {
                     </ol>
                   </div>
                   <div style="text-align:center;margin-bottom:24px;">
-                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Go to Dashboard</a>
+                    <a href="${APP_URL}/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Go to Dashboard</a>
                   </div>
                   <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
                     <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal - Trade smarter, not harder.</p>
@@ -248,11 +262,11 @@ module.exports = async (req, res) => {
                     </div>
                   </div>
                   <div style="text-align:center;margin-bottom:24px;">
-                    <a href="https://app.marketflowjournal.com/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Start Trading Smarter</a>
+                    <a href="${APP_URL}/dashboard" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Start Trading Smarter</a>
                   </div>
                   <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
                     <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal - Trade smarter, not harder.</p>
-                    <p style="color:#334566;margin:8px 0 0;font-size:11px;">You're receiving this because you signed up for MarketFlow Journal. <a href="https://marketflowjournal.com" style="color:#06E6FF;text-decoration:none;">Unsubscribe</a> anytime.</p>
+                    <p style="color:#334566;margin:8px 0 0;font-size:11px;">You're receiving this because you signed up for MarketFlow Journal. <a href="${PUBLIC_SITE_URL}" style="color:#06E6FF;text-decoration:none;">Unsubscribe</a> anytime.</p>
                   </div>
                 </div>
               `,
@@ -390,7 +404,7 @@ module.exports = async (req, res) => {
                     <p style="color:#7A90B8;margin:0;font-size:13px;line-height:1.6;">To restore full access, please update your payment method below:</p>
                   </div>
                   <div style="text-align:center;margin-bottom:24px;">
-                    <a href="https://app.marketflowjournal.com/plan" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Update Payment Method</a>
+                    <a href="${APP_URL}/plan" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06E6FF,#00FF88);color:#030508;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Update Payment Method</a>
                   </div>
                   <div style="border-top:1px solid #162034;padding-top:16px;text-align:center;">
                     <p style="color:#334566;margin:0;font-size:12px;">MarketFlow Journal - Trade smarter.</p>

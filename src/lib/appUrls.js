@@ -1,5 +1,12 @@
-export const PUBLIC_SITE_URL = 'https://marketflowjournal.com';
-export const APP_URL = 'https://app.marketflowjournal.com';
+export const PUBLIC_SITE_URL = stripTrailingSlash(
+  process.env.REACT_APP_PUBLIC_SITE_URL || 'https://marketflowjournal.com'
+);
+export const APP_URL = stripTrailingSlash(
+  process.env.REACT_APP_APP_URL || PUBLIC_SITE_URL
+);
+
+const PUBLIC_HOST = getUrlHost(PUBLIC_SITE_URL);
+const APP_HOST = getUrlHost(APP_URL);
 
 export function isLocalAppHost(hostname = getHostname()) {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
@@ -10,11 +17,15 @@ export function isPreviewHost(hostname = getHostname()) {
 }
 
 export function isAppHost(hostname = getHostname()) {
-  return hostname === 'app.marketflowjournal.com' || isLocalAppHost(hostname) || isPreviewHost(hostname);
+  return hostname === APP_HOST || isLocalAppHost(hostname) || isPreviewHost(hostname);
 }
 
 export function isPublicSiteHost(hostname = getHostname()) {
-  return hostname === 'marketflowjournal.com' || hostname === 'www.marketflowjournal.com';
+  return hostname === PUBLIC_HOST || hostname === `www.${PUBLIC_HOST}`;
+}
+
+export function hasDedicatedAppDomain() {
+  return Boolean(APP_HOST && PUBLIC_HOST && APP_HOST !== PUBLIC_HOST);
 }
 
 export function getAppOrigin() {
@@ -44,7 +55,19 @@ function normalizePath(path) {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
+function stripTrailingSlash(url) {
+  return String(url || '').replace(/\/+$/, '');
+}
+
 function getHostname() {
   if (typeof window === 'undefined') return '';
   return window.location.hostname;
+}
+
+function getUrlHost(url) {
+  try {
+    return new URL(url).hostname;
+  } catch (_) {
+    return '';
+  }
 }
