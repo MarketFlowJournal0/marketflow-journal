@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId requis' });
 
-  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://marketflowjournal.com';
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.marketflowjournal.com';
 
   try {
     const { data: profile } = await supabase

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { appUrl } from '../lib/appUrls';
 
 const AuthContext = createContext(null);
 
@@ -136,7 +137,7 @@ export function AuthProvider({ children }) {
       email, password,
       options: {
         data: { first_name: firstName.trim(), last_name: lastName.trim(), full_name: `${firstName.trim()} ${lastName.trim()}`, plan: 'trial' },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: appUrl('/auth/callback'),
       },
     });
     setAuthLoading(false);
@@ -160,7 +161,7 @@ export function AuthProvider({ children }) {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: appUrl('/') },
     });
     if (error) setError(translateError(error.message));
   }, []);
@@ -169,7 +170,7 @@ export function AuthProvider({ children }) {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: appUrl('/') },
     });
     if (error) setError(translateError(error.message));
   }, []);
@@ -177,7 +178,7 @@ export function AuthProvider({ children }) {
   const resetPassword = useCallback(async (email) => {
     setError(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: appUrl('/auth/callback'),
     });
     if (error) { setError(translateError(error.message)); return false; }
     return true;

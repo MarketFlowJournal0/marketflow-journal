@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { appUrl } from '../lib/appUrls';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW PLAN SELECTION — Premium v2
@@ -112,7 +113,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       setSuccessMsg('Subscription activated! Redirecting...');
       const doRefresh = async () => { try { await refreshProfile?.(); } catch (_) {} };
       doRefresh();
-      setTimeout(() => { window.location.href = window.location.origin; }, 1500);
+      setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 1500);
     }
   }, []); // eslint-disable-line
 

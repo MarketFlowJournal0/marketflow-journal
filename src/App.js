@@ -33,6 +33,7 @@ import WelcomePage from './pages/WelcomePage';
 import { getEntryRoute, hasRouteAccess, normalizePlan } from './lib/subscription';
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
 import { buildOnboardingRecord } from './lib/onboarding';
+import { appUrl, publicSiteUrl, isPublicSiteHost } from './lib/appUrls';
 import './App.css';
 import './theme.css';
 
@@ -253,6 +254,43 @@ function AppInner() {
     }
   }, []); // eslint-disable-line
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const authMode = params.get('auth');
+    const priceId = params.get('price_id');
+
+    if (!authMode && !priceId) return;
+
+    if (priceId && PRICE_PLAN_MAP[priceId]) {
+      sessionStorage.setItem('pending_price_id', priceId);
+      rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
+    }
+
+    if (!user && (authMode === 'login' || authMode === 'signup')) {
+      setAuthModal(authMode);
+    }
+
+    params.delete('auth');
+    params.delete('price_id');
+    const nextSearch = params.toString();
+    navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true });
+  }, [location.search, location.pathname, navigate, user]);
+
+  useEffect(() => {
+    const isPublicPage =
+      location.pathname === '/'
+      || location.pathname === '/auth/callback'
+      || Boolean(PUBLIC_INFO_ROUTES[location.pathname]);
+
+    if (!isPublicSiteHost() || isPublicPage) return;
+
+    const target = new URL(appUrl(location.pathname));
+    target.search = location.search;
+    target.hash = location.hash;
+    if (!user) target.searchParams.set('auth', 'login');
+    window.location.replace(target.toString());
+  }, [location.pathname, location.search, location.hash, user]);
+
   // Onboarding — uniquement après une nouvelle inscription
   useEffect(() => {
     if (user && profileLoaded && !user.stripeCustomerId) {
@@ -265,14 +303,28 @@ function AppInner() {
     }
   }, [user, profileLoaded]);
 
-  const openLogin          = () => setAuthModal('login');
-  const openSignup         = () => setAuthModal('signup');
+  const routeAuthToApp = (authMode, priceId = '') => {
+    const target = new URL(appUrl('/'));
+    target.searchParams.set('auth', authMode);
+    if (priceId) target.searchParams.set('price_id', priceId);
+    window.location.href = target.toString();
+  };
+
+  const openLogin = () => {
+    if (isPublicSiteHost()) return routeAuthToApp('login');
+    return setAuthModal('login');
+  };
+  const openSignup = () => {
+    if (isPublicSiteHost()) return routeAuthToApp('signup');
+    return setAuthModal('signup');
+  };
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
     if (priceId) {
       sessionStorage.setItem('pending_price_id', priceId);
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
     }
+    if (isPublicSiteHost()) return routeAuthToApp('signup', priceId);
     setAuthModal('signup');
   };
 
@@ -318,7 +370,7 @@ function AppInner() {
       const dbs = await window.indexedDB.databases();
       dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
     } catch (_) {}
-    window.location.href = 'https://marketflowjournal.com/';
+    window.location.href = publicSiteUrl('/');
   };
 
   const handleOnboardingComplete = async (answers) => {
@@ -449,7 +501,7 @@ function AppInner() {
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = '/'; }, 300); }}
+              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = publicSiteUrl('/'); }, 300); }}
             />
           } />
           <Route path="*" element={<Navigate to="/plan" replace />} />
