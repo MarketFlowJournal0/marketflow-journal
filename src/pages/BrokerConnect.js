@@ -45,9 +45,12 @@ const C = {
   brd: 'var(--mf-border,#142033)',
 };
 
-const SYNC_ENDPOINT = appUrl('/api/mt-sync');
+const SYNC_ENDPOINT = appUrl('/api/broker-sync?mode=mt');
+const MT_LEGACY_ENDPOINT = appUrl('/api/mt-sync');
 const MT_PATH_ENDPOINT = appUrl('/api/mt/sync');
-const WEBHOOK_ENDPOINT = appUrl('/api/webhook-sync');
+const WEBHOOK_ENDPOINT = appUrl('/api/broker-sync?mode=webhook');
+const WEBHOOK_LEGACY_ENDPOINT = appUrl('/api/webhook-sync');
+const WEBHOOK_TOKEN_ENDPOINT = `${WEBHOOK_ENDPOINT}&token=YOUR_TOKEN`;
 
 const BROKERS = [
   {
@@ -60,7 +63,7 @@ const BROKERS = [
     setup: [
       'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
       'Install the MarketFlow EA inside the MQL4 Experts folder.',
-      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. The compatibility path ${MT_PATH_ENDPOINT} is also active.`,
+      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. Legacy routes ${MT_LEGACY_ENDPOINT} and ${MT_PATH_ENDPOINT} are still active.`,
       'Paste the token inside EA inputs and attach it to a live chart. The EA must POST api_token and trades[].',
     ],
   },
@@ -74,7 +77,7 @@ const BROKERS = [
     setup: [
       'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
       'Install the MarketFlow EA in MQL5/Experts and compile it.',
-      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. The compatibility path ${MT_PATH_ENDPOINT} is also active.`,
+      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. Legacy routes ${MT_LEGACY_ENDPOINT} and ${MT_PATH_ENDPOINT} are still active.`,
       'Attach the EA to a chart and paste the token in the inputs panel. The EA must POST api_token and trades[].',
     ],
   },
@@ -129,7 +132,7 @@ const BROKERS = [
     features: ['Any platform', 'REST', 'Custom routing'],
     setup: [
       'Create a webhook account and copy its API token. Keep it private and rotate it if exposed.',
-      `POST your fills to ${WEBHOOK_ENDPOINT}?token=YOUR_TOKEN or send api_token in the JSON body.`,
+      `POST your fills to ${WEBHOOK_TOKEN_ENDPOINT} or send api_token in the JSON body. Legacy route ${WEBHOOK_LEGACY_ENDPOINT} is still active.`,
       'Use the same connection as a master or follower feed inside Elite copier.',
     ],
     status: 'webhook',
@@ -637,7 +640,7 @@ function BrokerConnect() {
     }
 
     try {
-      const response = await fetch('/api/mt-sync', {
+      const response = await fetch('/api/broker-sync?mode=mt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_token: account.api_token, trades: [] }),
@@ -884,12 +887,12 @@ function BrokerConnect() {
             },
             {
               label: 'Compatibility path',
-              value: MT_PATH_ENDPOINT,
-              body: 'Same payload, kept for EA builds that prefer /api/mt/sync.',
+              value: `${MT_LEGACY_ENDPOINT} / ${MT_PATH_ENDPOINT}`,
+              body: 'Same payload, routed to the consolidated broker-sync function for older EA builds.',
             },
             {
               label: 'Universal webhook',
-              value: `${WEBHOOK_ENDPOINT}?token=YOUR_TOKEN`,
+              value: WEBHOOK_TOKEN_ENDPOINT,
               body: 'For cBots, bridges, prop dashboards, and custom platforms that can POST structured fills.',
             },
           ].map((item) => (
