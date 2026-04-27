@@ -1033,8 +1033,19 @@ function HeaderPanel({
       }}
     >
       <div>
-        <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: shade(C.accent, 0.85), marginBottom: 8 }}>
-          Dashboard
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <WorkflowDock
+            items={routineItems}
+            onToggle={onRoutineToggle}
+            onTitleChange={onRoutineTitleChange}
+            navigate={navigate}
+            overview={overview}
+            plan={plan}
+            align="left"
+          />
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: shade(C.accent, 0.85) }}>
+            Dashboard
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           <div style={{ width: 34, height: 3, borderRadius: 999, background: C.accent, boxShadow: `0 0 18px ${shade(C.accent, 0.55)}` }} />
@@ -1070,14 +1081,6 @@ function HeaderPanel({
           onChange={onAccountChange}
           stats={stats}
           rank={overview.rank}
-        />
-        <WorkflowDock
-          items={routineItems}
-          onToggle={onRoutineToggle}
-          onTitleChange={onRoutineTitleChange}
-          navigate={navigate}
-          overview={overview}
-          plan={plan}
         />
       </div>
     </motion.div>
@@ -1808,7 +1811,7 @@ function CompactRoutinePanel({ items, onToggle, onTitleChange, navigate, overvie
   );
 }
 
-function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan = 'trial' }) {
+function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan = 'trial', align = 'right' }) {
   const [editing, setEditing] = useState(false);
   const [open, setOpen] = useState(false);
   const completed = items.filter((item) => item.done).length;
@@ -1817,9 +1820,12 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
   const neutralLine = 'rgba(255,255,255,0.10)';
   const neutralPanel = 'rgba(255,255,255,0.026)';
   const planLabel = String(plan || 'trial').toUpperCase();
+  const panelPosition = align === 'left'
+    ? { left: 0, right: 'auto' }
+    : { right: 0, left: 'auto' };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', display: 'inline-flex' }}>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -1830,7 +1836,7 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
             style={{
               position: 'absolute',
               top: 'calc(100% + 10px)',
-              right: 0,
+              ...panelPosition,
               width: 318,
               maxWidth: 'calc(100vw - 52px)',
               maxHeight: 'min(66vh, 640px)',
