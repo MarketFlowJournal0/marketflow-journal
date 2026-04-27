@@ -46,6 +46,8 @@ const C = {
 };
 
 const SYNC_ENDPOINT = appUrl('/api/mt-sync');
+const MT_PATH_ENDPOINT = appUrl('/api/mt/sync');
+const WEBHOOK_ENDPOINT = appUrl('/api/webhook-sync');
 
 const BROKERS = [
   {
@@ -58,8 +60,8 @@ const BROKERS = [
     setup: [
       'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
       'Install the MarketFlow EA inside the MQL4 Experts folder.',
-      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}.`,
-      'Paste the token inside EA inputs and attach it to a live chart.',
+      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. The compatibility path ${MT_PATH_ENDPOINT} is also active.`,
+      'Paste the token inside EA inputs and attach it to a live chart. The EA must POST api_token and trades[].',
     ],
   },
   {
@@ -72,8 +74,8 @@ const BROKERS = [
     setup: [
       'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
       'Install the MarketFlow EA in MQL5/Experts and compile it.',
-      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}.`,
-      'Attach the EA to a chart and paste the token in the inputs panel.',
+      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. The compatibility path ${MT_PATH_ENDPOINT} is also active.`,
+      'Attach the EA to a chart and paste the token in the inputs panel. The EA must POST api_token and trades[].',
     ],
   },
   {
@@ -127,7 +129,7 @@ const BROKERS = [
     features: ['Any platform', 'REST', 'Custom routing'],
     setup: [
       'Create a webhook account and copy its API token. Keep it private and rotate it if exposed.',
-      'POST your fills to the MarketFlow sync endpoint with the token.',
+      `POST your fills to ${WEBHOOK_ENDPOINT}?token=YOUR_TOKEN or send api_token in the JSON body.`,
       'Use the same connection as a master or follower feed inside Elite copier.',
     ],
     status: 'webhook',
@@ -872,6 +874,52 @@ function BrokerConnect() {
             </>
           )}
         />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
+          {[
+            {
+              label: 'MarketFlow EA',
+              value: SYNC_ENDPOINT,
+              body: 'MT4/MT5 posts api_token and trades[]. Empty heartbeats update last sync; duplicate tickets are skipped.',
+            },
+            {
+              label: 'Compatibility path',
+              value: MT_PATH_ENDPOINT,
+              body: 'Same payload, kept for EA builds that prefer /api/mt/sync.',
+            },
+            {
+              label: 'Universal webhook',
+              value: `${WEBHOOK_ENDPOINT}?token=YOUR_TOKEN`,
+              body: 'For cBots, bridges, prop dashboards, and custom platforms that can POST structured fills.',
+            },
+          ].map((item) => (
+            <div key={item.label} style={{ padding: 14, borderRadius: 18, border: `1px solid ${shade(C.t3, 0.13)}`, background: 'rgba(255,255,255,0.026)', minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.t3, marginBottom: 7 }}>{item.label}</div>
+              <button
+                type="button"
+                onClick={() => copyText(item.value, `${item.label} copied.`)}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  border: `1px solid ${shade(C.cyan, 0.12)}`,
+                  background: 'rgba(3,7,13,0.58)',
+                  color: C.t1,
+                  borderRadius: 12,
+                  padding: '9px 10px',
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  cursor: 'copy',
+                }}
+              >
+                {item.value}
+              </button>
+              <div style={{ marginTop: 9, fontSize: 11.5, color: C.t2, lineHeight: 1.6 }}>{item.body}</div>
+            </div>
+          ))}
+        </div>
 
         <AnimatePresence>
           {showBrokerForm && (

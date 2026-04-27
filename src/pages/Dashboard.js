@@ -26,6 +26,7 @@ import {
   buildMarketFlowRank,
   getCompetitionDayStamp,
 } from '../lib/marketflowCompetition';
+import { getDevelopmentScoreSnapshot } from '../lib/developmentScore';
 const C = {
   accent: 'var(--mf-accent,#14C9E5)',
   accentSoft: 'var(--mf-accent-secondary,#DCE4EF)',
@@ -51,6 +52,7 @@ const ROUTES = {
   psychology: '/psychology',
   backtest: '/backtest',
   competition: '/competition',
+  development: '/development',
 };
 
 const ROUTINE_TEMPLATE_PREFIX = 'mf_dashboard_routine_template_v1_';
@@ -158,6 +160,12 @@ const Ic = {
       <path d="M2.4 4.25l.9.9 1.4-1.55" />
       <path d="M2.4 7.5l.9.9 1.4-1.55" />
       <path d="M2.4 10.75l.9.9 1.4-1.55" />
+    </svg>
+  ),
+  Bell: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7.5 2.2a3.2 3.2 0 0 0-3.2 3.2v1.38c0 .7-.18 1.36-.52 1.96L3 10.2h9l-.78-1.46a3.95 3.95 0 0 1-.52-1.96V5.4a3.2 3.2 0 0 0-3.2-3.2z" />
+      <path d="M6.08 12.1a1.6 1.6 0 0 0 2.84 0" />
     </svg>
   ),
   Edit: () => (
@@ -516,7 +524,7 @@ function buildCalendarMonth(trades, monthOffset = 0) {
   };
 }
 
-function buildDashboardOverview(stats, trades, routineScore = 0) {
+function buildDashboardOverview(stats, trades, routineScore = 0, developmentScore = 0) {
   const closedTrades = getClosedTrades(trades);
   const recentTrades = [...(trades || [])]
     .sort((left, right) => new Date(right.open_date || right.date || 0) - new Date(left.open_date || left.date || 0))
@@ -562,6 +570,7 @@ function buildDashboardOverview(stats, trades, routineScore = 0) {
   const rank = buildMarketFlowRank(stats, {
     hygieneScore,
     routineScore,
+    developmentScore,
     bestSession,
     topPair,
     positiveDays: monthSummary.positiveDays,
@@ -587,6 +596,7 @@ function buildDashboardOverview(stats, trades, routineScore = 0) {
     monthSummary,
     rank,
     routineScore,
+    developmentScore,
     tradeCount: stats.totalTrades || 0,
   };
 }
@@ -1803,7 +1813,7 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
   const [open, setOpen] = useState(false);
   const completed = items.filter((item) => item.done).length;
   const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
-  const progressTone = C.text1;
+  const remaining = Math.max(items.length - completed, 0);
   const neutralLine = 'rgba(255,255,255,0.10)';
   const neutralPanel = 'rgba(255,255,255,0.026)';
   const planLabel = String(plan || 'trial').toUpperCase();
@@ -1821,12 +1831,12 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
               position: 'absolute',
               top: 'calc(100% + 10px)',
               right: 0,
-              width: 336,
+              width: 318,
               maxWidth: 'calc(100vw - 52px)',
-              maxHeight: 'min(70vh, 700px)',
+              maxHeight: 'min(66vh, 640px)',
               overflowY: 'auto',
-              padding: '14px 14px 12px',
-              borderRadius: 22,
+              padding: '12px',
+              borderRadius: 20,
               background: 'linear-gradient(180deg, rgba(8,13,22,0.98), rgba(7,11,20,0.98))',
               border: `1px solid ${neutralLine}`,
               boxShadow: '0 28px 60px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.035)',
@@ -1837,10 +1847,10 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
               <div>
                 <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>
-                  Today
+                  Notification
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '-0.04em', color: C.text0 }}>
-                  Workflow
+                  Daily process
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1862,6 +1872,12 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
                 <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, rgba(232,238,255,0.42), rgba(232,238,255,0.82))' }} />
               </div>
               <MiniMetric label="Plan scope" value={planLabel} tone={C.text1} caption={overview.rank.note} />
+              <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+                <MiniMetric label="Development" value={`${overview.developmentScore || 0}/100`} tone={C.text1} caption="Discipline and regularity input." />
+                <GhostButton onClick={() => navigate(ROUTES.development)} icon={<Ic.ArrowRight />}>
+                  Open
+                </GhostButton>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gap: 8 }}>
@@ -1928,10 +1944,11 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
         whileTap={{ scale: 0.98 }}
         onClick={() => setOpen((value) => !value)}
         style={{
-          minWidth: 58,
-          height: 58,
-          padding: '10px 11px',
-          borderRadius: 18,
+          width: 44,
+          minWidth: 44,
+          height: 44,
+          padding: 0,
+          borderRadius: 999,
           border: `1px solid ${neutralLine}`,
           background: 'linear-gradient(180deg, rgba(9,14,24,0.98), rgba(7,11,20,0.96))',
           color: C.text1,
@@ -1943,13 +1960,13 @@ function WorkflowDock({ items, onToggle, onTitleChange, navigate, overview, plan
           backdropFilter: 'blur(18px)',
           position: 'relative',
         }}
-        title="Open workflow"
+        title="Open daily process"
       >
-        <span style={{ width: 34, height: 34, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.028))', border: `1px solid ${neutralLine}`, color: C.text1 }}>
-          <Ic.Checklist />
+        <span style={{ width: 28, height: 28, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025))', border: `1px solid ${neutralLine}`, color: C.text1 }}>
+          <Ic.Bell />
         </span>
-        <span style={{ position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 999, padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 900, color: C.text1, background: 'rgba(255,255,255,0.075)', border: `1px solid ${neutralLine}`, letterSpacing: '-0.02em' }}>
-          {completed}
+        <span style={{ position: 'absolute', top: 3, right: 3, minWidth: 17, height: 17, borderRadius: 999, padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: remaining ? C.warn : C.green, background: remaining ? 'rgba(255,179,26,0.13)' : 'rgba(0,210,184,0.12)', border: `1px solid ${remaining ? 'rgba(255,179,26,0.24)' : 'rgba(0,210,184,0.22)'}`, letterSpacing: '-0.02em' }}>
+          {remaining || <Ic.Check />}
         </span>
       </motion.button>
     </div>
@@ -2418,7 +2435,11 @@ export default function Dashboard() {
   const setActiveAccount = ctx?.setActiveAccount || (() => null);
   const currentPlan = String(user?.plan || 'trial').toLowerCase();
 
-  const baseOverview = useMemo(() => buildDashboardOverview(stats, trades, 0), [stats, trades]);
+  const developmentSnapshot = useMemo(
+    () => getDevelopmentScoreSnapshot(user?.id || user?.email || 'guest', activeAccount),
+    [activeAccount, user?.email, user?.id],
+  );
+  const baseOverview = useMemo(() => buildDashboardOverview(stats, trades, 0, developmentSnapshot.score), [developmentSnapshot.score, stats, trades]);
   const routineBlueprint = useMemo(() => buildRoutineBlueprint(baseOverview), [baseOverview]);
   const [routineItems, setRoutineItems] = useState(() => loadRoutineState(activeAccount, routineBlueprint));
 
@@ -2434,7 +2455,10 @@ export default function Dashboard() {
     routineItems.length ? Math.round((routineItems.filter((item) => item.done).length / routineItems.length) * 100) : 0
   ), [routineItems]);
 
-  const overview = useMemo(() => buildDashboardOverview(stats, trades, routineScore), [stats, trades, routineScore]);
+  const overview = useMemo(
+    () => buildDashboardOverview(stats, trades, routineScore, developmentSnapshot.score),
+    [developmentSnapshot.score, stats, trades, routineScore],
+  );
 
   const toggleRoutineItem = (id) => {
     setRoutineItems((current) => current.map((item) => (

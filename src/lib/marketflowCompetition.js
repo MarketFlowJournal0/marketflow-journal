@@ -63,6 +63,7 @@ export function buildMarketFlowRank(stats = {}, context = {}) {
   const expectancy = safeNumber(stats.expectancy);
   const hygieneScore = safeNumber(context.hygieneScore);
   const routineScore = safeNumber(context.routineScore);
+  const developmentScore = safeNumber(context.developmentScore);
   const positiveDays = safeNumber(context.positiveDays);
   const negativeDays = safeNumber(context.negativeDays);
   const flatDays = safeNumber(context.flatDays);
@@ -73,7 +74,7 @@ export function buildMarketFlowRank(stats = {}, context = {}) {
   const streakCount = safeNumber(context.currentStreak?.count);
   const streakType = context.currentStreak?.type || 'flat';
 
-  const processScore = clamp((hygieneScore * 0.72) + (routineScore * 0.28));
+  const processScore = clamp((hygieneScore * 0.42) + (routineScore * 0.22) + (developmentScore * 0.36));
   const edgeScore = clamp((profitFactor / 2.6) * 100);
   const consistencyScore = clamp((winRate / 63) * 100 + (expectancy > 0 ? 8 : 0));
   const riskScore = clamp(100 - ((maxDrawdown / 12) * 100));
@@ -120,7 +121,7 @@ export function buildMarketFlowRank(stats = {}, context = {}) {
   );
 
   const factors = [
-    { label: 'Process', value: Math.round(processScore), tone: 'accent', description: 'Journal quality and routine completion.' },
+    { label: 'Process', value: Math.round(processScore), tone: 'accent', description: 'Journal quality, workflow, discipline, and regularity.' },
     { label: 'Edge', value: Math.round(edgeScore), tone: 'green', description: 'Profit factor, expectancy, and pair quality.' },
     { label: 'Consistency', value: Math.round(consistencyScore), tone: 'blue', description: 'Stable hit rate and controlled execution.' },
     { label: 'Risk', value: Math.round(riskScore), tone: 'warn', description: 'Drawdown pressure and downside control.' },

@@ -1,4 +1,4 @@
-const BASE_ROUTES = ['dashboard', 'all-trades', 'calendar'];
+const BASE_ROUTES = ['dashboard', 'all-trades', 'calendar', 'development'];
 const ACCOUNT_ROUTES = ['account-settings', 'subscription', 'support'];
 
 export const PLAN_DETAILS = {
@@ -13,6 +13,7 @@ export const PLAN_DETAILS = {
       'Dashboard and core statistics',
       'CSV import',
       'Performance calendar',
+      'Development workspace',
     ],
   },
   starter: {
@@ -26,6 +27,7 @@ export const PLAN_DETAILS = {
       'Dashboard and core statistics',
       'CSV import',
       'Performance calendar',
+      'Development workspace',
       'Core analytics',
       '1 trading account',
       '1 backtest session',

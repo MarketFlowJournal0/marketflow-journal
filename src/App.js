@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import AllTrades from './pages/AllTrades';
 import AnalyticsPro from './pages/AnalyticsPro';
 import Backtest from './pages/Backtest';
+import Development from './pages/Development';
 import Calendar from './pages/Calendar';
 import Equity from './pages/Equity';
 import Psychology from './pages/Psychology';
@@ -64,6 +65,7 @@ const APP_HOST_ROUTE_PREFIXES = [
   '/analytics',
   '/analytics-pro',
   '/backtest',
+  '/development',
   '/calendar',
   '/equity',
   '/psychology',
@@ -209,6 +211,7 @@ function AppLayout({ user, onLogout }) {
               <Route path="/analytics" element={<Navigate to="/analytics-pro" replace />} />
               <Route path="/analytics-pro" element={renderProtectedRoute('analytics-pro', <AnalyticsPro />)} />
               <Route path="/backtest" element={renderProtectedRoute('backtest', <Backtest />)} />
+              <Route path="/development" element={renderProtectedRoute('development', <Development />)} />
               <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />
               <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
               <Route path="/psychology" element={renderProtectedRoute('psychology', <Psychology />)} />

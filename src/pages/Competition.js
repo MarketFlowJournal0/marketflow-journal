@@ -1,495 +1,426 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useTradingContext } from '../context/TradingContext';
 import { useAuth } from '../context/AuthContext';
+import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
 import {
   buildCompetitionBoard,
   buildMarketFlowRank,
   getCompetitionDayStamp,
 } from '../lib/marketflowCompetition';
+import { getDevelopmentScoreSnapshot } from '../lib/developmentScore';
 
 const C = {
   accent: 'var(--mf-accent,#14C9E5)',
   green: 'var(--mf-green,#00D2B8)',
   blue: 'var(--mf-blue,#4D7CFF)',
-  teal: 'var(--mf-teal,#00D2B8)',
-  purple: 'var(--mf-purple,#A78BFA)',
   warn: 'var(--mf-warn,#FFB31A)',
   danger: 'var(--mf-danger,#FF3D57)',
+  purple: 'var(--mf-purple,#A78BFA)',
   text0: 'var(--mf-text-0,#FFFFFF)',
   text1: 'var(--mf-text-1,#E8EEFF)',
-  text2: 'var(--mf-text-2,#7A90B8)',
-  text3: 'var(--mf-text-3,#334566)',
+  text2: 'var(--mf-text-2,#8DA1C4)',
+  text3: 'var(--mf-text-3,#425575)',
   border: 'var(--mf-border,#142033)',
+  card: 'rgba(8,13,24,0.74)',
 };
 
-const ROUTES = {
-  dashboard: '/dashboard',
-  trades: '/all-trades',
-};
-
-const ROUTINE_DAY_PREFIX = 'mf_dashboard_routine_day_v1_';
-
-const PAGE_STYLES = `
-  .mf-competition-grid-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.8fr);
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-
-  .mf-competition-grid-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.82fr);
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-
-  .mf-competition-grid-secondary {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 14px;
-  }
-
-  @media (max-width: 1160px) {
-    .mf-competition-grid-hero,
-    .mf-competition-grid-main,
-    .mf-competition-grid-secondary {
-      grid-template-columns: 1fr;
-    }
-  }
-`;
-
-const Ic = {
-  Trophy: () => (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4.2 2.1h6.6v1.6A3.3 3.3 0 017.5 7 3.3 3.3 0 014.2 3.7z" />
-      <path d="M3.4 2.9H2.2a1.4 1.4 0 000 2.8h1.1" />
-      <path d="M11.6 2.9h1.2a1.4 1.4 0 010 2.8h-1.1" />
-      <path d="M7.5 7v2.1" />
-      <path d="M5.1 13h4.8" />
-      <path d="M5.8 9.1h3.4v1.6H5.8z" />
-    </svg>
-  ),
-  ArrowRight: () => (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 6.5h8.2" />
-      <path d="M6.8 3.2l3.4 3.3-3.4 3.3" />
-    </svg>
-  ),
-};
-
-function toneColor(tone = 'accent') {
-  if (tone === 'green') return C.green;
-  if (tone === 'blue') return C.blue;
-  if (tone === 'teal') return C.teal;
-  if (tone === 'purple') return C.purple;
-  if (tone === 'warn') return C.warn;
-  if (tone === 'danger') return C.danger;
-  if (tone === 'text') return C.text2;
-  return C.accent;
-}
-
-function panelMotion(index = 0) {
-  return {
-    initial: { opacity: 0, y: 14 },
-    animate: { opacity: 1, y: 0 },
-    transition: {
-      duration: 0.42,
-      delay: index * 0.05,
-      ease: [0.16, 1, 0.3, 1],
-    },
-  };
-}
-
-function formatCurrency(value = 0, signed = false) {
-  const amount = Number(value) || 0;
-  const absolute = Math.abs(amount).toLocaleString();
-  if (signed) {
-    if (amount > 0) return `+$${absolute}`;
-    if (amount < 0) return `-$${absolute}`;
-  }
-  return `$${absolute}`;
-}
-
-function formatSignedCompact(value = 0) {
-  const amount = Number(value) || 0;
-  if (amount > 0) return `+$${Math.abs(amount).toLocaleString()}`;
-  if (amount < 0) return `-$${Math.abs(amount).toLocaleString()}`;
-  return '$0';
-}
-
-function clamp(value, min = 0, max = 100) {
+function num(value, fallback = 0) {
   const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return min;
-  return Math.max(min, Math.min(max, numeric));
+  return Number.isFinite(numeric) ? numeric : fallback;
 }
 
-function getClosedTrades(trades) {
-  return [...(trades || [])]
-    .filter((trade) => ['TP', 'SL', 'BE'].includes(trade.status))
-    .sort((left, right) => new Date(right.open_date || right.date || 0) - new Date(left.open_date || left.date || 0));
+function money(value = 0, signed = false) {
+  const amount = num(value);
+  const prefix = signed && amount > 0 ? '+' : amount < 0 ? '-' : '';
+  return `${prefix}$${Math.abs(amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
-function percentage(total, predicate) {
-  if (!total.length) return 0;
-  const count = total.filter(predicate).length;
-  return Math.round((count / total.length) * 100);
+function pct(value = 0) {
+  return `${num(value).toFixed(1)}%`;
 }
 
-function getCurrentStreak(closedTrades) {
-  if (!closedTrades.length) {
-    return { count: 0, type: 'flat' };
-  }
-  const firstValue = Number(closedTrades[0].profit_loss || 0);
-  const firstSign = Math.sign(firstValue);
-  if (firstSign === 0) return { count: 1, type: 'flat' };
-  let count = 0;
-  for (const trade of closedTrades) {
-    const sign = Math.sign(Number(trade.profit_loss || 0));
-    if (sign === firstSign) count += 1;
+function toneColor(tone) {
+  return {
+    accent: C.accent,
+    green: C.green,
+    blue: C.blue,
+    warn: C.warn,
+    danger: C.danger,
+    purple: C.purple,
+    teal: C.green,
+  }[tone] || C.text1;
+}
+
+function getTradeDate(trade) {
+  const source = trade?.date || trade?.close_time || trade?.closed_at || trade?.open_time || trade?.created_at;
+  if (!source) return null;
+  const parsed = new Date(source);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+function getPnl(trade) {
+  return num(trade?.profit_loss ?? trade?.pnl ?? trade?.profit ?? trade?.result ?? 0);
+}
+
+function buildCompetitionContext(trades = [], developmentSnapshot = {}) {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const dayMap = new Map();
+  const sessionMap = new Map();
+  const pairMap = new Map();
+  let logged = 0;
+
+  trades.forEach((trade) => {
+    const pnl = getPnl(trade);
+    const dateKey = getTradeDate(trade);
+    if (dateKey) {
+      const day = dayMap.get(dateKey) || { pnl: 0, count: 0 };
+      day.pnl += pnl;
+      day.count += 1;
+      dayMap.set(dateKey, day);
+    }
+
+    const session = trade?.session || 'Unspecified';
+    const sessionItem = sessionMap.get(session) || { s: session, pnl: 0, count: 0 };
+    sessionItem.pnl += pnl;
+    sessionItem.count += 1;
+    sessionMap.set(session, sessionItem);
+
+    const pair = trade?.symbol || trade?.pair || 'Unknown';
+    const pairItem = pairMap.get(pair) || { p: pair, pnl: 0, count: 0 };
+    pairItem.pnl += pnl;
+    pairItem.count += 1;
+    pairMap.set(pair, pairItem);
+
+    if (trade?.notes || trade?.tags || trade?.strategy || trade?.setup || trade?.screenshots?.length) logged += 1;
+  });
+
+  const days = [...dayMap.entries()].sort(([left], [right]) => left.localeCompare(right));
+  const monthDays = days.filter(([date]) => date.startsWith(currentMonth));
+  const monthPnl = monthDays.reduce((sum, [, day]) => sum + day.pnl, 0);
+  const positiveDays = monthDays.filter(([, day]) => day.pnl > 0).length;
+  const negativeDays = monthDays.filter(([, day]) => day.pnl < 0).length;
+  const flatDays = monthDays.filter(([, day]) => day.pnl === 0).length;
+  const bestSession = [...sessionMap.values()].sort((left, right) => right.pnl - left.pnl)[0] || null;
+  const topPair = [...pairMap.values()].sort((left, right) => right.pnl - left.pnl)[0] || null;
+
+  let currentStreak = { type: 'flat', count: 0 };
+  for (let index = days.length - 1; index >= 0; index -= 1) {
+    const day = days[index][1];
+    const type = day.pnl > 0 ? 'win' : day.pnl < 0 ? 'loss' : 'flat';
+    if (!currentStreak.count) currentStreak = { type, count: 1 };
+    else if (currentStreak.type === type) currentStreak.count += 1;
     else break;
   }
-  return { count, type: firstSign > 0 ? 'win' : 'loss' };
-}
 
-function loadRoutineScore(accountId = 'all') {
-  const key = `${ROUTINE_DAY_PREFIX}${accountId || 'all'}`;
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(key) || 'null');
-    const items = Array.isArray(parsed?.items) ? parsed.items : [];
-    return items.length ? Math.round((items.filter((item) => item.done).length / items.length) * 100) : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function buildCompetitionOverview(stats, trades, routineScore = 0) {
-  const closedTrades = getClosedTrades(trades);
-  const setupCoverage = percentage(closedTrades, (trade) => String(trade.setup || '').trim().length > 0);
-  const sessionCoverage = percentage(closedTrades, (trade) => String(trade.session || '').trim().length > 0);
-  const noteCoverage = percentage(closedTrades, (trade) => String(trade.notes || '').trim().length > 0);
-  const psychologyCoverage = percentage(closedTrades, (trade) => {
-    const score = trade.psychology_score ?? trade.psychologyScore;
-    return score !== null && score !== undefined && score !== '';
-  });
-
-  const hygieneScore = closedTrades.length
-    ? Math.round((setupCoverage + sessionCoverage + noteCoverage + psychologyCoverage) / 4)
-    : 0;
-
-  const dailySeries = Array.isArray(stats.dailyPnl) ? stats.dailyPnl : [];
-  const positiveDays = dailySeries.filter((item) => item.v > 0).length;
-  const negativeDays = dailySeries.filter((item) => item.v < 0).length;
-  const flatDays = dailySeries.filter((item) => item.v === 0).length;
-  const sessionData = Array.isArray(stats.sessionData) ? stats.sessionData : [];
-  const pairData = Array.isArray(stats.pairData) ? stats.pairData : [];
-  const bestSession = sessionData.length ? [...sessionData].sort((left, right) => right.pnl - left.pnl)[0] : null;
-  const topPair = pairData.length ? [...pairData].sort((left, right) => right.pnl - left.pnl)[0] : null;
-  const monthPnl = dailySeries.reduce((sum, item) => sum + (Number(item.v) || 0), 0);
-  const currentStreak = getCurrentStreak(closedTrades);
-
-  const rank = buildMarketFlowRank(stats, {
-    hygieneScore,
-    routineScore,
-    bestSession,
-    topPair,
-    positiveDays,
-    negativeDays,
-    flatDays,
-    monthPnl,
-    currentStreak,
-  });
+  const hygieneScore = trades.length ? Math.round((logged / trades.length) * 100) : 0;
 
   return {
-    hygieneScore,
-    routineScore,
+    monthPnl,
     positiveDays,
     negativeDays,
     flatDays,
     bestSession,
     topPair,
-    monthPnl,
-    rank,
+    currentStreak,
+    hygieneScore,
+    routineScore: num(developmentSnapshot.weeklyAverage ?? developmentSnapshot.score),
+    developmentScore: num(developmentSnapshot.score),
   };
 }
 
-function SectionCard({ children, tone = C.accent, style, index = 0 }) {
+function Card({ children, style }) {
   return (
-    <motion.section
-      {...panelMotion(index)}
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        position: 'relative',
-        overflow: 'hidden',
+        border: `1px solid ${shade(C.border, 0.82)}`,
+        background: `linear-gradient(180deg, ${shade(C.card, 0.96)}, ${shade('#050914', 0.92)})`,
+        boxShadow: '0 24px 80px rgba(0,0,0,0.32)',
         borderRadius: 24,
-        border: `1px solid ${shade(tone, 0.16)}`,
-        background: 'linear-gradient(180deg, rgba(10,17,28,0.9), rgba(8,13,24,0.94))',
-        boxShadow: '0 18px 52px rgba(0,0,0,0.24)',
         ...style,
       }}
     >
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(circle at top right, ${shade(tone, 0.12)} 0%, transparent 42%)` }} />
-      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
-    </motion.section>
-  );
-}
-
-function SectionTitle({ eyebrow, title, tone = C.accent, icon, action }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          {icon && (
-            <div style={{ width: 28, height: 28, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: shade(tone, 0.12), color: tone, border: `1px solid ${shade(tone, 0.2)}` }}>
-              {icon}
-            </div>
-          )}
-          {eyebrow && (
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.text3 }}>
-              {eyebrow}
-            </div>
-          )}
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.05em', color: C.text0 }}>
-          {title}
-        </div>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function GhostButton({ children, onClick, icon }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        border: `1px solid ${shade(C.accent, 0.16)}`,
-        background: shade(C.accent, 0.06),
-        color: C.text1,
-        borderRadius: 12,
-        padding: '9px 13px',
-        fontSize: 12,
-        fontWeight: 700,
-        cursor: 'pointer',
-        transition: 'all 0.16s ease',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
-      {icon}
       {children}
-    </button>
+    </motion.div>
   );
 }
 
-function MiniMetric({ label, value, tone = C.text1, caption }) {
+function MiniStat({ label, value, tone = C.text1, caption }) {
   return (
-    <div style={{ padding: '12px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(tone, 0.12)}` }}>
-      <div style={{ fontSize: 10, fontWeight: 800, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+    <Card style={{ padding: 18 }}>
+      <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text3 }}>
         {label}
       </div>
-      <div style={{ fontSize: 19, fontWeight: 900, color: tone, lineHeight: 1.05, marginBottom: caption ? 6 : 0 }}>
+      <div style={{ marginTop: 8, fontSize: 28, fontWeight: 950, letterSpacing: '-0.05em', color: tone }}>
         {value}
       </div>
-      {caption && (
-        <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.5 }}>
-          {caption}
-        </div>
-      )}
-    </div>
+      {caption ? <div style={{ marginTop: 6, fontSize: 12, color: C.text2 }}>{caption}</div> : null}
+    </Card>
   );
 }
 
-function ProgressRow({ label, current, tone, description }) {
-  const progress = clamp(current);
-  const color = progress >= 88 ? C.green : progress >= 60 ? tone : C.warn;
+function FactorBar({ factor }) {
+  const color = toneColor(factor.tone);
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 7 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.text1 }}>
-          {label}
-        </span>
-        <span style={{ fontSize: 11, fontWeight: 800, color, fontFamily: 'monospace' }}>
-          {progress}%
-        </span>
+    <div style={{ display: 'grid', gap: 7 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+        <span style={{ color: C.text1, fontSize: 12, fontWeight: 800 }}>{factor.label}</span>
+        <span style={{ color, fontSize: 12, fontWeight: 900 }}>{factor.value}/100</span>
       </div>
-      <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: 6 }}>
-        <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(color, 0.58)}, ${color})` }} />
-      </div>
-      <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.5 }}>
-        {description}
+      <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.max(0, Math.min(100, factor.value))}%` }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(color, 0.55)}, ${color})` }}
+        />
       </div>
     </div>
   );
 }
 
-export default function Competition() {
-  const navigate = useNavigate();
+function Competition() {
   const { user } = useAuth();
-  const ctx = useTradingContext();
-  const stats = ctx?.stats || {};
-  const trades = ctx?.trades || [];
-  const activeAccount = ctx?.activeAccount || 'all';
-  const accountOptions = ctx?.accountOptions || [{ id: 'all', label: 'All Accounts', count: 0, pnl: 0 }];
-  const activeOption = accountOptions.find((option) => option.id === activeAccount) || accountOptions[0];
-  const routineScore = loadRoutineScore(activeAccount);
-  const overview = useMemo(() => buildCompetitionOverview(stats, trades, routineScore), [stats, trades, routineScore]);
-  const rank = overview.rank;
-  const rankTone = toneColor(rank.tone);
-  const displayName = user?.fullName || user?.name || user?.email?.split('@')[0] || 'You';
-  const [leaderboardDayStamp, setLeaderboardDayStamp] = useState(() => getCompetitionDayStamp());
+  const { trades, stats, activeAccount, accountOptions, setActiveAccount } = useTradingContext();
+  const [remoteBoard, setRemoteBoard] = useState([]);
+  const [remoteStatus, setRemoteStatus] = useState('idle');
+
+  const developmentSnapshot = useMemo(
+    () => getDevelopmentScoreSnapshot(user?.id || user?.email || 'guest', activeAccount),
+    [activeAccount, user?.email, user?.id],
+  );
+
+  const context = useMemo(
+    () => buildCompetitionContext(trades, developmentSnapshot),
+    [developmentSnapshot, trades],
+  );
+
+  const rank = useMemo(
+    () => buildMarketFlowRank(stats, context),
+    [context, stats],
+  );
+
+  const displayName = user?.fullName || user?.email?.split('@')[0] || 'MarketFlow Trader';
+  const localBoard = useMemo(
+    () => buildCompetitionBoard(rank, displayName, getCompetitionDayStamp()),
+    [displayName, rank],
+  );
 
   useEffect(() => {
-    const now = new Date();
-    const next = new Date(now);
-    next.setHours(24, 0, 5, 0);
-    const timeout = window.setTimeout(() => {
-      setLeaderboardDayStamp(getCompetitionDayStamp());
-    }, Math.max(60000, next.getTime() - now.getTime()));
-    return () => window.clearTimeout(timeout);
-  }, [leaderboardDayStamp]);
+    let mounted = true;
+    setRemoteStatus('loading');
+    fetch('/api/leaderboard')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Leaderboard unavailable')))
+      .then((payload) => {
+        if (!mounted) return;
+        const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+        setRemoteBoard(rows);
+        setRemoteStatus(rows.length ? 'live' : 'fallback');
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setRemoteBoard([]);
+        setRemoteStatus('fallback');
+      });
+    return () => { mounted = false; };
+  }, []);
 
-  const board = useMemo(() => buildCompetitionBoard(rank, displayName, leaderboardDayStamp), [displayName, leaderboardDayStamp, rank]);
+  const board = remoteBoard.length
+    ? remoteBoard.map((row, index) => ({
+      id: row.id || row.user_id || `remote-${index}`,
+      name: row.display_name || `Desk ${index + 1}`,
+      position: row.position || index + 1,
+      score: row.score || 0,
+      percentile: row.percentile || Math.max(1, 99 - index),
+      delta: row.weekly_delta || 0,
+      isUser: row.user_id && user?.id ? row.user_id === user.id : false,
+    }))
+    : localBoard;
 
   return (
-    <div style={{ padding: '30px 30px 54px', position: 'relative' }}>
-      <style>{PAGE_STYLES}</style>
+    <main style={{ minHeight: '100vh', padding: '28px clamp(18px, 3vw, 42px) 42px', color: C.text1 }}>
+      <div
+        aria-hidden
+        style={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          background: 'radial-gradient(circle at 20% 15%, rgba(20,201,229,0.12), transparent 30%), radial-gradient(circle at 78% 4%, rgba(0,210,184,0.08), transparent 28%), linear-gradient(135deg, #030711 0%, #07101c 52%, #02050c 100%)',
+          zIndex: -2,
+        }}
+      />
 
-      <div className="mf-competition-grid-hero">
-        <SectionCard tone={rankTone} index={0} style={{ padding: '22px 22px 20px' }}>
-          <SectionTitle
-            eyebrow="Competition"
-            title="MarketFlow Leaderboard"
-            tone={rankTone}
-            icon={<Ic.Trophy />}
-            action={<GhostButton onClick={() => navigate(ROUTES.dashboard)}>Back to Dashboard</GhostButton>}
-          />
+      <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(300px, 0.85fr)', gap: 18, alignItems: 'stretch' }}>
+        <Card style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 11, color: C.accent, fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+                Competition
+              </div>
+              <h1 style={{ margin: '8px 0 8px', fontSize: 'clamp(32px, 5vw, 58px)', lineHeight: 0.95, letterSpacing: '-0.07em', color: C.text0 }}>
+                MarketFlow Rank
+              </h1>
+              <p style={{ maxWidth: 680, margin: 0, color: C.text2, fontSize: 14, lineHeight: 1.7 }}>
+                Score built from real journal data, risk quality, execution consistency, and your development workspace.
+              </p>
+            </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '132px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
-            <div
-              style={{
-                width: 132,
-                height: 132,
-                borderRadius: '50%',
-                background: `conic-gradient(${rankTone} ${rank.normalized * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
-                padding: 12,
-                boxSizing: 'border-box',
-                boxShadow: `0 18px 46px ${shade(rankTone, 0.18)}`,
-              }}
-            >
-              <div
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                value={activeAccount}
+                onChange={(event) => setActiveAccount(event.target.value)}
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), rgba(7, 12, 22, 0.96) 62%)',
-                  border: `1px solid ${shade(rankTone, 0.18)}`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  border: `1px solid ${shade(C.border, 0.95)}`,
+                  background: 'rgba(255,255,255,0.035)',
+                  color: C.text1,
+                  borderRadius: 999,
+                  padding: '10px 14px',
+                  fontWeight: 800,
+                  outline: 'none',
                 }}
               >
-                <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.05em', color: C.text0 }}>
-                  {rank.score}
-                </div>
-                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
-                  Score
-                </div>
-              </div>
+                {(accountOptions || []).map((account) => (
+                  <option key={account.id} value={account.id}>{account.label}</option>
+                ))}
+              </select>
+              <span style={{ border: `1px solid ${shade(C.accent, 0.2)}`, background: shade(C.accent, 0.08), color: C.accent, borderRadius: 999, padding: '10px 13px', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                {remoteStatus === 'live' ? 'Daily snapshot' : remoteStatus === 'loading' ? 'Syncing' : 'Local live rank'}
+              </span>
             </div>
+          </div>
+        </Card>
 
+        <Card style={{ padding: 24, display: 'grid', alignContent: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-end' }}>
             <div>
-              <div style={{ display: 'inline-flex', padding: '6px 10px', borderRadius: 999, fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', background: shade(rankTone, 0.12), border: `1px solid ${shade(rankTone, 0.22)}`, color: rankTone, marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: C.text3, fontWeight: 900, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+                Current tier
+              </div>
+              <div style={{ marginTop: 7, fontSize: 32, fontWeight: 950, letterSpacing: '-0.05em', color: toneColor(rank.tone) }}>
                 {rank.label}
               </div>
-              <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1.02, letterSpacing: '-0.05em', color: C.text0, marginBottom: 8 }}>
-                #{rank.position.toLocaleString()} in the live MF field
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 52, lineHeight: 0.9, fontWeight: 950, letterSpacing: '-0.08em', color: C.text0 }}>
+                {rank.score}
               </div>
-              <div style={{ fontSize: 12.5, lineHeight: 1.7, color: C.text2, marginBottom: 12 }}>
-                {rank.focus}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-                <MiniMetric label="Top percentile" value={`${rank.percentile}%`} tone={rankTone} />
-                <MiniMetric label="Weekly delta" value={`${rank.weeklyDelta >= 0 ? '+' : ''}${rank.weeklyDelta}`} tone={rank.weeklyDelta >= 0 ? C.green : C.danger} />
-                <MiniMetric label="Next tier" value={rank.nextGap > 0 ? `${rank.nextGap} pts` : 'Unlocked'} tone={rankTone} caption={rank.nextGap > 0 ? rank.nextLabel : 'Apex'} />
-              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: C.text2 }}>#{rank.position.toLocaleString()} / {rank.fieldSize.toLocaleString()}</div>
             </div>
           </div>
-        </SectionCard>
-
-        <SectionCard tone={C.accent} index={1} style={{ padding: '20px 20px 18px' }}>
-          <SectionTitle eyebrow="Scope" title={activeOption?.label || 'All Accounts'} tone={C.accent} />
-          <div style={{ display: 'grid', gap: 10 }}>
-            <MiniMetric label="Scope P&L" value={formatSignedCompact(stats.pnl)} tone={(stats.pnl || 0) >= 0 ? C.green : C.danger} />
-            <MiniMetric label="Scope trades" value={`${stats.totalTrades || 0}`} tone={C.accent} />
-            <MiniMetric label="Routine score" value={`${overview.routineScore}%`} tone={overview.routineScore >= 70 ? C.green : C.warn} caption="Loaded from the daily dashboard routine." />
-            <MiniMetric label="Best context" value={overview.bestSession ? overview.bestSession.s : 'Waiting'} tone={C.teal} caption={overview.bestSession ? formatCurrency(overview.bestSession.pnl, true) : 'No session edge yet'} />
+          <div style={{ marginTop: 18, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.055)', overflow: 'hidden' }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${rank.progress}%` }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${shade(toneColor(rank.tone), 0.4)}, ${toneColor(rank.tone)})` }}
+            />
           </div>
-        </SectionCard>
-      </div>
+          <div style={{ marginTop: 10, color: C.text2, fontSize: 12 }}>{rank.focus}</div>
+        </Card>
+      </section>
 
-      <div className="mf-competition-grid-main">
-        <SectionCard tone={rankTone} index={2} style={{ padding: '20px 20px 18px' }}>
-          <SectionTitle eyebrow="Leaderboard" title="Field position" tone={rankTone} icon={<Ic.Trophy />} action={<GhostButton onClick={() => navigate(ROUTES.trades)} icon={<Ic.ArrowRight />}>Open All Trades</GhostButton>} />
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, marginTop: 16 }}>
+        <MiniStat label="Monthly P&L" value={money(context.monthPnl, true)} tone={context.monthPnl >= 0 ? C.green : C.danger} caption="From All Trades" />
+        <MiniStat label="Win rate" value={pct(stats.winRate)} tone={C.blue} caption={`${stats.wins || 0}W / ${stats.losses || 0}L`} />
+        <MiniStat label="Development" value={`${developmentSnapshot.score || 0}/100`} tone={C.accent} caption={`${developmentSnapshot.streak || 0} day streak`} />
+        <MiniStat label="Drawdown" value={pct(Math.abs(stats.maxDrawdown || 0))} tone={C.warn} caption="Rank risk pressure" />
+      </section>
+
+      <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(320px, 0.85fr)', gap: 16, marginTop: 16 }}>
+        <Card style={{ padding: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 10, color: C.text3, fontWeight: 900, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+                Leaderboard
+              </div>
+              <h2 style={{ margin: '5px 0 0', fontSize: 22, color: C.text0, letterSpacing: '-0.04em' }}>
+                Daily MarketFlow field
+              </h2>
+            </div>
+            <div style={{ color: C.text2, fontSize: 12 }}>Refresh: every 24h</div>
+          </div>
 
           <div style={{ display: 'grid', gap: 8 }}>
             {board.map((row) => {
-              const rowTone = row.isUser ? rankTone : C.text2;
+              const tone = row.isUser ? C.accent : C.text2;
               return (
-                <div key={row.id} style={{ padding: '12px 13px', borderRadius: 16, border: `1px solid ${shade(rowTone, row.isUser ? 0.22 : 0.12)}`, background: row.isUser ? shade(rankTone, 0.1) : 'rgba(255,255,255,0.025)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '64px minmax(0, 1fr) 90px 80px', alignItems: 'center', gap: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: rowTone }}>#{row.position}</div>
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 800, color: row.isUser ? C.text0 : C.text1 }}>{row.name}</div>
-                      <div style={{ fontSize: 10.5, color: row.isUser ? C.text2 : C.text3 }}>Top {row.percentile}%</div>
+                <motion.div
+                  key={row.id}
+                  layout
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '72px minmax(0, 1fr) 90px 90px',
+                    gap: 12,
+                    alignItems: 'center',
+                    padding: '13px 14px',
+                    borderRadius: 17,
+                    border: `1px solid ${row.isUser ? shade(C.accent, 0.28) : shade(C.border, 0.74)}`,
+                    background: row.isUser ? shade(C.accent, 0.075) : 'rgba(255,255,255,0.026)',
+                  }}
+                >
+                  <div style={{ color: tone, fontWeight: 950, fontSize: 14 }}>#{row.position}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: row.isUser ? C.text0 : C.text1, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {row.name}
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: rowTone, textAlign: 'right' }}>{row.score}</div>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: row.delta >= 0 ? C.green : C.danger, textAlign: 'right' }}>
-                      {row.delta >= 0 ? '+' : ''}{row.delta}
-                    </div>
+                    <div style={{ marginTop: 4, color: C.text3, fontSize: 11 }}>{row.percentile}% percentile</div>
                   </div>
-                </div>
+                  <div style={{ color: C.text0, fontWeight: 950, textAlign: 'right' }}>{row.score}</div>
+                  <div style={{ color: row.delta >= 0 ? C.green : C.danger, fontWeight: 850, textAlign: 'right', fontSize: 12 }}>
+                    {row.delta >= 0 ? '+' : ''}{row.delta || 0}
+                  </div>
+                </motion.div>
               );
             })}
           </div>
-        </SectionCard>
+        </Card>
 
-        <SectionCard tone={rankTone} index={3} style={{ padding: '20px 20px 18px' }}>
-          <SectionTitle eyebrow="Score model" title="MF score breakdown" tone={rankTone} />
-          <div style={{ display: 'grid', gap: 12 }}>
-            {rank.factors.map((factor) => (
-              <ProgressRow key={factor.label} label={factor.label} current={factor.value} tone={toneColor(factor.tone)} description={factor.description} />
-            ))}
+        <Card style={{ padding: 22 }}>
+          <div style={{ fontSize: 10, color: C.text3, fontWeight: 900, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+            Score engine
           </div>
-        </SectionCard>
-      </div>
+          <h2 style={{ margin: '5px 0 16px', fontSize: 22, color: C.text0, letterSpacing: '-0.04em' }}>
+            What moves your rank
+          </h2>
 
-      <div className="mf-competition-grid-secondary">
-        <SectionCard tone={C.accent} index={4} style={{ padding: '20px 20px 18px' }}>
-          <SectionTitle eyebrow="Promotion path" title="What moves the rank now" tone={C.accent} />
-          <div style={{ display: 'grid', gap: 10 }}>
-            <MiniMetric label="Current weakest factor" value={rank.weakestFactor.label} tone={toneColor(rank.weakestFactor.tone)} caption={rank.weakestFactor.description} />
-            <MiniMetric label="Current strongest factor" value={rank.strongestFactor.label} tone={toneColor(rank.strongestFactor.tone)} caption={rank.strongestFactor.description} />
-            <MiniMetric label="Month P&L" value={formatCurrency(overview.monthPnl, true)} tone={overview.monthPnl >= 0 ? C.green : C.danger} />
-            <MiniMetric label="Session edge" value={overview.bestSession ? overview.bestSession.s : 'n/a'} tone={C.teal} caption={overview.bestSession ? formatCurrency(overview.bestSession.pnl, true) : 'No session edge yet'} />
+          <div style={{ display: 'grid', gap: 14 }}>
+            {(rank.factors || []).map((factor) => <FactorBar key={factor.label} factor={factor} />)}
           </div>
-        </SectionCard>
 
-        <SectionCard tone={C.purple} index={5} style={{ padding: '20px 20px 18px' }}>
-          <SectionTitle eyebrow="Desk profile" title="Current competitive profile" tone={C.purple} />
-          <div style={{ display: 'grid', gap: 10 }}>
-            <MiniMetric label="Top pair" value={overview.topPair ? overview.topPair.p : 'n/a'} tone={C.green} caption={overview.topPair ? formatCurrency(overview.topPair.pnl, true) : 'No pair edge yet'} />
-            <MiniMetric label="Discipline" value={`${overview.hygieneScore}%`} tone={overview.hygieneScore >= 75 ? C.green : overview.hygieneScore >= 55 ? C.warn : C.danger} />
-            <MiniMetric label="Trading days" value={`${overview.positiveDays + overview.negativeDays + overview.flatDays}`} tone={C.blue} caption={`${overview.positiveDays} green / ${overview.negativeDays} red`} />
-            <MiniMetric label="Account scope" value={activeOption?.label || 'All Accounts'} tone={C.accent} caption={`${activeOption?.count || 0} trade${(activeOption?.count || 0) > 1 ? 's' : ''}`} />
+          <div style={{ marginTop: 18, display: 'grid', gap: 10 }}>
+            <div style={{ padding: 13, borderRadius: 16, border: `1px solid ${shade(C.green, 0.18)}`, background: shade(C.green, 0.055) }}>
+              <div style={{ color: C.green, fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Strongest factor</div>
+              <div style={{ marginTop: 4, color: C.text1, fontSize: 13 }}>{rank.strongestFactor?.label || 'n/a'}: {rank.strongestFactor?.description || 'Waiting for data.'}</div>
+            </div>
+            <div style={{ padding: 13, borderRadius: 16, border: `1px solid ${shade(C.warn, 0.18)}`, background: shade(C.warn, 0.045) }}>
+              <div style={{ color: C.warn, fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Priority</div>
+              <div style={{ marginTop: 4, color: C.text1, fontSize: 13 }}>{rank.weakestFactor?.label || 'Process'}: {rank.weakestFactor?.description || rank.focus}</div>
+            </div>
           </div>
-        </SectionCard>
-      </div>
-    </div>
+        </Card>
+      </section>
+
+      <style>{`
+        @media (max-width: 1100px) {
+          main section {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 760px) {
+          main {
+            padding: 18px 14px 32px !important;
+          }
+          main section:nth-of-type(2) {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+    </main>
   );
 }
+
+export default Competition;

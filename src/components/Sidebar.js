@@ -53,6 +53,15 @@ const Ic = {
       <polyline points="3.5,1 4.5,2 3.5,3.5" />
     </svg>
   ),
+  Development: () => (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 2.5h10v11H3z" />
+      <path d="M5.2 5h5.6" />
+      <path d="M5.2 8h5.6" />
+      <path d="M5.2 11h3" />
+      <path d="M11.6 10.2l1.2 1.2 1.9-2.2" />
+    </svg>
+  ),
   Psychology: () => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 1.5a4.5 4.5 0 014.5 4.5c0 1.8-1 3.4-2.7 4.3L10 12l.5 1.5H5.5L6 12l.3-1.2A4.5 4.5 0 018 1.5z" />
@@ -158,6 +167,7 @@ const NAV = (isAdmin, plan) => [
       { id: 'analytics-pro', label: 'Analytics', Icon: Ic.Analytics },
       { id: 'equity', label: 'Equity', Icon: Ic.Equity },
       { id: 'backtest', label: 'Backtest', Icon: Ic.Backtest },
+      { id: 'development', label: 'Development', Icon: Ic.Development },
     ].filter((item) => hasRouteAccess(plan, item.id)),
   },
   {

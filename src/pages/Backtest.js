@@ -632,6 +632,59 @@ function MiniStat({ label, value, caption = '', tone = C.text1 }) {
   );
 }
 
+function OhlcProviderPanel({ state, symbol, interval }) {
+  const status = state?.status || 'idle';
+  const ready = status === 'ready';
+  const loading = status === 'loading';
+  const tone = ready ? C.green : loading ? C.accent : C.warn;
+  const candleCount = Array.isArray(state?.candles) ? state.candles.length : 0;
+
+  return (
+    <Card tone={tone} index={13.5} style={{ padding: '16px 16px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 900, color: C.text0, marginBottom: 5 }}>Real OHLC provider</div>
+          <div style={{ fontSize: 11.5, color: C.text3 }}>{symbol || 'No symbol'} / {INTERVAL_OPTIONS.find((item) => item.value === String(interval))?.label || interval}</div>
+        </div>
+        <div style={{ padding: '5px 8px', borderRadius: 999, border: `1px solid ${shade(tone, 0.22)}`, background: shade(tone, 0.1), color: tone, fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {ready ? state.provider : loading ? 'Loading' : 'Setup'}
+        </div>
+      </div>
+
+      {ready ? (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <MiniStat label="Candles loaded" value={String(candleCount)} tone={C.green} caption="Fetched from the configured provider. No generated candles." />
+          <div style={{ height: 52, display: 'flex', alignItems: 'end', gap: 3 }}>
+            {state.candles.slice(-42).map((candle, index) => {
+              const range = Math.max(0.00001, candle.high - candle.low);
+              const body = Math.max(6, Math.min(44, range * 9000));
+              const up = candle.close >= candle.open;
+              return (
+                <span
+                  key={`${candle.time}-${index}`}
+                  style={{
+                    width: 4,
+                    height: body,
+                    borderRadius: 999,
+                    background: up ? C.green : C.danger,
+                    opacity: 0.58 + (index / 100),
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 12.2, color: C.text2, lineHeight: 1.7 }}>
+          {loading
+            ? 'Loading real candles from the market data endpoint.'
+            : (state?.message || state?.error || 'Configure TWELVE_DATA_API_KEY or ALPHA_VANTAGE_API_KEY in Vercel. MarketFlow does not fake replay candles.')}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function SelectField({ label, value, onChange, options = [], disabled = false }) {
   return (
     <label style={{ display: 'grid', gap: 7 }}>
@@ -988,6 +1041,7 @@ export default function Backtest() {
   const [chartInterval, setChartInterval] = useState('1');
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [sessionNotes, setSessionNotes] = useState('');
+  const [ohlcState, setOhlcState] = useState({ status: 'idle', candles: [] });
   const [form, setForm] = useState(() => createDefaultForm(tradeUniverse, activeAccount));
 
   useEffect(() => {
@@ -1153,6 +1207,62 @@ export default function Backtest() {
     }, delay);
     return () => window.clearTimeout(timer);
   }, [clampedReplayIndex, isPlaying, playbackSpeed, replayTrades.length, view]);
+
+  useEffect(() => {
+    if (view !== 'replay' || !selectedSession) {
+      setOhlcState({ status: 'idle', candles: [] });
+      return undefined;
+    }
+
+    const symbol = currentAsset || selectedSession.assets?.[0] || selectedSession.symbol || 'EURUSD';
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      symbol,
+      interval: String(chartInterval || '1'),
+      limit: '500',
+    });
+
+    if (selectedSession.startDate) params.set('from', selectedSession.startDate);
+    if (selectedSession.endDate) params.set('to', selectedSession.endDate);
+
+    setOhlcState({ status: 'loading', candles: [], symbol, interval: chartInterval });
+
+    fetch(`/api/market-ohlc?${params.toString()}`, { signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setOhlcState({
+            status: 'error',
+            candles: [],
+            symbol,
+            interval: chartInterval,
+            error: payload?.message || payload?.error || 'OHLC provider unavailable.',
+          });
+          return;
+        }
+
+        setOhlcState({
+          status: 'ready',
+          candles: Array.isArray(payload.candles) ? payload.candles : [],
+          provider: payload.provider,
+          symbol,
+          interval: chartInterval,
+          fetchedAt: payload.fetchedAt,
+        });
+      })
+      .catch((error) => {
+        if (error.name === 'AbortError') return;
+        setOhlcState({
+          status: 'error',
+          candles: [],
+          symbol,
+          interval: chartInterval,
+          error: error.message || 'OHLC provider unavailable.',
+        });
+      });
+
+    return () => controller.abort();
+  }, [chartInterval, currentAsset, selectedSessionId, view]);
 
   const handleCreateSession = () => {
     if (!tradeUniverse.length) {
@@ -1652,6 +1762,12 @@ export default function Backtest() {
                   <MiniStat label="Drawdown" value={formatCompactMoney(replaySummary.maxDrawdownCash || 0)} tone={C.danger} />
                 </div>
               </Card>
+
+              <OhlcProviderPanel
+                state={ohlcState}
+                symbol={currentAsset || selectedSession?.assets?.[0] || 'EURUSD'}
+                interval={chartInterval}
+              />
 
               <Card tone={currentTrade && getTradePnl(currentTrade) >= 0 ? C.green : C.warn} index={14} style={{ padding: '16px 16px 14px' }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 12 }}>Current trade</div>
