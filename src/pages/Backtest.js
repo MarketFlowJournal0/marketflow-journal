@@ -227,6 +227,14 @@ const INTERVAL_OPTIONS = [
   { value: 'W', label: 'W' },
 ];
 
+const OHLC_PROVIDER_OPTIONS = [
+  { value: 'auto', label: 'Auto source' },
+  { value: 'dukascopy', label: 'Dukascopy free' },
+  { value: 'oanda', label: 'OANDA' },
+  { value: 'twelvedata', label: 'Twelve Data' },
+  { value: 'alphavantage', label: 'Alpha Vantage' },
+];
+
 const SPEED_OPTIONS = [1, 2, 5, 10];
 
 const CHART_LAYOUT_OPTIONS = [
@@ -389,9 +397,14 @@ function createDefaultForm(trades = [], activeAccount = 'all') {
     endDate: bounds.max,
     randomize: false,
     interval: '1',
+    ohlcProvider: 'auto',
     accountScope: activeAccount || 'all',
     notes: '',
   };
+}
+
+function getOhlcProviderLabel(value) {
+  return OHLC_PROVIDER_OPTIONS.find((option) => option.value === String(value || 'auto'))?.label || 'Auto source';
 }
 
 function filterTradesForSession(trades = [], session = {}) {
@@ -637,44 +650,76 @@ function MiniStat({ label, value, caption = '', tone = C.text1 }) {
   );
 }
 
-function OhlcProviderPanel({ state, symbol, interval }) {
+function OhlcProviderPanel({ state, symbol, interval, provider }) {
   const status = state?.status || 'idle';
   const ready = status === 'ready';
   const loading = status === 'loading';
   const tone = ready ? C.green : loading ? C.accent : C.warn;
   const candleCount = Array.isArray(state?.candles) ? state.candles.length : 0;
+  const miniCandles = Array.isArray(state?.candles) ? state.candles.slice(-42) : [];
+  const minLow = miniCandles.length ? Math.min(...miniCandles.map((candle) => candle.low)) : 0;
+  const maxHigh = miniCandles.length ? Math.max(...miniCandles.map((candle) => candle.high)) : 1;
+  const priceRange = Math.max(0.00001, maxHigh - minLow);
+  const providerLabel = getOhlcProviderLabel(provider);
+  const resolvedProvider = state?.provider ? getOhlcProviderLabel(state.provider) : providerLabel;
 
   return (
     <Card tone={tone} index={13.5} style={{ padding: '16px 16px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 900, color: C.text0, marginBottom: 5 }}>Real OHLC provider</div>
-          <div style={{ fontSize: 11.5, color: C.text3 }}>{symbol || 'No symbol'} / {INTERVAL_OPTIONS.find((item) => item.value === String(interval))?.label || interval}</div>
+          <div style={{ fontSize: 12, fontWeight: 900, color: C.text0, marginBottom: 5 }}>Real OHLC stream</div>
+          <div style={{ fontSize: 11.5, color: C.text3 }}>
+            {symbol || 'No symbol'} / {INTERVAL_OPTIONS.find((item) => item.value === String(interval))?.label || interval} / {providerLabel}
+          </div>
         </div>
         <div style={{ padding: '5px 8px', borderRadius: 999, border: `1px solid ${shade(tone, 0.22)}`, background: shade(tone, 0.1), color: tone, fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          {ready ? state.provider : loading ? 'Loading' : 'Setup'}
+          {ready ? resolvedProvider : loading ? 'Loading' : 'Setup'}
         </div>
       </div>
 
       {ready ? (
         <div style={{ display: 'grid', gap: 8 }}>
-          <MiniStat label="Candles loaded" value={String(candleCount)} tone={C.green} caption="Fetched from the configured provider. No generated candles." />
-          <div style={{ height: 52, display: 'flex', alignItems: 'end', gap: 3 }}>
-            {state.candles.slice(-42).map((candle, index) => {
-              const range = Math.max(0.00001, candle.high - candle.low);
-              const body = Math.max(6, Math.min(44, range * 9000));
+          <MiniStat label="Candles loaded" value={String(candleCount)} tone={C.green} caption={`${resolvedProvider} market data. No generated candles.`} />
+          <div style={{ height: 68, display: 'flex', alignItems: 'stretch', gap: 3, padding: '7px 0' }}>
+            {miniCandles.map((candle, index) => {
+              const wickTop = ((maxHigh - candle.high) / priceRange) * 54;
+              const wickHeight = Math.max(8, ((candle.high - candle.low) / priceRange) * 54);
+              const bodyTop = ((maxHigh - Math.max(candle.open, candle.close)) / priceRange) * 54;
+              const bodyHeight = Math.max(4, (Math.abs(candle.close - candle.open) / priceRange) * 54);
               const up = candle.close >= candle.open;
               return (
                 <span
                   key={`${candle.time}-${index}`}
                   style={{
-                    width: 4,
-                    height: body,
-                    borderRadius: 999,
-                    background: up ? C.green : C.danger,
-                    opacity: 0.58 + (index / 100),
+                    width: 5,
+                    position: 'relative',
+                    opacity: 0.58 + (index / 95),
                   }}
-                />
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      left: 2,
+                      top: wickTop,
+                      width: 1,
+                      height: wickHeight,
+                      background: up ? shade(C.green, 0.72) : shade(C.danger, 0.72),
+                      borderRadius: 999,
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: bodyTop,
+                      width: 5,
+                      height: bodyHeight,
+                      background: up ? C.green : C.danger,
+                      borderRadius: 2,
+                      boxShadow: `0 0 12px ${shade(up ? C.green : C.danger, 0.24)}`,
+                    }}
+                  />
+                </span>
               );
             })}
           </div>
@@ -682,8 +727,8 @@ function OhlcProviderPanel({ state, symbol, interval }) {
       ) : (
         <div style={{ fontSize: 12.2, color: C.text2, lineHeight: 1.7 }}>
           {loading
-            ? 'Loading real candles from the market data endpoint.'
-            : (state?.message || state?.error || 'Configure TWELVE_DATA_API_KEY or ALPHA_VANTAGE_API_KEY in Vercel. MarketFlow does not fake replay candles.')}
+            ? `Loading real candles from ${providerLabel}.`
+            : (state?.message || state?.error || 'Use Dukascopy for supported FX symbols without a key, or configure OANDA_API_TOKEN / TWELVE_DATA_API_KEY / ALPHA_VANTAGE_API_KEY in Vercel. MarketFlow does not fake replay candles.')}
         </div>
       )}
     </Card>
@@ -894,6 +939,7 @@ function CreateSessionModal({
 
                 <SelectField label="Chart layout" value={form.chartLayout} onChange={(event) => setForm((current) => ({ ...current, chartLayout: event.target.value }))} options={CHART_LAYOUT_OPTIONS} />
                 <SelectField label="Account scope" value={form.accountScope} onChange={(event) => setForm((current) => ({ ...current, accountScope: event.target.value }))} options={accountOptions.map((option) => ({ value: option.id, label: option.label }))} />
+                <SelectField label="Market data" value={form.ohlcProvider} onChange={(event) => setForm((current) => ({ ...current, ohlcProvider: event.target.value }))} options={OHLC_PROVIDER_OPTIONS} />
                 <label style={{ display: 'grid', gap: 7 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>
                     Initial date
@@ -1044,6 +1090,7 @@ export default function Backtest() {
   const [replayIndex, setReplayIndex] = useState(0);
   const [currentAsset, setCurrentAsset] = useState('');
   const [chartInterval, setChartInterval] = useState('1');
+  const [ohlcProvider, setOhlcProvider] = useState('auto');
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [sessionNotes, setSessionNotes] = useState('');
   const [ohlcState, setOhlcState] = useState({ status: 'idle', candles: [] });
@@ -1161,6 +1208,7 @@ export default function Backtest() {
     setCurrentAsset(selectedSession.lastSymbol || selectedSession.assets?.[0] || symbolOptions[0] || '');
     setReplayIndex(selectedSession.replayIndex || 0);
     setChartInterval(selectedSession.interval || '1');
+    setOhlcProvider(selectedSession.ohlcProvider || 'auto');
     setPlaybackSpeed(selectedSession.playbackSpeed || 1);
     setSessionNotes(selectedSession.notes || '');
   }, [selectedSessionId, selectedSession, symbolOptions]);
@@ -1173,6 +1221,7 @@ export default function Backtest() {
             ...session,
             replayIndex: clampedReplayIndex,
             interval: chartInterval,
+            ohlcProvider,
             playbackSpeed,
             lastSymbol: currentAsset,
             progressPct,
@@ -1185,7 +1234,7 @@ export default function Backtest() {
           })
         : session
     )));
-  }, [chartInterval, clampedReplayIndex, currentAsset, playbackSpeed, progressPct, replayTrades.length, selectedSessionId, sessionNotes]);
+  }, [chartInterval, clampedReplayIndex, currentAsset, ohlcProvider, playbackSpeed, progressPct, replayTrades.length, selectedSessionId, sessionNotes]);
 
   useEffect(() => {
     if (!isPlaying || view !== 'replay') return undefined;
@@ -1227,13 +1276,14 @@ export default function Backtest() {
     const params = new URLSearchParams({
       symbol,
       interval: String(chartInterval || '1'),
+      provider: ohlcProvider || 'auto',
       limit: '500',
     });
 
     if (selectedSessionStart) params.set('from', selectedSessionStart);
     if (selectedSessionEnd) params.set('to', selectedSessionEnd);
 
-    setOhlcState({ status: 'loading', candles: [], symbol, interval: chartInterval });
+    setOhlcState({ status: 'loading', candles: [], symbol, interval: chartInterval, provider: ohlcProvider });
 
     fetch(`/api/market-ohlc?${params.toString()}`, { signal: controller.signal })
       .then(async (response) => {
@@ -1250,7 +1300,9 @@ export default function Backtest() {
             candles: [],
             symbol,
             interval: chartInterval,
+            provider: ohlcProvider,
             error: payload?.message || payload?.error || 'OHLC provider unavailable.',
+            message: payload?.detail,
           });
           return;
         }
@@ -1259,6 +1311,7 @@ export default function Backtest() {
           status: 'ready',
           candles: Array.isArray(payload.candles) ? payload.candles : [],
           provider: payload.provider,
+          requestedProvider: payload.requestedProvider,
           symbol,
           interval: chartInterval,
           fetchedAt: payload.fetchedAt,
@@ -1271,12 +1324,13 @@ export default function Backtest() {
           candles: [],
           symbol,
           interval: chartInterval,
+          provider: ohlcProvider,
           error: error.message || 'OHLC provider unavailable.',
         });
       });
 
     return () => controller.abort();
-  }, [chartInterval, currentAsset, selectedSessionDefaultAsset, selectedSessionEnd, selectedSessionId, selectedSessionStart, view]);
+  }, [chartInterval, currentAsset, ohlcProvider, selectedSessionDefaultAsset, selectedSessionEnd, selectedSessionId, selectedSessionStart, view]);
 
   const handleCreateSession = () => {
     if (!tradeUniverse.length) {
@@ -1332,6 +1386,7 @@ export default function Backtest() {
       replayIndex: 0,
       playbackSpeed: 1,
       interval: form.interval,
+      ohlcProvider: form.ohlcProvider || 'auto',
       plan,
     };
 
@@ -1735,6 +1790,7 @@ export default function Backtest() {
                   </NavButton>
                 ))}
                 <SelectField label="" value={chartInterval} onChange={(event) => setChartInterval(event.target.value)} options={INTERVAL_OPTIONS} />
+                <SelectField label="" value={ohlcProvider} onChange={(event) => setOhlcProvider(event.target.value)} options={OHLC_PROVIDER_OPTIONS} />
               </div>
             </div>
           </Card>
@@ -1781,6 +1837,7 @@ export default function Backtest() {
                 state={ohlcState}
                 symbol={currentAsset || selectedSession?.assets?.[0] || 'EURUSD'}
                 interval={chartInterval}
+                provider={ohlcProvider}
               />
 
               <Card tone={currentTrade && getTradePnl(currentTrade) >= 0 ? C.green : C.warn} index={14} style={{ padding: '16px 16px 14px' }}>
