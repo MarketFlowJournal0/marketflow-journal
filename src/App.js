@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { MarketFlowMark, MarketFlowWordmark } from './components/MarketFlowBrand';
 import Sidebar from './components/Sidebar';
@@ -156,70 +156,6 @@ function LoadingScreen() {
 
 }
 
-class JournalPageBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-
-  componentDidCatch(error, info) {
-    console.error(`[MarketFlow ${this.props.pageName || 'page'} crash]`, error, info);
-  }
-
-  render() {
-    if (!this.state.error) return this.props.children;
-
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        padding: 24,
-        color: 'var(--mf-text-0,#F6FAFF)',
-      }}>
-        <div style={{
-          width: 'min(560px, 100%)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 24,
-          padding: 24,
-          background: 'linear-gradient(180deg, rgba(12,19,31,0.94), rgba(6,10,17,0.98))',
-          boxShadow: '0 28px 80px rgba(0,0,0,0.42)',
-        }}>
-          <div style={{ fontSize: 12, color: 'var(--mf-accent,#14C9E5)', fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Module protected
-          </div>
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: '-0.04em' }}>
-            {this.props.pageName || 'This page'} was isolated before it could crash the journal.
-          </h2>
-          <p style={{ margin: '12px 0 0', color: 'var(--mf-text-2,#8EA4C8)', lineHeight: 1.7 }}>
-            Refresh the page or return to the dashboard. MarketFlow keeps the rest of the workspace alive while this module reports the issue in the console.
-          </p>
-          <button
-            type="button"
-            onClick={() => this.setState({ error: null })}
-            style={{
-              marginTop: 18,
-              border: 0,
-              borderRadius: 999,
-              padding: '11px 16px',
-              fontWeight: 900,
-              color: '#031018',
-              background: 'linear-gradient(135deg,#DCE4EF,#14C9E5,#00D2B8)',
-              cursor: 'pointer',
-            }}
-          >
-            Retry module
-          </button>
-        </div>
-      </div>
-    );
-  }
-}
-
 // Layout principal avec sidebar
 function AppLayout({ user, onLogout }) {
   const navigate = useNavigate();
@@ -274,7 +210,7 @@ function AppLayout({ user, onLogout }) {
               <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />
               <Route path="/analytics" element={<Navigate to="/analytics-pro" replace />} />
               <Route path="/analytics-pro" element={renderProtectedRoute('analytics-pro', <AnalyticsPro />)} />
-              <Route path="/backtest" element={renderProtectedRoute('backtest', <JournalPageBoundary pageName="Backtest"><Backtest /></JournalPageBoundary>)} />
+              <Route path="/backtest" element={renderProtectedRoute('backtest', <Backtest />)} />
               <Route path="/development" element={renderProtectedRoute('development', <Development />)} />
               <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />
               <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
