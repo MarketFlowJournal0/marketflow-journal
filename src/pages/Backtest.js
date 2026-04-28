@@ -111,6 +111,17 @@ const PAGE_STYLES = `
     margin-bottom: 16px;
   }
 
+  .mf-bt-dashboard-grid > *,
+  .mf-bt-chart-grid > *,
+  .mf-bt-replay-bottom > * {
+    min-width: 0;
+  }
+
+  .mf-bt-chart-frame {
+    min-width: 0;
+    min-height: 240px;
+  }
+
   .mf-bt-session-list {
     display: grid;
     gap: 10px;
@@ -372,7 +383,11 @@ function clamp(value, min, max) {
 }
 
 function getDefaultDateBounds(trades = []) {
-  const dates = trades.map((trade) => getTradeDateValue(trade)).filter(Boolean).sort((left, right) => left - right);
+  const source = Array.isArray(trades) ? trades : [];
+  const dates = source
+    .map((trade) => getTradeDateValue(trade))
+    .filter((date) => date && !Number.isNaN(date.getTime()))
+    .sort((left, right) => left - right);
   if (!dates.length) {
     const now = new Date();
     const iso = now.toISOString().slice(0, 10);
@@ -386,7 +401,8 @@ function getDefaultDateBounds(trades = []) {
 
 function createDefaultForm(trades = [], activeAccount = 'all') {
   const bounds = getDefaultDateBounds(trades);
-  const symbols = [...new Set(trades.map((trade) => getTradeSymbol(trade)).filter(Boolean))];
+  const source = Array.isArray(trades) ? trades : [];
+  const symbols = [...new Set(source.map((trade) => getTradeSymbol(trade)).filter(Boolean))];
   return {
     mode: 'backtesting',
     name: '',
@@ -408,15 +424,16 @@ function getOhlcProviderLabel(value) {
 }
 
 function filterTradesForSession(trades = [], session = {}) {
+  const source = Array.isArray(trades) ? trades : [];
   const assets = Array.isArray(session.assets) && session.assets.length
     ? session.assets
     : session.symbol && session.symbol !== 'all'
       ? [session.symbol]
       : [];
 
-  return sortTradesChronologically((trades || []).filter((trade) => {
+  return sortTradesChronologically(source.filter((trade) => {
     const tradeDate = getTradeDateValue(trade);
-    if (!tradeDate) return false;
+    if (!tradeDate || Number.isNaN(tradeDate.getTime())) return false;
 
     if (session.accountScope && session.accountScope !== 'all' && getTradeAccountId(trade) !== session.accountScope) return false;
     if (assets.length && !assets.includes(getTradeSymbol(trade))) return false;
@@ -427,23 +444,29 @@ function filterTradesForSession(trades = [], session = {}) {
 }
 
 function buildSessionMetrics(sessionDetails = []) {
-  const totalReviewedSeconds = sessionDetails.reduce((sum, session) => sum + (session.reviewedSeconds || 0), 0);
-  const totalTrades = sessionDetails.reduce((sum, session) => sum + (session.tradeCount || 0), 0);
-  const totalWins = sessionDetails.reduce((sum, session) => sum + (session.summary?.wins || 0), 0);
-  const totalHistoryDays = sessionDetails.reduce((sum, session) => {
+  const source = Array.isArray(sessionDetails) ? sessionDetails : [];
+  const totalReviewedSeconds = source.reduce((sum, session) => sum + (Number(session.reviewedSeconds) || 0), 0);
+  const totalTrades = source.reduce((sum, session) => sum + (Number(session.tradeCount) || 0), 0);
+  const totalWins = source.reduce((sum, session) => sum + (Number(session.summary?.wins) || 0), 0);
+  const totalHistoryDays = source.reduce((sum, session) => {
     if (!session.startDate || !session.endDate) return sum;
     const start = new Date(`${session.startDate}T00:00:00`);
     const end = new Date(`${session.endDate}T00:00:00`);
-    const diff = Math.max(1, Math.round((end - start) / 86400000) + 1);
+    const rawDiff = end - start;
+    if (!Number.isFinite(rawDiff)) return sum;
+    const diff = Math.max(1, Math.round(rawDiff / 86400000) + 1);
     return sum + diff;
   }, 0);
 
-  const timeInvestedSeries = Object.values(sessionDetails.reduce((bucket, session) => {
-    const label = new Date(session.createdAt || Date.now()).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  const timeInvestedSeries = Object.values(source.reduce((bucket, session) => {
+    const created = new Date(session.createdAt || Date.now());
+    const label = Number.isNaN(created.getTime())
+      ? 'Current'
+      : created.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
     if (!bucket[label]) bucket[label] = { label, seconds: 0, winRate: 0, trades: 0 };
-    bucket[label].seconds += session.reviewedSeconds || 0;
-    bucket[label].trades += session.tradeCount || 0;
-    bucket[label].winRate += session.summary?.wins || 0;
+    bucket[label].seconds += Number(session.reviewedSeconds) || 0;
+    bucket[label].trades += Number(session.tradeCount) || 0;
+    bucket[label].winRate += Number(session.summary?.wins) || 0;
     return bucket;
   }, {})).map((row) => ({
     label: row.label,
@@ -452,8 +475,9 @@ function buildSessionMetrics(sessionDetails = []) {
     winRate: row.trades ? Number(((row.winRate / row.trades) * 100).toFixed(1)) : 0,
   }));
 
-  const symbolSeries = Object.values(sessionDetails.reduce((bucket, session) => {
-    session.trades.forEach((trade) => {
+  const symbolSeries = Object.values(source.reduce((bucket, session) => {
+    const trades = Array.isArray(session.trades) ? session.trades : [];
+    trades.forEach((trade) => {
       const symbol = getTradeSymbol(trade);
       if (!bucket[symbol]) bucket[symbol] = { symbol, trades: 0 };
       bucket[symbol].trades += 1;
@@ -1068,7 +1092,7 @@ function CreateSessionModal({
   );
 }
 
-export default function Backtest() {
+export default function Backtest({ ignoreSavedSessions = false }) {
   const { user } = useAuth();
   const { allTrades = [], accountOptions = [], activeAccount = 'all' } = useTradingContext();
   const plan = String(user?.plan || 'trial').toLowerCase();
@@ -1095,9 +1119,17 @@ export default function Backtest() {
   const [sessionNotes, setSessionNotes] = useState('');
   const [ohlcState, setOhlcState] = useState({ status: 'idle', candles: [] });
   const [form, setForm] = useState(() => createDefaultForm(tradeUniverse, activeAccount));
+  const hydratedSessionIdRef = useRef('');
+  const skipNextSessionPersistRef = useRef(false);
 
   useEffect(() => {
     setSessionsLoaded(false);
+    if (ignoreSavedSessions) {
+      setSavedSessions([]);
+      setSelectedSessionId('');
+      setSessionsLoaded(true);
+      return;
+    }
     const loaded = loadBacktestSessions(userId)
       .sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0));
     setSavedSessions(loaded);
@@ -1107,12 +1139,12 @@ export default function Backtest() {
         : loaded[0]?.id || ''
     ));
     setSessionsLoaded(true);
-  }, [userId]);
+  }, [ignoreSavedSessions, userId]);
 
   useEffect(() => {
-    if (!sessionsLoaded) return;
+    if (!sessionsLoaded || ignoreSavedSessions) return;
     saveBacktestSessions(userId, savedSessions);
-  }, [savedSessions, sessionsLoaded, userId]);
+  }, [ignoreSavedSessions, savedSessions, sessionsLoaded, userId]);
 
   useEffect(() => {
     setForm(createDefaultForm(tradeUniverse, activeAccount));
@@ -1121,18 +1153,25 @@ export default function Backtest() {
   const symbolOptions = useMemo(() => [...new Set(tradeUniverse.map((trade) => getTradeSymbol(trade)).filter(Boolean))].sort(), [tradeUniverse]);
 
   const sessionDetails = useMemo(() => {
-    return savedSessions.map((session) => {
-      const trades = filterTradesForSession(tradeUniverse, session);
-      const summary = summarizeTradeSet(trades);
-      return {
-        ...session,
-        trades,
-        summary,
-        tradeCount: trades.length,
-        totalPnl: summary.totalPnL || 0,
-        winRate: summary.winRate || 0,
-      };
-    });
+    return savedSessions
+      .map((session) => {
+        try {
+          const trades = filterTradesForSession(tradeUniverse, session);
+          const summary = summarizeTradeSet(trades);
+          return {
+            ...session,
+            trades,
+            summary,
+            tradeCount: trades.length,
+            totalPnl: summary.totalPnL || 0,
+            winRate: summary.winRate || 0,
+          };
+        } catch (error) {
+          console.error('Backtest session normalization failed:', error, session);
+          return null;
+        }
+      })
+      .filter(Boolean);
   }, [savedSessions, tradeUniverse]);
 
   const metrics = useMemo(() => buildSessionMetrics(sessionDetails), [sessionDetails]);
@@ -1205,16 +1244,23 @@ export default function Backtest() {
 
   useEffect(() => {
     if (!selectedSession) return;
+    hydratedSessionIdRef.current = selectedSession.id;
+    skipNextSessionPersistRef.current = true;
     setCurrentAsset(selectedSession.lastSymbol || selectedSession.assets?.[0] || symbolOptions[0] || '');
     setReplayIndex(selectedSession.replayIndex || 0);
     setChartInterval(selectedSession.interval || '1');
     setOhlcProvider(selectedSession.ohlcProvider || 'auto');
     setPlaybackSpeed(selectedSession.playbackSpeed || 1);
     setSessionNotes(selectedSession.notes || '');
-  }, [selectedSessionId, selectedSession, symbolOptions]);
+  }, [selectedSessionId]); // hydrate only when the user opens another saved session
 
   useEffect(() => {
     if (!selectedSessionId) return;
+    if (hydratedSessionIdRef.current !== selectedSessionId) return;
+    if (skipNextSessionPersistRef.current) {
+      skipNextSessionPersistRef.current = false;
+      return;
+    }
     setSavedSessions((current) => current.map((session) => (
       session.id === selectedSessionId
         ? normalizeBacktestSession({
@@ -1475,6 +1521,14 @@ export default function Backtest() {
         </div>
       </div>
 
+      {ignoreSavedSessions ? (
+        <Card tone={C.warn} index={0.5} style={{ padding: '12px 14px', marginBottom: 16 }}>
+          <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.65 }}>
+            Backtest opened in clean mode because an older saved session could not be rendered safely. Create a new session after this deploy; your imported All Trades data stays untouched.
+          </div>
+        </Card>
+      ) : null}
+
       {view !== 'replay' ? (
         <>
           <div className="mf-bt-action-row">
@@ -1580,7 +1634,7 @@ export default function Backtest() {
                   <div className="mf-bt-chart-grid">
                     <Card tone={C.warn} index={4} style={{ padding: '18px 18px 16px' }}>
                       <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Time invested</div>
-                      <div style={{ height: 260 }}>
+                      <div className="mf-bt-chart-frame" style={{ height: 260 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={timeInvestedChart}>
                             <CartesianGrid {...CHART_GRID} />
@@ -1606,7 +1660,7 @@ export default function Backtest() {
 
                     <Card tone={C.accent} index={5} style={{ padding: '18px 18px 16px' }}>
                       <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Operations per symbol</div>
-                      <div style={{ height: 260 }}>
+                      <div className="mf-bt-chart-frame" style={{ height: 260 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={operationsBySymbol} layout="vertical">
                             <CartesianGrid {...CHART_GRID} />
@@ -1717,7 +1771,7 @@ export default function Backtest() {
             <div className="mf-bt-chart-grid">
               <Card tone={C.purple} index={8} style={{ padding: '18px 18px 16px' }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Win rate by review month</div>
-                <div style={{ height: 280 }}>
+                <div className="mf-bt-chart-frame" style={{ height: 280 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={timeInvestedChart}>
                       <CartesianGrid {...CHART_GRID} />
@@ -1743,7 +1797,7 @@ export default function Backtest() {
 
               <Card tone={C.green} index={9} style={{ padding: '18px 18px 16px' }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Session P&L spread</div>
-                <div style={{ height: 280 }}>
+                <div className="mf-bt-chart-frame" style={{ height: 280 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={filteredSessions}>
                       <CartesianGrid {...CHART_GRID} />
@@ -1915,7 +1969,7 @@ export default function Backtest() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 14 }}>
-                <div style={{ height: 220 }}>
+                <div className="mf-bt-chart-frame" style={{ height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={replayCurve}>
                       <defs>
@@ -1944,7 +1998,7 @@ export default function Backtest() {
                   </ResponsiveContainer>
                 </div>
 
-                <div style={{ height: 220 }}>
+                <div className="mf-bt-chart-frame" style={{ height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={replayWinRate}>
                       <CartesianGrid {...CHART_GRID} />

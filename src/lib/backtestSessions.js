@@ -14,7 +14,16 @@ export function loadBacktestSessions(userId) {
     const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${userId}`);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map(normalizeBacktestSession) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((session) => {
+        try {
+          return normalizeBacktestSession(session);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
   } catch {
     return [];
   }
@@ -62,38 +71,39 @@ export function createBacktestSession(input = {}) {
 }
 
 export function normalizeBacktestSession(session = {}) {
-  const assets = Array.isArray(session.assets)
-    ? session.assets.map((asset) => String(asset || '').trim()).filter(Boolean)
+  const source = session && typeof session === 'object' ? session : {};
+  const assets = Array.isArray(source.assets)
+    ? source.assets.map((asset) => String(asset || '').trim()).filter(Boolean)
     : [];
 
   return {
-    id: String(session.id || `bt-${Date.now()}`),
-    name: String(session.name || buildBacktestSessionName(session)),
-    mode: String(session.mode || 'backtesting'),
-    symbol: String(session.symbol || 'all'),
+    id: String(source.id || `bt-${Date.now()}`),
+    name: String(source.name || buildBacktestSessionName(source)),
+    mode: String(source.mode || 'backtesting'),
+    symbol: String(source.symbol || 'all'),
     assets,
-    setup: String(session.setup || 'all'),
-    session: String(session.session || 'all'),
-    interval: String(session.interval || '15'),
-    ohlcProvider: String(session.ohlcProvider || 'auto'),
-    playbackSpeed: clampNumber(session.playbackSpeed, 1, 10, 2),
-    replayIndex: clampNumber(session.replayIndex, 0, 100000, 0),
-    accountScope: String(session.accountScope || 'all'),
-    accountBalance: clampNumber(session.accountBalance, 0, 1000000000, 100000),
-    chartLayout: String(session.chartLayout || 'single'),
-    startDate: String(session.startDate || ''),
-    endDate: String(session.endDate || ''),
-    randomize: Boolean(session.randomize),
-    plan: String(session.plan || 'starter'),
-    tradeCount: clampNumber(session.tradeCount, 0, 1000000, 0),
-    progressPct: clampNumber(session.progressPct, 0, 100, 0),
-    lastSymbol: String(session.lastSymbol || ''),
-    reviewedSeconds: clampNumber(session.reviewedSeconds, 0, 100000000, 0),
-    status: String(session.status || 'new'),
-    notes: String(session.notes || ''),
-    createdAt: String(session.createdAt || new Date().toISOString()),
-    updatedAt: String(session.updatedAt || new Date().toISOString()),
-    lastOpenedAt: String(session.lastOpenedAt || new Date().toISOString()),
+    setup: String(source.setup || 'all'),
+    session: String(source.session || 'all'),
+    interval: String(source.interval || '15'),
+    ohlcProvider: String(source.ohlcProvider || 'auto'),
+    playbackSpeed: clampNumber(source.playbackSpeed, 1, 10, 2),
+    replayIndex: clampNumber(source.replayIndex, 0, 100000, 0),
+    accountScope: String(source.accountScope || 'all'),
+    accountBalance: clampNumber(source.accountBalance, 0, 1000000000, 100000),
+    chartLayout: String(source.chartLayout || 'single'),
+    startDate: normalizeDateString(source.startDate),
+    endDate: normalizeDateString(source.endDate),
+    randomize: Boolean(source.randomize),
+    plan: String(source.plan || 'starter'),
+    tradeCount: clampNumber(source.tradeCount, 0, 1000000, 0),
+    progressPct: clampNumber(source.progressPct, 0, 100, 0),
+    lastSymbol: String(source.lastSymbol || ''),
+    reviewedSeconds: clampNumber(source.reviewedSeconds, 0, 100000000, 0),
+    status: String(source.status || 'new'),
+    notes: String(source.notes || ''),
+    createdAt: normalizeIsoString(source.createdAt),
+    updatedAt: normalizeIsoString(source.updatedAt),
+    lastOpenedAt: normalizeIsoString(source.lastOpenedAt),
   };
 }
 
@@ -115,4 +125,18 @@ function clampNumber(value, min, max, fallback) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return fallback;
   return Math.min(Math.max(numeric, min), max);
+}
+
+function normalizeDateString(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeIsoString(value) {
+  if (!value) return new Date().toISOString();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return new Date().toISOString();
+  return date.toISOString();
 }

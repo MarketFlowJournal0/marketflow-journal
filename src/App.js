@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { MarketFlowMark, MarketFlowWordmark } from './components/MarketFlowBrand';
 import Sidebar from './components/Sidebar';
@@ -156,6 +156,76 @@ function LoadingScreen() {
 
 }
 
+class BacktestSafetyBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, resetKey: 0 };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[MarketFlow Backtest crash]', error, info);
+  }
+
+  resetSavedSessions = () => {
+    try {
+      if (this.props.userId) {
+        localStorage.removeItem(`mf_backtest_sessions_v1_${this.props.userId}`);
+      }
+    } catch (_) {}
+    this.setState((current) => ({ error: null, resetKey: current.resetKey + 1 }));
+  };
+
+  render() {
+    if (!this.state.error) {
+      return React.cloneElement(this.props.children, { key: this.state.resetKey });
+    }
+
+    return (
+      <div>
+        <div style={{ padding: '18px 30px 0', color: 'var(--mf-text-1,#E8EEFF)' }}>
+          <div style={{
+            border: '1px solid rgba(255,179,26,0.22)',
+            borderRadius: 18,
+            padding: '14px 16px',
+            background: 'linear-gradient(135deg, rgba(255,179,26,0.10), rgba(7,11,19,0.84))',
+            fontSize: 12.5,
+            lineHeight: 1.65,
+          }}>
+            Backtest opened in clean mode because a saved local replay session caused a render failure. Your All Trades data is untouched.
+            {this.state.error?.message ? (
+              <details style={{ marginTop: 8, color: 'var(--mf-text-2,#8EA4C8)' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 800 }}>Technical detail</summary>
+                <span>{this.state.error.message}</span>
+              </details>
+            ) : null}
+            <button
+              type="button"
+              onClick={this.resetSavedSessions}
+              style={{
+                marginLeft: 12,
+                border: '1px solid rgba(255,179,26,0.28)',
+                borderRadius: 999,
+                padding: '7px 11px',
+                background: 'rgba(255,179,26,0.12)',
+                color: 'var(--mf-warn,#FFB31A)',
+                fontWeight: 900,
+                cursor: 'pointer',
+              }}
+            >
+              Reset saved Backtest sessions
+            </button>
+          </div>
+        </div>
+        <Backtest ignoreSavedSessions />
+      </div>
+    );
+  }
+}
+
 // Layout principal avec sidebar
 function AppLayout({ user, onLogout }) {
   const navigate = useNavigate();
@@ -210,7 +280,15 @@ function AppLayout({ user, onLogout }) {
               <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />
               <Route path="/analytics" element={<Navigate to="/analytics-pro" replace />} />
               <Route path="/analytics-pro" element={renderProtectedRoute('analytics-pro', <AnalyticsPro />)} />
-              <Route path="/backtest" element={renderProtectedRoute('backtest', <Backtest />)} />
+              <Route
+                path="/backtest"
+                element={renderProtectedRoute(
+                  'backtest',
+                  <BacktestSafetyBoundary userId={effectiveUser?.id}>
+                    <Backtest />
+                  </BacktestSafetyBoundary>
+                )}
+              />
               <Route path="/development" element={renderProtectedRoute('development', <Development />)} />
               <Route path="/calendar" element={renderProtectedRoute('calendar', <Calendar />)} />
               <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
