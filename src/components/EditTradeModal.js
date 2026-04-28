@@ -9,6 +9,8 @@ function EditTradeModal({ isOpen, onClose, trade }) {
     time: '',
     symbol: '',
     type: 'Long',
+    result: 'TP',
+    rrActual: '',
     entry: '',
     exit: '',
     stopLoss: '',
@@ -21,11 +23,14 @@ function EditTradeModal({ isOpen, onClose, trade }) {
 
   useEffect(() => {
     if (trade) {
+      const pnl = parseFloat(trade.pnl ?? trade.profit_loss ?? 0) || 0;
       setFormData({
         date: trade.date || '',
         time: trade.time || '',
         symbol: trade.symbol || '',
         type: trade.type || 'Long',
+        result: trade.result || trade.status || (pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE'),
+        rrActual: trade.rrActual || trade.rr_actual || trade.metrics?.rrReel || '',
         entry: trade.entry || '',
         exit: trade.exit || '',
         stopLoss: trade.stopLoss || '',
@@ -48,15 +53,19 @@ function EditTradeModal({ isOpen, onClose, trade }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const optionalNumber = (value) => value === '' || value == null ? null : parseFloat(value);
     
     const updatedData = {
       ...formData,
-      entry: parseFloat(formData.entry),
-      exit: parseFloat(formData.exit),
-      stopLoss: parseFloat(formData.stopLoss),
+      entry: optionalNumber(formData.entry),
+      exit: optionalNumber(formData.exit),
+      stopLoss: optionalNumber(formData.stopLoss),
       shares: parseInt(formData.shares),
-      pnl: parseFloat(formData.pnl),
+      pnl: optionalNumber(formData.pnl) ?? 0,
+      status: formData.result,
+      rrActual: optionalNumber(formData.rrActual),
       riskPercent: parseFloat(formData.riskPercent),
+      win: formData.result === 'TP',
     };
     
     updateTrade(trade.id, updatedData);
@@ -133,6 +142,34 @@ function EditTradeModal({ isOpen, onClose, trade }) {
               </select>
             </div>
 
+            {/* Result */}
+            <div>
+              <label className="block text-[#A0AEC0] text-sm mb-2">Result</label>
+              <select
+                name="result"
+                value={formData.result}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-[#1A1F2E] text-white rounded-lg border border-[#2D3548] focus:border-[#60A5FA] focus:outline-none"
+              >
+                <option value="TP">TP</option>
+                <option value="BE">BE</option>
+                <option value="SL">SL</option>
+              </select>
+            </div>
+
+            {/* R:R */}
+            <div>
+              <label className="block text-[#A0AEC0] text-sm mb-2">R:R</label>
+              <input
+                type="number"
+                step="0.01"
+                name="rrActual"
+                value={formData.rrActual}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-[#1A1F2E] text-white rounded-lg border border-[#2D3548] focus:border-[#60A5FA] focus:outline-none"
+              />
+            </div>
+
             {/* Entry */}
             <div>
               <label className="block text-[#A0AEC0] text-sm mb-2">Entry Price</label>
@@ -197,7 +234,6 @@ function EditTradeModal({ isOpen, onClose, trade }) {
                 value={formData.pnl}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-[#1A1F2E] text-white rounded-lg border border-[#2D3548] focus:border-[#60A5FA] focus:outline-none"
-                required
               />
             </div>
 

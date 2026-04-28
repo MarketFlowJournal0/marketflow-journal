@@ -48,6 +48,7 @@ const DEFAULT_COLUMNS = [
   { key:'symbol',    label:'Symbol', visible:true, sortable:true, width:160 },
   { key:'account',   label:'Account', visible:true, sortable:true, width:160 },
   { key:'type',      label:'Type',    visible:true, sortable:true, width:80  },
+  { key:'result',    label:'Result',  visible:true, sortable:true, width:90, important:true },
   { key:'session',   label:'Session', visible:true, sortable:true, width:100 },
   { key:'bias',      label:'Bias',    visible:false, sortable:true, width:100 },
   { key:'news',      label:'News',    visible:false, sortable:true, width:90  },
@@ -57,7 +58,7 @@ const DEFAULT_COLUMNS = [
   { key:'rr',        label:'RR',      visible:true, sortable:true, width:80  },
   { key:'setup',     label:'Setup',   visible:true, sortable:true, width:120 },
   { key:'psychology',label:'Psychology',visible:false, sortable:true, width:100  },
-  { key:'pnl',       label:'P&L',     visible:true, sortable:true, width:100, important:true },
+  { key:'pnl',       label:'P&L',     visible:true, sortable:true, width:100 },
 ];
 const DEFAULT_FILTERS={search:'',result:'all',symbol:'all',session:'all',bias:'all',dateFrom:'',dateTo:''};
 
@@ -131,6 +132,8 @@ const createEmptyTradeForm=(customColumns=[])=>({
   symbol:'',
   account:'',
   type:'Long',
+  result:'TP',
+  rrActual:'',
   entry:'',
   exit:'',
   pnl:'',
@@ -238,6 +241,24 @@ const mfFormatRR = (value) => {
   return `1:${numeric.toFixed(2)}`;
 };
 
+const normalizeResultStatus = (value, pnlValue = 0) => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (['tp', 'take profit', 'takeprofit', 'win', 'winner', 'profit'].includes(raw)) return 'TP';
+  if (['sl', 'stop loss', 'stoploss', 'loss', 'loser', 'stop'].includes(raw)) return 'SL';
+  if (['be', 'break even', 'break-even', 'breakeven', 'flat'].includes(raw)) return 'BE';
+  const pnl = mfToNumber(pnlValue) ?? 0;
+  if (pnl > 0) return 'TP';
+  if (pnl < 0) return 'SL';
+  return 'BE';
+};
+
+const resultTone = (status = 'BE') => {
+  const normalized = normalizeResultStatus(status);
+  if (normalized === 'TP') return { color: C.green, bg: 'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)' };
+  if (normalized === 'SL') return { color: C.danger, bg: 'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)' };
+  return { color: C.teal, bg: 'rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)' };
+};
+
 const mfFormatDate = (value) => {
   if (!value) return '--';
   const date = new Date(value);
@@ -288,7 +309,17 @@ const filterTrades=(trades,filters)=>trades.filter(t=>{
   const date     = t.open_date?.split('T')[0] || t.date || '';
 
   if(filters.search){const q=filters.search.toLowerCase();if(!symbol.toLowerCase().includes(q)&&!type.toLowerCase().includes(q)&&!setup.toLowerCase().includes(q)&&!notes.toLowerCase().includes(q)&&!account.toLowerCase().includes(q))return false;}
-  if(filters.result&&filters.result!=='all'){const win=parseFloat(pnl)>0;if(filters.result==='wins'&&!win)return false;if(filters.result==='losses'&&win)return false;if(filters.result==='long'&&type!=='Long')return false;if(filters.result==='short'&&type!=='Short')return false;}
+  if(filters.result&&filters.result!=='all'){
+    const status=normalizeResultStatus(t.status||t.result||t.extra?.result,pnl);
+    const win=parseFloat(pnl)>0;
+    if(filters.result==='tp'&&status!=='TP')return false;
+    if(filters.result==='be'&&status!=='BE')return false;
+    if(filters.result==='sl'&&status!=='SL')return false;
+    if(filters.result==='wins'&&!win)return false;
+    if(filters.result==='losses'&&win)return false;
+    if(filters.result==='long'&&type!=='Long')return false;
+    if(filters.result==='short'&&type!=='Short')return false;
+  }
   if(filters.symbol&&filters.symbol!=='all'&&symbol!==filters.symbol)return false;
   if(filters.session&&filters.session!=='all'&&session!==filters.session)return false;
   if(filters.bias&&filters.bias!=='all'&&bias!==filters.bias)return false;
@@ -308,6 +339,7 @@ const sortTrades=(trades,key,dir)=>{
         return raw!==''&&raw!=null&&numeric!=null?numeric:String(raw||'');
       }
       if(k==='pnl') return parseFloat(t.profit_loss??t.pnl??0)||0;
+      if(k==='result') return normalizeResultStatus(t.status||t.result||t.extra?.result,t.profit_loss??t.pnl??0);
       if(k==='date') return new Date(t.open_date||t.date||'').getTime();
       if(k==='symbol') return t.symbol||'';
       if(k==='account') return t.account||t.extra?.account||'';
@@ -344,9 +376,10 @@ const calcStats=(trades)=>{
 const calcLedgerStats=(trades=[])=>{
   if(!trades?.length)return{total:0,wins:0,losses:0,breakeven:0,winRate:0,totalPnL:0,avgRR:null,pf:null,maxDD:0};
   const getPnl=trade=>mfToNumber(trade.profit_loss??trade.pnl)??0;
-  const wins=trades.filter(trade=>getPnl(trade)>0);
-  const losses=trades.filter(trade=>getPnl(trade)<0);
-  const breakeven=trades.filter(trade=>getPnl(trade)===0);
+  const getStatus=trade=>normalizeResultStatus(trade.status||trade.result||trade.extra?.result,getPnl(trade));
+  const wins=trades.filter(trade=>getStatus(trade)==='TP');
+  const losses=trades.filter(trade=>getStatus(trade)==='SL');
+  const breakeven=trades.filter(trade=>getStatus(trade)==='BE');
   const totalPnL=trades.reduce((sum,trade)=>sum+getPnl(trade),0);
   const rrs=trades.map(trade=>mfToStrictNumber(trade.metrics?.rrReel)).filter(value=>value!=null&&value>0);
   const avgRR=rrs.length?rrs.reduce((sum,value)=>sum+value,0)/rrs.length:null;
@@ -382,6 +415,8 @@ const toTradeFormData=(trade={})=>({
   symbol:trade.symbol||'',
   account:trade.account||trade.extra?.account||trade.accountLabel||'',
   type:trade.type||trade.direction||'Long',
+  result:normalizeResultStatus(trade.status||trade.result||trade.extra?.result,trade.profit_loss??trade.pnl??0),
+  rrActual:trade.rrActual??trade.rr_actual??trade.metrics?.rrReel??trade.extra?.rr_actual??trade.extra?.rrActual??trade.extra?.rr??'',
   entry:trade.entry??trade.entry_price??'',
   exit:trade.exit??trade.exit_price??'',
   sl:trade.sl??trade.stop_loss??'',
@@ -595,7 +630,7 @@ const FilterBar=({filters,setFilters,trades,onReset,compact=false})=>{
   const symbols=useMemo(()=>[...new Set(trades.map(t=>t.symbol).filter(Boolean))].sort(),[trades]);
   const activeCount=[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length;
   const iStyle={padding:compact?'8px 10px':'10px 12px',borderRadius:compact?10:12,border:`1px solid ${C.brd}`,backgroundColor:'rgba(6,10,18,0.88)',color:C.t1,fontSize:compact?11:12,outline:'none',fontFamily:'inherit',cursor:'pointer',minHeight:compact?36:40};
-  const resultFilters=[{id:'all',label:'All'},{id:'wins',label:'Winners'},{id:'losses',label:'Losers'},{id:'long',label:'Long'},{id:'short',label:'Short'}];
+  const resultFilters=[{id:'all',label:'All'},{id:'tp',label:'TP'},{id:'be',label:'BE'},{id:'sl',label:'SL'},{id:'long',label:'Long'},{id:'short',label:'Short'}];
   return(
     <motion.div variants={fadeInUp} initial="hidden" animate="visible" style={{background:'linear-gradient(180deg, rgba(11,18,30,0.92), rgba(8,13,22,0.96))',border:`1px solid ${C.brd}`,borderRadius:compact?18:20,padding:compact?'12px':'16px 16px 14px',marginBottom:compact?0:14,boxShadow:compact?'none':'0 18px 34px rgba(0,0,0,0.16)'}}>
       {activeCount>0&&(
@@ -641,7 +676,9 @@ const FilterBar=({filters,setFilters,trades,onReset,compact=false})=>{
 const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClickEdit,cols,cumulativePnl})=>{
   const[hov,setHov]=useState(false);
   const pnl    = mfToNumber(trade.profit_loss??trade.pnl)??0;
-  const isWin  = pnl>=0;
+  const status = normalizeResultStatus(trade.status||trade.result||trade.extra?.result,pnl);
+  const statusTone = resultTone(status);
+  const pnlTone = pnl>=0?C.green:C.danger;
   const symbol = trade.symbol||'';
   const type   = trade.direction||trade.type||'Long';
   const entry  = mfToNumber(trade.entry_price??trade.entry);
@@ -652,7 +689,7 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
   const rrValue = mfToStrictNumber(trade.metrics?.rrReel);
   const tpProgress = mfToStrictNumber(trade.metrics?.tpPercent);
   const runningPnl = cumulativePnl!=null ? mfFormatMoney(cumulativePnl) : '--';
-  const rowBg  = isSelected?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.09)':hov?'rgba(255,255,255,0.026)':isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.018)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.018)';
+  const rowBg  = isSelected?'rgba(var(--mf-accent-rgb, 6, 230, 255),0.09)':hov?'rgba(255,255,255,0.026)':status==='TP'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.018)':status==='SL'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.018)':'rgba(var(--mf-teal-rgb, 0, 245, 212),0.014)';
 
   const cell=(key)=>{
     switch(key){
@@ -660,6 +697,7 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
       case 'symbol':return(<div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg, rgba(var(--mf-accent-rgb, 6, 230, 255),0.18), rgba(var(--mf-accent-rgb, 6, 230, 255),0.04))',border:`1px solid ${shade(C.cyan,'26')}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:900,color:C.cyan,flexShrink:0}}>{symbol.substring(0,3)||'--'}</div><div><div style={{color:C.t1,fontSize:12.5,fontWeight:800,letterSpacing:'0.01em'}}>{symbol||'--'}</div><div style={{color:C.t3,fontSize:10.5,marginTop:2}}>{trade.setup||accountLabel||trade.marketType||'Execution'}</div></div></div>);
       case 'account':return accountLabel?<Tag label={accountLabel} color={C.blue} bg="rgba(var(--mf-blue-rgb, 77, 124, 255),0.1)"/>:<span style={{color:C.t3,fontSize:11}}>--</span>;
       case 'type':return<Tag label={type==='Long'?'Long':'Short'} color={type==='Long'?C.green:C.danger} bg={type==='Long'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.1)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)'}/>;
+      case 'result':return<Tag label={status} color={statusTone.color} bg={statusTone.bg}/>;
       case 'session':return<Tag label={mfSessionLabel(trade.session)} color={C.cyan} bg="rgba(var(--mf-accent-rgb, 6, 230, 255),0.08)"/>;
       case 'bias':return<Tag label={trade.bias||'--'} color={trade.bias==='Bullish'?C.green:trade.bias==='Bearish'?C.danger:C.t2} bg={trade.bias==='Bullish'?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':trade.bias==='Bearish'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)':'rgba(255,255,255,0.04)'}/>;
       case 'news':return<Tag label={trade.newsImpact||'--'} color={trade.newsImpact==='High'?C.danger:trade.newsImpact==='Medium'?C.warn:C.teal} bg={trade.newsImpact==='High'?'rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)':trade.newsImpact==='Medium'?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.1)':'rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)'}/>;
@@ -669,7 +707,7 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
       case 'rr':return rrValue==null?<span style={{color:C.t3}}>--</span>:<Tag label={mfFormatRR(rrValue)} color={C.teal} bg="rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)"/>;
       case 'setup':return trade.setup?<Tag label={trade.setup} color={C.purple} bg="rgba(167,139,250,0.1)"/>:<span style={{color:C.t3}}>--</span>;
       case 'psychology':{const s=psychology;if(s==null)return<span style={{color:C.t3}}>--</span>;return<Tag label={Math.round(s)} color={s>=80?C.green:s>=60?C.warn:C.danger} bg={s>=80?'rgba(var(--mf-green-rgb, 0, 255, 136),0.08)':s>=60?'rgba(var(--mf-warn-rgb, 255, 179, 26),0.08)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.08)'}/>;}
-      case 'pnl':return(<div><div style={{color:isWin?C.green:C.danger,fontSize:13,fontWeight:900,fontFamily:'monospace',letterSpacing:'-0.02em'}}>{mfFormatMoney(pnl)}</div>{cumulativePnl!=null&&(<div style={{color:C.t3,fontSize:9.5,fontWeight:700,marginTop:3}}>Running {runningPnl}</div>)}</div>);
+      case 'pnl':return(<div><div style={{color:pnlTone,fontSize:13,fontWeight:900,fontFamily:'monospace',letterSpacing:'-0.02em'}}>{mfFormatMoney(pnl)}</div>{cumulativePnl!=null&&(<div style={{color:C.t3,fontSize:9.5,fontWeight:700,marginTop:3}}>Running {runningPnl}</div>)}</div>);
       default:
         if(isCustomColumnKey(key)){
           const value=getTradeExtraValue(trade,getCustomFieldKey(key));
@@ -680,7 +718,7 @@ const TradeRow=React.memo(({trade,isSelected,onSelect,onClickDetail,onDoubleClic
         return<span style={{color:C.t3,fontSize:11}}>--</span>;
     }
   };
-  return(<motion.tr initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.15}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClickDetail} onDoubleClick={()=>onDoubleClickEdit(trade)} style={{backgroundColor:rowBg,borderLeft:`2px solid ${isSelected?C.cyan:isWin?'rgba(var(--mf-green-rgb, 0, 255, 136),0.14)':'rgba(var(--mf-danger-rgb, 255, 61, 87),0.14)'}`,cursor:'pointer',transition:'all 0.12s ease'}}>{cols.map(col=>(<td key={col.key} onClick={col.key==='select'?(e)=>{e.stopPropagation();onSelect(trade.id);}:undefined} style={{padding:'12px 14px',whiteSpace:'nowrap',borderBottom:'1px solid rgba(255,255,255,0.05)',verticalAlign:'middle'}}>{col.key==='select'?<input type="checkbox" checked={isSelected} onChange={()=>onSelect(trade.id)} onClick={e=>e.stopPropagation()} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:cell(col.key)}</td>))}</motion.tr>);
+  return(<motion.tr initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.15}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClickDetail} onDoubleClick={()=>onDoubleClickEdit(trade)} style={{backgroundColor:rowBg,borderLeft:`2px solid ${isSelected?C.cyan:shade(statusTone.color,'24')}`,cursor:'pointer',transition:'all 0.12s ease'}}>{cols.map(col=>(<td key={col.key} onClick={col.key==='select'?(e)=>{e.stopPropagation();onSelect(trade.id);}:undefined} style={{padding:'12px 14px',whiteSpace:'nowrap',borderBottom:'1px solid rgba(255,255,255,0.05)',verticalAlign:'middle'}}>{col.key==='select'?<input type="checkbox" checked={isSelected} onChange={()=>onSelect(trade.id)} onClick={e=>e.stopPropagation()} style={{cursor:'pointer',accentColor:C.cyan,width:14,height:14}}/>:cell(col.key)}</td>))}</motion.tr>);
 });
 TradeRow.displayName='TradeRow';
 
@@ -903,9 +941,12 @@ const FIELD_MAP = {
   prixsortie:'exit',closerate:'exit',exitrate:'exit',closelevel:'exit',
   endprice:'exit',avgexitprice:'exit',averageexit:'exit',sellprice:'exit',
   closingprice:'exit',coverprice:'exit',
+  // RESULT
+  result:'result',resultat:'result',status:'result',outcome:'result',winloss:'result',
+  closedreason:'result',closereason:'result',
   // PNL
   pnl:'pnl',pl:'pnl',profitloss:'pnl',profit:'pnl',gain:'pnl',
-  result:'pnl',resultat:'pnl',netprofit:'pnl',grossprofit:'pnl',
+  netprofit:'pnl',grossprofit:'pnl',
   realizedpnl:'pnl',realizedpl:'pnl',netpl:'pnl',netgain:'pnl',
   tradepnl:'pnl',closedpnl:'pnl',closedpl:'pnl',
   returnamount:'pnl',gainloss:'pnl',profitandloss:'pnl',
@@ -988,9 +1029,11 @@ const FIELD_MAP = {
 const KNOWN_FIELDS=[
   {value:'symbol',    label:'Symbol',          required:true},
   {value:'type',      label:'Type (Long/Short)'             },
+  {value:'result',    label:'Result (TP/BE/SL)'             },
+  {value:'rrActual',  label:'Actual RR'                       },
   {value:'entry',     label:'Entry Price'                   },
   {value:'exit',      label:'Exit Price'                   },
-  {value:'pnl',       label:'P&L ($)',           required:true},
+  {value:'pnl',       label:'P&L ($)'                       },
   {value:'date',      label:'Date'                          },
   {value:'time',      label:'Time'                         },
   {value:'session',   label:'Session'                       },
@@ -1007,7 +1050,6 @@ const KNOWN_FIELDS=[
   {value:'commission',label:'Commission / Fees'            },
   {value:'swap',      label:'Swap / Overnight'              },
   {value:'risk',      label:'Risk ($)'                    },
-  {value:'rrActual',  label:'Actual RR'                       },
   {value:'marketType',label:'Market type'                },
   {value:'exchange',  label:'Exchange / Broker'             },
   {value:'account',   label:'Account'                        },
@@ -1020,6 +1062,8 @@ const KNOWN_FIELDS=[
 const CLEAN_FIELD_LABELS={
   symbol:'Symbol',
   type:'Type (Long/Short)',
+  result:'Result (TP/BE/SL)',
+  rrActual:'Actual RR',
   entry:'Entry Price',
   exit:'Exit Price',
   pnl:'P&L ($)',
@@ -1039,7 +1083,6 @@ const CLEAN_FIELD_LABELS={
   commission:'Commission / Fees',
   swap:'Swap / Overnight',
   risk:'Risk ($)',
-  rrActual:'Actual RR',
   marketType:'Market type',
   exchange:'Exchange / Broker',
   account:'Account',
@@ -1473,7 +1516,7 @@ const ImportModal=({isOpen,onClose,onImport})=>{
                     const cl     = confLabel(conf, cur);
                     const isIgn  = cur==='_ignore';
                     const isExtr = cur==='_extra';
-                    const isReq  = ['symbol','pnl'].includes(cur);
+                    const isReq  = ['symbol'].includes(cur);
                     const colIdx = rawHeaders.indexOf(h);
                     const sample = previewRows[0]?.[colIdx]||'';
                     return(
@@ -1569,8 +1612,8 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
   const mergedCustomColumns=useMemo(()=>mergeCustomColumnsWithExtra(customColumns,form.extra),[customColumns,form.extra]);
   const calcRR=d=>{const[en,ex,sl]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.sl)];if(!en||!ex||!sl||isNaN(en)||isNaN(ex)||isNaN(sl))return'0.00';const risk=Math.abs(en-sl),reward=Math.abs(ex-en);return risk>0?(reward/risk).toFixed(2):'0.00';};
   const calcTPP=d=>{const[en,ex,tp]=[parseFloat(d.entry),parseFloat(d.exit),parseFloat(d.tp)];if(!en||!ex||!tp||isNaN(en)||isNaN(ex)||isNaN(tp))return'0.0';const target=Math.abs(tp-en);return target>0?((Math.abs(ex-en)/target)*100).toFixed(1):'0.0';};
-  const validate=()=>{const errs={};if(!form.symbol?.trim())errs.symbol='Required';if(!form.date)errs.date='Required';if(form.entry!==''&&isNaN(parseFloat(form.entry)))errs.entry='Invalid price';if(form.exit!==''&&isNaN(parseFloat(form.exit)))errs.exit='Invalid price';if(form.pnl!==''&&isNaN(parseFloat(form.pnl)))errs.pnl='Invalid amount';if(form.pnl===''&&!form.entry&&!form.exit)errs.pnl='Add P&L or prices';setErrors(errs);return Object.keys(errs).length===0;};
-  const handleSubmit=async()=>{if(!validate()){toast.error('Check the highlighted fields');return;}setSaving(true);try{const saved=await onSave({...form,symbol:(form.symbol||'').toUpperCase().trim(),extra:cleanExtraValues(form.extra),id:form.id,win:parseFloat(form.pnl)>0,metrics:{rrReel:calcRR(form),tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});if(!saved){toast.error('Trade could not be saved');return;}toast.success(isEdit?'Trade updated':'Trade added');setErrors({});onClose();}finally{setSaving(false);}};
+  const validate=()=>{const errs={};if(!form.symbol?.trim())errs.symbol='Required';if(!form.date)errs.date='Required';if(!form.result)errs.result='Required';if(form.rrActual!==''&&isNaN(parseFloat(form.rrActual)))errs.rrActual='Invalid RR';if(form.entry!==''&&isNaN(parseFloat(form.entry)))errs.entry='Invalid price';if(form.exit!==''&&isNaN(parseFloat(form.exit)))errs.exit='Invalid price';if(form.pnl!==''&&isNaN(parseFloat(form.pnl)))errs.pnl='Invalid amount';setErrors(errs);return Object.keys(errs).length===0;};
+  const handleSubmit=async()=>{if(!validate()){toast.error('Check the highlighted fields');return;}setSaving(true);try{const actualRR=form.rrActual!==''?form.rrActual:calcRR(form);const saved=await onSave({...form,symbol:(form.symbol||'').toUpperCase().trim(),result:form.result,status:form.result,rrActual:actualRR,extra:cleanExtraValues(form.extra),id:form.id,win:form.result==='TP',metrics:{rrReel:actualRR,tpPercent:calcTPP(form)},lastModified:new Date().toISOString()});if(!saved){toast.error('Trade could not be saved');return;}toast.success(isEdit?'Trade updated':'Trade added');setErrors({});onClose();}finally{setSaving(false);}};
   if(!isOpen)return null;
   const iStyle={width:'100%',padding:'8px 11px',borderRadius:7,border:`1px solid ${C.brd}`,backgroundColor:C.bgDeep,color:C.t1,fontSize:12,outline:'none',fontFamily:'inherit'};
   const lStyle={display:'block',fontSize:10,fontWeight:600,color:C.t3,marginBottom:5};
@@ -1586,7 +1629,7 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
           </div>
           <div style={{flex:1,overflowY:'auto',padding:'22px 24px 24px'}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
-              {[{k:'symbol',l:'Pair *',t:'text',ph:'EURUSD'},{k:'account',l:'Account',t:'text',ph:'FTMO Challenge'},{k:'type',l:'Direction',t:'select',opts:['Long','Short']},{k:'date',l:'Date *',t:'date'},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'pnl',l:'P&L',t:'number',ph:'150.00',step:'0.01'},{k:'entry',l:'Entry',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit',t:'number',ph:'1.09000',step:'0.00001'}].map(({k,l,t,ph,step,opts})=>(
+              {[{k:'symbol',l:'Pair *',t:'text',ph:'EURUSD'},{k:'account',l:'Account',t:'text',ph:'FTMO Challenge'},{k:'type',l:'Direction',t:'select',opts:['Long','Short']},{k:'date',l:'Date *',t:'date'},{k:'result',l:'Result *',t:'select',opts:['TP','BE','SL']},{k:'rrActual',l:'R:R',t:'number',ph:'2.00',step:'0.01'},{k:'entry',l:'Entry',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit',t:'number',ph:'1.09000',step:'0.00001'},{k:'pnl',l:'P&L',t:'number',ph:'150.00',step:'0.01'},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']}].map(({k,l,t,ph,step,opts})=>(
                 <div key={k}>
                   <label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>
                   {t==='select'
@@ -1657,12 +1700,8 @@ const TradeFormModal=({isOpen,onClose,onSave,trade=null,customColumns=[]})=>{
       </motion.div>
     </AnimatePresence>
   );
-  return(<AnimatePresence><motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,overflowY:'auto'}}><motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} onClick={e=>e.stopPropagation()} style={{backgroundColor:C.bgCard,borderRadius:16,border:`1px solid ${C.brd}`,maxWidth:680,width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}}><div style={{padding:'18px 22px',borderBottom:`1px solid ${C.brd}`,background:C.grad}}><h3 style={{margin:0,fontSize:17,fontWeight:700,color:'#fff'}}>{isEdit?'Edit Trade':'Add Trade'}</h3></div><div style={{flex:1,overflowY:'auto',padding:'22px'}}><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>{[{k:'date',l:'Date *',t:'date'},{k:'time',l:'Time',t:'time'},{k:'symbol',l:'Symbol *',t:'text',ph:'EURUSD'},{k:'account',l:'Account',t:'text',ph:'FTMO Challenge #1'},{k:'type',l:'Type',t:'select',opts:['Long','Short']},{k:'session',l:'Session',t:'select',opts:['NY','London','Asia']},{k:'bias',l:'Bias',t:'select',opts:['Bullish','Bearish','Neutral']},{k:'entry',l:'Entry *',t:'number',ph:'1.08500',step:'0.00001'},{k:'exit',l:'Exit *',t:'number',ph:'1.09000',step:'0.00001'},{k:'sl',l:'Stop Loss',t:'number',step:'0.00001'},{k:'tp',l:'Take Profit',t:'number',step:'0.00001'},{k:'pnl',l:'P&L ($) *',t:'number',ph:'150.00',step:'0.01'},{k:'setup',l:'Setup',t:'text',ph:'Breakout, Pullback...'},{k:'newsImpact',l:'News Impact',t:'select',opts:['High','Medium','Low']}].map(({k,l,t,ph,step,opts})=>(<div key={k}><label style={{...lStyle,color:errors[k]?C.danger:C.t3}}>{l}</label>{t==='select'?<select value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`,cursor:'pointer'}}>{opts.map(o=><option key={o} value={o}>{o}</option>)}</select>:<input type={t} placeholder={ph} step={step} value={form[k]||''} onChange={e=>setForm({...form,[k]:k==='symbol'?e.target.value.toUpperCase():e.target.value})} style={{...iStyle,border:`1px solid ${errors[k]?C.danger:C.brd}`}}/>}{errors[k]&&<div style={eStyle}>{errors[k]}</div>}</div>))}<div><label style={lStyle}>Psychology Score: <span style={{color:form.psychologyScore>=80?C.green:form.psychologyScore>=60?C.warn:C.danger,fontWeight:800}}>{form.psychologyScore}</span></label><input type="range" min="0" max="100" value={form.psychologyScore} onChange={e=>setForm({...form,psychologyScore:+e.target.value})} style={{...iStyle,padding:8,accentColor:C.cyan}}/></div></div><div style={{marginTop:14}}><label style={lStyle}>Notes</label><textarea placeholder="Context, emotions, observations..." value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} style={{...iStyle,resize:'vertical',minHeight:70}}/></div>{form.entry&&form.exit&&form.sl&&(<div style={{marginTop:16,padding:14,borderRadius:9,backgroundColor:'rgba(var(--mf-accent-rgb, 6, 230, 255),0.05)',border:`1px solid rgba(var(--mf-accent-rgb, 6, 230, 255),0.18)`}}><div style={{fontSize:10,fontWeight:700,color:C.cyan,marginBottom:8}}>Auto calculations</div><div style={{display:'flex',gap:28}}><div><div style={{fontSize:9,color:C.t3}}>Risk/Reward</div><div style={{fontSize:16,fontWeight:800,color:C.teal}}>1:{calcRR(form)}</div></div><div><div style={{fontSize:9,color:C.t3}}>TP reached</div><div style={{fontSize:16,fontWeight:800,color:C.cyan}}>{calcTPP(form)}%</div></div></div></div>)}</div><div style={{padding:'14px 22px',borderTop:`1px solid ${C.brd}`,display:'flex',gap:9,justifyContent:'flex-end'}}><GlassBtn onClick={onClose}>Cancel</GlassBtn><GlassBtn variant="primary" onClick={handleSubmit} loading={saving}>{isEdit?'Save Trade':'Add Trade'}</GlassBtn></div></motion.div></motion.div></AnimatePresence>);
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 🏠 COMPOSANT PRINCIPAL - AllTrades
-// ══════════════════════════════════════════════════════════════════════════════
 export default function AllTrades(){
   const{
     trades,
@@ -1829,24 +1868,28 @@ export default function AllTrades(){
               )}
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginTop:18}}>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Net P&amp;L</div>
-                  <div style={{fontSize:18,fontWeight:900,color:stats.totalPnL>=0?C.green:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatMoney(stats.totalPnL)}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{filtered.length} row{filtered.length===1?'':'s'} in scope</div>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Result split</div>
+                  <div style={{display:'flex',gap:7,alignItems:'center',flexWrap:'wrap'}}>
+                    <Tag label={`TP ${stats.wins||0}`} color={C.green} bg="rgba(var(--mf-green-rgb, 0, 255, 136),0.1)"/>
+                    <Tag label={`BE ${stats.breakeven||0}`} color={C.teal} bg="rgba(var(--mf-teal-rgb, 0, 245, 212),0.1)"/>
+                    <Tag label={`SL ${stats.losses||0}`} color={C.danger} bg="rgba(var(--mf-danger-rgb, 255, 61, 87),0.1)"/>
+                  </div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:8}}>{filtered.length} row{filtered.length===1?'':'s'} in scope</div>
                 </div>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Win rate</div>
-                  <div style={{fontSize:18,fontWeight:900,color:stats.winRate>=55?C.green:stats.winRate>=45?C.warn:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatPercent(stats.winRate,1)}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{stats.wins||0}W / {stats.losses||0}L / {stats.breakeven||0}BE</div>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Average R:R</div>
+                  <div style={{fontSize:18,fontWeight:900,color:stats.avgRR>=2?C.green:stats.avgRR>=1?C.warn:C.teal,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{stats.avgRR!=null?mfFormatRR(stats.avgRR):'--'}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Win rate {mfFormatPercent(stats.winRate,1)} from TP / BE / SL</div>
+                </div>
+                <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Net P&amp;L</div>
+                  <div style={{fontSize:18,fontWeight:900,color:stats.totalPnL>=0?C.green:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatMoney(stats.totalPnL)}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Secondary money read</div>
                 </div>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
                   <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Profit factor</div>
                   <div style={{fontSize:18,fontWeight:900,color:stats.pf===Infinity||stats.pf>=2?C.green:stats.pf>=1.2?C.warn:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatFactor(stats.pf)}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Average R:R {stats.avgRR!=null?mfFormatRR(stats.avgRR):'--'}</div>
-                </div>
-                <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Average trade</div>
-                  <div style={{fontSize:18,fontWeight:900,color:averageTrade>=0?C.green:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatMoney(averageTrade)}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Max drawdown {stats.maxDD>0?`-${mfFormatPercent(stats.maxDD,1)}`:'0.0%'}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Avg trade {mfFormatMoney(averageTrade)} / DD {stats.maxDD>0?`-${mfFormatPercent(stats.maxDD,1)}`:'0.0%'}</div>
                 </div>
               </div>
             </div>

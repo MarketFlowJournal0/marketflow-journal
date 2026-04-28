@@ -9,6 +9,8 @@ function AddTradeModal({ isOpen, onClose }) {
     time: '09:30',
     symbol: '',
     type: 'Long',
+    result: 'TP',
+    rrActual: '',
     entry: '',
     exit: '',
     stopLoss: '',
@@ -29,15 +31,19 @@ function AddTradeModal({ isOpen, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const optionalNumber = (value) => value === '' || value == null ? null : parseFloat(value);
     
     const newTrade = {
       ...formData,
-      entry: parseFloat(formData.entry),
-      exit: parseFloat(formData.exit),
-      stopLoss: parseFloat(formData.stopLoss) || parseFloat(formData.entry) * 0.98,
+      entry: optionalNumber(formData.entry),
+      exit: optionalNumber(formData.exit),
+      stopLoss: optionalNumber(formData.stopLoss) || optionalNumber(formData.entry) * 0.98,
       shares: parseInt(formData.shares),
-      pnl: parseFloat(formData.pnl),
+      pnl: optionalNumber(formData.pnl) ?? 0,
+      status: formData.result,
+      rrActual: optionalNumber(formData.rrActual),
       riskPercent: parseFloat(formData.riskPercent),
+      win: formData.result === 'TP',
     };
     
     addTrade(newTrade);
@@ -48,6 +54,8 @@ function AddTradeModal({ isOpen, onClose }) {
       time: '09:30',
       symbol: '',
       type: 'Long',
+      result: 'TP',
+      rrActual: '',
       entry: '',
       exit: '',
       stopLoss: '',
@@ -132,6 +140,35 @@ function AddTradeModal({ isOpen, onClose }) {
               </select>
             </div>
 
+            {/* Result */}
+            <div>
+              <label className="block text-[#A0AEC0] text-sm mb-2">Result *</label>
+              <select
+                name="result"
+                value={formData.result}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-[#1A1F2E] text-white rounded-lg border border-[#2D3548] focus:border-[#60A5FA] focus:outline-none"
+              >
+                <option value="TP">TP</option>
+                <option value="BE">BE</option>
+                <option value="SL">SL</option>
+              </select>
+            </div>
+
+            {/* R:R */}
+            <div>
+              <label className="block text-[#A0AEC0] text-sm mb-2">R:R</label>
+              <input
+                type="number"
+                step="0.01"
+                name="rrActual"
+                value={formData.rrActual}
+                onChange={handleChange}
+                placeholder="2.00"
+                className="w-full px-4 py-3 bg-[#1A1F2E] text-white rounded-lg border border-[#2D3548] focus:border-[#60A5FA] focus:outline-none"
+              />
+            </div>
+
             {/* Entry */}
             <div>
               <label className="block text-[#A0AEC0] text-sm mb-2">Entry Price *</label>
@@ -192,7 +229,7 @@ function AddTradeModal({ isOpen, onClose }) {
 
             {/* P&L */}
             <div>
-              <label className="block text-[#A0AEC0] text-sm mb-2">P&L ($) *</label>
+              <label className="block text-[#A0AEC0] text-sm mb-2">P&L ($)</label>
               <input
                 type="number"
                 step="0.01"
@@ -201,7 +238,6 @@ function AddTradeModal({ isOpen, onClose }) {
                 onChange={handleChange}
                 placeholder="380"
                 className="w-full px-4 py-3 bg-[#1A1F2E] text-white rounded-lg border border-[#2D3548] focus:border-[#60A5FA] focus:outline-none"
-                required
               />
             </div>
 

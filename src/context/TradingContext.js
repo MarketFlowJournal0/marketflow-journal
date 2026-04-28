@@ -664,6 +664,7 @@ function buildTradePayload(tradeData = {}, userId) {
   const commission = nullableDatabaseNumber(normalizedTrade.commission ?? normalizedTrade.comm);
   const swap = nullableDatabaseNumber(normalizedTrade.swap ?? normalizedTrade.overnight);
   const openDate   = normalizedTrade.open_date || normalizedTrade.date || new Date().toISOString().split('T')[0];
+  const status = normalizeTradeStatus(normalizedTrade.status || normalizedTrade.result || normalizedTrade.extra?.result, pnl);
   const extra = normalizeJournalExtra(normalizedTrade.extra, {
     account: normalizedTrade.account,
     accountName: normalizedTrade.account_name,
@@ -671,7 +672,7 @@ function buildTradePayload(tradeData = {}, userId) {
     exchange: normalizedTrade.exchange,
     broker: normalizedTrade.broker,
     rrActual: normalizedTrade.rrActual ?? normalizedTrade.rr_actual ?? normalizedTrade.rr ?? normalizedTrade.metrics?.rrReel,
-    result: normalizedTrade.result,
+    result: normalizedTrade.result || normalizedTrade.status,
     screenshots: normalizedTrade.screenshots,
   });
 
@@ -684,7 +685,7 @@ function buildTradePayload(tradeData = {}, userId) {
     stop_loss:          stopLoss,
     quantity:           qty,
     profit_loss:        pnl,
-    status:             pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
+    status,
     open_date:          openDate,
     notes:              normalizedTrade.notes || normalizedTrade.comment || '',
     session:            normalizedTrade.session || detectSession(),
@@ -717,7 +718,7 @@ function buildLegacyTradePayload(tradeData = {}, userId) {
     exchange: normalizedTrade.exchange,
     broker: normalizedTrade.broker,
     rrActual: normalizedTrade.rrActual ?? normalizedTrade.rr_actual ?? normalizedTrade.rr ?? normalizedTrade.metrics?.rrReel,
-    result: normalizedTrade.result,
+    result: normalizedTrade.result || normalizedTrade.status,
     screenshots: normalizedTrade.screenshots,
   });
 
@@ -762,6 +763,7 @@ function normalizeTradeRecord(trade = {}) {
   const trailingStop = trade.trailing_stop ?? trade.trailingStop ?? null;
   const marketType = trade.market_type || trade.marketType || '';
   const extra = trade.extra && typeof trade.extra === 'object' ? trade.extra : {};
+  const status = normalizeTradeStatus(trade.status || trade.result || extra.result, pnl);
   const account = trade.account || trade.account_name || extra.account || extra.account_name || extra.account_number || '';
   const exchange = trade.exchange || trade.broker || extra.exchange || extra.broker || '';
   const accountMeta = getTradeAccountMeta({ ...trade, extra, account, exchange });
@@ -787,7 +789,8 @@ function normalizeTradeRecord(trade = {}) {
     dir: direction,
     profit_loss: pnl,
     pnl,
-    status: trade.status || (pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE'),
+    status,
+    result: status,
     open_date: openDate,
     date: openDate,
     entry_price: entry,
@@ -834,6 +837,7 @@ function normalizeTradeRecord(trade = {}) {
 
 function mapTradeUpdates(tradeData = {}) {
   const pnl = resolveProfitLoss(tradeData);
+  const status = normalizeTradeStatus(tradeData.status || tradeData.result || tradeData.extra?.result, pnl);
   const extra = normalizeJournalExtra(tradeData.extra, {
     account: tradeData.account,
     accountName: tradeData.account_name,
@@ -841,7 +845,7 @@ function mapTradeUpdates(tradeData = {}) {
     exchange: tradeData.exchange,
     broker: tradeData.broker,
     rrActual: tradeData.rrActual ?? tradeData.rr_actual ?? tradeData.rr ?? tradeData.metrics?.rrReel,
-    result: tradeData.result,
+    result: tradeData.result || tradeData.status,
     screenshots: tradeData.screenshots,
   });
 
@@ -853,7 +857,7 @@ function mapTradeUpdates(tradeData = {}) {
     stop_loss:         nullableDatabaseNumber(tradeData.stop_loss ?? tradeData.sl ?? tradeData.stopLoss),
     quantity:          nullableDatabaseNumber(tradeData.quantity ?? tradeData.size ?? tradeData.lots ?? tradeData.volume),
     profit_loss:       pnl,
-    status:            pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE',
+    status,
     open_date:         tradeData.open_date || tradeData.date || new Date().toISOString().split('T')[0],
     notes:             tradeData.notes || tradeData.comment || '',
     session:           tradeData.session || detectSession(),
@@ -927,6 +931,17 @@ function normalizeTradeDirection(value) {
   if (['short', 'sell', 'bear', 'bearish', '1'].includes(normalized)) return 'Short';
   if (['buy', 'long', 'bull', 'bullish', '0'].includes(normalized)) return 'Long';
   return normalized[0].toUpperCase() + normalized.slice(1);
+}
+
+function normalizeTradeStatus(value, pnlValue = 0) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (['tp', 'take profit', 'takeprofit', 'win', 'winner', 'profit', 'target'].includes(normalized)) return 'TP';
+  if (['sl', 'stop loss', 'stoploss', 'loss', 'loser', 'stop'].includes(normalized)) return 'SL';
+  if (['be', 'break even', 'break-even', 'breakeven', 'flat'].includes(normalized)) return 'BE';
+  const pnl = nullableDatabaseNumber(pnlValue) || 0;
+  if (pnl > 0) return 'TP';
+  if (pnl < 0) return 'SL';
+  return 'BE';
 }
 
 function normalizeImportText(value) {
