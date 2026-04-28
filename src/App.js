@@ -25,6 +25,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import AuthCallback from './pages/AuthCallback';
 import BrokerConnect from './pages/BrokerConnect';
 import AIChatBot from './components/AIChatBot';
+import DailyPsychologyCheckIn from './components/DailyPsychologyCheckIn';
 import JournalAmbientBackground from './components/JournalAmbientBackground';
 import ReportsPage from './pages/Reports';
 import AlertsPage from './pages/Alerts';
@@ -320,6 +321,10 @@ function AppLayout({ user, onLogout }) {
           </div>
         </div>
         {hasRouteAccess(plan, 'ai-chat') && <AIChatBot />}
+        <DailyPsychologyCheckIn
+          user={effectiveUser}
+          enabled={!isFullscreen && hasRouteAccess(plan, 'psychology')}
+        />
       </div>
     </TradingProvider>
   );

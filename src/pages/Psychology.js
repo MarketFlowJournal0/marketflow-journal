@@ -15,6 +15,7 @@
 
 import React,{useState,useMemo,useEffect,useRef}from'react';
 import{motion,AnimatePresence}from'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import{useTradingContext}from'../context/TradingContext';
 import{
   AreaChart,Area,BarChart,Bar,ComposedChart,Line,LineChart,
@@ -23,6 +24,13 @@ import{
 }from'recharts';
 import { shade } from '../lib/colorAlpha';
 import { CHART_AXIS_SMALL, CHART_GRID, CHART_MOTION, CHART_MOTION_SOFT, chartActiveDot, chartCursor, chartTooltipStyle } from '../lib/marketflowCharts';
+import {
+  PSYCHOLOGY_CHECKIN_EVENT,
+  loadPsychologyCheckins,
+  mergePsychologyCheckinIntoSession,
+  psychologyCheckinToSession,
+  summarizePsychologyCheckins,
+} from '../lib/psychologyCheckins';
 
 // ═══════════════════════════════════════════════════════════════════
 // 🎨 DESIGN SYSTEM
@@ -1502,23 +1510,41 @@ const TABS=[
 
 export default function Psychology(){
   const[tab,setTab]=useState('overview');
+  const { user } = useAuth();
   const { trades } = useTradingContext();
+  const userId = user?.id || user?.email || 'guest';
+  const [checkins, setCheckins] = useState(() => loadPsychologyCheckins(userId));
+
+  useEffect(() => {
+    const refreshCheckins = () => setCheckins(loadPsychologyCheckins(userId));
+    refreshCheckins();
+
+    const handleCheckinUpdate = (event) => {
+      if (!event?.detail?.userId || event.detail.userId === userId) refreshCheckins();
+    };
+
+    window.addEventListener(PSYCHOLOGY_CHECKIN_EVENT, handleCheckinUpdate);
+    window.addEventListener('storage', refreshCheckins);
+    return () => {
+      window.removeEventListener(PSYCHOLOGY_CHECKIN_EVENT, handleCheckinUpdate);
+      window.removeEventListener('storage', refreshCheckins);
+    };
+  }, [userId]);
+
+  const checkinSummary = useMemo(() => summarizePsychologyCheckins(checkins), [checkins]);
 
   // ── Convertir les trades Supabase en sessions Psychology ──────────────
   // Each "session" = group of trades per day
   const sessions = useMemo(() => {
-    if (!trades || trades.length === 0) return [];
-
-    // Group by date
     const byDate = {};
-    trades.forEach(t => {
+    (trades || []).forEach(t => {
       const date = (t.open_date || t.date || '').substring(0, 10);
       if (!date) return;
       if (!byDate[date]) byDate[date] = [];
       byDate[date].push(t);
     });
 
-    return Object.entries(byDate)
+    const tradeSessions = Object.entries(byDate)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, dayTrades], idx) => {
         const pnl = dayTrades.reduce((s, t) => s + parseFloat(t.profit_loss ?? t.pnl ?? 0), 0);
@@ -1569,7 +1595,20 @@ export default function Psychology(){
           notes:       dayTrades.map(t => t.notes).filter(Boolean).join(' | ') || '',
         };
       });
-  }, [trades]);
+
+    const sessionsByDate = Object.fromEntries(tradeSessions.map((session) => [session.date, session]));
+    checkins.forEach((checkin) => {
+      if (checkin.skipped) return;
+      if (sessionsByDate[checkin.dateKey]) {
+        sessionsByDate[checkin.dateKey] = mergePsychologyCheckinIntoSession(sessionsByDate[checkin.dateKey], checkin);
+        return;
+      }
+      const checkinSession = psychologyCheckinToSession(checkin);
+      if (checkinSession) sessionsByDate[checkin.dateKey] = checkinSession;
+    });
+
+    return Object.values(sessionsByDate).sort((left, right) => left.date.localeCompare(right.date));
+  }, [trades, checkins]);
 
   // ── Empty state if no trades ────────────────────────────────────────
   const hasData = sessions.length > 0;
@@ -1648,7 +1687,9 @@ export default function Psychology(){
                   </h1>
                   <span style={{padding:'2px 9px',borderRadius:6,background:`${shade(C.blue,'20')}`,border:`1px solid ${shade(C.blue,'40')}`,fontSize:9,fontWeight:800,color:C.blue,letterSpacing:'0.5px'}}>v3.0</span>
                 </div>
-                <div style={{fontSize:11,color:C.t3}}>Composite score / 8 dimensions / {sessions.length} sessions analyzed</div>
+                <div style={{fontSize:11,color:C.t3}}>
+                  Composite score / 8 dimensions / {sessions.length} sessions analyzed / {checkinSummary.completed} daily check-ins
+                </div>
               </div>
             </div>
             {/* Tabs */}
