@@ -374,37 +374,56 @@ const calcStats=(trades)=>{
 };
 
 const calcLedgerStats=(trades=[])=>{
-  if(!trades?.length)return{total:0,wins:0,losses:0,breakeven:0,winRate:0,totalPnL:0,avgRR:null,pf:null,maxDD:0};
+  if(!trades?.length)return{total:0,wins:0,losses:0,breakeven:0,winRate:0,totalPnL:0,avgRR:null,pf:null,maxDD:0,pnlDD:0,totalR:0};
   const getPnl=trade=>mfToNumber(trade.profit_loss??trade.pnl)??0;
   const getStatus=trade=>normalizeResultStatus(trade.status||trade.result||trade.extra?.result,getPnl(trade));
+  const getRR=trade=>{
+    const raw=mfToStrictNumber(trade.metrics?.rrReel??trade.rrActual??trade.rr_actual??trade.rr??trade.extra?.rrActual??trade.extra?.rr_actual??trade.extra?.rr);
+    if(raw!=null&&raw>0)return raw;
+    const status=getStatus(trade);
+    return status==='TP'||status==='SL'?1:0;
+  };
   const wins=trades.filter(trade=>getStatus(trade)==='TP');
   const losses=trades.filter(trade=>getStatus(trade)==='SL');
   const breakeven=trades.filter(trade=>getStatus(trade)==='BE');
   const totalPnL=trades.reduce((sum,trade)=>sum+getPnl(trade),0);
-  const rrs=trades.map(trade=>mfToStrictNumber(trade.metrics?.rrReel)).filter(value=>value!=null&&value>0);
+  const rrs=wins.map(getRR).filter(value=>value!=null&&value>0);
   const avgRR=rrs.length?rrs.reduce((sum,value)=>sum+value,0)/rrs.length:null;
-  const grossW=wins.reduce((sum,trade)=>sum+getPnl(trade),0);
-  const grossL=Math.abs(losses.reduce((sum,trade)=>sum+getPnl(trade),0));
-  const pf=grossL>0?(grossW/grossL):grossW>0?Number.POSITIVE_INFINITY:0;
+  const grossR=wins.reduce((sum,trade)=>sum+getRR(trade),0);
+  const pf=losses.length>0?(grossR/losses.length):grossR>0?Number.POSITIVE_INFINITY:0;
+  const totalR=trades.reduce((sum,trade)=>{
+    const status=getStatus(trade);
+    if(status==='TP')return sum+getRR(trade);
+    if(status==='SL')return sum-1;
+    return sum;
+  },0);
   let peak=0;
   let equity=0;
   let dd=0;
+  let slStreak=0;
+  let maxSlStreak=0;
   [...trades].sort((a,b)=>(a.open_date||a.date||'').localeCompare(b.open_date||b.date||'')).forEach(trade=>{
+    const status=getStatus(trade);
     equity += getPnl(trade);
     if(equity>peak) peak=equity;
     const drawdown=peak>0?((peak-equity)/peak)*100:0;
     if(drawdown>dd) dd=drawdown;
+    slStreak=status==='SL'?slStreak+1:0;
+    if(slStreak>maxSlStreak)maxSlStreak=slStreak;
   });
+  const decisive=wins.length+losses.length;
   return{
     total:trades.length,
     wins:wins.length,
     losses:losses.length,
     breakeven:breakeven.length,
-    winRate:trades.length?(wins.length/trades.length)*100:0,
+    winRate:decisive?(wins.length/decisive)*100:0,
     totalPnL,
     avgRR,
     pf,
-    maxDD:dd,
+    maxDD:maxSlStreak,
+    pnlDD:dd,
+    totalR,
   };
 };
 
@@ -1745,7 +1764,6 @@ export default function AllTrades(){
   const activeFilterCount=useMemo(()=>[filters.search,filters.result!=='all'&&filters.result,filters.symbol!=='all'&&filters.symbol,filters.session!=='all'&&filters.session,filters.bias!=='all'&&filters.bias,filters.dateFrom,filters.dateTo].filter(Boolean).length,[filters]);
   const workflowOpen=showWorkflow||activeFilterCount>0;
   const symbolCount=useMemo(()=>new Set(filtered.map(t=>t.symbol).filter(Boolean)).size,[filtered]);
-  const averageTrade=stats.total?stats.totalPnL/stats.total:0;
   const latestTrade=sorted[0]||null;
   const activeScopeLabel=useMemo(()=>{
     if(activeAccount==='all') return 'All accounts';
@@ -1819,7 +1837,9 @@ export default function AllTrades(){
       setShowWipeModal(false);
       setSelected(new Set());
       setFilters(DEFAULT_FILTERS);
-      toast.success(`${result.deleted||0} trade${result.deleted===1?'':'s'} deleted`);
+      toast.success(result.pendingCloud
+        ? `${result.deleted||0} trade${result.deleted===1?'':'s'} removed. Cloud cleanup is finishing.`
+        : `${result.deleted||0} trade${result.deleted===1?'':'s'} deleted`);
       return;
     }
     toast.error(result?.error||'The journal could not be wiped');
@@ -1887,9 +1907,9 @@ export default function AllTrades(){
                   <div style={{fontSize:11,color:C.t2,marginTop:4}}>Secondary money read</div>
                 </div>
                 <div style={{padding:'13px 14px',borderRadius:16,border:`1px solid ${C.brd}`,background:'rgba(255,255,255,0.02)'}}>
-                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>Profit factor</div>
+                  <div style={{fontSize:10,color:C.t3,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:6}}>R factor</div>
                   <div style={{fontSize:18,fontWeight:900,color:stats.pf===Infinity||stats.pf>=2?C.green:stats.pf>=1.2?C.warn:C.danger,fontFamily:'monospace',letterSpacing:'-0.03em'}}>{mfFormatFactor(stats.pf)}</div>
-                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>Avg trade {mfFormatMoney(averageTrade)} / DD {stats.maxDD>0?`-${mfFormatPercent(stats.maxDD,1)}`:'0.0%'}</div>
+                  <div style={{fontSize:11,color:C.t2,marginTop:4}}>{stats.wins} TP / {stats.losses} SL / {stats.breakeven} BE · max SL {stats.maxDD || 0}</div>
                 </div>
               </div>
             </div>

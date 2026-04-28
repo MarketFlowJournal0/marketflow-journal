@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import {
+  getTradeOutcome,
+  getTradePnl,
+  getTradeRR,
+  getTradeSignedR,
+  sortTradesChronologically,
+  summarizeTradeSet,
+} from '../lib/marketflowAnalytics';
 
 const TradingContext = createContext(null);
 const REQUEST_TIMEOUT_MS = 12000;
@@ -398,29 +406,82 @@ export function TradingProvider({ children }) {
         return { success: false, deleted: 0, error: 'No active session found.' };
       }
 
-      const deletedCount = trades.length;
-      const { error } = await runSupabaseRequest(
-        (signal) => supabase
-          .from('trades')
-          .delete()
-          .eq('user_id', userId)
-          .abortSignal(signal),
-        REQUEST_TIMEOUT_MS,
-        'Deleting trades timed out.',
-      );
-
-      if (error) {
-        return { success: false, deleted: 0, error: formatSupabaseError(error, 'All trades could not be deleted.') };
+      const snapshot = [...trades];
+      const deletedCount = snapshot.length;
+      if (!deletedCount) {
+        return { success: true, deleted: 0, error: null };
       }
+
+      const cloudIds = snapshot
+        .filter((trade) => trade?.id && !isLocalTrade(trade))
+        .map((trade) => trade.id);
+
+      const cloudDeletePromise = (async () => {
+        if (!cloudIds.length) return { success: true };
+
+        try {
+          for (let index = 0; index < cloudIds.length; index += 100) {
+            const ids = cloudIds.slice(index, index + 100);
+            const { error } = await runSupabaseRequest(
+              (signal) => supabase
+                .from('trades')
+                .delete()
+                .eq('user_id', userId)
+                .in('id', ids)
+                .abortSignal(signal),
+              20000,
+              'Deleting trade batch timed out.',
+            );
+            if (error) throw error;
+          }
+        } catch (batchError) {
+          const { error } = await runSupabaseRequest(
+            (signal) => supabase
+              .from('trades')
+              .delete()
+              .eq('user_id', userId)
+              .abortSignal(signal),
+            20000,
+            'Deleting all trades timed out.',
+          );
+          if (error) throw error;
+        }
+
+        return { success: true };
+      })().catch((error) => ({ success: false, error }));
 
       setTrades([]);
       setActiveAccountState('all');
+
+      const quickResult = await Promise.race([
+        cloudDeletePromise,
+        new Promise((resolve) => setTimeout(() => resolve({ pending: true }), 1400)),
+      ]);
+
+      if (quickResult?.success === false) {
+        setTrades(snapshot);
+        return {
+          success: false,
+          deleted: 0,
+          error: formatSupabaseError(quickResult.error, 'All trades could not be deleted.'),
+        };
+      }
+
+      if (quickResult?.pending) {
+        cloudDeletePromise.then((result) => {
+          if (result?.success === false) {
+            console.error('deleteAllTrades background cleanup error:', result.error);
+          }
+        });
+        return { success: true, deleted: deletedCount, pendingCloud: true, error: null };
+      }
+
       return { success: true, deleted: deletedCount, error: null };
     } catch (error) {
       console.error('deleteAllTrades error:', error);
       return { success: false, deleted: 0, error: formatSupabaseError(error, 'All trades could not be deleted.') };
     }
-  }, [getActiveUserId, trades.length]);
+  }, [getActiveUserId, trades]);
 
   const downloadBackup = useCallback(({ columns = [], scope = 'all' } = {}) => {
     const backupTrades = scope === 'active' ? scopedTrades : trades;
@@ -438,6 +499,9 @@ export function TradingProvider({ children }) {
   }, [accountOptions, activeAccount, scopedTrades, trades]);
 
   const stats = useMemo(() => {
+    const outcomeStats = buildOutcomeStats(scopedTrades);
+    if (outcomeStats) return outcomeStats;
+
     if (!scopedTrades.length) return emptyStats();
     const closed = scopedTrades.filter(t => t.status === 'TP' || t.status === 'SL' || t.status === 'BE');
     const wins   = closed.filter(t => (t.profit_loss || 0) > 0);
@@ -629,11 +693,198 @@ export function useTrades() {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function emptyStats() {
   return {
-    pnl:0, pnlPct:0, winRate:0, profitFactor:0, avgRR:'—', sharpe:0,
-    maxDrawdown:0, expectancy:0, totalTrades:0, wins:0, losses:0, breakevens:0,
-    avgWin:0, avgLoss:0, streakWin:0, streakLoss:0, bestTrade:0, worstTrade:0,
+    pnl:0, pnlPct:0, winRate:0, profitFactor:0, pnlProfitFactor:0, rrRatio:0, avgRR:'—', sharpe:0,
+    maxDrawdown:0, maxDrawdownR:0, maxDrawdownPnl:0, maxDrawdownPct:0, expectancy:0, expectancyR:0, totalR:0,
+    totalTrades:0, wins:0, losses:0, breakevens:0,
+    avgWin:0, avgLoss:0, avgWinR:0, avgLossR:0, streakWin:0, streakLoss:0, currentSLStreak:0, bestTrade:0, worstTrade:0,
     equityData:[], dailyPnl:[], sessionData:[], pairData:[], biaisData:[],
     radarData:[], heatmap:[], recentTrades:[],
+  };
+}
+
+function buildOutcomeStats(scopedTrades = []) {
+  if (!Array.isArray(scopedTrades) || !scopedTrades.length) return emptyStats();
+
+  const closed = sortTradesChronologically(
+    scopedTrades.filter((trade) => ['TP', 'SL', 'BE'].includes(getTradeOutcome(trade)))
+  );
+
+  if (!closed.length) return emptyStats();
+
+  const summary = summarizeTradeSet(closed);
+  const wins = closed.filter((trade) => getTradeOutcome(trade) === 'TP');
+  const losses = closed.filter((trade) => getTradeOutcome(trade) === 'SL');
+  const bes = closed.filter((trade) => getTradeOutcome(trade) === 'BE');
+  const pnl = summary.totalPnL;
+  const rrRatio = Number.isFinite(summary.rrRatio)
+    ? Math.round(summary.rrRatio * 100) / 100
+    : summary.rrRatio;
+  const avgRRNumber = wins.length
+    ? wins.reduce((sum, trade) => sum + getTradeRR(trade), 0) / wins.length
+    : null;
+  const avgRR = avgRRNumber != null ? `1:${(Math.round(avgRRNumber * 100) / 100).toFixed(2)}` : '—';
+  const best = Math.max(...closed.map((trade) => getTradePnl(trade)));
+  const worst = Math.min(...closed.map((trade) => getTradePnl(trade)));
+  const equityData = summary.series.map((row) => ({
+    d: row.dateLabel,
+    v: Math.round(row.equity),
+    r: row.rEquity,
+    ddR: row.rDrawdown,
+    outcome: row.outcome,
+  }));
+
+  const byDay = {};
+  closed.forEach((trade) => {
+    const key = trade.open_date?.split('T')[0] || trade.date?.split('T')[0] || '';
+    if (!key) return;
+    if (!byDay[key]) byDay[key] = { pnl: 0, r: 0, tp: 0, sl: 0, be: 0 };
+    const outcome = getTradeOutcome(trade);
+    byDay[key].pnl += getTradePnl(trade);
+    byDay[key].r += getTradeSignedR(trade);
+    if (outcome === 'TP') byDay[key].tp += 1;
+    else if (outcome === 'SL') byDay[key].sl += 1;
+    else byDay[key].be += 1;
+  });
+
+  const dailyPnl = Object.entries(byDay).slice(-7).map(([date, value]) => ({
+    d: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+    v: Math.round(value.pnl),
+    r: Math.round(value.r * 10) / 10,
+    tp: value.tp,
+    sl: value.sl,
+    be: value.be,
+    w: value.tp >= value.sl,
+  }));
+
+  const sessionMap = {};
+  closed.forEach((trade) => {
+    const session = trade.session || 'Other';
+    if (!sessionMap[session]) sessionMap[session] = { s: session, tp: 0, sl: 0, be: 0, pnl: 0, r: 0 };
+    const outcome = getTradeOutcome(trade);
+    if (outcome === 'TP') sessionMap[session].tp += 1;
+    else if (outcome === 'SL') sessionMap[session].sl += 1;
+    else sessionMap[session].be += 1;
+    sessionMap[session].pnl += getTradePnl(trade);
+    sessionMap[session].r += getTradeSignedR(trade);
+  });
+
+  const sessionData = Object.values(sessionMap)
+    .map((entry) => ({
+      ...entry,
+      wr: entry.tp + entry.sl ? Math.round((entry.tp / (entry.tp + entry.sl)) * 100) : 0,
+    }))
+    .sort((left, right) => right.r - left.r || right.pnl - left.pnl);
+
+  const pairMap = {};
+  const colors = ['#14C9E5', '#00D2B8', '#D7B36A', '#B06EFF', '#FF4DC4', '#4D7CFF'];
+  closed.forEach((trade) => {
+    const pair = trade.symbol || trade.pair || 'Other';
+    if (!pairMap[pair]) pairMap[pair] = { p: pair, n: 0, wins: 0, losses: 0, be: 0, pnl: 0, r: 0 };
+    const outcome = getTradeOutcome(trade);
+    pairMap[pair].n += 1;
+    if (outcome === 'TP') pairMap[pair].wins += 1;
+    else if (outcome === 'SL') pairMap[pair].losses += 1;
+    else pairMap[pair].be += 1;
+    pairMap[pair].pnl += getTradePnl(trade);
+    pairMap[pair].r += getTradeSignedR(trade);
+  });
+
+  const pairData = Object.values(pairMap)
+    .sort((left, right) => right.r - left.r || right.pnl - left.pnl)
+    .slice(0, 6)
+    .map((pair, index) => ({
+      ...pair,
+      wr: Math.round((pair.wins / Math.max(pair.wins + pair.losses, 1)) * 100),
+      col: colors[index],
+    }));
+
+  const longs = closed.filter((trade) => trade.direction === 'Long');
+  const shorts = closed.filter((trade) => trade.direction === 'Short');
+  const total = closed.length || 1;
+  const biaisData = [
+    {
+      name: 'Bullish',
+      value: Math.round((longs.length / total) * 100),
+      color: '#00D2B8',
+      pnl: fmt(longs.reduce((sum, trade) => sum + getTradePnl(trade), 0)),
+    },
+    {
+      name: 'Bearish',
+      value: Math.round((shorts.length / total) * 100),
+      color: '#FF3D57',
+      pnl: fmt(shorts.reduce((sum, trade) => sum + getTradePnl(trade), 0)),
+    },
+  ].filter((row) => row.value > 0);
+
+  const heatmap = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => ({
+    day,
+    h: { '8h': 0, '10h': 0, '12h': 0, '14h': 0, '16h': 0 },
+  }));
+  closed.forEach((trade) => {
+    const date = new Date(trade.open_date || trade.date || '');
+    if (Number.isNaN(date.getTime())) return;
+    const dayIndex = (date.getDay() + 6) % 7;
+    if (dayIndex >= 5) return;
+    const hour = date.getHours();
+    const hourKey = hour < 9 ? '8h' : hour < 11 ? '10h' : hour < 13 ? '12h' : hour < 15 ? '14h' : '16h';
+    heatmap[dayIndex].h[hourKey] = Math.round((heatmap[dayIndex].h[hourKey] + getTradeSignedR(trade)) * 10) / 10;
+  });
+
+  const radarData = [
+    { m: 'Win Rate', v: Math.min(100, Math.round(summary.winRate)) },
+    { m: 'R Factor', v: Math.min(100, Math.round((Number.isFinite(rrRatio) ? rrRatio : 4) * 25)) },
+    { m: 'Risk/Rew.', v: avgRRNumber ? Math.min(100, Math.round(avgRRNumber * 30)) : 0 },
+    { m: 'Drawdown', v: Math.max(0, Math.min(100, Math.round((1 - summary.maxConsecutiveSL / 10) * 100))) },
+    { m: 'Discipline', v: Math.max(0, Math.min(100, Math.round((1 - summary.currentSLStreak / 6) * 100))) },
+    { m: 'Consistency', v: closed.length >= 10 ? Math.min(100, Math.round(summary.winRate)) : Math.round(closed.length * 10) },
+  ];
+
+  return {
+    pnl,
+    pnlPct: 0,
+    winRate: summary.winRate,
+    profitFactor: rrRatio,
+    pnlProfitFactor: summary.pnlProfitFactor,
+    rrRatio,
+    avgRR,
+    sharpe: 0,
+    maxDrawdown: summary.maxConsecutiveSL,
+    maxDrawdownR: Math.abs(summary.maxDrawdownR || 0),
+    maxDrawdownPnl: summary.maxDrawdownCash || 0,
+    maxDrawdownPct: summary.maxDrawdownPct || 0,
+    expectancy: summary.expectancy,
+    expectancyR: summary.expectancyR,
+    totalR: Math.round((summary.totalR || 0) * 10) / 10,
+    totalTrades: closed.length,
+    wins: wins.length,
+    losses: losses.length,
+    breakevens: bes.length,
+    avgWin: summary.avgWin,
+    avgLoss: summary.avgLoss,
+    avgWinR: avgRRNumber || 0,
+    avgLossR: losses.length ? 1 : 0,
+    streakWin: summary.bestWinStreak,
+    streakLoss: summary.bestLossStreak,
+    currentSLStreak: summary.currentSLStreak,
+    bestTrade: best,
+    worstTrade: worst,
+    equityData,
+    dailyPnl,
+    sessionData,
+    pairData,
+    biaisData,
+    radarData,
+    heatmap,
+    recentTrades: [...closed].reverse().slice(0, 6).map((trade) => ({
+      id: trade.id,
+      pair: trade.symbol || trade.pair || '',
+      dir: trade.direction || 'Long',
+      res: getTradeOutcome(trade),
+      rr: getTradeSignedR(trade),
+      pnl: Math.round(getTradePnl(trade)),
+      date: trade.open_date?.split('T')[0] || trade.date?.split('T')[0] || '',
+      session: trade.session || '—',
+    })),
   };
 }
 

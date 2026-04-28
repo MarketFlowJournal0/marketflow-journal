@@ -65,8 +65,39 @@ export function getTradePnl(trade = {}) {
   return toAnalyticsNumber(trade.profit_loss ?? trade.pnl) ?? 0;
 }
 
+export function getTradeOutcome(trade = {}) {
+  const raw = String(trade.status || trade.result || trade.extra?.result || '').trim().toLowerCase();
+  if (['tp', 'take profit', 'takeprofit', 'win', 'winner', 'profit', 'target'].includes(raw)) return 'TP';
+  if (['sl', 'stop loss', 'stoploss', 'loss', 'loser', 'stop'].includes(raw)) return 'SL';
+  if (['be', 'break even', 'break-even', 'breakeven', 'flat'].includes(raw)) return 'BE';
+
+  const pnl = getTradePnl(trade);
+  if (pnl > 0) return 'TP';
+  if (pnl < 0) return 'SL';
+  return 'BE';
+}
+
 export function getTradeRR(trade = {}) {
-  return toAnalyticsNumber(trade.metrics?.rrReel ?? trade.rr);
+  const rr = toAnalyticsNumber(
+    trade.metrics?.rrReel
+    ?? trade.rrActual
+    ?? trade.rr_actual
+    ?? trade.rr
+    ?? trade.extra?.rr_actual
+    ?? trade.extra?.rrActual
+    ?? trade.extra?.rr
+  );
+  if (rr != null && rr > 0) return rr;
+  const outcome = getTradeOutcome(trade);
+  if (outcome === 'TP' || outcome === 'SL') return 1;
+  return 0;
+}
+
+export function getTradeSignedR(trade = {}) {
+  const outcome = getTradeOutcome(trade);
+  if (outcome === 'TP') return getTradeRR(trade) || 1;
+  if (outcome === 'SL') return -1;
+  return 0;
 }
 
 export function getTradeDateValue(trade = {}) {
@@ -126,14 +157,21 @@ export function buildEquityDrawdownSeries(trades = []) {
   const sorted = sortTradesChronologically(trades);
   let equity = 0;
   let peak = 0;
+  let rEquity = 0;
+  let rPeak = 0;
 
   return sorted.map((trade, index) => {
     const pnl = getTradePnl(trade);
+    const outcome = getTradeOutcome(trade);
+    const r = getTradeSignedR(trade);
     equity += pnl;
     peak = Math.max(peak, equity, 0);
+    rEquity += r;
+    rPeak = Math.max(rPeak, rEquity, 0);
 
     const drawdownCash = equity - peak;
     const drawdownPct = peak > 0 ? (drawdownCash / peak) * 100 : 0;
+    const rDrawdown = rEquity - rPeak;
 
     return {
       index: index + 1,
@@ -144,7 +182,11 @@ export function buildEquityDrawdownSeries(trades = []) {
       peak: Number(peak.toFixed(2)),
       drawdownCash: Number(drawdownCash.toFixed(2)),
       drawdownPct: Number(drawdownPct.toFixed(2)),
-      isWin: pnl > 0,
+      r: Number(r.toFixed(2)),
+      rEquity: Number(rEquity.toFixed(2)),
+      rDrawdown: Number(rDrawdown.toFixed(2)),
+      outcome,
+      isWin: outcome === 'TP',
       symbol: trade.symbol || trade.pair || '--',
       session: normalizeSessionLabel(trade.session),
     };
@@ -153,31 +195,40 @@ export function buildEquityDrawdownSeries(trades = []) {
 
 export function summarizeTradeSet(trades = []) {
   const sorted = sortTradesChronologically(trades);
-  const wins = sorted.filter((trade) => getTradePnl(trade) > 0);
-  const losses = sorted.filter((trade) => getTradePnl(trade) < 0);
-  const breakeven = sorted.filter((trade) => getTradePnl(trade) === 0);
+  const wins = sorted.filter((trade) => getTradeOutcome(trade) === 'TP');
+  const losses = sorted.filter((trade) => getTradeOutcome(trade) === 'SL');
+  const breakeven = sorted.filter((trade) => getTradeOutcome(trade) === 'BE');
+  const decisiveTrades = wins.length + losses.length;
   const totalPnL = sorted.reduce((sum, trade) => sum + getTradePnl(trade), 0);
   const grossWin = wins.reduce((sum, trade) => sum + getTradePnl(trade), 0);
   const grossLoss = Math.abs(losses.reduce((sum, trade) => sum + getTradePnl(trade), 0));
   const avgWin = wins.length ? grossWin / wins.length : 0;
   const avgLoss = losses.length ? grossLoss / losses.length : 0;
-  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Number.POSITIVE_INFINITY : 0;
-  const rrs = sorted.map(getTradeRR).filter((value) => value != null && value > 0);
-  const avgRR = rrs.length ? rrs.reduce((sum, value) => sum + value, 0) / rrs.length : null;
+  const pnlProfitFactor = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Number.POSITIVE_INFINITY : 0;
+  const winRs = wins.map(getTradeRR).filter((value) => value != null && value > 0);
+  const avgRR = winRs.length ? winRs.reduce((sum, value) => sum + value, 0) / winRs.length : null;
+  const grossRWin = wins.reduce((sum, trade) => sum + Math.max(0, getTradeSignedR(trade)), 0);
+  const grossRLoss = losses.length;
+  const totalR = sorted.reduce((sum, trade) => sum + getTradeSignedR(trade), 0);
+  const rrRatio = grossRLoss > 0 ? grossRWin / grossRLoss : grossRWin > 0 ? Number.POSITIVE_INFINITY : 0;
   const expectancy = sorted.length ? totalPnL / sorted.length : 0;
-  const winRate = sorted.length ? (wins.length / sorted.length) * 100 : 0;
+  const expectancyR = decisiveTrades ? totalR / decisiveTrades : 0;
+  const winRate = decisiveTrades ? (wins.length / decisiveTrades) * 100 : 0;
   const series = buildEquityDrawdownSeries(sorted);
   const maxDrawdownCash = series.length ? Math.min(...series.map((row) => row.drawdownCash)) : 0;
   const maxDrawdownPct = series.length ? Math.min(...series.map((row) => row.drawdownPct)) : 0;
+  const maxDrawdownR = series.length ? Math.min(...series.map((row) => row.rDrawdown)) : 0;
 
   let streak = 0;
   let bestWinStreak = 0;
   let bestLossStreak = 0;
+  let currentSLStreak = 0;
+  let maxConsecutiveSL = 0;
   let currentDirection = 0;
 
   sorted.forEach((trade) => {
-    const pnl = getTradePnl(trade);
-    const direction = pnl > 0 ? 1 : pnl < 0 ? -1 : 0;
+    const outcome = getTradeOutcome(trade);
+    const direction = outcome === 'TP' ? 1 : outcome === 'SL' ? -1 : 0;
     if (!direction) return;
     if (direction === currentDirection) streak += direction;
     else {
@@ -186,6 +237,8 @@ export function summarizeTradeSet(trades = []) {
     }
     if (streak > bestWinStreak) bestWinStreak = streak;
     if (streak < bestLossStreak) bestLossStreak = streak;
+    currentSLStreak = outcome === 'SL' ? currentSLStreak + 1 : 0;
+    maxConsecutiveSL = Math.max(maxConsecutiveSL, currentSLStreak);
   });
 
   const activeDays = new Set(sorted.map(getTradeDateKey).filter(Boolean)).size;
@@ -198,14 +251,23 @@ export function summarizeTradeSet(trades = []) {
     totalPnL,
     grossWin,
     grossLoss,
+    grossRWin,
+    grossRLoss,
+    totalR,
     avgWin,
     avgLoss,
     avgRR,
     expectancy,
+    expectancyR,
     winRate,
-    profitFactor,
+    profitFactor: rrRatio,
+    pnlProfitFactor,
+    rrRatio,
     maxDrawdownCash,
     maxDrawdownPct,
+    maxDrawdownR,
+    maxConsecutiveSL,
+    currentSLStreak,
     activeDays,
     tradesPerDay: activeDays ? sorted.length / activeDays : 0,
     currentStreak: streak,
@@ -218,18 +280,24 @@ export function summarizeTradeSet(trades = []) {
 export function buildRollingWinRateSeries(trades = [], windowSize = 12) {
   const sorted = sortTradesChronologically(trades);
   let wins = 0;
+  let decisive = 0;
 
   return sorted.map((trade, index) => {
-    if (getTradePnl(trade) > 0) wins += 1;
+    const outcome = getTradeOutcome(trade);
+    if (outcome === 'TP') wins += 1;
+    if (outcome === 'TP' || outcome === 'SL') decisive += 1;
     const windowTrades = sorted.slice(Math.max(0, index - windowSize + 1), index + 1);
-    const windowWins = windowTrades.filter((item) => getTradePnl(item) > 0).length;
+    const windowDecisive = windowTrades.filter((item) => ['TP', 'SL'].includes(getTradeOutcome(item)));
+    const windowWins = windowDecisive.filter((item) => getTradeOutcome(item) === 'TP').length;
     return {
       index: index + 1,
       dateKey: getTradeDateKey(trade),
       dateLabel: getTradeDateLabel(trade),
-      cumulativeWinRate: Number(((wins / (index + 1)) * 100).toFixed(2)),
-      rollingWinRate: Number(((windowWins / windowTrades.length) * 100).toFixed(2)),
+      cumulativeWinRate: Number(((wins / Math.max(decisive, 1)) * 100).toFixed(2)),
+      rollingWinRate: Number(((windowWins / Math.max(windowDecisive.length, 1)) * 100).toFixed(2)),
       pnl: getTradePnl(trade),
+      outcome,
+      r: getTradeSignedR(trade),
       session: normalizeSessionLabel(trade.session),
       symbol: trade.symbol || trade.pair || '--',
     };
@@ -242,11 +310,15 @@ function buildBreakdown(trades, getKey, minTrades = 1) {
   trades.forEach((trade) => {
     const key = getKey(trade);
     if (!key) return;
-    const current = map.get(key) || { key, trades: 0, wins: 0, pnl: 0 };
+    const current = map.get(key) || { key, trades: 0, wins: 0, losses: 0, breakeven: 0, pnl: 0, r: 0 };
     current.trades += 1;
+    const outcome = getTradeOutcome(trade);
     const pnl = getTradePnl(trade);
-    if (pnl > 0) current.wins += 1;
+    if (outcome === 'TP') current.wins += 1;
+    else if (outcome === 'SL') current.losses += 1;
+    else current.breakeven += 1;
     current.pnl += pnl;
+    current.r += getTradeSignedR(trade);
     map.set(key, current);
   });
 
@@ -255,7 +327,8 @@ function buildBreakdown(trades, getKey, minTrades = 1) {
     .map((entry) => ({
       ...entry,
       pnl: Number(entry.pnl.toFixed(2)),
-      winRate: Number(((entry.wins / entry.trades) * 100).toFixed(1)),
+      r: Number(entry.r.toFixed(2)),
+      winRate: Number(((entry.wins / Math.max(entry.wins + entry.losses, 1)) * 100).toFixed(1)),
     }));
 }
 

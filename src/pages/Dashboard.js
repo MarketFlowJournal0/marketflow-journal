@@ -27,6 +27,11 @@ import {
   getCompetitionDayStamp,
 } from '../lib/marketflowCompetition';
 import { getDevelopmentScoreSnapshot } from '../lib/developmentScore';
+import {
+  getTradeOutcome,
+  getTradePnl,
+  getTradeSignedR,
+} from '../lib/marketflowAnalytics';
 const C = {
   accent: 'var(--mf-accent,#14C9E5)',
   accentSoft: 'var(--mf-accent-secondary,#DCE4EF)',
@@ -359,7 +364,7 @@ function percentage(total, predicate) {
 
 function getClosedTrades(trades) {
   return [...(trades || [])]
-    .filter((trade) => ['TP', 'SL', 'BE'].includes(trade.status))
+    .filter((trade) => ['TP', 'SL', 'BE'].includes(getTradeOutcome(trade)))
     .sort((left, right) => new Date(right.open_date || right.date || 0) - new Date(left.open_date || left.date || 0));
 }
 
@@ -373,9 +378,8 @@ function getCurrentStreak(closedTrades) {
     };
   }
 
-  const firstValue = Number(closedTrades[0].profit_loss || 0);
-  const firstSign = Math.sign(firstValue);
-  if (firstSign === 0) {
+  const firstOutcome = getTradeOutcome(closedTrades[0]);
+  if (firstOutcome === 'BE') {
     return {
       count: 1,
       type: 'flat',
@@ -386,16 +390,16 @@ function getCurrentStreak(closedTrades) {
 
   let count = 0;
   for (const trade of closedTrades) {
-    const sign = Math.sign(Number(trade.profit_loss || 0));
-    if (sign === firstSign) count += 1;
+    const outcome = getTradeOutcome(trade);
+    if (outcome === firstOutcome) count += 1;
     else break;
   }
 
   return {
     count,
-    type: firstSign > 0 ? 'win' : 'loss',
-    label: firstSign > 0 ? `${count} winning trade${count > 1 ? 's' : ''}` : `${count} losing trade${count > 1 ? 's' : ''}`,
-    tone: firstSign > 0 ? C.green : C.danger,
+    type: firstOutcome === 'TP' ? 'win' : 'loss',
+    label: firstOutcome === 'TP' ? `${count} TP streak` : `${count} SL streak`,
+    tone: firstOutcome === 'TP' ? C.green : C.danger,
   };
 }
 
@@ -416,9 +420,12 @@ function buildCalendarMonth(trades, monthOffset = 0) {
     if (tradeDate.getMonth() !== monthStart.getMonth()) return;
 
     const key = toDateKey(tradeDate);
-    const pnl = Number(trade.profit_loss ?? trade.pnl ?? 0) || 0;
+    const outcome = getTradeOutcome(trade);
+    const pnl = getTradePnl(trade);
+    const signedR = getTradeSignedR(trade);
     const summary = bucket.get(key) || {
       pnl: 0,
+      r: 0,
       trades: 0,
       wins: 0,
       losses: 0,
@@ -429,9 +436,10 @@ function buildCalendarMonth(trades, monthOffset = 0) {
     };
 
     summary.pnl += pnl;
+    summary.r += signedR;
     summary.trades += 1;
-    if (pnl > 0) summary.wins += 1;
-    else if (pnl < 0) summary.losses += 1;
+    if (outcome === 'TP') summary.wins += 1;
+    else if (outcome === 'SL') summary.losses += 1;
     else summary.breakevens += 1;
 
     const sessionLabel = trade.session || 'Unassigned';
@@ -446,7 +454,8 @@ function buildCalendarMonth(trades, monthOffset = 0) {
       session: sessionLabel,
       setup: trade.setup || 'Unlabeled',
       pnl,
-      status: trade.status || (pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BE'),
+      r: signedR,
+      status: outcome,
       notes: trade.notes || '',
       time: trade.time || '',
     });
@@ -459,6 +468,7 @@ function buildCalendarMonth(trades, monthOffset = 0) {
     const key = toDateKey(date);
     const entry = bucket.get(key) || {
       pnl: 0,
+      r: 0,
       trades: 0,
       wins: 0,
       losses: 0,
@@ -472,7 +482,8 @@ function buildCalendarMonth(trades, monthOffset = 0) {
     const pairLeader = Object.entries(entry.pairs).sort((left, right) => right[1] - left[1])[0] || null;
     const bestTrade = [...entry.records].sort((left, right) => right.pnl - left.pnl)[0] || null;
     const worstTrade = [...entry.records].sort((left, right) => left.pnl - right.pnl)[0] || null;
-    const winRate = entry.trades ? Math.round((entry.wins / entry.trades) * 100) : 0;
+    const decisive = entry.wins + entry.losses;
+    const winRate = decisive ? Math.round((entry.wins / decisive) * 100) : 0;
     const avgTrade = entry.trades ? Math.round(entry.pnl / entry.trades) : 0;
 
     return {
@@ -497,6 +508,7 @@ function buildCalendarMonth(trades, monthOffset = 0) {
     weeks.push({
       cells,
       pnl: cells.reduce((sum, cell) => sum + (cell.inMonth ? cell.pnl : 0), 0),
+      r: cells.reduce((sum, cell) => sum + (cell.inMonth ? cell.r || 0 : 0), 0),
       trades: cells.reduce((sum, cell) => sum + (cell.inMonth ? cell.trades : 0), 0),
     });
   }
@@ -1232,9 +1244,9 @@ function StatusStrip({ overview }) {
 
 function KpiStrip({ stats, overview }) {
   const items = [
-    { label: 'Risk / reward', value: stats.avgRR || 'n/a', caption: `${stats.totalTrades || 0} realized trades`, tone: C.accent },
+    { label: 'Risk / reward', value: stats.avgRR || 'n/a', caption: `${stats.totalR || 0}R total from TP/SL logic`, tone: C.accent },
     { label: 'Total P&L', value: formatSignedCompact(stats.pnl), caption: `${stats.wins || 0}W / ${stats.losses || 0}L / ${stats.breakevens || 0}BE`, tone: (stats.pnl || 0) >= 0 ? C.green : C.danger },
-    { label: 'Profit factor', value: formatRatio(stats.profitFactor), caption: `${formatCurrency(stats.avgWin)} avg win / ${formatCurrency(stats.avgLoss)} avg loss`, tone: C.blue },
+    { label: 'R factor', value: formatRatio(stats.rrRatio ?? stats.profitFactor), caption: `${stats.wins || 0}TP / ${stats.losses || 0}SL / ${stats.breakevens || 0}BE`, tone: C.blue },
     { label: 'MF score', value: `${overview.rank.score}`, caption: overview.rank.label, tone: toneColor(overview.rank.tone) },
   ];
 
@@ -1306,7 +1318,7 @@ function EquityPanel({ stats }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
         <MiniMetric label="Best trade" value={formatCurrency(stats.bestTrade || 0, true)} tone={C.green} />
         <MiniMetric label="Worst trade" value={formatCurrency(stats.worstTrade || 0, true)} tone={C.danger} />
-        <MiniMetric label="Max drawdown" value={`${Math.abs(stats.maxDrawdown || 0)}%`} tone={C.orange} />
+        <MiniMetric label="Max SL streak" value={`${stats.maxDrawdown || 0} SL`} tone={C.orange} />
         <MiniMetric label="Daily average" value={formatCurrency(averageDaily, true)} tone={averageDaily >= 0 ? C.accent : C.warn} />
       </div>
 

@@ -502,8 +502,13 @@ function TradingViewEmbed({ symbol, interval, height = 640 }) {
     });
     script.onerror = () => setWidgetFailed(true);
 
-    host.appendChild(widget);
-    host.appendChild(script);
+    try {
+      host.appendChild(widget);
+      host.appendChild(script);
+    } catch (error) {
+      console.error('TradingView embed failed:', error);
+      setWidgetFailed(true);
+    }
 
     const fallbackTimer = window.setTimeout(() => {
       if (host && !host.querySelector('iframe')) setWidgetFailed(true);
@@ -1109,6 +1114,9 @@ export default function Backtest() {
     () => sessionDetails.find((session) => session.id === selectedSessionId) || null,
     [selectedSessionId, sessionDetails]
   );
+  const selectedSessionStart = selectedSession?.startDate || '';
+  const selectedSessionEnd = selectedSession?.endDate || '';
+  const selectedSessionDefaultAsset = selectedSession?.assets?.[0] || selectedSession?.symbol || 'EURUSD';
 
   useEffect(() => {
     if (!sessionsLoaded) return;
@@ -1209,12 +1217,12 @@ export default function Backtest() {
   }, [clampedReplayIndex, isPlaying, playbackSpeed, replayTrades.length, view]);
 
   useEffect(() => {
-    if (view !== 'replay' || !selectedSession) {
+    if (view !== 'replay' || !selectedSessionId || !selectedSessionDefaultAsset) {
       setOhlcState({ status: 'idle', candles: [] });
       return undefined;
     }
 
-    const symbol = currentAsset || selectedSession.assets?.[0] || selectedSession.symbol || 'EURUSD';
+    const symbol = currentAsset || selectedSessionDefaultAsset;
     const controller = new AbortController();
     const params = new URLSearchParams({
       symbol,
@@ -1222,14 +1230,20 @@ export default function Backtest() {
       limit: '500',
     });
 
-    if (selectedSession.startDate) params.set('from', selectedSession.startDate);
-    if (selectedSession.endDate) params.set('to', selectedSession.endDate);
+    if (selectedSessionStart) params.set('from', selectedSessionStart);
+    if (selectedSessionEnd) params.set('to', selectedSessionEnd);
 
     setOhlcState({ status: 'loading', candles: [], symbol, interval: chartInterval });
 
     fetch(`/api/market-ohlc?${params.toString()}`, { signal: controller.signal })
       .then(async (response) => {
-        const payload = await response.json().catch(() => ({}));
+        const text = await response.text().catch(() => '');
+        let payload = {};
+        try {
+          payload = text ? JSON.parse(text) : {};
+        } catch (error) {
+          payload = { error: text || error.message };
+        }
         if (!response.ok) {
           setOhlcState({
             status: 'error',
@@ -1262,7 +1276,7 @@ export default function Backtest() {
       });
 
     return () => controller.abort();
-  }, [chartInterval, currentAsset, selectedSessionId, view]);
+  }, [chartInterval, currentAsset, selectedSessionDefaultAsset, selectedSessionEnd, selectedSessionId, selectedSessionStart, view]);
 
   const handleCreateSession = () => {
     if (!tradeUniverse.length) {
