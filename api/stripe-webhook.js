@@ -14,7 +14,7 @@ const PUBLIC_SITE_URL = getBaseUrl(
   normalizePublicSiteUrl(
     process.env.NEXT_PUBLIC_SITE_URL
     || process.env.PUBLIC_SITE_URL
-    || 'https://www.marketflowjournal.com'
+    || 'https://marketflowjournal.com'
   )
 );
 const APP_URL = getAppBaseUrl();
@@ -25,13 +25,6 @@ function getBaseUrl(url) {
 
 function normalizePublicSiteUrl(url) {
   const clean = getBaseUrl(url);
-  try {
-    const parsed = new URL(clean);
-    if (parsed.hostname === 'marketflowjournal.com') {
-      parsed.hostname = 'www.marketflowjournal.com';
-      return parsed.toString().replace(/\/+$/, '');
-    }
-  } catch (_) {}
   return clean;
 }
 

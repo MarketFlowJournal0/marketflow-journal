@@ -1,5 +1,5 @@
 export const PUBLIC_SITE_URL = stripTrailingSlash(
-  normalizePublicSiteUrl(process.env.REACT_APP_PUBLIC_SITE_URL || 'https://www.marketflowjournal.com')
+  process.env.REACT_APP_PUBLIC_SITE_URL || 'https://marketflowjournal.com'
 );
 export const APP_URL = stripTrailingSlash(
   process.env.REACT_APP_APP_URL || 'https://app.marketflowjournal.com'
@@ -71,18 +71,6 @@ function normalizePath(path) {
 
 function stripTrailingSlash(url) {
   return String(url || '').replace(/\/+$/, '');
-}
-
-function normalizePublicSiteUrl(url) {
-  const clean = stripTrailingSlash(url);
-  try {
-    const parsed = new URL(clean);
-    if (parsed.hostname === 'marketflowjournal.com') {
-      parsed.hostname = 'www.marketflowjournal.com';
-      return parsed.toString().replace(/\/+$/, '');
-    }
-  } catch (_) {}
-  return clean;
 }
 
 function getHostname() {

@@ -1,15 +1,9 @@
 {
   "redirects": [
     {
-      "source": "/",
-      "has": [{ "type": "host", "value": "marketflowjournal.com" }],
-      "destination": "https://www.marketflowjournal.com/",
-      "permanent": true
-    },
-    {
-      "source": "/:path(changelog|roadmap|docs|documentation|guide|import-guide|csv|tutorials|workflows|terms|terms-of-service|privacy|privacy-policy|contact)",
-      "has": [{ "type": "host", "value": "marketflowjournal.com" }],
-      "destination": "https://www.marketflowjournal.com/:path",
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.marketflowjournal.com" }],
+      "destination": "https://marketflowjournal.com/:path*",
       "permanent": true
     }
   ],
