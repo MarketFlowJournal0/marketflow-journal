@@ -4,6 +4,7 @@ export const PUBLIC_SITE_URL = stripTrailingSlash(
 export const APP_URL = stripTrailingSlash(
   process.env.REACT_APP_APP_URL || PUBLIC_SITE_URL
 );
+const ENABLE_DEDICATED_APP_DOMAIN = String(process.env.REACT_APP_ENABLE_APP_DOMAIN || '').toLowerCase() === 'true';
 
 const PUBLIC_HOST = getUrlHost(PUBLIC_SITE_URL);
 const APP_HOST = getUrlHost(APP_URL);
@@ -25,10 +26,16 @@ export function isPublicSiteHost(hostname = getHostname()) {
 }
 
 export function hasDedicatedAppDomain() {
-  return Boolean(APP_HOST && PUBLIC_HOST && APP_HOST !== PUBLIC_HOST);
+  return Boolean(ENABLE_DEDICATED_APP_DOMAIN && APP_HOST && PUBLIC_HOST && APP_HOST !== PUBLIC_HOST);
 }
 
 export function getAppOrigin() {
+  if (!hasDedicatedAppDomain()) {
+    if (typeof window !== 'undefined' && (isLocalAppHost(window.location.hostname) || isPreviewHost(window.location.hostname))) {
+      return window.location.origin;
+    }
+    return PUBLIC_SITE_URL;
+  }
   if (typeof window === 'undefined') return APP_URL;
   if (isAppHost(window.location.hostname)) return window.location.origin;
   return APP_URL;
