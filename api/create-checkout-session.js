@@ -154,9 +154,33 @@ module.exports = async (req, res) => {
 };
 
 function getAppBaseUrl() {
-  return String(
+  const dedicatedAppDomain = String(
+    process.env.ENABLE_APP_DOMAIN
+    || process.env.REACT_APP_ENABLE_APP_DOMAIN
+    || ''
+  ).toLowerCase() === 'true';
+  const publicUrl = normalizePublicSiteUrl(
+    process.env.NEXT_PUBLIC_SITE_URL
+    || process.env.PUBLIC_SITE_URL
+    || 'https://www.marketflowjournal.com'
+  );
+  const appUrl = String(
     process.env.NEXT_PUBLIC_APP_URL
     || process.env.APP_URL
-    || 'https://marketflowjournal.com'
+    || 'https://app.marketflowjournal.com'
   ).replace(/\/+$/, '');
+
+  return dedicatedAppDomain ? appUrl : publicUrl;
+}
+
+function normalizePublicSiteUrl(url) {
+  const clean = String(url || '').replace(/\/+$/, '');
+  try {
+    const parsed = new URL(clean);
+    if (parsed.hostname === 'marketflowjournal.com') {
+      parsed.hostname = 'www.marketflowjournal.com';
+      return parsed.toString().replace(/\/+$/, '');
+    }
+  } catch (_) {}
+  return clean;
 }

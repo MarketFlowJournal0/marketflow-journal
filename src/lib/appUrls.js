@@ -1,12 +1,13 @@
 export const PUBLIC_SITE_URL = stripTrailingSlash(
-  process.env.REACT_APP_PUBLIC_SITE_URL || 'https://marketflowjournal.com'
+  normalizePublicSiteUrl(process.env.REACT_APP_PUBLIC_SITE_URL || 'https://www.marketflowjournal.com')
 );
 export const APP_URL = stripTrailingSlash(
-  process.env.REACT_APP_APP_URL || PUBLIC_SITE_URL
+  process.env.REACT_APP_APP_URL || 'https://app.marketflowjournal.com'
 );
 const ENABLE_DEDICATED_APP_DOMAIN = String(process.env.REACT_APP_ENABLE_APP_DOMAIN || '').toLowerCase() === 'true';
 
 const PUBLIC_HOST = getUrlHost(PUBLIC_SITE_URL);
+const PUBLIC_APEX_HOST = PUBLIC_HOST.replace(/^www\./, '');
 const APP_HOST = getUrlHost(APP_URL);
 
 export function isLocalAppHost(hostname = getHostname()) {
@@ -22,7 +23,13 @@ export function isAppHost(hostname = getHostname()) {
 }
 
 export function isPublicSiteHost(hostname = getHostname()) {
-  return hostname === PUBLIC_HOST || hostname === `www.${PUBLIC_HOST}`;
+  return hostname === PUBLIC_HOST
+    || hostname === PUBLIC_APEX_HOST
+    || hostname === `www.${PUBLIC_APEX_HOST}`;
+}
+
+export function isDedicatedAppHost(hostname = getHostname()) {
+  return Boolean(hasDedicatedAppDomain() && APP_HOST && hostname === APP_HOST);
 }
 
 export function hasDedicatedAppDomain() {
@@ -64,6 +71,18 @@ function normalizePath(path) {
 
 function stripTrailingSlash(url) {
   return String(url || '').replace(/\/+$/, '');
+}
+
+function normalizePublicSiteUrl(url) {
+  const clean = stripTrailingSlash(url);
+  try {
+    const parsed = new URL(clean);
+    if (parsed.hostname === 'marketflowjournal.com') {
+      parsed.hostname = 'www.marketflowjournal.com';
+      return parsed.toString().replace(/\/+$/, '');
+    }
+  } catch (_) {}
+  return clean;
 }
 
 function getHostname() {

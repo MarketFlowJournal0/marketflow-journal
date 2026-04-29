@@ -11,18 +11,43 @@ const supabase = createClient(
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@marketflowjournal.com';
 const PUBLIC_SITE_URL = getBaseUrl(
-  process.env.NEXT_PUBLIC_SITE_URL
-  || process.env.PUBLIC_SITE_URL
-  || 'https://marketflowjournal.com'
+  normalizePublicSiteUrl(
+    process.env.NEXT_PUBLIC_SITE_URL
+    || process.env.PUBLIC_SITE_URL
+    || 'https://www.marketflowjournal.com'
+  )
 );
-const APP_URL = getBaseUrl(
-  process.env.NEXT_PUBLIC_APP_URL
-  || process.env.APP_URL
-  || PUBLIC_SITE_URL
-);
+const APP_URL = getAppBaseUrl();
 
 function getBaseUrl(url) {
   return String(url || '').replace(/\/+$/, '');
+}
+
+function normalizePublicSiteUrl(url) {
+  const clean = getBaseUrl(url);
+  try {
+    const parsed = new URL(clean);
+    if (parsed.hostname === 'marketflowjournal.com') {
+      parsed.hostname = 'www.marketflowjournal.com';
+      return parsed.toString().replace(/\/+$/, '');
+    }
+  } catch (_) {}
+  return clean;
+}
+
+function getAppBaseUrl() {
+  const dedicatedAppDomain = String(
+    process.env.ENABLE_APP_DOMAIN
+    || process.env.REACT_APP_ENABLE_APP_DOMAIN
+    || ''
+  ).toLowerCase() === 'true';
+  const appUrl = getBaseUrl(
+    process.env.NEXT_PUBLIC_APP_URL
+    || process.env.APP_URL
+    || 'https://app.marketflowjournal.com'
+  );
+
+  return dedicatedAppDomain ? appUrl : PUBLIC_SITE_URL;
 }
 
 async function sendEmail(payload) {
