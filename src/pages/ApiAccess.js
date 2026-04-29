@@ -4,6 +4,7 @@ import { shade } from '../lib/colorAlpha';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { appUrl } from '../lib/appUrls';
+import { fetchBrokerAccounts } from '../lib/brokerAccounts';
 
 const C = {
   bgCard: 'var(--mf-card,#060D18)',
@@ -74,20 +75,17 @@ export default function ApiAccessPage() {
       }
 
       setLoading(true);
-      const { data, error } = await supabase
-        .from('broker_accounts')
-        .select('id, broker_type, account_name, account_number, api_token, status, total_trades_synced, last_sync_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
       if (!active) return;
-      if (error) {
+
+      try {
+        const data = await fetchBrokerAccounts(supabase, user.id);
+        setAccounts(data || []);
+      } catch {
         setAccounts([]);
         setLoading(false);
         return;
       }
 
-      setAccounts(data || []);
       setLoading(false);
     }
 

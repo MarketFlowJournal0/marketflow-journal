@@ -6,6 +6,7 @@ import { useTradingContext } from '../context/TradingContext';
 import { supabase } from '../lib/supabase';
 import { shade } from '../lib/colorAlpha';
 import { appUrl } from '../lib/appUrls';
+import { createBrokerAccount, fetchBrokerAccounts, markBrokerAccountConnected } from '../lib/brokerAccounts';
 import {
   ACCOUNT_ROLE_OPTIONS,
   COPY_SIZING_MODES,
@@ -546,14 +547,12 @@ function BrokerConnect() {
     }
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('broker_accounts')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) toast.error(error.message);
-    else setAccounts(data || []);
+    try {
+      const data = await fetchBrokerAccounts(supabase, user.id);
+      setAccounts(data);
+    } catch (error) {
+      toast.error(error.message);
+    }
     setLoading(false);
   }, [user?.id]);
 
@@ -596,9 +595,9 @@ function BrokerConnect() {
     }
 
     const token = generateToken();
-    const { error } = await supabase
-      .from('broker_accounts')
-      .insert({
+
+    try {
+      await createBrokerAccount(supabase, {
         user_id: user.id,
         broker_type: brokerForm.broker_type,
         account_number: brokerForm.account_number.trim(),
@@ -607,8 +606,7 @@ function BrokerConnect() {
         api_token: token,
         status: 'disconnected',
       });
-
-    if (error) {
+    } catch (error) {
       toast.error(error.message);
       return;
     }
@@ -653,13 +651,7 @@ function BrokerConnect() {
         return;
       }
 
-      await supabase
-        .from('broker_accounts')
-        .update({
-          status: 'connected',
-          last_sync_at: new Date().toISOString(),
-        })
-        .eq('id', id);
+      await markBrokerAccountConnected(supabase, id);
 
       toast.success(`${payload.inserted || 0} trade(s) synced.`);
       fetchAccounts();

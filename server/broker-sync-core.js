@@ -39,11 +39,7 @@ async function handleBrokerSync(req, res, options = {}) {
       return res.status(400).json({ error: `Max ${MAX_TRADES_PER_REQUEST} trades per request` });
     }
 
-    const { data: account, error: accountError } = await supabase
-      .from('broker_accounts')
-      .select('id, user_id, broker_type, is_active, status, total_trades_synced')
-      .eq('api_token', token)
-      .single();
+    const { account, error: accountError } = await selectBrokerAccountByToken(supabase, token);
 
     if (accountError || !account) return res.status(401).json({ error: 'Invalid api_token' });
     if (account.is_active === false) return res.status(403).json({ error: 'Account is disabled' });
@@ -217,24 +213,71 @@ async function insertTradesWithFallback(supabase, modernRows, legacyRows) {
 
 async function updateBrokerAccount(supabase, account, insertedCount = 0) {
   const nextTotal = Number(account.total_trades_synced || 0) + Number(insertedCount || 0);
-  const fullUpdate = await supabase
-    .from('broker_accounts')
-    .update({
-      last_sync_at: new Date().toISOString(),
-      status: 'connected',
-      total_trades_synced: nextTotal,
-    })
-    .eq('id', account.id);
+  const syncedAt = new Date().toISOString();
+  const candidates = [
+    { last_sync_at: syncedAt, total_trades_synced: nextTotal, status: 'connected' },
+    { last_sync_at: syncedAt, total_trades_synced: nextTotal },
+    { last_sync_at: syncedAt },
+    { total_trades_synced: nextTotal },
+  ];
 
-  if (!fullUpdate.error) return;
+  let lastError = null;
+  for (const payload of candidates) {
+    const result = await supabase
+      .from('broker_accounts')
+      .update(payload)
+      .eq('id', account.id);
 
-  await supabase
-    .from('broker_accounts')
-    .update({
-      last_sync_at: new Date().toISOString(),
-      status: 'connected',
-    })
-    .eq('id', account.id);
+    if (!result.error) return { ok: true, payload };
+    lastError = result.error;
+    if (!isSchemaCacheColumnError(result.error)) break;
+  }
+
+  console.warn('broker account heartbeat update skipped:', lastError?.message || lastError);
+  return { ok: false, error: lastError };
+}
+
+async function selectBrokerAccountByToken(supabase, token) {
+  const selects = [
+    'id, user_id, broker_type, is_active, total_trades_synced',
+    'id, user_id, broker_type, is_active',
+    'id, user_id, broker_type',
+    '*',
+  ];
+
+  let lastError = null;
+  for (const columns of selects) {
+    const { data, error } = await supabase
+      .from('broker_accounts')
+      .select(columns)
+      .eq('api_token', token)
+      .single();
+
+    if (!error) {
+      return {
+        account: {
+          ...data,
+          is_active: data?.is_active !== false,
+          total_trades_synced: Number(data?.total_trades_synced || 0),
+        },
+        error: null,
+      };
+    }
+
+    lastError = error;
+    if (!isSchemaCacheColumnError(error)) break;
+  }
+
+  return { account: null, error: lastError };
+}
+
+function isSchemaCacheColumnError(error = {}) {
+  const text = [error.message, error.details, error.hint, error.code]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return text.includes('could not find')
+    && (text.includes('schema cache') || text.includes('column'));
 }
 
 function shouldTryLegacyInsert(error = {}) {

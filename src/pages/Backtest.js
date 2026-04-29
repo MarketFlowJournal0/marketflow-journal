@@ -247,6 +247,7 @@ const OHLC_PROVIDER_OPTIONS = [
 ];
 
 const SPEED_OPTIONS = [1, 2, 5, 10];
+const DEFAULT_BACKTEST_SYMBOLS = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'AUDUSD', 'USDCAD', 'BTCUSD', 'ETHUSD'];
 
 const CHART_LAYOUT_OPTIONS = [
   { value: 'single', label: 'Single chart' },
@@ -390,8 +391,12 @@ function getDefaultDateBounds(trades = []) {
     .sort((left, right) => left - right);
   if (!dates.length) {
     const now = new Date();
-    const iso = now.toISOString().slice(0, 10);
-    return { min: iso, max: iso };
+    const start = new Date(now);
+    start.setDate(now.getDate() - 7);
+    return {
+      min: start.toISOString().slice(0, 10),
+      max: now.toISOString().slice(0, 10),
+    };
   }
   return {
     min: dates[0].toISOString().slice(0, 10),
@@ -403,11 +408,12 @@ function createDefaultForm(trades = [], activeAccount = 'all') {
   const bounds = getDefaultDateBounds(trades);
   const source = Array.isArray(trades) ? trades : [];
   const symbols = [...new Set(source.map((trade) => getTradeSymbol(trade)).filter(Boolean))];
+  const assets = symbols.length ? [symbols[0]] : ['EURUSD'];
   return {
     mode: 'backtesting',
     name: '',
     accountBalance: 100000,
-    assets: symbols.length ? [symbols[0]] : [],
+    assets,
     chartLayout: 'single',
     startDate: bounds.min,
     endDate: bounds.max,
@@ -549,7 +555,7 @@ function TradingViewEmbed({ symbol, interval, height = 640 }) {
 
     const fallbackTimer = window.setTimeout(() => {
       if (host && !host.querySelector('iframe')) setWidgetFailed(true);
-    }, 7000);
+    }, 15000);
 
     return () => {
       window.clearTimeout(fallbackTimer);
@@ -670,6 +676,106 @@ function MiniStat({ label, value, caption = '', tone = C.text1 }) {
         {value}
       </div>
       {caption ? <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.6 }}>{caption}</div> : null}
+    </div>
+  );
+}
+
+function OhlcReplayChart({ state, symbol, interval, revealPct = 100 }) {
+  const candles = Array.isArray(state?.candles) ? state.candles : [];
+  const ready = state?.status === 'ready' && candles.length > 0;
+  const visibleCount = ready
+    ? Math.max(12, Math.min(candles.length, Math.ceil(candles.length * (Math.max(2, revealPct) / 100))))
+    : 0;
+  const visible = ready ? candles.slice(0, visibleCount).slice(-120) : [];
+  const minLow = visible.length ? Math.min(...visible.map((candle) => Number(candle.low))) : 0;
+  const maxHigh = visible.length ? Math.max(...visible.map((candle) => Number(candle.high))) : 1;
+  const range = Math.max(0.00001, maxHigh - minLow);
+  const chart = { width: 1000, height: 300, left: 52, right: 28, top: 22, bottom: 34 };
+  const innerWidth = chart.width - chart.left - chart.right;
+  const innerHeight = chart.height - chart.top - chart.bottom;
+  const candleStep = visible.length > 1 ? innerWidth / (visible.length - 1) : innerWidth;
+  const bodyWidth = Math.max(3.5, Math.min(10, candleStep * 0.48));
+  const last = visible[visible.length - 1] || null;
+  const priceY = (price) => chart.top + ((maxHigh - price) / range) * innerHeight;
+  const timeLabel = last?.time
+    ? new Date(last.time).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : 'No candle';
+
+  return (
+    <div style={{ marginTop: 12, borderRadius: 20, border: `1px solid ${shade(C.accent, 0.16)}`, background: 'linear-gradient(180deg, rgba(4,8,15,0.94), rgba(2,5,10,0.98))', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', borderBottom: `1px solid ${shade(C.borderHi, 0.7)}` }}>
+        <div>
+          <div style={{ fontSize: 11.5, fontWeight: 900, color: C.text0 }}>MarketFlow OHLC replay</div>
+          <div style={{ marginTop: 4, fontSize: 10.5, color: C.text3 }}>
+            {symbol || 'EURUSD'} / {INTERVAL_OPTIONS.find((item) => item.value === String(interval))?.label || interval} / session calendar range
+          </div>
+        </div>
+        <div style={{ padding: '5px 8px', borderRadius: 999, color: ready ? C.green : C.warn, background: shade(ready ? C.green : C.warn, 0.1), border: `1px solid ${shade(ready ? C.green : C.warn, 0.2)}`, fontSize: 10, fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          {ready ? `${visibleCount}/${candles.length} candles` : state?.status || 'idle'}
+        </div>
+      </div>
+
+      {ready ? (
+        <svg viewBox={`0 0 ${chart.width} ${chart.height}`} preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 260 }}>
+          <defs>
+            <linearGradient id="btOhlcPanelGlow" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor={shade(C.accent, 0.16)} />
+              <stop offset="100%" stopColor={shade(C.accent, 0.01)} />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width={chart.width} height={chart.height} fill="url(#btOhlcPanelGlow)" />
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+            const y = chart.top + innerHeight * ratio;
+            const price = maxHigh - range * ratio;
+            return (
+              <g key={ratio}>
+                <line x1={chart.left} x2={chart.width - chart.right} y1={y} y2={y} stroke="rgba(122,144,184,0.13)" strokeDasharray="8 8" />
+                <text x={10} y={y + 4} fill="rgba(122,144,184,0.64)" fontSize="12" fontWeight="700">
+                  {price.toFixed(symbol?.includes('JPY') ? 3 : 5)}
+                </text>
+              </g>
+            );
+          })}
+          {visible.map((candle, index) => {
+            const x = chart.left + index * candleStep;
+            const up = Number(candle.close) >= Number(candle.open);
+            const tone = up ? C.green : C.danger;
+            const yHigh = priceY(Number(candle.high));
+            const yLow = priceY(Number(candle.low));
+            const yOpen = priceY(Number(candle.open));
+            const yClose = priceY(Number(candle.close));
+            const bodyY = Math.min(yOpen, yClose);
+            const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+            return (
+              <g key={`${candle.time}-${index}`}>
+                <line x1={x} x2={x} y1={yHigh} y2={yLow} stroke={shade(tone, 0.72)} strokeWidth="1.5" />
+                <rect x={x - bodyWidth / 2} y={bodyY} width={bodyWidth} height={bodyHeight} rx="1.8" fill={tone} opacity="0.92" />
+              </g>
+            );
+          })}
+          {last ? (
+            <g>
+              <line x1={chart.left} x2={chart.width - chart.right} y1={priceY(Number(last.close))} y2={priceY(Number(last.close))} stroke={shade(C.accent, 0.55)} strokeDasharray="5 5" />
+              <rect x={chart.width - chart.right - 86} y={priceY(Number(last.close)) - 12} width="84" height="24" rx="7" fill={shade(C.accent, 0.18)} stroke={shade(C.accent, 0.35)} />
+              <text x={chart.width - chart.right - 44} y={priceY(Number(last.close)) + 4} textAnchor="middle" fill={C.accent} fontSize="12" fontWeight="900">
+                {Number(last.close).toFixed(symbol?.includes('JPY') ? 3 : 5)}
+              </text>
+              <text x={chart.left} y={chart.height - 12} fill="rgba(122,144,184,0.72)" fontSize="12" fontWeight="800">
+                {timeLabel}
+              </text>
+            </g>
+          ) : null}
+        </svg>
+      ) : (
+        <div style={{ minHeight: 220, display: 'grid', placeItems: 'center', padding: 22, textAlign: 'center' }}>
+          <div style={{ maxWidth: 440 }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: C.text0, marginBottom: 8 }}>No OHLC candles loaded yet</div>
+            <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.7 }}>
+              Choose a supported FX symbol such as EURUSD/XAUUSD and a session date range. MarketFlow will request OANDA first if configured, then Dukascopy free data.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1150,7 +1256,10 @@ export default function Backtest({ ignoreSavedSessions = false }) {
     setForm(createDefaultForm(tradeUniverse, activeAccount));
   }, [tradeUniverse, activeAccount]);
 
-  const symbolOptions = useMemo(() => [...new Set(tradeUniverse.map((trade) => getTradeSymbol(trade)).filter(Boolean))].sort(), [tradeUniverse]);
+  const symbolOptions = useMemo(() => {
+    const importedSymbols = [...new Set(tradeUniverse.map((trade) => getTradeSymbol(trade)).filter(Boolean))].sort();
+    return importedSymbols.length ? importedSymbols : DEFAULT_BACKTEST_SYMBOLS;
+  }, [tradeUniverse]);
 
   const sessionDetails = useMemo(() => {
     return savedSessions
@@ -1379,14 +1488,6 @@ export default function Backtest({ ignoreSavedSessions = false }) {
   }, [chartInterval, currentAsset, ohlcProvider, selectedSessionDefaultAsset, selectedSessionEnd, selectedSessionId, selectedSessionStart, view]);
 
   const handleCreateSession = () => {
-    if (!tradeUniverse.length) {
-      toast.error('Import trades first, then create a backtest session.');
-      return;
-    }
-    if (!form.name.trim()) {
-      toast.error('Session name is required.');
-      return;
-    }
     if (!form.assets.length) {
       toast.error('Choose at least one asset.');
       return;
@@ -1437,14 +1538,10 @@ export default function Backtest({ ignoreSavedSessions = false }) {
     };
 
     const filteredTrades = filterTradesForSession(tradeUniverse, sessionSeed);
-    if (!filteredTrades.length) {
-      toast.error('No trades match this asset, account and date range.');
-      return;
-    }
 
     const session = createBacktestSession({
       ...sessionSeed,
-      name: form.name.trim(),
+      name: form.name.trim() || buildBacktestSessionName(sessionSeed),
       tradeCount: filteredTrades.length,
       progressPct: 0,
     });
@@ -1541,8 +1638,8 @@ export default function Backtest({ ignoreSavedSessions = false }) {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <GhostButton onClick={() => setCreateOpen(true)} icon={<Ic.Plus />} tone={C.accent} disabled={!tradeUniverse.length}>Backtesting session</GhostButton>
-              <GhostButton disabled={!tradeUniverse.length} onClick={() => {
+              <GhostButton onClick={() => setCreateOpen(true)} icon={<Ic.Plus />} tone={C.accent}>Backtesting session</GhostButton>
+              <GhostButton onClick={() => {
                 setForm((current) => ({ ...current, mode: plan === 'starter' ? 'backtesting' : 'prop-firm' }));
                 setCreateOpen(true);
               }}>
@@ -1874,6 +1971,12 @@ export default function Backtest({ ignoreSavedSessions = false }) {
 
             <Card tone={C.accent} index={12} style={{ padding: '12px 12px 10px' }}>
               <TradingViewEmbed symbol={currentAsset || selectedSession?.assets?.[0] || 'EURUSD'} interval={chartInterval} />
+              <OhlcReplayChart
+                state={ohlcState}
+                symbol={currentAsset || selectedSession?.assets?.[0] || 'EURUSD'}
+                interval={chartInterval}
+                revealPct={replayTrades.length ? progressPct : 100}
+              />
             </Card>
 
             <div className="mf-bt-replay-side">
