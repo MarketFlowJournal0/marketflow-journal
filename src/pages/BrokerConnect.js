@@ -140,6 +140,83 @@ const BROKERS = [
   },
 ];
 
+const BROKER_MARKETS = ['All Markets', 'Stocks', 'Options', 'Futures', 'Forex', 'Crypto'];
+const POPULAR_BROKER_NAMES = ['cTrader', 'TopstepX', 'TradeLocker', 'Interactive Brokers', 'MetaTrader 4', 'MetaTrader 5', 'Thinkorswim', 'Tradovate'];
+const BROKER_CATALOG = [
+  brokerCatalogItem('Alpha Futures', ['Futures'], true, true, 'General'),
+  brokerCatalogItem('Bybit', ['Futures', 'Crypto'], false, true, 'General'),
+  brokerCatalogItem('Charles Schwab', ['Stocks', 'Options', 'Futures'], true, true, 'General'),
+  brokerCatalogItem('Coinbase', ['Crypto'], false, true, 'General'),
+  brokerCatalogItem('cTrader', ['Stocks', 'Forex', 'Futures', 'Crypto'], false, true, 'General', 'ctrader'),
+  brokerCatalogItem('Das Trader Pro', ['Stocks', 'Options'], true, true, 'General'),
+  brokerCatalogItem('DXtrade', ['Stocks', 'Options', 'Forex', 'Crypto'], false, true, 'General'),
+  brokerCatalogItem('Fidelity', ['Stocks', 'Options'], false, true, 'General'),
+  brokerCatalogItem('Interactive Brokers', ['Stocks', 'Options', 'Futures', 'Forex'], true, true, 'General', 'ibkr'),
+  brokerCatalogItem('Lightspeed', ['Stocks', 'Options'], true, true, 'General'),
+  brokerCatalogItem('Match-Trader', ['Stocks', 'Forex', 'Futures', 'Crypto'], false, true, 'General'),
+  brokerCatalogItem('MetaTrader 4', ['Stocks', 'Forex', 'Futures', 'Crypto'], true, true, 'General', 'mt4'),
+  brokerCatalogItem('MetaTrader 5', ['Stocks', 'Forex', 'Futures', 'Crypto'], true, true, 'General', 'mt5'),
+  brokerCatalogItem('MotiveWave', ['Stocks', 'Futures'], false, true, 'General'),
+  brokerCatalogItem('NinjaTrader', ['Stocks', 'Forex', 'Futures'], true, true, 'General'),
+  brokerCatalogItem('Oanda', ['Forex'], true, true, 'General', 'mt5'),
+  brokerCatalogItem('Power E Trade', ['Stocks', 'Options', 'Futures'], false, true, 'General'),
+  brokerCatalogItem('Project X', ['Futures'], false, true, 'General'),
+  brokerCatalogItem('Quantower', ['Futures', 'Crypto'], false, true, 'General'),
+  brokerCatalogItem('Questrade', ['Stocks', 'Options'], false, true, 'General'),
+  brokerCatalogItem('Rithmic R Trader', ['Futures'], true, true, 'General'),
+  brokerCatalogItem('Robinhood', ['Stocks', 'Options', 'Futures'], false, true, 'General'),
+  brokerCatalogItem('Sierra Chart', ['Stocks', 'Futures'], false, true, 'General'),
+  brokerCatalogItem('Sterling Trader Pro', ['Stocks', 'Options'], true, true, 'General'),
+  brokerCatalogItem('Tastytrade', ['Stocks', 'Options', 'Futures'], false, true, 'General'),
+  brokerCatalogItem('TC2000', ['Stocks', 'Options'], false, true, 'General'),
+  brokerCatalogItem('Thinkorswim', ['Stocks', 'Options', 'Futures'], true, true, 'General'),
+  brokerCatalogItem('Tickblaze', ['Stocks', 'Forex', 'Futures', 'Crypto'], false, true, 'General'),
+  brokerCatalogItem('TopstepX', ['Futures'], false, true, 'General'),
+  brokerCatalogItem('TradeLocker', ['Stocks', 'Forex', 'Crypto'], false, true, 'General'),
+  brokerCatalogItem('TradeStation', ['Stocks', 'Options', 'Futures'], true, true, 'General'),
+  brokerCatalogItem('TradeZero', ['Stocks', 'Options', 'Futures'], true, true, 'General'),
+  brokerCatalogItem('TradingView Paper Trading', ['Stocks', 'Options', 'Forex', 'Futures', 'Crypto'], false, true, 'General', 'tradingview'),
+  brokerCatalogItem('Tradovate', ['Futures'], true, true, 'General'),
+  brokerCatalogItem('Webull', ['Stocks', 'Options', 'Futures', 'Crypto'], false, true, 'General'),
+  ...[
+    'AAAFX', 'AAFX', 'Accuindex', 'ActivTrades', 'ACY Capital', 'Admiral Markets', 'ADN Broker', 'Advanced Markets',
+    'Aetos', 'Afterprime', 'Aiko International', 'Alpari', 'Amana Capital', 'Axi', 'Axiory', 'BlackBull Markets',
+    'Blueberry Markets', 'Capital.com', 'City Index', 'CMC Markets', 'Coinexx', 'CPT Markets', 'Darwinex',
+    'Dukascopy', 'Eightcap', 'Equiti', 'Errante', 'Exness', 'FBS', 'FIBO Group', 'Finalto', 'FlowBank',
+    'Forex.com', 'ForexMart', 'FP Markets', 'FTMO', 'Fusion Markets', 'FXCM', 'FXDD', 'FXFlat', 'FXGlobe',
+    'FXOpen', 'FXPrimus', 'FXPro', 'Global Prime', 'Hankotrade', 'Hantec Markets', 'HF Markets', 'HYCM',
+    'IC Markets', 'ICM Capital', 'IG', 'Infinox', 'IronFX', 'JFD Brokers', 'JustMarkets', 'Key To Markets',
+    'KOT4X', 'LMAX', 'LiteFinance', 'Markets.com', 'Moneta Markets', 'MyForexFunds', 'NAGA', 'NordFX',
+    'OctaFX', 'Orbex', 'Pepperstone', 'PU Prime', 'Purple Trading', 'RoboForex', 'Saxo Bank', 'Scope Markets',
+    'Skilling', 'Swissquote', 'Switch Markets', 'ThinkMarkets', 'Tickmill', 'Titan FX', 'TopFX', 'Trade245',
+    'Trade Nation', 'Traders Global Group', 'Traders Way', 'Tradeview', 'Trive', 'True Proprietary Funds',
+    'Ultima Markets', 'Valutrades', 'Vantage', 'VT Markets', 'Weltrade', 'XM', 'XTB', 'YaMarkets', 'Zenfinex'
+  ].map((name) => brokerCatalogItem(name, ['Forex'], true, true, 'MT4 / MT5 Forex Brokers', name.toLowerCase().includes('mt5') ? 'mt5' : 'mt4')),
+].sort((left, right) => left.name.localeCompare(right.name));
+
+function brokerCatalogItem(name, markets, autoSync = false, fileUpload = true, group = 'General', platformId = '') {
+  return {
+    id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+    name,
+    markets,
+    autoSync,
+    fileUpload,
+    group,
+    platformId,
+  };
+}
+
+function resolveCatalogPlatformId(item = {}) {
+  if (item.platformId) return item.platformId;
+  const name = String(item.name || '').toLowerCase();
+  if (name.includes('metatrader 4') || name.includes('mt4')) return 'mt4';
+  if (name.includes('metatrader 5') || name.includes('mt5')) return 'mt5';
+  if (name.includes('ctrader')) return 'ctrader';
+  if (name.includes('interactive')) return 'ibkr';
+  if (name.includes('tradingview')) return 'tradingview';
+  return item.autoSync ? 'webhook' : 'webhook';
+}
+
 const ICON = {
   ArrowUpRight: () => (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -514,6 +591,10 @@ function BrokerConnect() {
   const [deletingId, setDeletingId] = useState(null);
   const [syncingId, setSyncingId] = useState(null);
   const [brokerForm, setBrokerForm] = useState(initialBrokerForm);
+  const [brokerSearch, setBrokerSearch] = useState('');
+  const [marketFilter, setMarketFilter] = useState('All Markets');
+  const [selectedCatalogBroker, setSelectedCatalogBroker] = useState(null);
+  const [selectedImportMethod, setSelectedImportMethod] = useState('');
 
   const [copierLoaded, setCopierLoaded] = useState(false);
   const [copierState, setCopierState] = useState(() => normalizeTradeCopierState({}));
@@ -538,6 +619,17 @@ function BrokerConnect() {
   const totalSynced = useMemo(() => brokerAccounts.reduce((sum, account) => sum + (account.total_trades_synced || 0), 0), [brokerAccounts]);
   const connectedCount = useMemo(() => brokerAccounts.filter((account) => account.status === 'connected').length, [brokerAccounts]);
   const journalAccounts = useMemo(() => (accountOptions || []).filter((item) => item.id !== 'all'), [accountOptions]);
+  const filteredCatalog = useMemo(() => {
+    const query = brokerSearch.trim().toLowerCase();
+    return BROKER_CATALOG.filter((broker) => {
+      const matchesMarket = marketFilter === 'All Markets' || broker.markets.includes(marketFilter);
+      const matchesSearch = !query || [broker.name, broker.group, ...(broker.markets || [])].join(' ').toLowerCase().includes(query);
+      return matchesMarket && matchesSearch;
+    }).slice(0, 80);
+  }, [brokerSearch, marketFilter]);
+  const popularCatalog = useMemo(() => POPULAR_BROKER_NAMES
+    .map((name) => BROKER_CATALOG.find((broker) => broker.name.toLowerCase() === name.toLowerCase()))
+    .filter(Boolean), []);
 
   const fetchAccounts = useCallback(async () => {
     if (!user?.id) {
@@ -559,6 +651,16 @@ function BrokerConnect() {
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('setup') === '1') {
+      toast.success('Choose your broker to connect the first account.');
+      window.history.replaceState({}, '', window.location.pathname);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
 
   useEffect(() => {
     if (!user?.id) {
@@ -665,6 +767,41 @@ function BrokerConnect() {
   function openSetup(broker) {
     setSelectedBroker(broker);
     setSetupOpen(true);
+  }
+
+  function selectCatalogBroker(item) {
+    setSelectedCatalogBroker(item);
+    setSelectedImportMethod('');
+  }
+
+  function beginCatalogConnection(item = selectedCatalogBroker, method = selectedImportMethod) {
+    if (!item) {
+      toast.error('Choose a broker or platform first.');
+      return;
+    }
+    if (!method) {
+      toast.error('Choose Auto Sync, File Upload, or Manual entry.');
+      return;
+    }
+
+    const platformId = resolveCatalogPlatformId(item);
+    setBrokerForm((current) => ({
+      ...current,
+      broker_type: platformId,
+      account_name: current.account_name || item.name,
+      server_name: current.server_name || item.group,
+    }));
+    setShowBrokerForm(true);
+
+    const broker = BROKERS.find((entry) => entry.id === platformId) || BROKERS.find((entry) => entry.id === 'webhook') || BROKERS[0];
+    if (method === 'file') {
+      toast.success('File Upload selected. Create the account token here, then import the broker CSV in All Trades.');
+    } else if (method === 'manual') {
+      toast.success('Manual selected. Create the account token here, then add trades manually in All Trades.');
+    } else {
+      toast.success('Auto Sync selected. Generate a token and follow the setup guide.');
+    }
+    openSetup(broker);
   }
 
   function openAccountEditor(account = null) {
@@ -847,6 +984,165 @@ function BrokerConnect() {
             <MetricCard label="Trades synced" value={totalSynced.toLocaleString()} detail="Recorded trade rows delivered through broker or API sync." tone={C.cyan} icon={ICON.Network} />
             <MetricCard label="Elite copy links" value={String(copierOverview.activeLinks)} detail="Active master to follower relationships inside the copier desk." tone={C.purple} icon={ICON.Link} />
             <MetricCard label="Protected capital" value={money(copierOverview.capital)} detail="Follower and master capital currently modeled by the risk engine." tone={C.gold} icon={ICON.Shield} />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...pageCardStyle({ padding: 24 }) }}>
+        <SectionHeader
+          eyebrow="First connection"
+          title="Choose Broker, Prop Firm or Trading Platform"
+          description="Search your broker, choose the market, then select Auto Sync, File Upload, or Manual entry. MarketFlow never asks for broker passwords; live connections use scoped tokens or broker-approved export flows."
+          actions={(
+            <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.green, 0.18)}`, background: shade(C.green, 0.08), color: C.green, fontSize: 10.5, fontWeight: 800 }}>
+              {BROKER_CATALOG.length}+ integrations indexed
+            </div>
+          )}
+        />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(340px, 0.85fr)', gap: 18 }}>
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) 170px', gap: 10 }}>
+              <Field label="Search broker">
+                <input
+                  value={brokerSearch}
+                  onChange={(event) => setBrokerSearch(event.target.value)}
+                  placeholder="Start typing a broker, prop firm or trading platform"
+                  style={inputStyle()}
+                />
+              </Field>
+              <Field label="Market">
+                <select value={marketFilter} onChange={(event) => setMarketFilter(event.target.value)} style={inputStyle()}>
+                  {BROKER_MARKETS.map((market) => <option key={market} value={market}>{market}</option>)}
+                </select>
+              </Field>
+            </div>
+
+            {!brokerSearch.trim() && marketFilter === 'All Markets' ? (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: C.t0, marginBottom: 10 }}>Popular brokers</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+                  {popularCatalog.map((broker) => (
+                    <button
+                      key={broker.id}
+                      type="button"
+                      onClick={() => selectCatalogBroker(broker)}
+                      style={{
+                        minHeight: 82,
+                        borderRadius: 18,
+                        border: `1px solid ${selectedCatalogBroker?.id === broker.id ? shade(C.cyan, 0.36) : shade(C.t3, 0.14)}`,
+                        background: selectedCatalogBroker?.id === broker.id ? shade(C.cyan, 0.09) : 'rgba(255,255,255,0.024)',
+                        color: C.t1,
+                        textAlign: 'left',
+                        padding: 13,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      <div style={{ width: 32, height: 32, borderRadius: 12, display: 'grid', placeItems: 'center', border: `1px solid ${shade(C.cyan, 0.18)}`, background: shade(C.cyan, 0.08), color: C.cyan, fontSize: 12, fontWeight: 900, marginBottom: 10 }}>
+                        {broker.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: C.t0, fontWeight: 900 }}>{broker.name}</div>
+                      <div style={{ marginTop: 4, fontSize: 10.5, color: C.t3 }}>{broker.markets.join(' / ')}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div style={{ borderRadius: 20, border: `1px solid ${shade(C.t3, 0.14)}`, background: 'rgba(255,255,255,0.018)', overflow: 'hidden' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) 170px 92px 92px', gap: 10, padding: '10px 13px', borderBottom: `1px solid ${shade(C.t3, 0.14)}`, color: C.t3, fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                <span>Integration / Broker</span>
+                <span>Markets</span>
+                <span>Auto Sync</span>
+                <span>File</span>
+              </div>
+              <div style={{ maxHeight: 380, overflow: 'auto' }}>
+                {filteredCatalog.map((broker) => (
+                  <button
+                    key={broker.id}
+                    type="button"
+                    onClick={() => selectCatalogBroker(broker)}
+                    style={{
+                      width: '100%',
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(220px, 1.4fr) 170px 92px 92px',
+                      gap: 10,
+                      alignItems: 'center',
+                      padding: '11px 13px',
+                      border: 0,
+                      borderBottom: `1px solid ${shade(C.t3, 0.08)}`,
+                      background: selectedCatalogBroker?.id === broker.id ? shade(C.cyan, 0.08) : 'transparent',
+                      color: C.t1,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <span>
+                      <span style={{ display: 'block', fontSize: 12.5, fontWeight: 900, color: C.t0 }}>{broker.name}</span>
+                      <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: C.t3 }}>{broker.group}</span>
+                    </span>
+                    <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      {broker.markets.slice(0, 3).map((market) => (
+                        <span key={market} style={{ padding: '3px 7px', borderRadius: 999, border: `1px solid ${shade(C.t3, 0.12)}`, color: C.t2, fontSize: 10.5 }}>{market}</span>
+                      ))}
+                    </span>
+                    <span style={{ color: broker.autoSync ? C.green : C.t3, fontWeight: 900 }}>{broker.autoSync ? 'Yes' : 'No'}</span>
+                    <span style={{ color: broker.fileUpload ? C.green : C.t3, fontWeight: 900 }}>{broker.fileUpload ? 'Yes' : 'No'}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
+            <div style={{ ...pageCardStyle({ padding: 18, borderRadius: 20 }) }}>
+              <div style={{ fontSize: 12, fontWeight: 900, color: C.t3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Selected broker</div>
+              {selectedCatalogBroker ? (
+                <>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: C.t0, letterSpacing: '-0.04em' }}>{selectedCatalogBroker.name}</div>
+                  <div style={{ marginTop: 7, color: C.t2, fontSize: 12.5, lineHeight: 1.6 }}>{selectedCatalogBroker.markets.join(', ')} / {selectedCatalogBroker.group}</div>
+                </>
+              ) : (
+                <div style={{ color: C.t2, fontSize: 13, lineHeight: 1.7 }}>Choose a broker from the list to unlock the method step.</div>
+              )}
+            </div>
+
+            {[
+              { id: 'auto', title: 'Auto Sync', body: 'Token, EA, API, Flex, webhook or provider-approved bridge.', available: Boolean(selectedCatalogBroker?.autoSync), recommended: selectedCatalogBroker?.autoSync },
+              { id: 'file', title: 'File Upload', body: 'Upload CSV, Excel or broker export through All Trades.', available: Boolean(selectedCatalogBroker?.fileUpload), recommended: !selectedCatalogBroker?.autoSync },
+              { id: 'manual', title: 'Add manually', body: 'Create the account now and add trades one by one.', available: Boolean(selectedCatalogBroker), recommended: false },
+            ].map((method) => (
+              <button
+                key={method.id}
+                type="button"
+                disabled={!method.available}
+                onClick={() => method.available && setSelectedImportMethod(method.id)}
+                style={{
+                  textAlign: 'left',
+                  borderRadius: 18,
+                  padding: 16,
+                  border: `1px solid ${selectedImportMethod === method.id ? shade(C.cyan, 0.35) : shade(method.available ? C.t3 : C.danger, 0.14)}`,
+                  background: selectedImportMethod === method.id ? shade(C.cyan, 0.09) : method.available ? 'rgba(255,255,255,0.025)' : shade(C.danger, 0.045),
+                  color: method.available ? C.t1 : C.t3,
+                  cursor: method.available ? 'pointer' : 'not-allowed',
+                  fontFamily: 'inherit',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: method.available ? C.t0 : C.t3 }}>{method.title}</div>
+                  {method.recommended ? <span style={{ padding: '4px 7px', borderRadius: 999, background: shade(C.green, 0.1), border: `1px solid ${shade(C.green, 0.18)}`, color: C.green, fontSize: 9.5, fontWeight: 900 }}>Recommended</span> : null}
+                  {!method.available ? <span style={{ padding: '4px 7px', borderRadius: 999, background: shade(C.danger, 0.08), border: `1px solid ${shade(C.danger, 0.16)}`, color: C.danger, fontSize: 9.5, fontWeight: 900 }}>Not available</span> : null}
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.6, color: method.available ? C.t2 : C.t3 }}>{method.body}</div>
+              </button>
+            ))}
+
+            <ActionButton onClick={() => beginCatalogConnection()} disabled={!selectedCatalogBroker || !selectedImportMethod} style={{ justifyContent: 'center', opacity: (!selectedCatalogBroker || !selectedImportMethod) ? 0.55 : 1 }}>
+              Continue connection
+              <ICON.ArrowUpRight />
+            </ActionButton>
           </div>
         </div>
       </div>

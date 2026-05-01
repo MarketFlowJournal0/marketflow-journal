@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTradingContext } from '../context/TradingContext';
 import { shade } from '../lib/colorAlpha';
 import {
+  DEVELOPMENT_ROUTINES,
   DEVELOPMENT_TASKS,
   computeEntryScore,
   createDevelopmentEntry,
@@ -68,9 +69,29 @@ const PAGE_STYLES = `
     margin-top: 14px;
   }
 
+  .mf-dev-routine-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mf-dev-identity-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+  }
+
   @media (max-width: 1180px) {
     .mf-dev-grid,
     .mf-dev-secondary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 780px) {
+    .mf-dev-routine-grid,
+    .mf-dev-identity-grid {
       grid-template-columns: 1fr;
     }
   }
@@ -275,12 +296,16 @@ export default function Development() {
     day: entry.dateKey.slice(5),
     score: computeEntryScore(entry),
     discipline: Number(entry.disciplineRating || 0) * 10,
+    energy: Number(entry.energyLevel || 0) * 10,
+    stress: Number(entry.stressLevel || 0) * 10,
   })), [snapshot.recent]);
 
   const todayPnl = todayTrades.reduce((sum, trade) => sum + getTradePnl(trade), 0);
   const completedTasks = DEVELOPMENT_TASKS.filter((task) => today.tasks?.[task.id]).length;
+  const completedRoutines = DEVELOPMENT_ROUTINES.filter((routine) => today.routines?.[routine.id]).length;
   const activeAccountLabel = accountOptions.find((account) => account.id === activeAccount)?.label || 'All Accounts';
   const disciplineTone = snapshot.score >= 78 ? C.green : snapshot.score >= 58 ? C.warn : C.danger;
+  const readinessScore = Math.round(((Number(today.sleepQuality || 0) + Number(today.energyLevel || 0) + (11 - Number(today.stressLevel || 0))) / 30) * 100);
 
   const updateToday = (patch) => {
     const next = {
@@ -296,6 +321,15 @@ export default function Development() {
       tasks: {
         ...today.tasks,
         [taskId]: !today.tasks?.[taskId],
+      },
+    });
+  };
+
+  const toggleRoutine = (routineId) => {
+    updateToday({
+      routines: {
+        ...today.routines,
+        [routineId]: !today.routines?.[routineId],
       },
     });
   };
@@ -396,6 +430,23 @@ export default function Development() {
               placeholder="One behavior to improve tomorrow."
             />
           </div>
+
+          <div className="mf-dev-identity-grid">
+            <TextArea
+              label="Trader identity"
+              value={today.identityStatement}
+              onChange={(value) => updateToday({ identityStatement: value })}
+              placeholder="The trader I am training to become..."
+              rows={3}
+            />
+            <TextArea
+              label="Non-negotiable"
+              value={today.nonNegotiable}
+              onChange={(value) => updateToday({ nonNegotiable: value })}
+              placeholder="The behavior I refuse to violate today."
+              rows={3}
+            />
+          </div>
         </Card>
 
         <div style={{ display: 'grid', gap: 14 }}>
@@ -406,6 +457,8 @@ export default function Development() {
               <MiniMetric label="Today P&L" value={formatCurrency(todayPnl, true)} tone={todayPnl >= 0 ? C.green : C.danger} />
               <MiniMetric label="Trades today" value={String(todayTrades.length)} tone={C.accent} caption={activeAccountLabel} />
               <MiniMetric label="Weekly avg" value={`${snapshot.weeklyAverage}/100`} tone={snapshot.weeklyAverage >= 70 ? C.green : C.warn} />
+              <MiniMetric label="Readiness" value={`${readinessScore}/100`} tone={readinessScore >= 70 ? C.green : C.warn} caption="Sleep, energy, stress" />
+              <MiniMetric label="Routine" value={`${completedRoutines}/${DEVELOPMENT_ROUTINES.length}`} tone={C.purple} caption="Life around trading" />
             </div>
 
             <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
@@ -416,6 +469,14 @@ export default function Development() {
               <label style={{ display: 'grid', gap: 7 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>Sleep quality</span>
                 <input type="range" min="1" max="10" value={today.sleepQuality} onChange={(event) => updateToday({ sleepQuality: Number(event.target.value) })} />
+              </label>
+              <label style={{ display: 'grid', gap: 7 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>Energy level</span>
+                <input type="range" min="1" max="10" value={today.energyLevel} onChange={(event) => updateToday({ energyLevel: Number(event.target.value) })} />
+              </label>
+              <label style={{ display: 'grid', gap: 7 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>Stress level</span>
+                <input type="range" min="1" max="10" value={today.stressLevel} onChange={(event) => updateToday({ stressLevel: Number(event.target.value) })} />
               </label>
               <label style={{ display: 'grid', gap: 7 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3 }}>Mental state</span>
@@ -438,6 +499,39 @@ export default function Development() {
                   <option value="overconfident">Overconfident</option>
                 </select>
               </label>
+            </div>
+          </Card>
+
+          <Card tone={C.purple} index={2.5} style={{ padding: 20 }}>
+            <SectionHeader eyebrow="Personal development" title="Routine around trading" />
+            <div className="mf-dev-routine-grid">
+              {DEVELOPMENT_ROUTINES.map((routine) => {
+                const done = Boolean(today.routines?.[routine.id]);
+                return (
+                  <button
+                    key={routine.id}
+                    type="button"
+                    onClick={() => toggleRoutine(routine.id)}
+                    style={{
+                      minHeight: 86,
+                      borderRadius: 17,
+                      border: `1px solid ${done ? shade(C.purple, 0.28) : shade(C.borderHi, 0.8)}`,
+                      background: done ? shade(C.purple, 0.1) : 'rgba(255,255,255,0.024)',
+                      color: C.text1,
+                      textAlign: 'left',
+                      padding: 13,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <div style={{ width: 24, height: 24, borderRadius: 8, display: 'grid', placeItems: 'center', border: `1px solid ${done ? shade(C.purple, 0.5) : shade(C.text3, 0.4)}`, color: done ? C.purple : C.text3, marginBottom: 9 }}>
+                      {done ? <Ic.Check /> : null}
+                    </div>
+                    <div style={{ fontSize: 12.5, color: C.text0, fontWeight: 900, lineHeight: 1.25 }}>{routine.label}</div>
+                    <div style={{ marginTop: 4, fontSize: 10.5, color: C.text3, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{routine.category}</div>
+                  </button>
+                );
+              })}
             </div>
           </Card>
 

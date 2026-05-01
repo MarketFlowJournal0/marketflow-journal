@@ -37,6 +37,27 @@ export const DEVELOPMENT_TASKS = [
     weight: 15,
     category: 'Review',
   },
+  {
+    id: 'body_ready',
+    label: 'Body and energy prepared',
+    weight: 8,
+    category: 'Routine',
+  },
+  {
+    id: 'shutdown_complete',
+    label: 'Trading shutdown respected',
+    weight: 7,
+    category: 'Recovery',
+  },
+];
+
+export const DEVELOPMENT_ROUTINES = [
+  { id: 'sleep', label: 'Sleep window respected', category: 'Recovery' },
+  { id: 'movement', label: 'Movement or walk completed', category: 'Body' },
+  { id: 'hydration', label: 'Hydration before screen time', category: 'Body' },
+  { id: 'news', label: 'Calendar and news checked', category: 'Preparation' },
+  { id: 'screens', label: 'No unnecessary screen noise', category: 'Focus' },
+  { id: 'shutdown', label: 'Post-market shutdown ritual', category: 'Recovery' },
 ];
 
 export function getDevelopmentDateKey(date = new Date()) {
@@ -62,7 +83,12 @@ export function createDevelopmentEntry(dateKey = getDevelopmentDateKey()) {
     improvement: '',
     mentalState: 'steady',
     sleepQuality: 7,
+    energyLevel: 7,
+    stressLevel: 3,
     disciplineRating: 7,
+    routines: DEVELOPMENT_ROUTINES.reduce((accumulator, routine) => ({ ...accumulator, [routine.id]: false }), {}),
+    identityStatement: '',
+    nonNegotiable: '',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -72,6 +98,10 @@ export function normalizeDevelopmentEntry(entry = {}, dateKey = getDevelopmentDa
   const tasks = DEVELOPMENT_TASKS.reduce((accumulator, task) => ({
     ...accumulator,
     [task.id]: Boolean(entry?.tasks?.[task.id]),
+  }), {});
+  const routines = DEVELOPMENT_ROUTINES.reduce((accumulator, routine) => ({
+    ...accumulator,
+    [routine.id]: Boolean(entry?.routines?.[routine.id]),
   }), {});
 
   return {
@@ -85,7 +115,12 @@ export function normalizeDevelopmentEntry(entry = {}, dateKey = getDevelopmentDa
     improvement: String(entry.improvement || ''),
     mentalState: String(entry.mentalState || 'steady'),
     sleepQuality: clampNumber(entry.sleepQuality, 1, 10, 7),
+    energyLevel: clampNumber(entry.energyLevel, 1, 10, 7),
+    stressLevel: clampNumber(entry.stressLevel, 1, 10, 3),
     disciplineRating: clampNumber(entry.disciplineRating, 1, 10, 7),
+    routines,
+    identityStatement: String(entry.identityStatement || ''),
+    nonNegotiable: String(entry.nonNegotiable || ''),
     updatedAt: entry.updatedAt || new Date().toISOString(),
   };
 }
@@ -172,8 +207,13 @@ export function computeEntryScore(entry = {}) {
   ), 0);
   const disciplineScore = (normalized.disciplineRating / 10) * 8;
   const sleepScore = (normalized.sleepQuality / 10) * 4;
+  const energyScore = (normalized.energyLevel / 10) * 3;
+  const stressScore = ((11 - normalized.stressLevel) / 10) * 3;
+  const routineScore = DEVELOPMENT_ROUTINES.reduce((sum, routine) => (
+    sum + (normalized.routines?.[routine.id] ? 1.6 : 0)
+  ), 0);
   const textScore = computeReviewQuality(normalized) * 0.08;
-  return clampNumber(Math.round(taskScore + disciplineScore + sleepScore + textScore), 0, 100, 0);
+  return clampNumber(Math.round(taskScore + disciplineScore + sleepScore + energyScore + stressScore + routineScore + textScore), 0, 100, 0);
 }
 
 function buildRecentWindow(entries = {}, days = 14) {
@@ -202,7 +242,7 @@ function computeDevelopmentStreak(entries = {}) {
 }
 
 function computeReviewQuality(entry = {}) {
-  const text = [entry.focus, entry.riskPlan, entry.review, entry.improvement].join(' ').trim();
+  const text = [entry.focus, entry.riskPlan, entry.review, entry.improvement, entry.identityStatement, entry.nonNegotiable].join(' ').trim();
   if (!text) return 0;
   return clampNumber(Math.round((text.length / 220) * 100), 0, 100, 0);
 }

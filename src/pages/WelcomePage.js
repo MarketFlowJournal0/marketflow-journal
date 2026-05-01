@@ -501,6 +501,27 @@ export default function WelcomePage() {
                   Access Your Journal ->
                 </motion.button>
               )}
+              {ready && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.18, duration: 0.34 }}
+                  onClick={() => navigate('/broker-connect?setup=1')}
+                  style={{
+                    border: '1px solid rgba(20,201,229,0.32)',
+                    background: 'rgba(20,201,229,0.08)',
+                    color: '#14C9E5',
+                    borderRadius: 14,
+                    padding: '15px 20px',
+                    fontSize: 15,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Connect First Broker
+                </motion.button>
+              )}
               <button
                 onClick={() => navigate('/subscription')}
                 style={{

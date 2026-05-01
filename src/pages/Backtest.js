@@ -111,6 +111,25 @@ const PAGE_STYLES = `
     margin-bottom: 16px;
   }
 
+  .mf-bt-data-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .mf-bt-density-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(62px, 1fr));
+    gap: 8px;
+    min-width: 640px;
+  }
+
+  .mf-bt-table-scroll {
+    overflow: auto;
+    padding-bottom: 4px;
+  }
+
   .mf-bt-dashboard-grid > *,
   .mf-bt-chart-grid > *,
   .mf-bt-replay-bottom > * {
@@ -200,6 +219,7 @@ const PAGE_STYLES = `
   @media (max-width: 1320px) {
     .mf-bt-dashboard-grid,
     .mf-bt-chart-grid,
+    .mf-bt-data-grid,
     .mf-bt-replay-bottom {
       grid-template-columns: 1fr;
     }
@@ -220,10 +240,8 @@ const PAGE_STYLES = `
 `;
 
 const VIEW_TABS = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'sessions', label: 'Sessions' },
-  { id: 'trades', label: 'Trades' },
-  { id: 'analytics', label: 'Analytics' },
+  { id: 'dashboard', label: 'Replay Sessions' },
+  { id: 'analytics', label: 'Data Lab' },
 ];
 
 const INTERVAL_OPTIONS = [
@@ -503,6 +521,141 @@ function buildSessionMetrics(sessionDetails = []) {
   };
 }
 
+function buildBacktestDataLab(sessionDetails = [], fallbackTrades = []) {
+  const reviewedTrades = sessionDetails.flatMap((session) => Array.isArray(session.trades) ? session.trades : []);
+  const sourceTrades = reviewedTrades.length ? reviewedTrades : fallbackTrades;
+  const sortedTrades = sortTradesChronologically(sourceTrades || []);
+  const summary = summarizeTradeSet(sortedTrades);
+  const sourceLabel = reviewedTrades.length ? 'Backtest sessions' : 'All Trades fallback';
+  const hourlyRows = Array.from({ length: 24 }, (_, hour) => summarizeBucket(
+    `${String(hour).padStart(2, '0')}:00`,
+    sortedTrades.filter((trade) => getTradeHour(trade) === hour),
+  ));
+  const weekdayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekdayRows = weekdayOrder.map((label) => summarizeBucket(
+    label,
+    sortedTrades.filter((trade) => getTradeWeekday(trade) === label),
+  ));
+  const weekRows = [1, 2, 3, 4, 5].map((week) => summarizeBucket(
+    `Week ${week}`,
+    sortedTrades.filter((trade) => getTradeWeekOfMonth(trade) === week),
+  ));
+  const symbolRows = summarizeBy(sortedTrades, getTradeSymbol)
+    .sort((left, right) => right.trades - left.trades || right.pnl - left.pnl)
+    .slice(0, 10);
+  const setupRows = summarizeBy(sortedTrades, (trade) => String(trade.setup || trade.extra?.setup || 'Unlabeled').trim() || 'Unlabeled')
+    .sort((left, right) => right.expectancy - left.expectancy)
+    .slice(0, 8);
+  const sessionRows = summarizeBy(sortedTrades, (trade) => String(trade.session || trade.extra?.session || 'Unlabeled').trim() || 'Unlabeled')
+    .sort((left, right) => right.pnl - left.pnl)
+    .slice(0, 8);
+  const monthRows = summarizeBy(sortedTrades, (trade) => {
+    const date = getTradeDateValue(trade);
+    if (!date || Number.isNaN(date.getTime())) return 'Unknown';
+    return date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+  });
+  const dayHourRows = weekdayOrder.map((day) => ({
+    day,
+    cells: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((hour) => summarizeBucket(
+      `${day} ${hour}`,
+      sortedTrades.filter((trade) => getTradeWeekday(trade) === day && getTradeHour(trade) === hour),
+      { hour },
+    )),
+  }));
+  const bestHour = findBestBucket(hourlyRows);
+  const bestDay = findBestBucket(weekdayRows);
+  const bestWeek = findBestBucket(weekRows);
+  const worstHour = findWorstBucket(hourlyRows);
+  const sessionSummaryRows = sessionDetails.map((session) => ({
+    label: session.name || 'Backtest session',
+    trades: session.tradeCount || 0,
+    pnl: session.totalPnl || 0,
+    winRate: session.winRate || 0,
+    reviewed: formatHours(session.reviewedSeconds || 0),
+    assets: (session.assets || []).join(', ') || session.symbol || 'All',
+  }));
+
+  return {
+    sourceLabel,
+    summary,
+    sortedTrades,
+    hourlyRows,
+    weekdayRows,
+    weekRows,
+    symbolRows,
+    setupRows,
+    sessionRows,
+    monthRows,
+    dayHourRows,
+    bestHour,
+    bestDay,
+    bestWeek,
+    worstHour,
+    sessionSummaryRows,
+    avgRR: sortedTrades.length
+      ? sortedTrades.reduce((sum, trade) => sum + (Number(getTradeRR(trade)) || 0), 0) / sortedTrades.length
+      : 0,
+  };
+}
+
+function summarizeBy(trades = [], keyFn) {
+  const buckets = trades.reduce((map, trade) => {
+    const key = keyFn(trade);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(trade);
+    return map;
+  }, new Map());
+  return Array.from(buckets.entries()).map(([label, items]) => summarizeBucket(label, items));
+}
+
+function summarizeBucket(label, trades = [], extra = {}) {
+  const pnl = trades.reduce((sum, trade) => sum + getTradePnl(trade), 0);
+  const wins = trades.filter((trade) => getTradePnl(trade) > 0).length;
+  const losses = trades.filter((trade) => getTradePnl(trade) < 0).length;
+  const breakeven = trades.length - wins - losses;
+  const rr = trades.reduce((sum, trade) => sum + (Number(getTradeRR(trade)) || 0), 0);
+  return {
+    label,
+    trades: trades.length,
+    wins,
+    losses,
+    breakeven,
+    pnl,
+    winRate: trades.length ? Number(((wins / trades.length) * 100).toFixed(1)) : 0,
+    avgRR: trades.length ? Number((rr / trades.length).toFixed(2)) : 0,
+    expectancy: trades.length ? Number((pnl / trades.length).toFixed(2)) : 0,
+    ...extra,
+  };
+}
+
+function findBestBucket(rows = []) {
+  return [...rows].filter((row) => row.trades > 0).sort((left, right) => right.expectancy - left.expectancy || right.winRate - left.winRate)[0] || null;
+}
+
+function findWorstBucket(rows = []) {
+  return [...rows].filter((row) => row.trades > 0).sort((left, right) => left.expectancy - right.expectancy || left.winRate - right.winRate)[0] || null;
+}
+
+function getTradeHour(trade = {}) {
+  const time = String(trade.time || trade.open_time || trade.created_at || '').match(/(\d{1,2}):(\d{2})/);
+  if (time) return clamp(Number(time[1]), 0, 23);
+  const date = getTradeDateValue(trade);
+  if (!date || Number.isNaN(date.getTime())) return -1;
+  return date.getHours();
+}
+
+function getTradeWeekday(trade = {}) {
+  const date = getTradeDateValue(trade);
+  if (!date || Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+function getTradeWeekOfMonth(trade = {}) {
+  const date = getTradeDateValue(trade);
+  if (!date || Number.isNaN(date.getTime())) return 0;
+  return Math.min(5, Math.ceil(date.getDate() / 7));
+}
+
 function TradingViewEmbed({ symbol, interval, height = 640 }) {
   const containerRef = useRef(null);
   const [widgetFailed, setWidgetFailed] = useState(false);
@@ -677,6 +830,32 @@ function MiniStat({ label, value, caption = '', tone = C.text1 }) {
       </div>
       {caption ? <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.6 }}>{caption}</div> : null}
     </div>
+  );
+}
+
+function BacktestDataTable({ title, rows = [], tone = C.accent }) {
+  return (
+    <Card tone={tone} style={{ padding: '18px 18px 16px' }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>{title}</div>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {rows.length ? rows.map((row) => (
+          <div key={row.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 1fr) repeat(4, minmax(58px, auto))', alignItems: 'center', gap: 10, padding: '11px 12px', borderRadius: 14, border: `1px solid ${shade(row.pnl >= 0 ? C.green : C.danger, 0.13)}`, background: 'rgba(255,255,255,0.022)' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, color: C.text1, fontWeight: 900, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</div>
+              <div style={{ marginTop: 4, fontSize: 10.5, color: C.text3 }}>{row.trades} trades</div>
+            </div>
+            <div style={{ fontSize: 11.5, color: row.pnl >= 0 ? C.green : C.danger, fontWeight: 900 }}>{formatCompactMoney(row.pnl)}</div>
+            <div style={{ fontSize: 11.5, color: C.accent, fontWeight: 900 }}>{row.winRate}%</div>
+            <div style={{ fontSize: 11.5, color: C.purple, fontWeight: 900 }}>{row.avgRR}R</div>
+            <div style={{ fontSize: 11.5, color: tone, fontWeight: 900 }}>{formatCompactMoney(row.expectancy)}</div>
+          </div>
+        )) : (
+          <div style={{ padding: '15px 13px', borderRadius: 16, border: `1px dashed ${shade(C.borderHi, 0.82)}`, color: C.text2, fontSize: 12.5 }}>
+            No data yet.
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 
@@ -1284,6 +1463,7 @@ export default function Backtest({ ignoreSavedSessions = false }) {
   }, [savedSessions, tradeUniverse]);
 
   const metrics = useMemo(() => buildSessionMetrics(sessionDetails), [sessionDetails]);
+  const dataLab = useMemo(() => buildBacktestDataLab(sessionDetails, tradeUniverse), [sessionDetails, tradeUniverse]);
 
   const filteredSessions = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -1712,7 +1892,7 @@ export default function Backtest({ ignoreSavedSessions = false }) {
                       </div>
 
                       <div className="mf-bt-session-list">
-                        {filteredSessions.length ? filteredSessions.slice(0, 3).map((session) => (
+                        {filteredSessions.length ? filteredSessions.slice(0, 6).map((session) => (
                           <SessionCard
                             key={session.id}
                             session={session}
@@ -1865,56 +2045,150 @@ export default function Backtest({ ignoreSavedSessions = false }) {
           ) : null}
 
           {view === 'analytics' ? (
-            <div className="mf-bt-chart-grid">
-              <Card tone={C.purple} index={8} style={{ padding: '18px 18px 16px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Win rate by review month</div>
-                <div className="mf-bt-chart-frame" style={{ height: 280 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={timeInvestedChart}>
-                      <CartesianGrid {...CHART_GRID} />
-                      <XAxis dataKey="label" {...CHART_AXIS_SMALL} />
-                      <YAxis width={54} tickFormatter={(value) => `${value}%`} {...CHART_AXIS_SMALL} />
-                      <Tooltip
-                        cursor={chartCursor(C.purple)}
-                        content={({ active, payload = [], label }) => {
+            <div style={{ display: 'grid', gap: 16 }}>
+              <div className="mf-bt-chart-grid">
+                <Card tone={C.accent} index={8} style={{ padding: '18px 18px 16px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Backtest data source</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+                    <MiniStat label="Source" value={dataLab.sourceLabel} tone={C.text0} caption="Same stream used by replay" />
+                    <MiniStat label="Trades" value={String(dataLab.sortedTrades.length)} tone={C.accent} caption={`${sessionDetails.length} saved session(s)`} />
+                    <MiniStat label="Win rate" value={formatAnalyticsPercent(dataLab.summary.winRate || 0, 1)} tone={(dataLab.summary.winRate || 0) >= 50 ? C.green : C.warn} />
+                    <MiniStat label="Avg R:R" value={formatAnalyticsRR(dataLab.avgRR || 0)} tone={C.purple} />
+                  </div>
+                </Card>
+
+                <Card tone={C.green} index={9} style={{ padding: '18px 18px 16px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Best execution windows</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+                    <MiniStat label="Best hour" value={dataLab.bestHour?.label || '-'} tone={C.green} caption={dataLab.bestHour ? `${formatCompactMoney(dataLab.bestHour.expectancy)} expectancy` : 'Need data'} />
+                    <MiniStat label="Best day" value={dataLab.bestDay?.label || '-'} tone={C.accent} caption={dataLab.bestDay ? `${dataLab.bestDay.winRate}% win rate` : 'Need data'} />
+                    <MiniStat label="Best week" value={dataLab.bestWeek?.label || '-'} tone={C.gold} caption={dataLab.bestWeek ? `${dataLab.bestWeek.trades} trades` : 'Need data'} />
+                    <MiniStat label="Weakest hour" value={dataLab.worstHour?.label || '-'} tone={C.danger} caption={dataLab.worstHour ? `${formatCompactMoney(dataLab.worstHour.expectancy)} expectancy` : 'Need data'} />
+                  </div>
+                </Card>
+              </div>
+
+              <div className="mf-bt-data-grid">
+                <Card tone={C.accent} index={10} style={{ padding: '18px 18px 16px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Hour x day execution heatmap</div>
+                  <div className="mf-bt-table-scroll">
+                    <div className="mf-bt-density-grid">
+                      {dataLab.dayHourRows.flatMap((row) => row.cells.map((cell) => {
+                        const tone = cell.trades === 0 ? C.borderHi : cell.expectancy >= 0 ? C.green : C.danger;
+                        return (
+                          <div key={`${row.day}-${cell.hour}`} style={{ minHeight: 72, padding: 9, borderRadius: 14, border: `1px solid ${shade(tone, cell.trades ? 0.2 : 0.12)}`, background: cell.trades ? `linear-gradient(180deg, ${shade(tone, 0.13)}, rgba(255,255,255,0.018))` : 'rgba(255,255,255,0.018)' }}>
+                            <div style={{ fontSize: 10, fontWeight: 900, color: cell.trades ? tone : C.text3 }}>{row.day} {cell.hour}:00</div>
+                            <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, color: cell.trades ? tone : C.text3 }}>{cell.trades ? formatCompactMoney(cell.expectancy) : '-'}</div>
+                            <div style={{ marginTop: 3, fontSize: 10.5, color: C.text2 }}>{cell.trades} trades / {cell.winRate}%</div>
+                          </div>
+                        );
+                      }))}
+                    </div>
+                  </div>
+                </Card>
+
+                <Card tone={C.purple} index={11} style={{ padding: '18px 18px 16px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Week of month edge</div>
+                  <div className="mf-bt-chart-frame" style={{ height: 270 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dataLab.weekRows}>
+                        <CartesianGrid {...CHART_GRID} />
+                        <XAxis dataKey="label" {...CHART_AXIS_SMALL} />
+                        <YAxis width={64} tickFormatter={(value) => formatCompactMoney(value)} {...CHART_AXIS_SMALL} />
+                        <Tooltip cursor={chartCursor(C.purple)} content={({ active, payload = [], label }) => {
                           if (!active || !payload.length) return null;
+                          const row = payload[0]?.payload || {};
                           return (
                             <div style={{ ...chartTooltipStyle(C.purple), padding: '12px 13px' }}>
                               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>{label}</div>
-                              <div style={{ fontSize: 11.5, color: C.purple, fontWeight: 800 }}>{payload[0]?.value}%</div>
+                              <div style={{ fontSize: 11.5, color: C.purple, fontWeight: 800 }}>{formatCompactMoney(row.pnl || 0)} / {row.trades || 0} trades</div>
+                              <div style={{ fontSize: 11, color: C.text2, marginTop: 4 }}>{row.winRate || 0}% win rate</div>
                             </div>
                           );
-                        }}
-                      />
-                      <Line type="monotone" dataKey="winRate" stroke={C.purple} strokeWidth={2.3} dot={false} activeDot={chartActiveDot(C.purple)} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
+                        }} />
+                        <Bar dataKey="pnl" fill={C.purple} radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+              </div>
 
-              <Card tone={C.green} index={9} style={{ padding: '18px 18px 16px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Session P&L spread</div>
-                <div className="mf-bt-chart-frame" style={{ height: 280 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={filteredSessions}>
-                      <CartesianGrid {...CHART_GRID} />
-                      <XAxis dataKey="name" hide />
-                      <YAxis width={60} tickFormatter={(value) => formatCompactMoney(value)} {...CHART_AXIS_SMALL} />
-                      <Tooltip
-                        cursor={chartCursor(C.green)}
-                        content={({ active, payload = [], label }) => {
+              <div className="mf-bt-chart-grid">
+                <Card tone={C.warn} index={12} style={{ padding: '18px 18px 16px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Hourly expectancy</div>
+                  <div className="mf-bt-chart-frame" style={{ height: 280 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dataLab.hourlyRows}>
+                        <CartesianGrid {...CHART_GRID} />
+                        <XAxis dataKey="label" interval={2} {...CHART_AXIS_SMALL} />
+                        <YAxis width={64} tickFormatter={(value) => formatCompactMoney(value)} {...CHART_AXIS_SMALL} />
+                        <Tooltip cursor={chartCursor(C.warn)} content={({ active, payload = [], label }) => {
                           if (!active || !payload.length) return null;
+                          const row = payload[0]?.payload || {};
                           return (
-                            <div style={{ ...chartTooltipStyle(C.green), padding: '12px 13px' }}>
+                            <div style={{ ...chartTooltipStyle(C.warn), padding: '12px 13px' }}>
                               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>{label}</div>
-                              <div style={{ fontSize: 11.5, color: (payload[0]?.value || 0) >= 0 ? C.green : C.danger, fontWeight: 800 }}>{formatCompactMoney(payload[0]?.value || 0)}</div>
+                              <div style={{ fontSize: 11.5, color: C.warn, fontWeight: 800 }}>{formatCompactMoney(row.expectancy || 0)} expectancy</div>
+                              <div style={{ fontSize: 11, color: C.text2, marginTop: 4 }}>{row.trades || 0} trades / {row.winRate || 0}% WR</div>
                             </div>
                           );
-                        }}
-                      />
-                      <Bar dataKey="totalPnl" fill={C.green} radius={[7, 7, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                        }} />
+                        <Bar dataKey="expectancy" fill={C.warn} radius={[7, 7, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+
+                <Card tone={C.accent} index={13} style={{ padding: '18px 18px 16px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Symbol quality</div>
+                  <div className="mf-bt-chart-frame" style={{ height: 280 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dataLab.symbolRows} layout="vertical">
+                        <CartesianGrid {...CHART_GRID} />
+                        <XAxis type="number" tickFormatter={(value) => formatCompactMoney(value)} {...CHART_AXIS_SMALL} />
+                        <YAxis type="category" dataKey="label" width={88} {...CHART_AXIS_SMALL} />
+                        <Tooltip cursor={chartCursor(C.accent)} content={({ active, payload = [], label }) => {
+                          if (!active || !payload.length) return null;
+                          const row = payload[0]?.payload || {};
+                          return (
+                            <div style={{ ...chartTooltipStyle(C.accent), padding: '12px 13px' }}>
+                              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text3, marginBottom: 8 }}>{label}</div>
+                              <div style={{ fontSize: 11.5, color: C.accent, fontWeight: 800 }}>{formatCompactMoney(row.pnl || 0)}</div>
+                              <div style={{ fontSize: 11, color: C.text2, marginTop: 4 }}>{row.trades || 0} trades / {row.avgRR || 0}R avg</div>
+                            </div>
+                          );
+                        }} />
+                        <Bar dataKey="pnl" fill={C.accent} radius={[0, 7, 7, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="mf-bt-chart-grid">
+                <BacktestDataTable title="Setups by expectancy" rows={dataLab.setupRows} tone={C.green} />
+                <BacktestDataTable title="Market sessions" rows={dataLab.sessionRows} tone={C.blue} />
+              </div>
+
+              <Card tone={C.text1} index={16} style={{ padding: '18px 18px 16px' }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 14 }}>Saved session data</div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {dataLab.sessionSummaryRows.length ? dataLab.sessionSummaryRows.map((row) => (
+                    <div key={row.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) repeat(4, minmax(90px, auto))', gap: 12, alignItems: 'center', padding: '12px 13px', borderRadius: 14, border: `1px solid ${shade(C.borderHi, 0.72)}`, background: 'rgba(255,255,255,0.022)' }}>
+                      <div>
+                        <div style={{ fontSize: 12.5, fontWeight: 900, color: C.text1 }}>{row.label}</div>
+                        <div style={{ marginTop: 4, fontSize: 10.5, color: C.text3 }}>{row.assets}</div>
+                      </div>
+                      <div style={{ fontSize: 11.5, color: C.text2 }}>{row.trades} trades</div>
+                      <div style={{ fontSize: 11.5, color: row.pnl >= 0 ? C.green : C.danger, fontWeight: 900 }}>{formatCompactMoney(row.pnl)}</div>
+                      <div style={{ fontSize: 11.5, color: C.accent, fontWeight: 900 }}>{formatAnalyticsPercent(row.winRate, 0)}</div>
+                      <div style={{ fontSize: 11.5, color: C.text2 }}>{row.reviewed}</div>
+                    </div>
+                  )) : (
+                    <div style={{ padding: '16px 14px', borderRadius: 18, border: `1px dashed ${shade(C.borderHi, 0.82)}`, fontSize: 12.5, color: C.text2 }}>
+                      Create a replay session to generate session-level backtest data. Until then, Data Lab reads the All Trades fallback.
+                    </div>
+                  )}
                 </div>
               </Card>
             </div>
