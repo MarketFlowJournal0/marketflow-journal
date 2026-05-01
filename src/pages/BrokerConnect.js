@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTradingContext } from '../context/TradingContext';
 import { supabase } from '../lib/supabase';
 import { shade } from '../lib/colorAlpha';
-import { appUrl } from '../lib/appUrls';
 import { createBrokerAccount, fetchBrokerAccounts, markBrokerAccountConnected } from '../lib/brokerAccounts';
 import {
   ACCOUNT_ROLE_OPTIONS,
@@ -46,26 +45,19 @@ const C = {
   brd: 'var(--mf-border,#142033)',
 };
 
-const SYNC_ENDPOINT = appUrl('/api/broker-sync?mode=mt');
-const MT_LEGACY_ENDPOINT = appUrl('/api/mt-sync');
-const MT_PATH_ENDPOINT = appUrl('/api/mt/sync');
-const WEBHOOK_ENDPOINT = appUrl('/api/broker-sync?mode=webhook');
-const WEBHOOK_LEGACY_ENDPOINT = appUrl('/api/webhook-sync');
-const WEBHOOK_TOKEN_ENDPOINT = `${WEBHOOK_ENDPOINT}&token=YOUR_TOKEN`;
-
 const BROKERS = [
   {
     id: 'mt4',
     name: 'MetaTrader 4',
     short: 'MT4',
     color: 'var(--mf-accent,#14C9E5)',
-    desc: 'Real-time sync through the MarketFlow EA and token handshake.',
-    features: ['EA sync', 'Multi-account', 'Retry-safe'],
+    desc: 'MarketFlow Bridge connection for MT4 accounts, with file upload fallback when a broker blocks live access.',
+    features: ['Bridge sync', 'Multi-account', 'File fallback'],
     setup: [
-      'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
-      'Install the MarketFlow EA inside the MQL4 Experts folder.',
-      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. Legacy routes ${MT_LEGACY_ENDPOINT} and ${MT_PATH_ENDPOINT} are still active.`,
-      'Paste the token inside EA inputs and attach it to a live chart. The EA must POST api_token and trades[].',
+      'Use the integrated connection panel at the top of this page to create the account feed.',
+      'MarketFlow generates one scoped journal token per account and never asks for your broker password.',
+      'If your broker blocks direct sync, use File Upload in All Trades with the same broker account selected.',
+      'Live bridge payloads are accepted through the broker-sync endpoint, but the technical route stays hidden from the normal workflow.',
     ],
   },
   {
@@ -73,13 +65,13 @@ const BROKERS = [
     name: 'MetaTrader 5',
     short: 'MT5',
     color: 'var(--mf-green,#00D2B8)',
-    desc: 'Live MT5 synchronization with hedge-aware position handling.',
-    features: ['Live sync', 'Hedging', 'Netting'],
+    desc: 'MarketFlow Bridge connection for MT5 accounts with hedge/netting account support.',
+    features: ['Bridge sync', 'Hedging', 'Netting'],
     setup: [
-      'Create the broker account and copy the generated token. MarketFlow never asks for your broker password.',
-      'Install the MarketFlow EA in MQL5/Experts and compile it.',
-      `Allow WebRequest and whitelist ${SYNC_ENDPOINT}. Legacy routes ${MT_LEGACY_ENDPOINT} and ${MT_PATH_ENDPOINT} are still active.`,
-      'Attach the EA to a chart and paste the token in the inputs panel. The EA must POST api_token and trades[].',
+      'Use the integrated connection panel at the top of this page to create the account feed.',
+      'MarketFlow generates one scoped journal token per account and never asks for your broker password.',
+      'If your broker blocks direct sync, use File Upload in All Trades with the same broker account selected.',
+      'Live bridge payloads are accepted through the broker-sync endpoint, but the technical route stays hidden from the normal workflow.',
     ],
   },
   {
@@ -115,14 +107,53 @@ const BROKERS = [
     name: 'Interactive Brokers',
     short: 'IBKR',
     color: 'var(--mf-warn,#FFB31A)',
-    desc: 'Flex query imports with commission-aware statement support.',
+    desc: 'Flex query connection flow for statement-based importing without broker password access.',
     features: ['Flex query', 'Multi-currency', 'Statements'],
     setup: [
-      'Create an IBKR activity statement in CSV format.',
-      'Import the file through All Trades.',
-      'Use this broker slot to align the account inside the Elite copier desk.',
+      'Use the integrated Interactive Brokers form and provide the Flex token plus Activity Flex Query ID.',
+      'MarketFlow only imports activity history; it cannot execute orders or move funds.',
+      'If Flex is unavailable, keep this account and import the IBKR CSV from All Trades.',
     ],
     status: 'csv',
+  },
+  {
+    id: 'oanda',
+    name: 'Oanda',
+    short: 'OANDA',
+    color: 'var(--mf-blue,#4D7CFF)',
+    desc: 'Oanda REST account feed with practice/live environment selection.',
+    features: ['REST API', 'Forex', 'File fallback'],
+    setup: [
+      'Use the integrated Oanda form and choose practice or live.',
+      'MarketFlow stores the MarketFlow feed token separately from broker credentials.',
+      'If API permissions are unavailable, use File Upload in All Trades.',
+    ],
+  },
+  {
+    id: 'tradovate',
+    name: 'Tradovate',
+    short: 'TRDV',
+    color: 'var(--mf-purple,#A78BFA)',
+    desc: 'Futures account connection desk for approved API or export workflows.',
+    features: ['Futures', 'API key', 'File fallback'],
+    setup: [
+      'Use the integrated connection form and select demo or live.',
+      'MarketFlow imports execution history only; trading permissions are not requested.',
+      'If API access is not enabled on the broker side, use File Upload.',
+    ],
+  },
+  {
+    id: 'ninjatrader',
+    name: 'NinjaTrader',
+    short: 'NT',
+    color: 'var(--mf-gold,#D7B36A)',
+    desc: 'Futures and FX workflow for NinjaTrader exports or approved API bridge.',
+    features: ['Futures', 'FX', 'File fallback'],
+    setup: [
+      'Use the integrated connection form to create the account feed.',
+      'MarketFlow keeps broker credentials out of the journal UI unless a scoped provider token is available.',
+      'File Upload remains available for account history exports.',
+    ],
   },
   {
     id: 'webhook',
@@ -132,9 +163,9 @@ const BROKERS = [
     desc: 'Universal bridge for any platform capable of posting trade payloads.',
     features: ['Any platform', 'REST', 'Custom routing'],
     setup: [
-      'Create a webhook account and copy its API token. Keep it private and rotate it if exposed.',
-      `POST your fills to ${WEBHOOK_TOKEN_ENDPOINT} or send api_token in the JSON body. Legacy route ${WEBHOOK_LEGACY_ENDPOINT} is still active.`,
-      'Use the same connection as a master or follower feed inside Elite copier.',
+      'Use the integrated universal feed form to create a journal connection.',
+      'MarketFlow generates a scoped feed token and keeps the account isolated from other users.',
+      'Technical webhook routes stay available for developers, but the normal broker flow does not require manual endpoint setup.',
     ],
     status: 'webhook',
   },
@@ -142,7 +173,7 @@ const BROKERS = [
 
 const BROKER_MARKETS = ['All Markets', 'Stocks', 'Options', 'Futures', 'Forex', 'Crypto'];
 const POPULAR_BROKER_NAMES = ['cTrader', 'TopstepX', 'TradeLocker', 'Interactive Brokers', 'MetaTrader 4', 'MetaTrader 5', 'Thinkorswim', 'Tradovate'];
-const BROKER_CATALOG = [
+const BROKER_CATALOG = dedupeBrokerCatalog([
   brokerCatalogItem('Alpha Futures', ['Futures'], true, true, 'General'),
   brokerCatalogItem('Bybit', ['Futures', 'Crypto'], false, true, 'General'),
   brokerCatalogItem('Charles Schwab', ['Stocks', 'Options', 'Futures'], true, true, 'General'),
@@ -157,8 +188,8 @@ const BROKER_CATALOG = [
   brokerCatalogItem('MetaTrader 4', ['Stocks', 'Forex', 'Futures', 'Crypto'], true, true, 'General', 'mt4'),
   brokerCatalogItem('MetaTrader 5', ['Stocks', 'Forex', 'Futures', 'Crypto'], true, true, 'General', 'mt5'),
   brokerCatalogItem('MotiveWave', ['Stocks', 'Futures'], false, true, 'General'),
-  brokerCatalogItem('NinjaTrader', ['Stocks', 'Forex', 'Futures'], true, true, 'General'),
-  brokerCatalogItem('Oanda', ['Forex'], true, true, 'General', 'mt5'),
+  brokerCatalogItem('NinjaTrader', ['Stocks', 'Forex', 'Futures'], true, true, 'General', 'ninjatrader'),
+  brokerCatalogItem('Oanda', ['Forex'], true, true, 'General', 'oanda'),
   brokerCatalogItem('Power E Trade', ['Stocks', 'Options', 'Futures'], false, true, 'General'),
   brokerCatalogItem('Project X', ['Futures'], false, true, 'General'),
   brokerCatalogItem('Quantower', ['Futures', 'Crypto'], false, true, 'General'),
@@ -176,7 +207,7 @@ const BROKER_CATALOG = [
   brokerCatalogItem('TradeStation', ['Stocks', 'Options', 'Futures'], true, true, 'General'),
   brokerCatalogItem('TradeZero', ['Stocks', 'Options', 'Futures'], true, true, 'General'),
   brokerCatalogItem('TradingView Paper Trading', ['Stocks', 'Options', 'Forex', 'Futures', 'Crypto'], false, true, 'General', 'tradingview'),
-  brokerCatalogItem('Tradovate', ['Futures'], true, true, 'General'),
+  brokerCatalogItem('Tradovate', ['Futures'], true, true, 'General', 'tradovate'),
   brokerCatalogItem('Webull', ['Stocks', 'Options', 'Futures', 'Crypto'], false, true, 'General'),
   ...[
     'AAAFX', 'AAFX', 'Accuindex', 'ActivTrades', 'ACY Capital', 'Admiral Markets', 'ADN Broker', 'Advanced Markets',
@@ -192,7 +223,7 @@ const BROKER_CATALOG = [
     'Trade Nation', 'Traders Global Group', 'Traders Way', 'Tradeview', 'Trive', 'True Proprietary Funds',
     'Ultima Markets', 'Valutrades', 'Vantage', 'VT Markets', 'Weltrade', 'XM', 'XTB', 'YaMarkets', 'Zenfinex'
   ].map((name) => brokerCatalogItem(name, ['Forex'], true, true, 'MT4 / MT5 Forex Brokers', name.toLowerCase().includes('mt5') ? 'mt5' : 'mt4')),
-].sort((left, right) => left.name.localeCompare(right.name));
+]).sort((left, right) => left.name.localeCompare(right.name));
 
 function brokerCatalogItem(name, markets, autoSync = false, fileUpload = true, group = 'General', platformId = '') {
   return {
@@ -206,15 +237,197 @@ function brokerCatalogItem(name, markets, autoSync = false, fileUpload = true, g
   };
 }
 
+function dedupeBrokerCatalog(items = []) {
+  const seen = new Map();
+  items.forEach((item) => {
+    if (!item?.id) return;
+    const previous = seen.get(item.id);
+    if (!previous) {
+      seen.set(item.id, item);
+      return;
+    }
+    seen.set(item.id, {
+      ...previous,
+      markets: Array.from(new Set([...(previous.markets || []), ...(item.markets || [])])),
+      autoSync: Boolean(previous.autoSync || item.autoSync),
+      fileUpload: Boolean(previous.fileUpload || item.fileUpload),
+      group: previous.group || item.group,
+      platformId: previous.platformId || item.platformId,
+    });
+  });
+  return Array.from(seen.values());
+}
+
 function resolveCatalogPlatformId(item = {}) {
   if (item.platformId) return item.platformId;
   const name = String(item.name || '').toLowerCase();
   if (name.includes('metatrader 4') || name.includes('mt4')) return 'mt4';
   if (name.includes('metatrader 5') || name.includes('mt5')) return 'mt5';
   if (name.includes('ctrader')) return 'ctrader';
+  if (name.includes('oanda')) return 'oanda';
+  if (name.includes('tradovate')) return 'tradovate';
+  if (name.includes('ninja')) return 'ninjatrader';
   if (name.includes('interactive')) return 'ibkr';
   if (name.includes('tradingview')) return 'tradingview';
   return item.autoSync ? 'webhook' : 'webhook';
+}
+
+function buildInitialConnectionDraft(item = {}, method = '') {
+  const platformId = resolveCatalogPlatformId(item);
+  const label = item?.name ? `${item.name} Account` : '';
+  return {
+    accountLabel: label,
+    accountNumber: '',
+    serverName: item?.group || '',
+    environment: platformId === 'oanda' ? 'practice' : 'live',
+    flexToken: '',
+    flexQueryId: '',
+    apiToken: '',
+    apiKey: '',
+    accountId: '',
+    sourceName: item?.name || '',
+    baseCurrency: 'USD',
+    importFormat: method === 'file' ? 'CSV / Excel' : '',
+  };
+}
+
+function getConnectionBlueprint(item = {}, method = '') {
+  if (!item || !method) return null;
+  const platformId = resolveCatalogPlatformId(item);
+  const markets = item.markets || [];
+  const commonSecurity = [
+    'MarketFlow never asks for your broker password.',
+    'The journal imports execution history only; it cannot place orders or move funds.',
+    'Auto Sync is only enabled when the selected broker exposes a compatible API, Flex report, token, or bridge flow.',
+  ];
+
+  if (method === 'file') {
+    return {
+      key: 'file',
+      title: 'File Upload',
+      subtitle: `Create a clean ${item.name} account slot, then import CSV, Excel, or broker exports in All Trades.`,
+      connectLabel: 'Create account and open importer',
+      status: 'disconnected',
+      markets,
+      fields: [
+        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Main`, required: true },
+        { id: 'accountNumber', label: 'Account number', placeholder: 'Optional broker account ID' },
+        { id: 'importFormat', label: 'Import format', type: 'select', options: ['CSV / Excel', 'Broker statement', 'Generic structured file'], required: true },
+      ],
+      security: commonSecurity,
+      guide: 'Use File Upload when a broker does not expose a safe auto-sync API or when you want to import a historical export first.',
+    };
+  }
+
+  if (method === 'manual') {
+    return {
+      key: 'manual',
+      title: 'Manual Account',
+      subtitle: `Create a ${item.name} journal account and add trades manually from All Trades.`,
+      connectLabel: 'Create manual account',
+      status: 'disconnected',
+      markets,
+      fields: [
+        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Manual`, required: true },
+        { id: 'accountNumber', label: 'Account number', placeholder: 'Optional broker account ID' },
+        { id: 'baseCurrency', label: 'Base currency', type: 'select', options: ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF'], required: true },
+      ],
+      security: commonSecurity,
+      guide: 'Manual accounts are useful for brokers without export files, prop accounts with limited portals, or fast trade reviews.',
+    };
+  }
+
+  if (platformId === 'ibkr') {
+    return {
+      key: 'ibkr-flex',
+      title: 'Interactive Brokers Flex Sync',
+      subtitle: 'Connect an IBKR activity feed with Flex Token and Activity Flex Query ID, directly inside MarketFlow.',
+      connectLabel: 'Connect IBKR feed',
+      status: 'ready',
+      markets,
+      fields: [
+        { id: 'accountLabel', label: 'Account label', placeholder: 'IBKR Main', required: true },
+        { id: 'flexToken', label: 'Flex token', placeholder: 'Paste IBKR Flex token', required: true, secret: true },
+        { id: 'flexQueryId', label: 'Activity Flex Query ID', placeholder: '123456', required: true },
+        { id: 'accountNumber', label: 'IBKR account number', placeholder: 'U1234567' },
+      ],
+      security: commonSecurity,
+      guide: 'IBKR sync is statement-based through Flex reports. MarketFlow reads activity history and keeps execution permissions out of scope.',
+    };
+  }
+
+  if (platformId === 'oanda') {
+    return {
+      key: 'oanda-rest',
+      title: 'Oanda REST Sync',
+      subtitle: 'Connect an Oanda practice or live account with scoped REST credentials.',
+      connectLabel: 'Connect Oanda feed',
+      status: 'ready',
+      markets,
+      fields: [
+        { id: 'accountLabel', label: 'Account label', placeholder: 'Oanda London', required: true },
+        { id: 'accountId', label: 'Oanda account ID', placeholder: '101-001-1234567-001', required: true },
+        { id: 'apiToken', label: 'API token', placeholder: 'Paste scoped Oanda token', required: true, secret: true },
+        { id: 'environment', label: 'Environment', type: 'select', options: ['practice', 'live'], required: true },
+      ],
+      security: commonSecurity,
+      guide: 'Oanda accounts use practice/live environments. MarketFlow only needs read/import permissions for journal sync.',
+    };
+  }
+
+  if (platformId === 'mt4' || platformId === 'mt5') {
+    return {
+      key: `${platformId}-bridge`,
+      title: `${platformId.toUpperCase()} MarketFlow Bridge`,
+      subtitle: `Create the ${platformId.toUpperCase()} feed in MarketFlow. If live bridge is unavailable, keep the same account for File Upload.`,
+      connectLabel: 'Create bridge feed',
+      status: 'ready',
+      markets,
+      fields: [
+        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Main`, required: true },
+        { id: 'accountNumber', label: 'Account number', placeholder: '50123456', required: true },
+        { id: 'serverName', label: 'Server / prop environment', placeholder: 'Broker-Live01', required: true },
+      ],
+      security: commonSecurity,
+      guide: 'MT4/MT5 brokers vary. MarketFlow creates the feed and token inside the journal; the broker-side bridge can be attached later without changing the account.',
+    };
+  }
+
+  if (platformId === 'tradovate' || platformId === 'ninjatrader') {
+    return {
+      key: `${platformId}-api`,
+      title: `${item.name} API / Export Sync`,
+      subtitle: 'Use an approved broker token when available, or keep the account ready for file-based futures imports.',
+      connectLabel: `Connect ${item.name}`,
+      status: 'ready',
+      markets,
+      fields: [
+        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Futures`, required: true },
+        { id: 'accountNumber', label: 'Account ID', placeholder: 'Broker account ID', required: true },
+        { id: 'apiKey', label: 'API key / access token', placeholder: 'Optional if File Upload only', secret: true },
+        { id: 'environment', label: 'Environment', type: 'select', options: ['demo', 'live'], required: true },
+      ],
+      security: commonSecurity,
+      guide: 'Futures platforms often require account-level API approval. MarketFlow keeps File Upload available whenever direct sync is not approved yet.',
+    };
+  }
+
+  return {
+    key: 'universal',
+    title: `${item.name} Sync`,
+    subtitle: 'Create a universal MarketFlow feed for API, webhook, export, or future provider sync.',
+    connectLabel: `Connect ${item.name}`,
+    status: 'ready',
+    markets,
+    fields: [
+      { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Main`, required: true },
+      { id: 'accountNumber', label: 'Account number', placeholder: 'Broker account ID' },
+      { id: 'apiKey', label: 'API key / provider token', placeholder: 'Optional when supported', secret: true },
+      { id: 'serverName', label: 'Server / platform', placeholder: item.group || item.name },
+    ],
+    security: commonSecurity,
+    guide: 'Universal feeds are used for brokers with custom exports, provider APIs, or webhook-capable platforms. Unsupported brokers should use File Upload first.',
+  };
 }
 
 const ICON = {
@@ -381,6 +594,7 @@ function sizingModeLabel(value) {
 
 function statusTone(status) {
   if (status === 'connected' || status === 'ready' || status === 'active') return { color: C.green, bg: shade(C.green, 0.12), border: shade(C.green, 0.22) };
+  if (status === 'pending' || status === 'queued') return { color: C.cyan, bg: shade(C.cyan, 0.1), border: shade(C.cyan, 0.18) };
   if (status === 'warning' || status === 'watch') return { color: C.warn, bg: shade(C.warn, 0.12), border: shade(C.warn, 0.22) };
   if (status === 'blocked' || status === 'offline') return { color: C.danger, bg: shade(C.danger, 0.12), border: shade(C.danger, 0.22) };
   return { color: C.t2, bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.06)' };
@@ -595,6 +809,8 @@ function BrokerConnect() {
   const [marketFilter, setMarketFilter] = useState('All Markets');
   const [selectedCatalogBroker, setSelectedCatalogBroker] = useState(null);
   const [selectedImportMethod, setSelectedImportMethod] = useState('');
+  const [connectionDraft, setConnectionDraft] = useState(() => buildInitialConnectionDraft());
+  const [connectionSubmitting, setConnectionSubmitting] = useState(false);
 
   const [copierLoaded, setCopierLoaded] = useState(false);
   const [copierState, setCopierState] = useState(() => normalizeTradeCopierState({}));
@@ -630,6 +846,10 @@ function BrokerConnect() {
   const popularCatalog = useMemo(() => POPULAR_BROKER_NAMES
     .map((name) => BROKER_CATALOG.find((broker) => broker.name.toLowerCase() === name.toLowerCase()))
     .filter(Boolean), []);
+  const connectionBlueprint = useMemo(
+    () => getConnectionBlueprint(selectedCatalogBroker, selectedImportMethod),
+    [selectedCatalogBroker, selectedImportMethod]
+  );
 
   const fetchAccounts = useCallback(async () => {
     if (!user?.id) {
@@ -689,6 +909,10 @@ function BrokerConnect() {
     }
   }, [dispatchForm.masterAccountId, masterAccounts]);
 
+  useEffect(() => {
+    setConnectionDraft(buildInitialConnectionDraft(selectedCatalogBroker, selectedImportMethod));
+  }, [selectedCatalogBroker, selectedImportMethod]);
+
   async function handleAddBroker(event) {
     event.preventDefault();
     if (!brokerForm.account_number.trim()) {
@@ -713,10 +937,85 @@ function BrokerConnect() {
       return;
     }
 
-    toast.success('Broker account created. Copy the token and finish the platform setup.');
+    toast.success('Broker account created. MarketFlow generated a scoped journal token.');
     setBrokerForm(initialBrokerForm());
     setShowBrokerForm(false);
     fetchAccounts();
+  }
+
+  async function handleIntegratedConnectionSubmit(event) {
+    event.preventDefault();
+    if (!user?.id) {
+      toast.error('Sign in required.');
+      return;
+    }
+    if (!selectedCatalogBroker || !selectedImportMethod || !connectionBlueprint) {
+      toast.error('Choose a broker and connection method first.');
+      return;
+    }
+
+    const missingField = (connectionBlueprint.fields || []).find((field) => (
+      field.required && !String(connectionDraft[field.id] || '').trim()
+    ));
+    if (missingField) {
+      toast.error(`${missingField.label} required.`);
+      return;
+    }
+
+    const platformId = resolveCatalogPlatformId(selectedCatalogBroker);
+    const token = generateToken();
+    const accountNumber = String(
+      connectionDraft.accountNumber
+      || connectionDraft.accountId
+      || connectionDraft.flexQueryId
+      || selectedCatalogBroker.id
+    ).trim();
+    const accountName = String(connectionDraft.accountLabel || selectedCatalogBroker.name).trim();
+    const serverName = String(
+      connectionDraft.serverName
+      || connectionDraft.environment
+      || connectionBlueprint.title
+    ).trim();
+
+    setConnectionSubmitting(true);
+    try {
+      const createdAccount = await createBrokerAccount(supabase, {
+        user_id: user.id,
+        broker_type: platformId,
+        account_number: accountNumber,
+        account_name: accountName,
+        server_name: serverName,
+        api_token: token,
+        status: connectionBlueprint.status || 'pending',
+      });
+
+      if (typeof window !== 'undefined') {
+        const safeDraft = {};
+        (connectionBlueprint.fields || []).forEach((field) => {
+          if (!field.secret) safeDraft[field.id] = connectionDraft[field.id] || '';
+        });
+        window.localStorage.setItem(`mfj_broker_connection_${createdAccount.id || token}`, JSON.stringify({
+          broker: selectedCatalogBroker.name,
+          brokerId: selectedCatalogBroker.id,
+          platformId,
+          method: selectedImportMethod,
+          blueprint: connectionBlueprint.key,
+          markets: selectedCatalogBroker.markets || [],
+          fields: safeDraft,
+          createdAt: new Date().toISOString(),
+        }));
+      }
+
+      toast.success(selectedImportMethod === 'file'
+        ? 'Account created. Open All Trades to import the broker file.'
+        : 'Connection created inside MarketFlow. First broker data sync will update this feed automatically.');
+      setShowBrokerForm(false);
+      fetchAccounts();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setConnectionSubmitting(false);
+    }
   }
 
   async function handleDeleteBroker(id) {
@@ -758,7 +1057,7 @@ function BrokerConnect() {
       toast.success(`${payload.inserted || 0} trade(s) synced.`);
       fetchAccounts();
     } catch {
-      toast.error('Connection failed. Re-check the platform setup and endpoint permissions.');
+      toast.error('Connection failed. Re-check the broker feed and try again.');
     } finally {
       setSyncingId(null);
     }
@@ -784,24 +1083,8 @@ function BrokerConnect() {
       return;
     }
 
-    const platformId = resolveCatalogPlatformId(item);
-    setBrokerForm((current) => ({
-      ...current,
-      broker_type: platformId,
-      account_name: current.account_name || item.name,
-      server_name: current.server_name || item.group,
-    }));
-    setShowBrokerForm(true);
-
-    const broker = BROKERS.find((entry) => entry.id === platformId) || BROKERS.find((entry) => entry.id === 'webhook') || BROKERS[0];
-    if (method === 'file') {
-      toast.success('File Upload selected. Create the account token here, then import the broker CSV in All Trades.');
-    } else if (method === 'manual') {
-      toast.success('Manual selected. Create the account token here, then add trades manually in All Trades.');
-    } else {
-      toast.success('Auto Sync selected. Generate a token and follow the setup guide.');
-    }
-    openSetup(broker);
+    setConnectionDraft(buildInitialConnectionDraft(item, method));
+    toast.success('Connection form ready inside MarketFlow.');
   }
 
   function openAccountEditor(account = null) {
@@ -1110,7 +1393,7 @@ function BrokerConnect() {
             </div>
 
             {[
-              { id: 'auto', title: 'Auto Sync', body: 'Token, EA, API, Flex, webhook or provider-approved bridge.', available: Boolean(selectedCatalogBroker?.autoSync), recommended: selectedCatalogBroker?.autoSync },
+              { id: 'auto', title: 'Auto Sync', body: 'Broker API, Flex report, webhook, or provider-approved bridge when available.', available: Boolean(selectedCatalogBroker?.autoSync), recommended: selectedCatalogBroker?.autoSync },
               { id: 'file', title: 'File Upload', body: 'Upload CSV, Excel or broker export through All Trades.', available: Boolean(selectedCatalogBroker?.fileUpload), recommended: !selectedCatalogBroker?.autoSync },
               { id: 'manual', title: 'Add manually', body: 'Create the account now and add trades one by one.', available: Boolean(selectedCatalogBroker), recommended: false },
             ].map((method) => (
@@ -1139,10 +1422,90 @@ function BrokerConnect() {
               </button>
             ))}
 
-            <ActionButton onClick={() => beginCatalogConnection()} disabled={!selectedCatalogBroker || !selectedImportMethod} style={{ justifyContent: 'center', opacity: (!selectedCatalogBroker || !selectedImportMethod) ? 0.55 : 1 }}>
-              Continue connection
-              <ICON.ArrowUpRight />
-            </ActionButton>
+            <AnimatePresence>
+              {connectionBlueprint ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.18 }}
+                  style={{
+                    marginTop: 2,
+                    padding: 16,
+                    borderRadius: 22,
+                    border: `1px solid ${shade(C.cyan, 0.18)}`,
+                    background: 'linear-gradient(180deg, rgba(7,13,23,0.96), rgba(4,8,15,0.98))',
+                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.035), 0 18px 44px ${shade(C.cyan, 0.08)}`,
+                  }}
+                >
+                  <div style={{ height: 3, borderRadius: 999, background: `linear-gradient(90deg, ${C.cyan}, ${C.green})`, marginBottom: 16 }} />
+                  <div style={{ display: 'grid', gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 900, color: C.t3, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Add trades</div>
+                      <div style={{ marginTop: 6, fontSize: 22, fontWeight: 950, color: C.t0, letterSpacing: '-0.05em' }}>{connectionBlueprint.title}</div>
+                      <div style={{ marginTop: 7, fontSize: 12.5, lineHeight: 1.65, color: C.t2 }}>{connectionBlueprint.subtitle}</div>
+                    </div>
+
+                    <form onSubmit={handleIntegratedConnectionSubmit} style={{ display: 'grid', gap: 12 }}>
+                      {(connectionBlueprint.fields || []).map((field) => (
+                        <Field key={field.id} label={field.label} hint={field.secret ? 'Sensitive field' : field.required ? 'Required' : 'Optional'}>
+                          {field.type === 'select' ? (
+                            <select
+                              value={connectionDraft[field.id] || field.options?.[0] || ''}
+                              onChange={(event) => setConnectionDraft((current) => ({ ...current, [field.id]: event.target.value }))}
+                              style={inputStyle()}
+                            >
+                              {(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                          ) : (
+                            <input
+                              type={field.secret ? 'password' : 'text'}
+                              value={connectionDraft[field.id] || ''}
+                              onChange={(event) => setConnectionDraft((current) => ({ ...current, [field.id]: event.target.value }))}
+                              placeholder={field.placeholder}
+                              autoComplete="off"
+                              style={inputStyle()}
+                            />
+                          )}
+                        </Field>
+                      ))}
+
+                      <ActionButton type="submit" disabled={connectionSubmitting} style={{ justifyContent: 'center', opacity: connectionSubmitting ? 0.72 : 1 }}>
+                        <ICON.Plug />
+                        {connectionSubmitting ? 'Connecting...' : connectionBlueprint.connectLabel}
+                      </ActionButton>
+                    </form>
+
+                    <div style={{ padding: 13, borderRadius: 16, border: `1px solid ${shade(C.t3, 0.12)}`, background: 'rgba(255,255,255,0.025)' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12 }}>
+                        {(connectionBlueprint.markets || []).map((market) => (
+                          <span key={market} style={{ padding: '4px 8px', borderRadius: 999, background: shade(C.cyan, 0.08), border: `1px solid ${shade(C.cyan, 0.12)}`, color: C.t1, fontSize: 10.5, fontWeight: 800 }}>
+                            {market}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        {(connectionBlueprint.security || []).map((line) => (
+                          <div key={line} style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr)', gap: 8, alignItems: 'start', fontSize: 11.5, lineHeight: 1.55, color: C.t2 }}>
+                            <span style={{ width: 16, height: 16, borderRadius: '50%', display: 'grid', placeItems: 'center', color: C.green, background: shade(C.green, 0.1), border: `1px solid ${shade(C.green, 0.14)}`, fontSize: 8, fontWeight: 900 }}>OK</span>
+                            <span>{line}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <details style={{ marginTop: 12, color: C.t2, fontSize: 11.5, lineHeight: 1.6 }}>
+                        <summary style={{ cursor: 'pointer', color: C.t1, fontWeight: 800 }}>Integration guide</summary>
+                        <div style={{ marginTop: 8 }}>{connectionBlueprint.guide}</div>
+                      </details>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <ActionButton onClick={() => beginCatalogConnection()} disabled={!selectedCatalogBroker || !selectedImportMethod} style={{ justifyContent: 'center', opacity: (!selectedCatalogBroker || !selectedImportMethod) ? 0.55 : 1 }}>
+                  Continue connection
+                  <ICON.ArrowUpRight />
+                </ActionButton>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -1151,7 +1514,7 @@ function BrokerConnect() {
         <SectionHeader
           eyebrow="Broker Sync"
           title="Connection desk"
-          description="Create broker feeds, generate tokens, and prepare each platform for live synchronization. The same connected accounts can then be promoted into the Elite copier structure."
+          description="Manage connected broker feeds without leaving MarketFlow. Direct API, file imports, manual accounts, and Elite copier accounts all stay linked to the same journal data layer."
           actions={(
             <>
               <ActionButton tone="subtle" onClick={handleJournalBackup}>
@@ -1169,19 +1532,19 @@ function BrokerConnect() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
           {[
             {
-              label: 'MarketFlow EA',
-              value: SYNC_ENDPOINT,
-              body: 'MT4/MT5 posts api_token and trades[]. Empty heartbeats update last sync; duplicate tickets are skipped.',
+              label: 'Direct API / approved sync',
+              value: 'Available only when the broker exposes a compatible read-only feed.',
+              body: 'Use this for brokers like IBKR Flex, Oanda REST, Tradovate-style APIs, or platform-approved bridge connections.',
             },
             {
-              label: 'Compatibility path',
-              value: `${MT_LEGACY_ENDPOINT} / ${MT_PATH_ENDPOINT}`,
-              body: 'Same payload, routed to the consolidated broker-sync function for older EA builds.',
+              label: 'File upload fallback',
+              value: 'CSV, Excel, statements, and structured broker exports.',
+              body: 'When auto sync is not safe or not available, MarketFlow keeps the same broker account and imports the history from All Trades.',
             },
             {
-              label: 'Universal webhook',
-              value: WEBHOOK_TOKEN_ENDPOINT,
-              body: 'For cBots, bridges, prop dashboards, and custom platforms that can POST structured fills.',
+              label: 'Manual account',
+              value: 'For unsupported brokers, prop dashboards, and review-only workflows.',
+              body: 'Create the account, add trades manually, then keep analytics, calendar, psychology, and reports connected to that account.',
             },
           ].map((item) => (
             <div key={item.label} style={{ padding: 14, borderRadius: 18, border: `1px solid ${shade(C.t3, 0.13)}`, background: 'rgba(255,255,255,0.026)', minWidth: 0 }}>
@@ -1197,7 +1560,7 @@ function BrokerConnect() {
                   color: C.t1,
                   borderRadius: 12,
                   padding: '9px 10px',
-                  fontFamily: 'monospace',
+                  fontFamily: 'inherit',
                   fontSize: 11,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -1245,7 +1608,7 @@ function BrokerConnect() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(320px, 0.85fr)', gap: 18 }}>
           <div style={{ display: 'grid', gap: 12 }}>
             {loading ? (
-              <div style={{ ...pageCardStyle({ padding: 28, borderRadius: 18, color: C.t2 }) }}>Loading broker connections…</div>
+              <div style={{ ...pageCardStyle({ padding: 28, borderRadius: 18, color: C.t2 }) }}>Loading broker connections...</div>
             ) : brokerAccounts.length === 0 ? (
               <div style={{ ...pageCardStyle({ padding: 30, borderRadius: 18 }) }}>
                 <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
@@ -1303,12 +1666,12 @@ function BrokerConnect() {
                       {(account.broker_type === 'mt4' || account.broker_type === 'mt5') ? (
                         <ActionButton tone="subtle" onClick={() => handleSyncBroker(account.id)} disabled={syncingId === account.id} style={{ minWidth: 130, justifyContent: 'center' }}>
                           <ICON.Network />
-                          {syncingId === account.id ? 'Syncing…' : 'Sync now'}
+                          {syncingId === account.id ? 'Syncing...' : 'Sync now'}
                         </ActionButton>
                       ) : null}
                       <ActionButton tone="subtle" onClick={() => openSetup(broker)} style={{ minWidth: 130, justifyContent: 'center' }}>
                         <ICON.Spark />
-                        Setup guide
+                        Connection details
                       </ActionButton>
                       <ActionButton tone="danger" onClick={() => handleDeleteBroker(account.id)} disabled={deletingId === account.id} style={{ minWidth: 130, justifyContent: 'center' }}>
                         <ICON.Trash />
@@ -1323,7 +1686,7 @@ function BrokerConnect() {
 
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ ...pageCardStyle({ padding: 18, borderRadius: 18 }) }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.t0 }}>Supported platforms</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.t0 }}>Connection methods</div>
               <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
                 {BROKERS.map((broker) => (
                   <button key={broker.id} onClick={() => openSetup(broker)} style={{ textAlign: 'left', width: '100%', padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.025)', border: `1px solid ${shade(C.t3, 0.14)}`, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -1964,7 +2327,7 @@ function BrokerConnect() {
                   <div style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 10px', borderRadius: 999, background: shade(selectedBroker.color, 0.12), border: `1px solid ${shade(selectedBroker.color, 0.18)}`, color: selectedBroker.color, fontSize: 11, fontWeight: 700 }}>
                     {selectedBroker.short}
                   </div>
-                  <div style={{ marginTop: 12, fontSize: 24, fontWeight: 800, letterSpacing: '-0.05em', color: C.t0 }}>{selectedBroker.name} setup</div>
+                  <div style={{ marginTop: 12, fontSize: 24, fontWeight: 800, letterSpacing: '-0.05em', color: C.t0 }}>{selectedBroker.name} connection</div>
                   <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: C.t2 }}>{selectedBroker.desc}</div>
                 </div>
                 <ActionButton tone="subtle" onClick={() => setSetupOpen(false)}>Close</ActionButton>

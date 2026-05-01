@@ -6,10 +6,12 @@ It is not a Next.js project.
 ## Current Safe Production Structure
 
 - `marketflowjournal.com` -> active public site and journal fallback.
-- `www.marketflowjournal.com` -> should redirect to `marketflowjournal.com` once the DNS record exists.
-- `app.marketflowjournal.com` -> future connected journal workspace, enabled only after DNS is valid.
+- `www.marketflowjournal.com` -> future official marketing site once DNS exists.
+- `app.marketflowjournal.com` -> future connected journal workspace once DNS exists.
 
 Important: `www.marketflowjournal.com` and `app.marketflowjournal.com` currently return DNS `NXDOMAIN` until records are created. Code cannot fix NXDOMAIN; DNS must be added first.
+
+The deployment intentionally does not redirect `marketflowjournal.com` to `www.marketflowjournal.com` yet. Redirecting before `www` resolves would break the live site again.
 
 ## DNS Records To Add
 
@@ -35,13 +37,13 @@ Do not add an `A` record for `www` or `app`; both should be CNAME records.
    - `https://marketflowjournal.com/auth/callback`
    - `https://www.marketflowjournal.com/auth/callback`
    - `https://app.marketflowjournal.com/auth/callback`
-6. Only then set app-domain flags to true and redeploy:
+6. Only then set the public/app domain values and app-domain flags, then redeploy:
 
 ```env
-REACT_APP_PUBLIC_SITE_URL=https://marketflowjournal.com
+REACT_APP_PUBLIC_SITE_URL=https://www.marketflowjournal.com
 REACT_APP_APP_URL=https://app.marketflowjournal.com
 REACT_APP_ENABLE_APP_DOMAIN=true
-NEXT_PUBLIC_SITE_URL=https://marketflowjournal.com
+NEXT_PUBLIC_SITE_URL=https://www.marketflowjournal.com
 NEXT_PUBLIC_APP_URL=https://app.marketflowjournal.com
 APP_URL=https://app.marketflowjournal.com
 ENABLE_APP_DOMAIN=true
@@ -49,6 +51,12 @@ SUPPORT_EMAIL=support@marketflowjournal.com
 ```
 
 Before DNS is ready, keep both app-domain flags set to `false`.
+
+After both subdomains are valid in Vercel, set the Vercel Domains preference so:
+
+- `www.marketflowjournal.com` is the primary marketing domain.
+- `app.marketflowjournal.com` is assigned to the same deployment and handled by app routing.
+- `marketflowjournal.com` can redirect to `https://www.marketflowjournal.com` only after `www` is confirmed live.
 
 ## Verification
 
@@ -61,6 +69,6 @@ Before enabling app mode:
 
 After DNS and flags are active:
 
-- `https://www.marketflowjournal.com` redirects to `https://marketflowjournal.com`.
+- `https://www.marketflowjournal.com` loads the landing site.
 - `https://app.marketflowjournal.com/dashboard` loads the app entry and asks for login if needed.
 - Pricing checkout returns to `https://app.marketflowjournal.com/welcome`.

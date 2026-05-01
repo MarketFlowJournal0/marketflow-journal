@@ -1,12 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.marketflowjournal.com" }],
-      "destination": "https://marketflowjournal.com/:path*",
-      "permanent": true
-    }
-  ],
   "crons": [
     {
       "path": "/api/cron/leaderboard-refresh",
