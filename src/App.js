@@ -300,6 +300,78 @@ class BacktestSafetyBoundary extends React.Component {
   }
 }
 
+class BrokerConnectSafetyBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, resetKey: 0 };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[MarketFlow Broker Connect crash]', error, info);
+  }
+
+  resetLocalBrokerDesk = () => {
+    try {
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('mf_trade_copier_v1_') || key.startsWith('mfj_broker_connection_'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch (_) {}
+    this.setState((current) => ({ error: null, resetKey: current.resetKey + 1 }));
+  };
+
+  render() {
+    if (!this.state.error) {
+      return React.cloneElement(this.props.children, { key: this.state.resetKey });
+    }
+
+    return (
+      <div style={{ padding: '34px 34px 72px', maxWidth: 980, margin: '0 auto', color: 'var(--mf-text-1,#E8EEFF)' }}>
+        <div style={{
+          border: '1px solid rgba(20,201,229,0.20)',
+          borderRadius: 24,
+          padding: 24,
+          background: 'linear-gradient(180deg, rgba(10,17,28,0.96), rgba(5,9,16,0.98))',
+          boxShadow: '0 24px 70px rgba(0,0,0,0.30)',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--mf-accent,#14C9E5)', marginBottom: 10 }}>
+            Broker Connect protected
+          </div>
+          <h1 style={{ margin: 0, fontSize: 30, letterSpacing: '-0.05em' }}>Broker Connect was recovered before the journal could crash.</h1>
+          <p style={{ margin: '12px 0 0', color: 'var(--mf-text-2,#8EA4C8)', lineHeight: 1.7, fontSize: 13.5 }}>
+            MarketFlow isolated a local broker desk error. Your trades and subscription access are untouched.
+          </p>
+          {this.state.error?.message ? (
+            <details style={{ marginTop: 14, color: 'var(--mf-text-2,#8EA4C8)', fontSize: 12 }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 800, color: 'var(--mf-text-1,#E8EEFF)' }}>Technical detail</summary>
+              <div style={{ marginTop: 8 }}>{this.state.error.message}</div>
+            </details>
+          ) : null}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 18 }}>
+            <button
+              type="button"
+              onClick={this.resetLocalBrokerDesk}
+              style={{ border: 0, borderRadius: 999, padding: '11px 15px', background: 'linear-gradient(135deg, var(--mf-accent,#14C9E5), var(--mf-green,#00D2B8))', color: '#01040A', fontWeight: 950, cursor: 'pointer' }}
+            >
+              Reset local broker desk
+            </button>
+            <button
+              type="button"
+              onClick={() => this.setState((current) => ({ error: null, resetKey: current.resetKey + 1 }))}
+              style={{ border: '1px solid rgba(255,255,255,0.12)', borderRadius: 999, padding: '11px 15px', background: 'rgba(255,255,255,0.035)', color: 'var(--mf-text-1,#E8EEFF)', fontWeight: 900, cursor: 'pointer' }}
+            >
+              Retry Broker Connect
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
 // Layout principal avec sidebar
 function AppLayout({ user, onLogout }) {
   const navigate = useNavigate();
@@ -368,7 +440,15 @@ function AppLayout({ user, onLogout }) {
               <Route path="/equity" element={renderProtectedRoute('equity', <Equity />)} />
               <Route path="/psychology" element={renderProtectedRoute('psychology', <Psychology />)} />
               <Route path="/ai-chat" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/broker-connect" element={renderProtectedRoute('broker-connect', <BrokerConnect />)} />
+              <Route
+                path="/broker-connect"
+                element={renderProtectedRoute(
+                  'broker-connect',
+                  <BrokerConnectSafetyBoundary userId={effectiveUser?.id}>
+                    <BrokerConnect />
+                  </BrokerConnectSafetyBoundary>
+                )}
+              />
               <Route
                 path="/account-settings"
                 element={renderProtectedRoute('account-settings', <AccountSettings user={effectiveUser} onBack={() => navigate(fallbackRoute)} />)}

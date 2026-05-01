@@ -549,11 +549,20 @@ function maskToken(token = '') {
 
 function timeAgo(date) {
   if (!date) return 'Never';
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  const timestamp = new Date(date).getTime();
+  if (!Number.isFinite(timestamp)) return 'Never';
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+function safeDateLabel(date) {
+  if (!date) return 'Unknown';
+  const parsed = new Date(date);
+  if (!Number.isFinite(parsed.getTime())) return 'Unknown';
+  return parsed.toLocaleDateString('en-GB');
 }
 
 function money(value) {
@@ -580,8 +589,36 @@ function downloadJson(payload, filename) {
 }
 
 function copyText(value, successMessage = 'Copied.') {
-  navigator.clipboard.writeText(value);
+  if (navigator?.clipboard?.writeText) {
+    navigator.clipboard.writeText(String(value || '')).catch(() => {});
+  } else if (typeof document !== 'undefined') {
+    const textarea = document.createElement('textarea');
+    textarea.value = String(value || '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(textarea);
+  }
   toast.success(successMessage);
+}
+
+function sanitizeBrokerAccounts(accounts = []) {
+  if (!Array.isArray(accounts)) return [];
+  return accounts
+    .filter((account) => account && typeof account === 'object')
+    .map((account) => ({
+      ...account,
+      id: account.id || account.api_token || `${account.broker_type || 'broker'}-${account.account_number || 'account'}`,
+      broker_type: account.broker_type || 'webhook',
+      account_name: account.account_name || account.account_number || 'Broker account',
+      account_number: account.account_number || '',
+      server_name: account.server_name || '',
+      api_token: account.api_token || '',
+      status: account.status || account.connection_status || (account.last_sync_at ? 'connected' : 'disconnected'),
+      total_trades_synced: Number(account.total_trades_synced || account.synced_trades || 0) || 0,
+    }));
 }
 
 function roleLabel(role) {
@@ -825,7 +862,7 @@ function BrokerConnect() {
   const [dispatchSummary, setDispatchSummary] = useState(null);
   const restoreInputRef = useRef(null);
 
-  const brokerAccounts = accounts;
+  const brokerAccounts = useMemo(() => sanitizeBrokerAccounts(accounts), [accounts]);
   const copierAccounts = copierState.accounts || [];
   const copierLinks = copierState.links || [];
   const copierOverview = useMemo(() => buildTradeCopierOverview(copierState), [copierState]);
@@ -861,9 +898,10 @@ function BrokerConnect() {
     setLoading(true);
     try {
       const data = await fetchBrokerAccounts(supabase, user.id);
-      setAccounts(data);
+      setAccounts(sanitizeBrokerAccounts(data));
     } catch (error) {
       toast.error(error.message);
+      setAccounts([]);
     }
     setLoading(false);
   }, [user?.id]);
@@ -1655,7 +1693,7 @@ function BrokerConnect() {
                       <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 14 }}>
                         <MetaItem label="Last sync" value={timeAgo(account.last_sync_at)} />
                         <MetaItem label="Trades" value={String(account.total_trades_synced || 0)} />
-                        <MetaItem label="Created" value={new Date(account.created_at).toLocaleDateString('en-GB')} />
+                        <MetaItem label="Created" value={safeDateLabel(account.created_at)} />
                       </div>
                       <div style={{ marginTop: 12, fontSize: 11.5, lineHeight: 1.55, color: C.t3 }}>
                         Passwords are never collected here. Broker bridges use scoped API tokens, each tied to one MarketFlow account feed.

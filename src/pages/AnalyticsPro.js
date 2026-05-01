@@ -13,7 +13,7 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   ScatterChart, Scatter, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, ComposedChart,
+  ReferenceLine, ComposedChart, ZAxis,
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
 import { useAuth } from '../context/AuthContext';
@@ -1934,12 +1934,176 @@ const BiasAnalysis = ({ trades }) => {
 // 🏠 MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 const EliteMetricTile = ({ label, value, sub, tone = C.cyan }) => (
-  <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(tone,'18')}`, background: 'rgba(255,255,255,0.025)' }}>
+  <motion.div
+    whileHover={{ y: -2, borderColor: shade(tone, 0.28) }}
+    transition={{ duration: 0.16 }}
+    style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(tone, 0.18)}`, background: 'linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.018))' }}
+  >
     <div style={{ fontSize: 9, fontWeight: 900, color: C.t3, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 7 }}>{label}</div>
     <div style={{ fontSize: 20, fontWeight: 950, color: tone, letterSpacing: '-0.04em' }}>{value || '--'}</div>
     {sub ? <div style={{ marginTop: 5, fontSize: 11, lineHeight: 1.5, color: C.t2 }}>{sub}</div> : null}
-  </div>
+  </motion.div>
 );
+
+const eliteChartShellStyle = (tone = C.cyan) => ({
+  minHeight: 300,
+  padding: 16,
+  borderRadius: 20,
+  border: `1px solid ${shade(tone, 0.14)}`,
+  background: `
+    radial-gradient(circle at 18% 0%, ${shade(tone, 0.08)}, transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.034), rgba(255,255,255,0.014))
+  `,
+  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.035), 0 18px 44px ${shade(tone, 0.035)}`,
+});
+
+const EliteChartShell = ({ title, meta, tone = C.cyan, children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 14 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: '-80px' }}
+    transition={{ duration: 0.44, ease: [0.22, 1, 0.36, 1] }}
+    whileHover={{ y: -3, borderColor: shade(tone, 0.26) }}
+    style={eliteChartShellStyle(tone)}
+  >
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 950, color: C.t1, letterSpacing: '-0.02em' }}>{title}</div>
+        {meta ? <div style={{ marginTop: 4, fontSize: 10.5, color: C.t3, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meta}</div> : null}
+      </div>
+      <div style={{ width: 32, height: 3, borderRadius: 999, background: `linear-gradient(90deg, ${tone}, transparent)` }} />
+    </div>
+    {children}
+  </motion.div>
+);
+
+const eliteTooltip = (formatter) => ({
+  ...chartTooltipStyle,
+  formatter,
+  labelStyle: { color: C.t1, fontWeight: 900 },
+});
+
+const EliteVisualAnalytics = ({ lab }) => {
+  const hourlyChart = lab.hourly.map((row) => ({
+    label: row.label.replace(':00', ''),
+    r: row.r,
+    winRate: row.winRate,
+    trades: row.trades,
+    avgR: row.avgR,
+  }));
+  const weekdayChart = lab.weekdays.map((row) => ({
+    label: row.label.slice(0, 3),
+    r: row.r,
+    winRate: row.winRate,
+    trades: row.trades,
+    avgR: row.avgR,
+  }));
+  const weekMonthChart = lab.weeksOfMonth.map((row) => ({
+    label: row.label,
+    r: row.r,
+    winRate: row.winRate,
+    trades: row.trades,
+    pnl: row.pnl,
+  }));
+  const patternScatter = lab.dimensions
+    .flatMap((dimension) => dimension.rows.map((row) => ({
+      name: row.label,
+      dimension: dimension.title,
+      trades: row.trades,
+      avgR: row.avgR,
+      winRate: row.winRate,
+      r: row.r,
+      pnl: row.pnl,
+    })))
+    .filter((row) => row.trades > 0 && row.name !== 'Unknown')
+    .slice(0, 70);
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
+      <EliteChartShell title="Intraday R rhythm" meta="hourly edge" tone={C.cyan}>
+        <ResponsiveContainer width="100%" height={238}>
+          <ComposedChart data={hourlyChart} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
+            <defs>
+              <linearGradient id="eliteHourR" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={C.cyan} stopOpacity={0.82} />
+                <stop offset="100%" stopColor={C.cyan} stopOpacity={0.08} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...CHART_GRID} />
+            <XAxis dataKey="label" {...CHART_AXIS_SMALL} interval={2} />
+            <YAxis yAxisId="r" {...CHART_AXIS_SMALL} />
+            <YAxis yAxisId="wr" orientation="right" domain={[0, 100]} hide />
+            <Tooltip {...eliteTooltip((value, name) => (name === 'winRate' ? formatAnalyticsPercent(value, 1) : name === 'r' ? `${Number(value || 0).toFixed(2)}R` : value))} />
+            <ReferenceLine yAxisId="r" y={0} stroke={shade(C.t3, 0.34)} strokeDasharray="4 6" />
+            <Bar yAxisId="r" dataKey="r" radius={[8, 8, 8, 8]} fill="url(#eliteHourR)" animationDuration={1050} />
+            <Line yAxisId="wr" type="monotone" dataKey="winRate" stroke={C.green} strokeWidth={2.4} dot={false} activeDot={chartActiveDot(C.green)} animationDuration={1200} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </EliteChartShell>
+
+      <EliteChartShell title="Weekday quality curve" meta="discipline by day" tone={C.green}>
+        <ResponsiveContainer width="100%" height={238}>
+          <ComposedChart data={weekdayChart} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
+            <defs>
+              <linearGradient id="eliteWeekdayArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={C.green} stopOpacity={0.32} />
+                <stop offset="100%" stopColor={C.green} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...CHART_GRID} />
+            <XAxis dataKey="label" {...CHART_AXIS_SMALL} />
+            <YAxis yAxisId="r" {...CHART_AXIS_SMALL} />
+            <YAxis yAxisId="wr" orientation="right" domain={[0, 100]} hide />
+            <Tooltip {...eliteTooltip((value, name) => (name === 'winRate' ? formatAnalyticsPercent(value, 1) : name === 'trades' ? `${value} trades` : `${Number(value || 0).toFixed(2)}R`))} />
+            <Area yAxisId="r" type="monotone" dataKey="avgR" stroke={C.green} fill="url(#eliteWeekdayArea)" strokeWidth={2.2} activeDot={chartActiveDot(C.green)} animationDuration={1100} />
+            <Bar yAxisId="r" dataKey="r" radius={[8, 8, 0, 0]} fill={shade(C.cyan, 0.34)} animationDuration={950} />
+            <Line yAxisId="wr" type="monotone" dataKey="winRate" stroke={C.gold} strokeWidth={2.2} dot={false} animationDuration={1300} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </EliteChartShell>
+
+      <EliteChartShell title="Month phase profile" meta="best week of month" tone={C.purple}>
+        <ResponsiveContainer width="100%" height={238}>
+          <BarChart data={weekMonthChart} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
+            <CartesianGrid {...CHART_GRID} />
+            <XAxis dataKey="label" {...CHART_AXIS_SMALL} />
+            <YAxis {...CHART_AXIS_SMALL} />
+            <Tooltip {...eliteTooltip((value, name) => (name === 'winRate' ? formatAnalyticsPercent(value, 1) : name === 'pnl' ? fmtPnl(value) : `${Number(value || 0).toFixed(2)}R`))} />
+            <ReferenceLine y={0} stroke={shade(C.t3, 0.34)} strokeDasharray="4 6" />
+            <Bar dataKey="r" radius={[10, 10, 10, 10]} animationDuration={1000}>
+              {weekMonthChart.map((row, index) => (
+                <Cell key={row.label} fill={row.r >= 0 ? shade(CHART_COLORS[index % CHART_COLORS.length], 0.72) : shade(C.danger, 0.72)} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </EliteChartShell>
+
+      <EliteChartShell title="Pattern efficiency map" meta="sample size x avg R" tone={C.gold}>
+        <ResponsiveContainer width="100%" height={238}>
+          <ScatterChart margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+            <CartesianGrid {...CHART_GRID} />
+            <XAxis dataKey="trades" name="Trades" {...CHART_AXIS_SMALL} />
+            <YAxis dataKey="avgR" name="Avg R" {...CHART_AXIS_SMALL} />
+            <ZAxis dataKey="winRate" range={[52, 260]} name="Win rate" />
+            <Tooltip
+              {...chartTooltipStyle}
+              cursor={chartCursor(C.gold)}
+              formatter={(value, name) => {
+                if (name === 'Avg R') return `${Number(value || 0).toFixed(2)}R`;
+                if (name === 'Win rate') return formatAnalyticsPercent(value, 1);
+                return value;
+              }}
+              labelFormatter={(_, payload) => payload?.[0]?.payload ? `${payload[0].payload.name} / ${payload[0].payload.dimension}` : 'Pattern'}
+            />
+            <ReferenceLine y={0} stroke={shade(C.t3, 0.34)} strokeDasharray="4 6" />
+            <Scatter data={patternScatter} fill={C.gold} animationDuration={1200} />
+          </ScatterChart>
+        </ResponsiveContainer>
+      </EliteChartShell>
+    </div>
+  );
+};
 
 const EliteRowTable = ({ title, rows, limit = 8 }) => (
   <div style={{ padding: 16, borderRadius: 18, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)', minWidth: 0 }}>
@@ -2043,6 +2207,8 @@ const EliteAnalyticsLab = ({ trades, isElite }) => {
           <EliteMetricTile label="Strongest pattern" value={lab.bestPattern?.label} tone={C.gold} sub={lab.bestPattern ? `${lab.bestPattern.dimension} / ${lab.bestPattern.r > 0 ? '+' : ''}${lab.bestPattern.r.toFixed(1)}R` : 'No pattern data'} />
           <EliteMetricTile label="Weakest leak" value={lab.weakestPattern?.label} tone={C.danger} sub={lab.weakestPattern ? `${lab.weakestPattern.dimension} / ${fmtPnl(lab.weakestPattern.pnl)}` : 'No leak detected'} />
         </div>
+
+        <EliteVisualAnalytics lab={lab} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(320px, 0.85fr)', gap: 16, marginBottom: 16 }}>
           <div style={{ padding: 16, borderRadius: 18, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
