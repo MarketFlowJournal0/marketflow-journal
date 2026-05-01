@@ -16,6 +16,7 @@ import {
   ReferenceLine, ComposedChart,
 } from 'recharts';
 import { useTradingContext } from '../context/TradingContext';
+import { useAuth } from '../context/AuthContext';
 import { shade } from '../lib/colorAlpha';
 import {
   CHART_AXIS,
@@ -39,11 +40,16 @@ import {
   formatAnalyticsPercent,
   formatAnalyticsRR,
   getTradeDateValue,
+  getTradeHour,
+  getTradeOutcome,
   getTradePnl,
+  getTradeRR,
+  getTradeSignedR,
   normalizeSessionLabel,
   summarizeTradeSet,
   toAnalyticsNumber,
 } from '../lib/marketflowAnalytics';
+import { normalizePlan } from '../lib/subscription';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🎨 PALETTE
@@ -143,6 +149,7 @@ const SECTION_SHORTCUTS = [
   { id: 'analytics-long-short', label: 'Long vs Short' },
   { id: 'analytics-heatmaps', label: 'Heatmaps' },
   { id: 'analytics-trades', label: 'Trades' },
+  { id: 'analytics-elite-lab', label: 'Elite Lab' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -317,6 +324,223 @@ const normalizeAnalyticsTrade = (trade = {}) => {
       rrReel: rr ?? trade.metrics?.rrReel ?? null,
     },
   };
+};
+
+const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const normalizeEdgeKey = (value, fallback = 'Unknown') => {
+  const text = String(value ?? '').trim();
+  if (!text || text === '--' || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return fallback;
+  return text;
+};
+
+const splitAnalyticsList = (value) => {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  if (value && typeof value === 'object') return Object.values(value).flatMap(splitAnalyticsList);
+  return String(value || '')
+    .split(/[;,|]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const createEliteBucket = (key, label = key, meta = {}) => ({
+  key,
+  label,
+  trades: 0,
+  tp: 0,
+  sl: 0,
+  be: 0,
+  pnl: 0,
+  r: 0,
+  rrTotal: 0,
+  rrCount: 0,
+  bestPnl: Number.NEGATIVE_INFINITY,
+  worstPnl: Number.POSITIVE_INFINITY,
+  ...meta,
+});
+
+const addTradeToEliteBucket = (bucket, trade) => {
+  const pnl = getTradePnl(trade);
+  const outcome = getTradeOutcome(trade);
+  const rr = getTradeRR(trade);
+  bucket.trades += 1;
+  bucket.pnl += pnl;
+  bucket.r += getTradeSignedR(trade);
+  bucket.bestPnl = Math.max(bucket.bestPnl, pnl);
+  bucket.worstPnl = Math.min(bucket.worstPnl, pnl);
+  if (outcome === 'TP') bucket.tp += 1;
+  else if (outcome === 'SL') bucket.sl += 1;
+  else bucket.be += 1;
+  if (rr > 0) {
+    bucket.rrTotal += rr;
+    bucket.rrCount += 1;
+  }
+};
+
+const finalizeEliteBucket = (bucket) => {
+  const decisive = bucket.tp + bucket.sl;
+  const winRate = decisive ? (bucket.tp / decisive) * 100 : 0;
+  const avgR = bucket.trades ? bucket.r / bucket.trades : 0;
+  const avgPnl = bucket.trades ? bucket.pnl / bucket.trades : 0;
+  const avgRR = bucket.rrCount ? bucket.rrTotal / bucket.rrCount : 0;
+  return {
+    ...bucket,
+    pnl: Number(bucket.pnl.toFixed(2)),
+    r: Number(bucket.r.toFixed(2)),
+    winRate: Number(winRate.toFixed(1)),
+    avgR: Number(avgR.toFixed(2)),
+    avgPnl: Number(avgPnl.toFixed(2)),
+    avgRR: Number(avgRR.toFixed(2)),
+    bestPnl: Number.isFinite(bucket.bestPnl) ? Number(bucket.bestPnl.toFixed(2)) : 0,
+    worstPnl: Number.isFinite(bucket.worstPnl) ? Number(bucket.worstPnl.toFixed(2)) : 0,
+    quality: Number((avgR * 45 + (winRate - 50) * 0.65 + Math.min(bucket.trades, 20) * 0.7).toFixed(1)),
+  };
+};
+
+const summarizeEliteDimension = (trades, getter, label = '') => {
+  const map = new Map();
+  trades.forEach((trade) => {
+    const rawValues = getter(trade);
+    const values = Array.isArray(rawValues) ? rawValues : [rawValues];
+    values.map((value) => normalizeEdgeKey(value)).filter(Boolean).forEach((value) => {
+      const key = String(value);
+      if (!map.has(key)) map.set(key, createEliteBucket(key, key, { dimension: label }));
+      addTradeToEliteBucket(map.get(key), trade);
+    });
+  });
+  return Array.from(map.values())
+    .map(finalizeEliteBucket)
+    .sort((left, right) => right.quality - left.quality || right.trades - left.trades || right.pnl - left.pnl);
+};
+
+const getWeekOfMonth = (date) => Math.min(5, Math.max(1, Math.ceil(date.getDate() / 7)));
+
+const buildEliteAnalyticsLab = (trades = []) => {
+  const sorted = [...trades].sort((left, right) => {
+    const leftTime = getTradeDateValue(left)?.getTime() ?? 0;
+    const rightTime = getTradeDateValue(right)?.getTime() ?? 0;
+    return leftTime - rightTime;
+  });
+
+  const hourly = Array.from({ length: 24 }, (_, hour) => createEliteBucket(String(hour), `${String(hour).padStart(2, '0')}:00`, { hour }));
+  const weekdays = WEEKDAY_LABELS.map((label, index) => createEliteBucket(String(index), label, { weekday: index }));
+  const weeksOfMonth = Array.from({ length: 5 }, (_, index) => createEliteBucket(String(index + 1), `Week ${index + 1}`, { weekOfMonth: index + 1 }));
+  const daysOfMonth = Array.from({ length: 31 }, (_, index) => createEliteBucket(String(index + 1), `${index + 1}`, { dayOfMonth: index + 1 }));
+  const months = Array.from({ length: 12 }, (_, index) => createEliteBucket(String(index + 1), MONTH_LABELS[index], { month: index + 1 }));
+  const hourDayMap = new Map();
+
+  WEEKDAY_LABELS.forEach((day, dayIndex) => {
+    hourly.forEach((hour) => {
+      const key = `${dayIndex}-${hour.hour}`;
+      hourDayMap.set(key, createEliteBucket(key, `${day.slice(0, 3)} ${hour.label}`, { weekday: dayIndex, hour: hour.hour }));
+    });
+  });
+
+  sorted.forEach((trade) => {
+    const date = getTradeDateValue(trade);
+    const hour = getTradeHour(trade);
+    if (Number.isInteger(hour) && hourly[hour]) addTradeToEliteBucket(hourly[hour], trade);
+    if (date) {
+      addTradeToEliteBucket(weekdays[date.getDay()], trade);
+      addTradeToEliteBucket(weeksOfMonth[getWeekOfMonth(date) - 1], trade);
+      addTradeToEliteBucket(daysOfMonth[date.getDate() - 1], trade);
+      addTradeToEliteBucket(months[date.getMonth()], trade);
+      if (Number.isInteger(hour)) {
+        const hourDay = hourDayMap.get(`${date.getDay()}-${hour}`);
+        if (hourDay) addTradeToEliteBucket(hourDay, trade);
+      }
+    }
+  });
+
+  const finalHourly = hourly.map(finalizeEliteBucket);
+  const finalWeekdays = weekdays.map(finalizeEliteBucket);
+  const finalWeeks = weeksOfMonth.map(finalizeEliteBucket);
+  const finalDays = daysOfMonth.map(finalizeEliteBucket);
+  const finalMonths = months.map(finalizeEliteBucket);
+  const hourDay = Array.from(hourDayMap.values()).map(finalizeEliteBucket);
+
+  const dimensions = [
+    { id: 'account', title: 'Accounts', rows: summarizeEliteDimension(sorted, (trade) => trade.accountLabel, 'Account') },
+    { id: 'broker', title: 'Brokers', rows: summarizeEliteDimension(sorted, (trade) => trade.broker, 'Broker') },
+    { id: 'symbol', title: 'Symbols', rows: summarizeEliteDimension(sorted, (trade) => trade.symbol, 'Symbol') },
+    { id: 'strategy', title: 'Strategies', rows: summarizeEliteDimension(sorted, (trade) => trade.strategy || trade.setup, 'Strategy') },
+    { id: 'setup', title: 'Setups', rows: summarizeEliteDimension(sorted, (trade) => trade.setup, 'Setup') },
+    { id: 'session', title: 'Sessions', rows: summarizeEliteDimension(sorted, (trade) => trade.session, 'Session') },
+    { id: 'direction', title: 'Long / Short', rows: summarizeEliteDimension(sorted, (trade) => trade.type, 'Direction') },
+    { id: 'bias', title: 'Bias', rows: summarizeEliteDimension(sorted, (trade) => trade.bias || trade.extra?.bias, 'Bias') },
+    { id: 'news', title: 'News Impact', rows: summarizeEliteDimension(sorted, (trade) => trade.newsImpact || trade.news_impact || trade.extra?.newsImpact, 'News') },
+    { id: 'market', title: 'Market Type', rows: summarizeEliteDimension(sorted, (trade) => trade.marketType || trade.market_type || trade.extra?.marketType, 'Market') },
+    { id: 'tags', title: 'Tags', rows: summarizeEliteDimension(sorted, (trade) => trade.tagsArray, 'Tags') },
+    { id: 'confluences', title: 'Confluences', rows: summarizeEliteDimension(sorted, (trade) => splitAnalyticsList(trade.confluences || trade.extra?.confluences), 'Confluence') },
+    { id: 'emotion', title: 'Emotion / Psychology', rows: summarizeEliteDimension(sorted, (trade) => trade.emotion || trade.mood || trade.psychology?.mood || trade.extra?.emotion, 'Emotion') },
+  ].filter((dimension) => dimension.rows.some((row) => row.trades > 0 && row.key !== 'Unknown'));
+
+  const qualified = (rows) => rows.filter((row) => row.trades > 0).sort((left, right) => right.quality - left.quality || right.pnl - left.pnl);
+  const weakest = (rows) => rows.filter((row) => row.trades > 0).sort((left, right) => left.quality - right.quality || left.pnl - right.pnl);
+
+  return {
+    hourly: finalHourly,
+    weekdays: finalWeekdays,
+    weeksOfMonth: finalWeeks,
+    daysOfMonth: finalDays,
+    months: finalMonths,
+    hourDay,
+    dimensions,
+    bestHour: qualified(finalHourly)[0],
+    bestWeekday: qualified(finalWeekdays)[0],
+    bestWeekOfMonth: qualified(finalWeeks)[0],
+    bestDayOfMonth: qualified(finalDays)[0],
+    bestPattern: dimensions.flatMap((dimension) => dimension.rows.map((row) => ({ ...row, dimension: dimension.title }))).sort((left, right) => right.quality - left.quality)[0],
+    weakestPattern: dimensions.flatMap((dimension) => dimension.rows.map((row) => ({ ...row, dimension: dimension.title }))).sort((left, right) => left.quality - right.quality)[0],
+    weakestHour: weakest(finalHourly)[0],
+  };
+};
+
+const flattenAnalyticsFields = (value, prefix = '', output = {}) => {
+  if (value == null) return output;
+  if (Array.isArray(value)) {
+    output[prefix || 'array'] = value.join(', ');
+    return output;
+  }
+  if (typeof value === 'object') {
+    Object.entries(value).forEach(([key, childValue]) => {
+      const nextPrefix = prefix ? `${prefix}.${key}` : key;
+      flattenAnalyticsFields(childValue, nextPrefix, output);
+    });
+    return output;
+  }
+  if (prefix) output[prefix] = value;
+  return output;
+};
+
+const buildDataCoverageRows = (trades = []) => {
+  const map = new Map();
+  trades.forEach((trade) => {
+    const flat = flattenAnalyticsFields(trade);
+    Object.entries(flat).forEach(([field, value]) => {
+      if (!map.has(field)) map.set(field, { field, filled: 0, numeric: 0, total: 0, values: new Map() });
+      const row = map.get(field);
+      row.total += 1;
+      const text = String(value ?? '').trim();
+      if (!text || text === '--') return;
+      row.filled += 1;
+      if (toAnalyticsNumber(value) != null) row.numeric += 1;
+      row.values.set(text, (row.values.get(text) || 0) + 1);
+    });
+  });
+
+  return Array.from(map.values())
+    .map((row) => ({
+      ...row,
+      coverage: trades.length ? (row.filled / trades.length) * 100 : 0,
+      topValues: Array.from(row.values.entries())
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, 3)
+        .map(([value, count]) => `${value} (${count})`)
+        .join(', '),
+    }))
+    .sort((left, right) => right.filled - left.filled || left.field.localeCompare(right.field));
 };
 
 const uniqueOptions = (items = [], getter, fallbackLabel = 'All') => {
@@ -1709,7 +1933,197 @@ const BiasAnalysis = ({ trades }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 🏠 MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
+const EliteMetricTile = ({ label, value, sub, tone = C.cyan }) => (
+  <div style={{ padding: '14px 15px', borderRadius: 16, border: `1px solid ${shade(tone,'18')}`, background: 'rgba(255,255,255,0.025)' }}>
+    <div style={{ fontSize: 9, fontWeight: 900, color: C.t3, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 7 }}>{label}</div>
+    <div style={{ fontSize: 20, fontWeight: 950, color: tone, letterSpacing: '-0.04em' }}>{value || '--'}</div>
+    {sub ? <div style={{ marginTop: 5, fontSize: 11, lineHeight: 1.5, color: C.t2 }}>{sub}</div> : null}
+  </div>
+);
+
+const EliteRowTable = ({ title, rows, limit = 8 }) => (
+  <div style={{ padding: 16, borderRadius: 18, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)', minWidth: 0 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+      <div style={{ fontSize: 13, fontWeight: 900, color: C.t1 }}>{title}</div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: C.t3, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Elite</div>
+    </div>
+    <div style={{ display: 'grid', gap: 8 }}>
+      {(rows || []).filter((row) => row.trades > 0).slice(0, limit).map((row) => (
+        <div key={`${title}-${row.key}`} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 62px 64px 74px', gap: 8, alignItems: 'center', padding: '9px 10px', borderRadius: 12, border: `1px solid ${shade(row.pnl >= 0 ? C.green : C.danger,'12')}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.t1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.label}</div>
+            <div style={{ marginTop: 3, fontSize: 10, color: C.t3 }}>{row.tp}TP / {row.sl}SL / {row.be}BE</div>
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 900, color: row.winRate >= 50 ? C.green : C.danger, textAlign: 'right' }}>{formatAnalyticsPercent(row.winRate, 0)}</div>
+          <div style={{ fontSize: 11, fontWeight: 900, color: row.r >= 0 ? C.green : C.danger, textAlign: 'right' }}>{row.r > 0 ? '+' : ''}{row.r.toFixed(1)}R</div>
+          <div style={{ fontSize: 11, fontWeight: 900, color: row.pnl >= 0 ? C.green : C.danger, textAlign: 'right' }}>{fmtPnl(row.pnl)}</div>
+        </div>
+      ))}
+      {!(rows || []).some((row) => row.trades > 0) ? (
+        <div style={{ padding: '16px 12px', color: C.t3, fontSize: 12, border: `1px dashed ${C.brd}`, borderRadius: 12 }}>No data in this lane yet.</div>
+      ) : null}
+    </div>
+  </div>
+);
+
+const EliteDimensionCard = ({ dimension }) => (
+  <div style={{ padding: 16, borderRadius: 18, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 900, color: C.t1 }}>{dimension.title}</div>
+        <div style={{ fontSize: 10, color: C.t3, marginTop: 3 }}>{dimension.rows.length} values detected</div>
+      </div>
+      <div style={{ color: C.gold, fontSize: 10, fontWeight: 900 }}>DATA</div>
+    </div>
+    <div style={{ display: 'grid', gap: 8 }}>
+      {dimension.rows.filter((row) => row.trades > 0 && row.key !== 'Unknown').slice(0, 7).map((row, index) => (
+        <div key={row.key} style={{ display: 'grid', gridTemplateColumns: '26px minmax(0, 1fr) 56px 70px', gap: 8, alignItems: 'center' }}>
+          <div style={{ width: 22, height: 22, borderRadius: 8, display: 'grid', placeItems: 'center', background: shade(CHART_COLORS[index % CHART_COLORS.length], '12'), border: `1px solid ${shade(CHART_COLORS[index % CHART_COLORS.length], '22')}`, color: CHART_COLORS[index % CHART_COLORS.length], fontSize: 10, fontWeight: 900 }}>{index + 1}</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: C.t1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.label}</div>
+            <div style={{ height: 4, marginTop: 5, borderRadius: 999, overflow: 'hidden', background: C.bgDeep }}>
+              <div style={{ width: `${Math.min(100, Math.max(4, row.winRate))}%`, height: '100%', background: row.winRate >= 50 ? C.green : C.danger }} />
+            </div>
+          </div>
+          <div style={{ fontSize: 10.5, fontWeight: 900, color: row.winRate >= 50 ? C.green : C.danger, textAlign: 'right' }}>{formatAnalyticsPercent(row.winRate, 0)}</div>
+          <div style={{ fontSize: 10.5, fontWeight: 900, color: row.pnl >= 0 ? C.green : C.danger, textAlign: 'right' }}>{fmtPnl(row.pnl)}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const EliteAnalyticsLab = ({ trades, isElite }) => {
+  const lab = useMemo(() => buildEliteAnalyticsLab(trades), [trades]);
+  const coverageRows = useMemo(() => buildDataCoverageRows(trades), [trades]);
+  const hourDayMax = Math.max(1, ...lab.hourDay.map((row) => Math.abs(row.r)));
+
+  if (!isElite) {
+    return (
+      <Card index={18} glow={C.gold}>
+        <div id="analytics-elite-lab" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 18, alignItems: 'center' }}>
+          <div>
+            <div style={{ display: 'inline-flex', padding: '5px 9px', borderRadius: 999, border: `1px solid ${shade(C.gold,'22')}`, background: shade(C.gold,'08'), color: C.gold, fontSize: 9, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Elite only</div>
+            <h2 style={{ margin: 0, fontSize: 28, letterSpacing: '-0.06em', color: C.t1 }}>Full Data Lab locked</h2>
+            <p style={{ margin: '10px 0 0', maxWidth: 760, fontSize: 13, lineHeight: 1.7, color: C.t2 }}>
+              Elite unlocks the exhaustive layer: every hour, weekday, week of month, day of month, pattern, tag, account, broker, symbol, and imported All Trades field.
+            </p>
+          </div>
+          <div style={{ minWidth: 160, padding: 16, borderRadius: 18, border: `1px solid ${shade(C.gold,'18')}`, background: shade(C.gold,'06'), textAlign: 'center' }}>
+            <div style={{ fontSize: 30, fontWeight: 950, color: C.gold }}>Elite</div>
+            <div style={{ marginTop: 4, fontSize: 11, color: C.t2 }}>advanced data layer</div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div id="analytics-elite-lab" style={{ marginTop: 8 }}>
+      <Card index={18} glow={C.gold}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 18 }}>
+          <div>
+            <div style={{ display: 'inline-flex', padding: '5px 9px', borderRadius: 999, border: `1px solid ${shade(C.gold,'24')}`, background: shade(C.gold,'08'), color: C.gold, fontSize: 9, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Elite Data Lab</div>
+            <h2 style={{ margin: 0, fontSize: 30, letterSpacing: '-0.065em', color: C.t1 }}>All Trades intelligence layer</h2>
+            <p style={{ margin: '9px 0 0', maxWidth: 860, fontSize: 13, lineHeight: 1.7, color: C.t2 }}>
+              Deep analytics generated only from the filtered All Trades stream. Every imported field is inspected and every usable pattern is ranked.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ padding: '8px 10px', borderRadius: 999, border: `1px solid ${shade(C.cyan,'18')}`, background: shade(C.cyan,'07'), color: C.cyan, fontSize: 10, fontWeight: 900 }}>{trades.length} trades</div>
+            <div style={{ padding: '8px 10px', borderRadius: 999, border: `1px solid ${shade(C.gold,'18')}`, background: shade(C.gold,'07'), color: C.gold, fontSize: 10, fontWeight: 900 }}>{coverageRows.length} fields</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10, marginBottom: 16 }}>
+          <EliteMetricTile label="Best hour" value={lab.bestHour?.label} tone={C.cyan} sub={lab.bestHour ? `${formatAnalyticsPercent(lab.bestHour.winRate, 1)} WR / ${lab.bestHour.r > 0 ? '+' : ''}${lab.bestHour.r.toFixed(1)}R` : 'No hour data'} />
+          <EliteMetricTile label="Best weekday" value={lab.bestWeekday?.label} tone={C.green} sub={lab.bestWeekday ? `${lab.bestWeekday.trades} trades / ${fmtPnl(lab.bestWeekday.pnl)}` : 'No weekday data'} />
+          <EliteMetricTile label="Best week of month" value={lab.bestWeekOfMonth?.label} tone={C.purple} sub={lab.bestWeekOfMonth ? `${lab.bestWeekOfMonth.tp}TP / ${lab.bestWeekOfMonth.sl}SL / ${lab.bestWeekOfMonth.be}BE` : 'No week data'} />
+          <EliteMetricTile label="Best day of month" value={lab.bestDayOfMonth ? `Day ${lab.bestDayOfMonth.label}` : '--'} tone={C.blue} sub={lab.bestDayOfMonth ? `${fmtPnl(lab.bestDayOfMonth.pnl)} / ${lab.bestDayOfMonth.trades} trades` : 'No day data'} />
+          <EliteMetricTile label="Strongest pattern" value={lab.bestPattern?.label} tone={C.gold} sub={lab.bestPattern ? `${lab.bestPattern.dimension} / ${lab.bestPattern.r > 0 ? '+' : ''}${lab.bestPattern.r.toFixed(1)}R` : 'No pattern data'} />
+          <EliteMetricTile label="Weakest leak" value={lab.weakestPattern?.label} tone={C.danger} sub={lab.weakestPattern ? `${lab.weakestPattern.dimension} / ${fmtPnl(lab.weakestPattern.pnl)}` : 'No leak detected'} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(320px, 0.85fr)', gap: 16, marginBottom: 16 }}>
+          <div style={{ padding: 16, borderRadius: 18, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: C.t1 }}>Hour x weekday edge map</div>
+                <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>Color intensity follows R result, not decorative P&L only.</div>
+              </div>
+              <div style={{ fontSize: 10, color: C.t3, fontWeight: 900 }}>24h x 7d</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '42px repeat(24, minmax(10px, 1fr))', gap: 3, alignItems: 'center' }}>
+              <div />
+              {Array.from({ length: 24 }, (_, hour) => (
+                <div key={hour} style={{ fontSize: 8, color: hour % 3 === 0 ? C.t3 : 'transparent', textAlign: 'center' }}>{hour}</div>
+              ))}
+              {WEEKDAY_LABELS.map((day, weekday) => (
+                <React.Fragment key={day}>
+                  <div style={{ fontSize: 9, fontWeight: 900, color: C.t3 }}>{day.slice(0, 3)}</div>
+                  {Array.from({ length: 24 }, (_, hour) => {
+                    const cell = lab.hourDay.find((row) => row.weekday === weekday && row.hour === hour);
+                    const intensity = Math.min(0.72, Math.max(0.04, Math.abs(cell?.r || 0) / hourDayMax * 0.72));
+                    const color = !cell?.trades ? 'rgba(255,255,255,0.025)' : cell.r >= 0 ? `rgba(0,210,184,${intensity})` : `rgba(255,61,87,${intensity})`;
+                    return (
+                      <div
+                        key={`${weekday}-${hour}`}
+                        title={cell?.trades ? `${day} ${String(hour).padStart(2, '0')}:00 - ${cell.trades} trades / ${cell.r > 0 ? '+' : ''}${cell.r.toFixed(1)}R / ${fmtPnl(cell.pnl)}` : `${day} ${hour}:00 - no trades`}
+                        style={{ height: 18, borderRadius: 5, background: color, border: `1px solid ${cell?.trades ? shade(cell.r >= 0 ? C.green : C.danger,'18') : 'rgba(255,255,255,0.025)'}` }}
+                      />
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          <EliteRowTable title="Best trading hours" rows={lab.hourly} limit={10} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 16 }}>
+          <EliteRowTable title="Weekday ranking" rows={lab.weekdays} limit={7} />
+          <EliteRowTable title="Week of month ranking" rows={lab.weeksOfMonth} limit={5} />
+          <EliteRowTable title="Day of month ranking" rows={lab.daysOfMonth} limit={12} />
+          <EliteRowTable title="Month ranking" rows={lab.months} limit={12} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16, marginBottom: 16 }}>
+          {lab.dimensions.map((dimension) => <EliteDimensionCard key={dimension.id} dimension={dimension} />)}
+        </div>
+
+        <div style={{ padding: 16, borderRadius: 18, border: `1px solid ${C.brd}`, background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: C.t1 }}>All Trades field coverage</div>
+              <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>Every detected top-level, metrics, extra, psychology, and custom field from the current trade stream.</div>
+            </div>
+            <div style={{ color: C.gold, fontSize: 10, fontWeight: 900 }}>{coverageRows.length} columns</div>
+          </div>
+          <div style={{ maxHeight: 360, overflow: 'auto', borderRadius: 14, border: `1px solid ${shade(C.brdBright,'55')}` }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 0.9fr) 90px 90px minmax(220px, 1.2fr)', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.035)', color: C.t3, fontSize: 9, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', position: 'sticky', top: 0, zIndex: 2 }}>
+              <span>Field</span>
+              <span>Coverage</span>
+              <span>Numeric</span>
+              <span>Top values</span>
+            </div>
+            {coverageRows.map((row) => (
+              <div key={row.field} style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 0.9fr) 90px 90px minmax(220px, 1.2fr)', gap: 10, padding: '10px 12px', borderTop: `1px solid ${shade(C.brd,'65')}`, alignItems: 'center' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 800, color: C.t1, wordBreak: 'break-word' }}>{row.field}</div>
+                <div style={{ fontSize: 11, color: row.coverage >= 80 ? C.green : row.coverage >= 35 ? C.warn : C.t3, fontWeight: 900 }}>{formatAnalyticsPercent(row.coverage, 0)}</div>
+                <div style={{ fontSize: 11, color: row.numeric ? C.cyan : C.t3, fontWeight: 800 }}>{row.numeric}/{row.filled}</div>
+                <div style={{ fontSize: 11, color: C.t2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.topValues || '--'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 export default function AnalyticsPro() {
+  const { user } = useAuth();
   const { trades: scopedTrades = [], allTrades = [], activeAccount = 'all', accountOptions = [] }  = useTradingContext();
   const [period, setPeriod] = useState('ALL');
   const [filters, setFilters] = useState({
@@ -1779,6 +2193,7 @@ export default function AnalyticsPro() {
   const strongestSession = sessionSeries.length ? [...sessionSeries].sort((left, right) => right.winRate - left.winRate)[0] : null;
   const weakestSession = sessionSeries.length ? [...sessionSeries].sort((left, right) => left.winRate - right.winRate)[0] : null;
   const intelligence = useMemo(() => buildWinRateInsights(filtered), [filtered]);
+  const isElite = normalizePlan(user?.plan) === 'elite';
 
   return (
     <div style={{ backgroundColor: 'transparent', minHeight: '100vh', fontFamily: 'system-ui,-apple-system,sans-serif', color: C.t1, padding: '28px 24px 48px', position: 'relative', overflow: 'hidden' }}>
@@ -1950,6 +2365,8 @@ export default function AnalyticsPro() {
             <NewsImpact   trades={filtered} />
             <BiasAnalysis trades={filtered} />
           </div>
+
+          <EliteAnalyticsLab trades={filtered} isElite={isElite} />
         </>
       )}
       </div>
