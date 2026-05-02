@@ -157,12 +157,12 @@ function getAppBaseUrl() {
   const dedicatedAppDomain = String(
     process.env.ENABLE_APP_DOMAIN
     || process.env.REACT_APP_ENABLE_APP_DOMAIN
-    || 'auto'
-  ).toLowerCase() !== 'false';
+    || 'false'
+  ).toLowerCase() === 'true';
   const publicUrl = normalizePublicSiteUrl(
     process.env.NEXT_PUBLIC_SITE_URL
     || process.env.PUBLIC_SITE_URL
-    || 'https://www.marketflowjournal.com'
+    || 'https://marketflowjournal.com'
   );
   const appUrl = String(
     process.env.NEXT_PUBLIC_APP_URL

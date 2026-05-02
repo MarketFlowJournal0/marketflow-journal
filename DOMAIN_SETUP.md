@@ -35,22 +35,39 @@ Add all three domains to the same MarketFlow Vercel project:
 
 Once DNS is valid, make `www.marketflowjournal.com` the primary public domain. Keep `app.marketflowjournal.com` attached to the same deployment for the workspace.
 
-## Production Environment Variables
+## Current Safe Production Environment Variables
 
-Use these values in Vercel Production:
+Keep these values until `www.marketflowjournal.com` and `app.marketflowjournal.com` both resolve in DNS and are marked valid in Vercel:
+
+```env
+REACT_APP_PUBLIC_SITE_URL=https://marketflowjournal.com
+REACT_APP_APP_URL=https://app.marketflowjournal.com
+REACT_APP_ENABLE_APP_DOMAIN=false
+NEXT_PUBLIC_SITE_URL=https://marketflowjournal.com
+NEXT_PUBLIC_APP_URL=https://app.marketflowjournal.com
+APP_URL=https://app.marketflowjournal.com
+ENABLE_APP_DOMAIN=false
+SUPPORT_EMAIL=support@marketflowjournal.com
+```
+
+This keeps the journal accessible on `https://marketflowjournal.com` instead of redirecting users to an NXDOMAIN subdomain.
+
+## Final Split-Domain Environment Variables
+
+Use these values in Vercel Production only after the DNS records are valid:
 
 ```env
 REACT_APP_PUBLIC_SITE_URL=https://www.marketflowjournal.com
 REACT_APP_APP_URL=https://app.marketflowjournal.com
-REACT_APP_ENABLE_APP_DOMAIN=auto
+REACT_APP_ENABLE_APP_DOMAIN=true
 NEXT_PUBLIC_SITE_URL=https://www.marketflowjournal.com
 NEXT_PUBLIC_APP_URL=https://app.marketflowjournal.com
 APP_URL=https://app.marketflowjournal.com
-ENABLE_APP_DOMAIN=auto
+ENABLE_APP_DOMAIN=true
 SUPPORT_EMAIL=support@marketflowjournal.com
 ```
 
-`auto` keeps localhost and Vercel preview deployments safe while enabling the split on the real production domains.
+Do not set the flags to `true` before DNS is ready, otherwise users will be redirected to `app.marketflowjournal.com` and see `DNS_PROBE_FINISHED_NXDOMAIN`.
 
 ## Supabase Redirect URLs
 

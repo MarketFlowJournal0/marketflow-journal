@@ -14,7 +14,7 @@ const PUBLIC_SITE_URL = getBaseUrl(
   normalizePublicSiteUrl(
     process.env.NEXT_PUBLIC_SITE_URL
     || process.env.PUBLIC_SITE_URL
-    || 'https://www.marketflowjournal.com'
+    || 'https://marketflowjournal.com'
   )
 );
 const APP_URL = getAppBaseUrl();
@@ -32,8 +32,8 @@ function getAppBaseUrl() {
   const dedicatedAppDomain = String(
     process.env.ENABLE_APP_DOMAIN
     || process.env.REACT_APP_ENABLE_APP_DOMAIN
-    || 'auto'
-  ).toLowerCase() !== 'false';
+    || 'false'
+  ).toLowerCase() === 'true';
   const appUrl = getBaseUrl(
     process.env.NEXT_PUBLIC_APP_URL
     || process.env.APP_URL
