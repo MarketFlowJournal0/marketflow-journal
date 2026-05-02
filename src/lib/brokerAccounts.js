@@ -20,63 +20,87 @@ export async function fetchBrokerAccounts(supabase, userId) {
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
+  if (request.error && isMissingColumnError(request.error, 'created_at')) {
+    const fallback = await supabase
+      .from('broker_accounts')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (fallback.error) throw fallback.error;
+    return (fallback.data || []).map(normalizeBrokerAccount);
+  }
+
   if (request.error) throw request.error;
   return (request.data || []).map(normalizeBrokerAccount);
 }
 
 export async function createBrokerAccount(supabase, payload = {}) {
-  const fullPayload = {
+  return insertBrokerAccountWithSchemaFallback(supabase, {
     ...payload,
     status: payload.status || 'disconnected',
-  };
-
-  const first = await supabase
-    .from('broker_accounts')
-    .insert(fullPayload)
-    .select('*')
-    .single();
-
-  if (!first.error) return normalizeBrokerAccount(first.data || fullPayload);
-  if (!isMissingColumnError(first.error, 'status')) throw first.error;
-
-  const { status, ...schemaSafePayload } = fullPayload;
-  const fallback = await supabase
-    .from('broker_accounts')
-    .insert(schemaSafePayload)
-    .select('*')
-    .single();
-
-  if (fallback.error) throw fallback.error;
-  return normalizeBrokerAccount(fallback.data || schemaSafePayload);
+  });
 }
 
 export async function markBrokerAccountConnected(supabase, id) {
   if (!supabase || !id) return null;
   const connectedAt = new Date().toISOString();
-  const fullUpdate = {
+  return updateBrokerAccountWithSchemaFallback(supabase, id, {
     status: 'connected',
     last_sync_at: connectedAt,
-  };
+  });
+}
 
-  const first = await supabase
-    .from('broker_accounts')
-    .update(fullUpdate)
-    .eq('id', id)
-    .select('*')
-    .single();
+async function insertBrokerAccountWithSchemaFallback(supabase, payload = {}) {
+  let safePayload = { ...payload };
+  const removedColumns = new Set();
 
-  if (!first.error) return normalizeBrokerAccount(first.data || fullUpdate);
-  if (!isMissingColumnError(first.error, 'status')) throw first.error;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const request = await supabase
+      .from('broker_accounts')
+      .insert(safePayload)
+      .select('*')
+      .single();
 
-  const fallback = await supabase
-    .from('broker_accounts')
-    .update({ last_sync_at: connectedAt })
-    .eq('id', id)
-    .select('*')
-    .single();
+    if (!request.error) return normalizeBrokerAccount(request.data || safePayload);
 
-  if (fallback.error) throw fallback.error;
-  return normalizeBrokerAccount(fallback.data || { id, last_sync_at: connectedAt });
+    const missingColumn = getMissingColumnName(request.error);
+    if (!missingColumn || removedColumns.has(missingColumn) || !(missingColumn in safePayload)) {
+      throw request.error;
+    }
+
+    removedColumns.add(missingColumn);
+    const { [missingColumn]: _removed, ...nextPayload } = safePayload;
+    safePayload = nextPayload;
+  }
+
+  return normalizeBrokerAccount(safePayload);
+}
+
+async function updateBrokerAccountWithSchemaFallback(supabase, id, patch = {}) {
+  let safePatch = { ...patch };
+  const removedColumns = new Set();
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const request = await supabase
+      .from('broker_accounts')
+      .update(safePatch)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (!request.error) return normalizeBrokerAccount(request.data || { id, ...safePatch });
+
+    const missingColumn = getMissingColumnName(request.error);
+    if (!missingColumn || removedColumns.has(missingColumn) || !(missingColumn in safePatch)) {
+      throw request.error;
+    }
+
+    removedColumns.add(missingColumn);
+    const { [missingColumn]: _removed, ...nextPatch } = safePatch;
+    safePatch = nextPatch;
+  }
+
+  return normalizeBrokerAccount({ id, ...safePatch });
 }
 
 export function isMissingColumnError(error = {}, column = '') {
@@ -88,4 +112,15 @@ export function isMissingColumnError(error = {}, column = '') {
   return text.includes('could not find')
     && text.includes(cleanColumn)
     && (text.includes('schema cache') || text.includes('column'));
+}
+
+function getMissingColumnName(error = {}) {
+  const text = [error.message, error.details, error.hint]
+    .filter(Boolean)
+    .join(' ');
+  const quoted = text.match(/'([^']+)' column/i);
+  if (quoted?.[1]) return quoted[1];
+  const named = text.match(/column\s+"?([a-zA-Z0-9_]+)"?\s+(?:does not exist|not found)/i);
+  if (named?.[1]) return named[1];
+  return '';
 }

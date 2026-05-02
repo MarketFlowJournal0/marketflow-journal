@@ -502,6 +502,12 @@ const ICON = {
       <path d="M3.5 3.5h11" />
     </svg>
   ),
+  Plus: () => (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 3.5v11" />
+      <path d="M3.5 9h11" />
+    </svg>
+  ),
   Clock: () => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="5.5" />
@@ -829,6 +835,191 @@ function SectionHeader({ eyebrow, title, description, actions }) {
   );
 }
 
+function BrokerChoiceCard({ broker, active, onClick }) {
+  if (!broker) return null;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: `1px solid ${active ? shade(C.cyan, 0.34) : shade(C.t3, 0.14)}`,
+        borderRadius: 18,
+        background: active
+          ? `linear-gradient(145deg, ${shade(C.cyan, 0.12)}, rgba(255,255,255,0.026))`
+          : 'rgba(255,255,255,0.022)',
+        color: C.t1,
+        padding: 16,
+        minHeight: 118,
+        textAlign: 'left',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        boxShadow: active ? `0 18px 42px ${shade(C.cyan, 0.1)}` : 'none',
+        display: 'grid',
+        gap: 10,
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{
+          width: 34,
+          height: 34,
+          borderRadius: 12,
+          display: 'grid',
+          placeItems: 'center',
+          color: active ? C.bg : C.cyan,
+          background: active ? `linear-gradient(135deg, ${C.cyan}, ${C.green})` : shade(C.cyan, 0.1),
+          border: `1px solid ${shade(C.cyan, active ? 0.22 : 0.16)}`,
+          fontSize: 12,
+          fontWeight: 950,
+          letterSpacing: '-0.04em',
+        }}>
+          {broker.name.slice(0, 2).toUpperCase()}
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: 'block', color: C.t0, fontSize: 13.5, fontWeight: 950, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {broker.name}
+          </span>
+          <span style={{ display: 'block', marginTop: 3, color: C.t3, fontSize: 10.5, fontWeight: 800 }}>
+            {broker.group}
+          </span>
+        </span>
+      </span>
+      <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        {(broker.markets || []).slice(0, 3).map((market) => (
+          <span key={market} style={{ padding: '4px 7px', borderRadius: 999, border: `1px solid ${shade(C.t3, 0.12)}`, color: C.t2, fontSize: 10, fontWeight: 800 }}>
+            {market}
+          </span>
+        ))}
+      </span>
+      <span style={{ display: 'flex', gap: 7, flexWrap: 'wrap', color: C.t3, fontSize: 10.5, fontWeight: 850 }}>
+        <span style={{ color: broker.autoSync ? C.green : C.t3 }}>Auto Sync {broker.autoSync ? 'available' : 'not available'}</span>
+        <span style={{ color: broker.fileUpload ? C.green : C.t3 }}>File {broker.fileUpload ? 'available' : 'not available'}</span>
+      </span>
+    </button>
+  );
+}
+
+function MethodChoiceCard({ method, active, onClick }) {
+  if (!method) return null;
+  const disabled = !method.available;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        position: 'relative',
+        border: `1px solid ${active ? shade(C.cyan, 0.36) : shade(disabled ? C.t3 : C.t3, 0.14)}`,
+        borderRadius: 22,
+        background: active
+          ? `linear-gradient(145deg, ${shade(C.cyan, 0.12)}, rgba(255,255,255,0.028))`
+          : disabled
+            ? 'rgba(255,255,255,0.014)'
+            : 'rgba(255,255,255,0.024)',
+        color: disabled ? C.t3 : C.t1,
+        padding: 22,
+        minHeight: 190,
+        textAlign: 'center',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontFamily: 'inherit',
+        opacity: disabled ? 0.62 : 1,
+        display: 'grid',
+        justifyItems: 'center',
+        alignContent: 'center',
+        gap: 12,
+      }}
+    >
+      {method.recommended ? (
+        <span style={{ position: 'absolute', left: 14, top: 14, padding: '5px 8px', borderRadius: 999, background: shade(C.blue, 0.14), border: `1px solid ${shade(C.blue, 0.22)}`, color: C.blue, fontSize: 9.5, fontWeight: 950, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          Recommended
+        </span>
+      ) : null}
+      {!method.available ? (
+        <span style={{ position: 'absolute', left: 14, top: 14, padding: '5px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', border: `1px solid ${shade(C.t3, 0.16)}`, color: C.t3, fontSize: 9.5, fontWeight: 950, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          Not available
+        </span>
+      ) : null}
+      <span style={{
+        width: 58,
+        height: 58,
+        borderRadius: 20,
+        display: 'grid',
+        placeItems: 'center',
+        color: active ? C.bg : disabled ? C.t3 : C.cyan,
+        background: active ? `linear-gradient(135deg, ${C.cyan}, ${C.green})` : shade(disabled ? C.t3 : C.cyan, 0.1),
+        border: `1px solid ${shade(disabled ? C.t3 : C.cyan, 0.16)}`,
+      }}>
+        {method.id === 'auto' ? <ICON.Network /> : method.id === 'file' ? <ICON.Upload /> : <ICON.Plus />}
+      </span>
+      <span style={{ display: 'grid', gap: 7 }}>
+        <span style={{ color: disabled ? C.t3 : C.t0, fontSize: 18, fontWeight: 950, letterSpacing: '-0.04em' }}>
+          {method.title}
+        </span>
+        <span style={{ maxWidth: 230, color: disabled ? C.t3 : C.t2, fontSize: 12.5, lineHeight: 1.55 }}>
+          {method.body}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function WizardBrokerHeader({ broker, method, onBack, compact = false }) {
+  if (!broker) return null;
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: compact ? 'center' : 'flex-start',
+      justifyContent: 'space-between',
+      gap: 14,
+      flexWrap: 'wrap',
+      padding: compact ? 0 : 16,
+      borderRadius: compact ? 0 : 18,
+      border: compact ? 0 : `1px solid ${shade(C.t3, 0.12)}`,
+      background: compact ? 'transparent' : 'rgba(255,255,255,0.02)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <div style={{
+          width: compact ? 38 : 48,
+          height: compact ? 38 : 48,
+          borderRadius: compact ? 13 : 16,
+          display: 'grid',
+          placeItems: 'center',
+          color: C.bg,
+          background: `linear-gradient(135deg, ${C.cyan}, ${C.green})`,
+          fontSize: compact ? 12 : 15,
+          fontWeight: 950,
+          letterSpacing: '-0.05em',
+          flex: '0 0 auto',
+        }}>
+          {broker.name.slice(0, 2).toUpperCase()}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: C.t0, fontSize: compact ? 15 : 20, fontWeight: 950, letterSpacing: '-0.05em' }}>{broker.name}</div>
+          <div style={{ marginTop: 4, color: C.t2, fontSize: 11.5, lineHeight: 1.45 }}>
+            {method?.title ? `${method.title} selected` : `${(broker.markets || []).join(', ')} account workflow`}
+          </div>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{
+          border: `1px solid ${shade(C.t3, 0.16)}`,
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.026)',
+          color: C.t1,
+          padding: '8px 12px',
+          fontSize: 11,
+          fontWeight: 900,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        Back
+      </button>
+    </div>
+  );
+}
+
 function BrokerConnect() {
   const { user } = useAuth();
   const { accountOptions, downloadBackup } = useTradingContext();
@@ -846,6 +1037,7 @@ function BrokerConnect() {
   const [marketFilter, setMarketFilter] = useState('All Markets');
   const [selectedCatalogBroker, setSelectedCatalogBroker] = useState(null);
   const [selectedImportMethod, setSelectedImportMethod] = useState('');
+  const [connectionComplete, setConnectionComplete] = useState(null);
   const [connectionDraft, setConnectionDraft] = useState(() => buildInitialConnectionDraft());
   const [connectionSubmitting, setConnectionSubmitting] = useState(false);
 
@@ -1047,6 +1239,13 @@ function BrokerConnect() {
       toast.success(selectedImportMethod === 'file'
         ? 'Account created. Open All Trades to import the broker file.'
         : 'Connection created inside MarketFlow. First broker data sync will update this feed automatically.');
+      setConnectionComplete({
+        broker: selectedCatalogBroker.name,
+        method: selectedImportMethod,
+        accountName,
+        accountNumber,
+        status: connectionBlueprint.status || 'pending',
+      });
       setShowBrokerForm(false);
       fetchAccounts();
     } catch (error) {
@@ -1109,6 +1308,7 @@ function BrokerConnect() {
   function selectCatalogBroker(item) {
     setSelectedCatalogBroker(item);
     setSelectedImportMethod('');
+    setConnectionComplete(null);
   }
 
   function beginCatalogConnection(item = selectedCatalogBroker, method = selectedImportMethod) {
@@ -1122,6 +1322,7 @@ function BrokerConnect() {
     }
 
     setConnectionDraft(buildInitialConnectionDraft(item, method));
+    setConnectionComplete(null);
     toast.success('Connection form ready inside MarketFlow.');
   }
 
@@ -1270,6 +1471,31 @@ function BrokerConnect() {
   }
 
   const activityFeed = copierState.activity || [];
+  const connectionMethods = [
+    {
+      id: 'auto',
+      title: 'Auto Sync',
+      body: 'Broker API, Flex report, webhook, or provider-approved bridge when available.',
+      available: Boolean(selectedCatalogBroker?.autoSync),
+      recommended: Boolean(selectedCatalogBroker?.autoSync),
+    },
+    {
+      id: 'file',
+      title: 'File Upload',
+      body: 'Upload CSV, Excel, statements, or broker exports through All Trades.',
+      available: Boolean(selectedCatalogBroker?.fileUpload),
+      recommended: Boolean(selectedCatalogBroker && !selectedCatalogBroker.autoSync),
+    },
+    {
+      id: 'manual',
+      title: 'Add manually',
+      body: 'Create the account now and add trades one by one from All Trades.',
+      available: Boolean(selectedCatalogBroker),
+      recommended: false,
+    },
+  ];
+  const selectedMethod = connectionMethods.find((method) => method.id === selectedImportMethod);
+  const wizardStep = connectionComplete ? 4 : selectedImportMethod ? 3 : selectedCatalogBroker ? 2 : 1;
 
   return (
     <div style={{ padding: '34px 34px 72px', maxWidth: 1520, margin: '0 auto', display: 'grid', gap: 24 }}>
@@ -1309,11 +1535,11 @@ function BrokerConnect() {
         </div>
       </div>
 
-      <div style={{ ...pageCardStyle({ padding: 24 }) }}>
+      <div style={{ ...pageCardStyle({ padding: 28 }) }}>
         <SectionHeader
-          eyebrow="First connection"
-          title="Choose Broker, Prop Firm or Trading Platform"
-          description="Search your broker, choose the market, then select Auto Sync, File Upload, or Manual entry. MarketFlow never asks for broker passwords; live connections use scoped tokens or broker-approved export flows."
+          eyebrow="Add trades"
+          title={wizardStep === 1 ? 'Choose Broker, Prop Firm or Trading Platform' : wizardStep === 2 ? 'Select Import Method' : wizardStep === 3 ? 'Broker Sync' : 'Connection ready'}
+          description="A clean broker connection flow: choose the platform, choose the import method, then connect the feed or create the account slot. MarketFlow never asks for broker passwords."
           actions={(
             <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.green, 0.18)}`, background: shade(C.green, 0.08), color: C.green, fontSize: 10.5, fontWeight: 800 }}>
               {BROKER_CATALOG.length}+ integrations indexed
@@ -1321,231 +1547,220 @@ function BrokerConnect() {
           )}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(340px, 0.85fr)', gap: 18 }}>
-          <div style={{ display: 'grid', gap: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) 170px', gap: 10 }}>
-              <Field label="Search broker">
-                <input
-                  value={brokerSearch}
-                  onChange={(event) => setBrokerSearch(event.target.value)}
-                  placeholder="Start typing a broker, prop firm or trading platform"
-                  style={inputStyle()}
-                />
-              </Field>
-              <Field label="Market">
-                <select value={marketFilter} onChange={(event) => setMarketFilter(event.target.value)} style={inputStyle()}>
-                  {BROKER_MARKETS.map((market) => <option key={market} value={market}>{market}</option>)}
-                </select>
-              </Field>
-            </div>
+        <div style={{ maxWidth: 920, margin: '0 auto 26px' }}>
+          <div style={{ height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 14 }}>
+            <motion.div
+              initial={false}
+              animate={{ width: `${Math.min(100, wizardStep * 25)}%` }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${C.cyan}, ${C.green})` }}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
+            {['Broker', 'Method', 'Connect', 'Ready'].map((label, index) => {
+              const active = wizardStep >= index + 1;
+              return (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, color: active ? C.t1 : C.t3, fontSize: 11, fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  <span style={{ width: 20, height: 20, borderRadius: '50%', display: 'grid', placeItems: 'center', border: `1px solid ${active ? shade(C.cyan, 0.34) : shade(C.t3, 0.16)}`, background: active ? shade(C.cyan, 0.1) : 'rgba(255,255,255,0.025)', color: active ? C.cyan : C.t3, fontSize: 10 }}>{index + 1}</span>
+                  {label}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-            {!brokerSearch.trim() && marketFilter === 'All Markets' ? (
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.t0, marginBottom: 10 }}>Popular brokers</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
-                  {popularCatalog.map((broker) => (
+        <AnimatePresence mode="wait">
+          {wizardStep === 1 ? (
+            <motion.div key="broker-step" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} style={{ maxWidth: 1040, margin: '0 auto', display: 'grid', gap: 18 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 14, color: C.t2, marginBottom: 12 }}>Search your broker, prop firm or trading platform</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) 180px', gap: 10, maxWidth: 720, margin: '0 auto' }}>
+                  <input
+                    value={brokerSearch}
+                    onChange={(event) => setBrokerSearch(event.target.value)}
+                    placeholder="Start typing the broker, prop firm or platform"
+                    style={{ ...inputStyle(), padding: '14px 15px', borderRadius: 14 }}
+                  />
+                  <select value={marketFilter} onChange={(event) => setMarketFilter(event.target.value)} style={{ ...inputStyle(), padding: '14px 15px', borderRadius: 14 }}>
+                    {BROKER_MARKETS.map((market) => <option key={market} value={market}>{market}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {!brokerSearch.trim() && marketFilter === 'All Markets' ? (
+                <div>
+                  <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.t0, marginBottom: 12 }}>Popular brokers</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+                    {popularCatalog.map((broker) => (
+                      <BrokerChoiceCard key={broker.id} broker={broker} active={selectedCatalogBroker?.id === broker.id} onClick={() => selectCatalogBroker(broker)} />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div style={{ borderRadius: 20, border: `1px solid ${shade(C.t3, 0.14)}`, background: 'rgba(255,255,255,0.018)', overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) 170px 92px 92px', gap: 10, padding: '10px 13px', borderBottom: `1px solid ${shade(C.t3, 0.14)}`, color: C.t3, fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                  <span>Integration / Broker</span>
+                  <span>Markets</span>
+                  <span>Auto Sync</span>
+                  <span>File</span>
+                </div>
+                <div style={{ maxHeight: 420, overflow: 'auto' }}>
+                  {filteredCatalog.map((broker) => (
                     <button
                       key={broker.id}
                       type="button"
                       onClick={() => selectCatalogBroker(broker)}
                       style={{
-                        minHeight: 82,
-                        borderRadius: 18,
-                        border: `1px solid ${selectedCatalogBroker?.id === broker.id ? shade(C.cyan, 0.36) : shade(C.t3, 0.14)}`,
-                        background: selectedCatalogBroker?.id === broker.id ? shade(C.cyan, 0.09) : 'rgba(255,255,255,0.024)',
+                        width: '100%',
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(220px, 1.4fr) 170px 92px 92px',
+                        gap: 10,
+                        alignItems: 'center',
+                        padding: '12px 13px',
+                        border: 0,
+                        borderBottom: `1px solid ${shade(C.t3, 0.08)}`,
+                        background: selectedCatalogBroker?.id === broker.id ? shade(C.cyan, 0.08) : 'transparent',
                         color: C.t1,
                         textAlign: 'left',
-                        padding: 13,
                         cursor: 'pointer',
                         fontFamily: 'inherit',
                       }}
                     >
-                      <div style={{ width: 32, height: 32, borderRadius: 12, display: 'grid', placeItems: 'center', border: `1px solid ${shade(C.cyan, 0.18)}`, background: shade(C.cyan, 0.08), color: C.cyan, fontSize: 12, fontWeight: 900, marginBottom: 10 }}>
-                        {broker.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div style={{ fontSize: 12.5, color: C.t0, fontWeight: 900 }}>{broker.name}</div>
-                      <div style={{ marginTop: 4, fontSize: 10.5, color: C.t3 }}>{broker.markets.join(' / ')}</div>
+                      <span>
+                        <span style={{ display: 'block', fontSize: 13, fontWeight: 900, color: C.t0 }}>{broker.name}</span>
+                        <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: C.t3 }}>{broker.group}</span>
+                      </span>
+                      <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                        {broker.markets.slice(0, 3).map((market) => (
+                          <span key={market} style={{ padding: '3px 7px', borderRadius: 999, border: `1px solid ${shade(C.t3, 0.12)}`, color: C.t2, fontSize: 10.5 }}>{market}</span>
+                        ))}
+                      </span>
+                      <span style={{ color: broker.autoSync ? C.green : C.t3, fontWeight: 900 }}>{broker.autoSync ? 'Yes' : 'No'}</span>
+                      <span style={{ color: broker.fileUpload ? C.green : C.t3, fontWeight: 900 }}>{broker.fileUpload ? 'Yes' : 'No'}</span>
                     </button>
                   ))}
                 </div>
               </div>
-            ) : null}
+            </motion.div>
+          ) : null}
 
-            <div style={{ borderRadius: 20, border: `1px solid ${shade(C.t3, 0.14)}`, background: 'rgba(255,255,255,0.018)', overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) 170px 92px 92px', gap: 10, padding: '10px 13px', borderBottom: `1px solid ${shade(C.t3, 0.14)}`, color: C.t3, fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                <span>Integration / Broker</span>
-                <span>Markets</span>
-                <span>Auto Sync</span>
-                <span>File</span>
-              </div>
-              <div style={{ maxHeight: 380, overflow: 'auto' }}>
-                {filteredCatalog.map((broker) => (
-                  <button
-                    key={broker.id}
-                    type="button"
-                    onClick={() => selectCatalogBroker(broker)}
-                    style={{
-                      width: '100%',
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(220px, 1.4fr) 170px 92px 92px',
-                      gap: 10,
-                      alignItems: 'center',
-                      padding: '11px 13px',
-                      border: 0,
-                      borderBottom: `1px solid ${shade(C.t3, 0.08)}`,
-                      background: selectedCatalogBroker?.id === broker.id ? shade(C.cyan, 0.08) : 'transparent',
-                      color: C.t1,
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
+          {wizardStep === 2 ? (
+            <motion.div key="method-step" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} style={{ maxWidth: 880, margin: '0 auto', display: 'grid', gap: 18 }}>
+              <WizardBrokerHeader broker={selectedCatalogBroker} onBack={() => { setSelectedCatalogBroker(null); setSelectedImportMethod(''); }} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
+                {connectionMethods.map((method) => (
+                  <MethodChoiceCard
+                    key={method.id}
+                    method={method}
+                    active={selectedImportMethod === method.id}
+                    onClick={() => {
+                      if (!method.available) return;
+                      setSelectedImportMethod(method.id);
+                      setConnectionComplete(null);
                     }}
-                  >
-                    <span>
-                      <span style={{ display: 'block', fontSize: 12.5, fontWeight: 900, color: C.t0 }}>{broker.name}</span>
-                      <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: C.t3 }}>{broker.group}</span>
-                    </span>
-                    <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                      {broker.markets.slice(0, 3).map((market) => (
-                        <span key={market} style={{ padding: '3px 7px', borderRadius: 999, border: `1px solid ${shade(C.t3, 0.12)}`, color: C.t2, fontSize: 10.5 }}>{market}</span>
-                      ))}
-                    </span>
-                    <span style={{ color: broker.autoSync ? C.green : C.t3, fontWeight: 900 }}>{broker.autoSync ? 'Yes' : 'No'}</span>
-                    <span style={{ color: broker.fileUpload ? C.green : C.t3, fontWeight: 900 }}>{broker.fileUpload ? 'Yes' : 'No'}</span>
-                  </button>
+                  />
                 ))}
               </div>
-            </div>
-          </div>
+            </motion.div>
+          ) : null}
 
-          <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
-            <div style={{ ...pageCardStyle({ padding: 18, borderRadius: 20 }) }}>
-              <div style={{ fontSize: 12, fontWeight: 900, color: C.t3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Selected broker</div>
-              {selectedCatalogBroker ? (
-                <>
-                  <div style={{ fontSize: 24, fontWeight: 900, color: C.t0, letterSpacing: '-0.04em' }}>{selectedCatalogBroker.name}</div>
-                  <div style={{ marginTop: 7, color: C.t2, fontSize: 12.5, lineHeight: 1.6 }}>{selectedCatalogBroker.markets.join(', ')} / {selectedCatalogBroker.group}</div>
-                </>
-              ) : (
-                <div style={{ color: C.t2, fontSize: 13, lineHeight: 1.7 }}>Choose a broker from the list to unlock the method step.</div>
-              )}
-            </div>
+          {wizardStep === 3 && connectionBlueprint ? (
+            <motion.div key="connect-step" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} style={{ maxWidth: 980, margin: '0 auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(300px, 0.82fr)', gap: 22, alignItems: 'start' }}>
+                <div style={{ ...pageCardStyle({ padding: 22, borderRadius: 22, border: `1px solid ${shade(C.cyan, 0.18)}` }) }}>
+                  <WizardBrokerHeader broker={selectedCatalogBroker} method={selectedMethod} onBack={() => setSelectedImportMethod('')} compact />
+                  <div style={{ height: 3, borderRadius: 999, background: `linear-gradient(90deg, ${C.cyan}, ${C.green})`, margin: '18px 0' }} />
+                  <div style={{ fontSize: 10, fontWeight: 900, color: C.t3, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Add trades</div>
+                  <div style={{ marginTop: 6, fontSize: 28, fontWeight: 950, color: C.t0, letterSpacing: '-0.06em' }}>{connectionBlueprint.title}</div>
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: C.t2 }}>{connectionBlueprint.subtitle}</div>
 
-            {[
-              { id: 'auto', title: 'Auto Sync', body: 'Broker API, Flex report, webhook, or provider-approved bridge when available.', available: Boolean(selectedCatalogBroker?.autoSync), recommended: selectedCatalogBroker?.autoSync },
-              { id: 'file', title: 'File Upload', body: 'Upload CSV, Excel or broker export through All Trades.', available: Boolean(selectedCatalogBroker?.fileUpload), recommended: !selectedCatalogBroker?.autoSync },
-              { id: 'manual', title: 'Add manually', body: 'Create the account now and add trades one by one.', available: Boolean(selectedCatalogBroker), recommended: false },
-            ].map((method) => (
-              <button
-                key={method.id}
-                type="button"
-                disabled={!method.available}
-                onClick={() => method.available && setSelectedImportMethod(method.id)}
-                style={{
-                  textAlign: 'left',
-                  borderRadius: 18,
-                  padding: 16,
-                  border: `1px solid ${selectedImportMethod === method.id ? shade(C.cyan, 0.35) : shade(method.available ? C.t3 : C.danger, 0.14)}`,
-                  background: selectedImportMethod === method.id ? shade(C.cyan, 0.09) : method.available ? 'rgba(255,255,255,0.025)' : shade(C.danger, 0.045),
-                  color: method.available ? C.t1 : C.t3,
-                  cursor: method.available ? 'pointer' : 'not-allowed',
-                  fontFamily: 'inherit',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: method.available ? C.t0 : C.t3 }}>{method.title}</div>
-                  {method.recommended ? <span style={{ padding: '4px 7px', borderRadius: 999, background: shade(C.green, 0.1), border: `1px solid ${shade(C.green, 0.18)}`, color: C.green, fontSize: 9.5, fontWeight: 900 }}>Recommended</span> : null}
-                  {!method.available ? <span style={{ padding: '4px 7px', borderRadius: 999, background: shade(C.danger, 0.08), border: `1px solid ${shade(C.danger, 0.16)}`, color: C.danger, fontSize: 9.5, fontWeight: 900 }}>Not available</span> : null}
+                  <form onSubmit={handleIntegratedConnectionSubmit} style={{ marginTop: 18, display: 'grid', gap: 13 }}>
+                    {(connectionBlueprint.fields || []).map((field) => (
+                      <Field key={field.id} label={field.label} hint={field.secret ? 'Sensitive field' : field.required ? 'Required' : 'Optional'}>
+                        {field.type === 'select' ? (
+                          <select
+                            value={connectionDraft[field.id] || field.options?.[0] || ''}
+                            onChange={(event) => setConnectionDraft((current) => ({ ...current, [field.id]: event.target.value }))}
+                            style={inputStyle()}
+                          >
+                            {(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}
+                          </select>
+                        ) : (
+                          <input
+                            type={field.secret ? 'password' : 'text'}
+                            value={connectionDraft[field.id] || ''}
+                            onChange={(event) => setConnectionDraft((current) => ({ ...current, [field.id]: event.target.value }))}
+                            placeholder={field.placeholder}
+                            autoComplete="off"
+                            style={inputStyle()}
+                          />
+                        )}
+                      </Field>
+                    ))}
+
+                    <ActionButton type="submit" disabled={connectionSubmitting} style={{ justifyContent: 'center', opacity: connectionSubmitting ? 0.72 : 1 }}>
+                      <ICON.Plug />
+                      {connectionSubmitting ? 'Connecting...' : connectionBlueprint.connectLabel}
+                    </ActionButton>
+                  </form>
                 </div>
-                <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.6, color: method.available ? C.t2 : C.t3 }}>{method.body}</div>
-              </button>
-            ))}
 
-            <AnimatePresence>
-              {connectionBlueprint ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.18 }}
-                  style={{
-                    marginTop: 2,
-                    padding: 16,
-                    borderRadius: 22,
-                    border: `1px solid ${shade(C.cyan, 0.18)}`,
-                    background: 'linear-gradient(180deg, rgba(7,13,23,0.96), rgba(4,8,15,0.98))',
-                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.035), 0 18px 44px ${shade(C.cyan, 0.08)}`,
-                  }}
-                >
-                  <div style={{ height: 3, borderRadius: 999, background: `linear-gradient(90deg, ${C.cyan}, ${C.green})`, marginBottom: 16 }} />
-                  <div style={{ display: 'grid', gap: 14 }}>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 900, color: C.t3, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Add trades</div>
-                      <div style={{ marginTop: 6, fontSize: 22, fontWeight: 950, color: C.t0, letterSpacing: '-0.05em' }}>{connectionBlueprint.title}</div>
-                      <div style={{ marginTop: 7, fontSize: 12.5, lineHeight: 1.65, color: C.t2 }}>{connectionBlueprint.subtitle}</div>
-                    </div>
-
-                    <form onSubmit={handleIntegratedConnectionSubmit} style={{ display: 'grid', gap: 12 }}>
-                      {(connectionBlueprint.fields || []).map((field) => (
-                        <Field key={field.id} label={field.label} hint={field.secret ? 'Sensitive field' : field.required ? 'Required' : 'Optional'}>
-                          {field.type === 'select' ? (
-                            <select
-                              value={connectionDraft[field.id] || field.options?.[0] || ''}
-                              onChange={(event) => setConnectionDraft((current) => ({ ...current, [field.id]: event.target.value }))}
-                              style={inputStyle()}
-                            >
-                              {(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}
-                            </select>
-                          ) : (
-                            <input
-                              type={field.secret ? 'password' : 'text'}
-                              value={connectionDraft[field.id] || ''}
-                              onChange={(event) => setConnectionDraft((current) => ({ ...current, [field.id]: event.target.value }))}
-                              placeholder={field.placeholder}
-                              autoComplete="off"
-                              style={inputStyle()}
-                            />
-                          )}
-                        </Field>
-                      ))}
-
-                      <ActionButton type="submit" disabled={connectionSubmitting} style={{ justifyContent: 'center', opacity: connectionSubmitting ? 0.72 : 1 }}>
-                        <ICON.Plug />
-                        {connectionSubmitting ? 'Connecting...' : connectionBlueprint.connectLabel}
-                      </ActionButton>
-                    </form>
-
-                    <div style={{ padding: 13, borderRadius: 16, border: `1px solid ${shade(C.t3, 0.12)}`, background: 'rgba(255,255,255,0.025)' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12 }}>
-                        {(connectionBlueprint.markets || []).map((market) => (
-                          <span key={market} style={{ padding: '4px 8px', borderRadius: 999, background: shade(C.cyan, 0.08), border: `1px solid ${shade(C.cyan, 0.12)}`, color: C.t1, fontSize: 10.5, fontWeight: 800 }}>
-                            {market}
-                          </span>
-                        ))}
-                      </div>
-                      <div style={{ display: 'grid', gap: 8 }}>
-                        {(connectionBlueprint.security || []).map((line) => (
-                          <div key={line} style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr)', gap: 8, alignItems: 'start', fontSize: 11.5, lineHeight: 1.55, color: C.t2 }}>
-                            <span style={{ width: 16, height: 16, borderRadius: '50%', display: 'grid', placeItems: 'center', color: C.green, background: shade(C.green, 0.1), border: `1px solid ${shade(C.green, 0.14)}`, fontSize: 8, fontWeight: 900 }}>OK</span>
-                            <span>{line}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <details style={{ marginTop: 12, color: C.t2, fontSize: 11.5, lineHeight: 1.6 }}>
-                        <summary style={{ cursor: 'pointer', color: C.t1, fontWeight: 800 }}>Integration guide</summary>
-                        <div style={{ marginTop: 8 }}>{connectionBlueprint.guide}</div>
-                      </details>
-                    </div>
+                <div style={{ ...pageCardStyle({ padding: 22, borderRadius: 22 }) }}>
+                  <div style={{ fontSize: 22, fontWeight: 950, color: C.t0, letterSpacing: '-0.04em' }}>{selectedCatalogBroker?.name}</div>
+                  <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                    {(connectionBlueprint.markets || []).map((market) => (
+                      <span key={market} style={{ padding: '4px 8px', borderRadius: 999, background: shade(C.cyan, 0.08), border: `1px solid ${shade(C.cyan, 0.12)}`, color: C.t1, fontSize: 10.5, fontWeight: 800 }}>
+                        {market}
+                      </span>
+                    ))}
                   </div>
-                </motion.div>
-              ) : (
-                <ActionButton onClick={() => beginCatalogConnection()} disabled={!selectedCatalogBroker || !selectedImportMethod} style={{ justifyContent: 'center', opacity: (!selectedCatalogBroker || !selectedImportMethod) ? 0.55 : 1 }}>
-                  Continue connection
-                  <ICON.ArrowUpRight />
-                </ActionButton>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
+                  <div style={{ marginTop: 18, display: 'grid', gap: 9 }}>
+                    {(connectionBlueprint.security || []).map((line) => (
+                      <div key={line} style={{ display: 'grid', gridTemplateColumns: '20px minmax(0, 1fr)', gap: 9, alignItems: 'start', fontSize: 12, lineHeight: 1.6, color: C.t2 }}>
+                        <span style={{ width: 18, height: 18, borderRadius: '50%', display: 'grid', placeItems: 'center', color: C.green, background: shade(C.green, 0.1), border: `1px solid ${shade(C.green, 0.14)}`, fontSize: 8, fontWeight: 900 }}>OK</span>
+                        <span>{line}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <details style={{ marginTop: 16, color: C.t2, fontSize: 12, lineHeight: 1.65 }}>
+                    <summary style={{ cursor: 'pointer', color: C.t1, fontWeight: 900 }}>Integration guide</summary>
+                    <div style={{ marginTop: 8 }}>{connectionBlueprint.guide}</div>
+                  </details>
+                </div>
+              </div>
+            </motion.div>
+          ) : null}
+
+          {wizardStep === 4 ? (
+            <motion.div key="ready-step" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} style={{ maxWidth: 760, margin: '0 auto' }}>
+              <div style={{ ...pageCardStyle({ padding: 28, borderRadius: 24, textAlign: 'center', border: `1px solid ${shade(C.green, 0.22)}` }) }}>
+                <div style={{ width: 54, height: 54, margin: '0 auto 16px', borderRadius: 18, display: 'grid', placeItems: 'center', color: C.green, background: shade(C.green, 0.12), border: `1px solid ${shade(C.green, 0.2)}` }}>
+                  <ICON.Plug />
+                </div>
+                <div style={{ fontSize: 30, fontWeight: 950, color: C.t0, letterSpacing: '-0.06em' }}>Broker feed created</div>
+                <div style={{ margin: '10px auto 0', maxWidth: 560, color: C.t2, fontSize: 13, lineHeight: 1.7 }}>
+                  {connectionComplete.accountName} is now linked to {connectionComplete.broker}. Auto Sync accounts can refresh from the connection desk; file and manual accounts stay ready for All Trades.
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 22 }}>
+                  <ActionButton onClick={() => { window.location.href = '/all-trades'; }}>
+                    Open All Trades
+                    <ICON.ArrowUpRight />
+                  </ActionButton>
+                  <ActionButton tone="subtle" onClick={() => {
+                    setSelectedCatalogBroker(null);
+                    setSelectedImportMethod('');
+                    setConnectionComplete(null);
+                    setBrokerSearch('');
+                    setMarketFilter('All Markets');
+                  }}>
+                    Connect another broker
+                  </ActionButton>
+                </div>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
 
       <div style={{ ...pageCardStyle({ padding: 24 }) }}>
