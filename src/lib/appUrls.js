@@ -1,10 +1,10 @@
 export const PUBLIC_SITE_URL = stripTrailingSlash(
-  process.env.REACT_APP_PUBLIC_SITE_URL || 'https://marketflowjournal.com'
+  process.env.REACT_APP_PUBLIC_SITE_URL || 'https://www.marketflowjournal.com'
 );
 export const APP_URL = stripTrailingSlash(
   process.env.REACT_APP_APP_URL || 'https://app.marketflowjournal.com'
 );
-const ENABLE_DEDICATED_APP_DOMAIN = String(process.env.REACT_APP_ENABLE_APP_DOMAIN || '').toLowerCase() === 'true';
+const APP_DOMAIN_MODE = String(process.env.REACT_APP_ENABLE_APP_DOMAIN || 'auto').toLowerCase();
 
 const PUBLIC_HOST = getUrlHost(PUBLIC_SITE_URL);
 const PUBLIC_APEX_HOST = PUBLIC_HOST.replace(/^www\./, '');
@@ -33,7 +33,17 @@ export function isDedicatedAppHost(hostname = getHostname()) {
 }
 
 export function hasDedicatedAppDomain() {
-  return Boolean(ENABLE_DEDICATED_APP_DOMAIN && APP_HOST && PUBLIC_HOST && APP_HOST !== PUBLIC_HOST);
+  const hostname = getHostname();
+  const hasSplitDomains = Boolean(APP_HOST && PUBLIC_HOST && APP_HOST !== PUBLIC_HOST);
+  if (!hasSplitDomains) return false;
+  if (isLocalAppHost(hostname) || isPreviewHost(hostname)) return false;
+  if (APP_DOMAIN_MODE === 'true') return true;
+  if (APP_DOMAIN_MODE === 'false') {
+    // Production was previously deployed with the flag disabled. Keep local/preview safe,
+    // but let the real MarketFlow domains route correctly once DNS is attached.
+    return isPublicSiteHost(hostname) || hostname === APP_HOST;
+  }
+  return true;
 }
 
 export function getAppOrigin() {

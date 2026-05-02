@@ -1,74 +1,69 @@
 # MarketFlow Domain Setup
 
-MarketFlow is currently a Create React App deployed on Vercel with serverless functions in `api/`.
+MarketFlow is a Create React App deployed on Vercel with serverless functions in `api/`.
 It is not a Next.js project.
 
-## Current Safe Production Structure
+## Target Structure
 
-- `marketflowjournal.com` -> active public site and journal fallback.
-- `www.marketflowjournal.com` -> future official marketing site once DNS exists.
-- `app.marketflowjournal.com` -> future connected journal workspace once DNS exists.
+- `https://www.marketflowjournal.com` is the public marketing site.
+- `https://app.marketflowjournal.com` is the connected journal workspace.
+- `https://marketflowjournal.com` should stay attached to Vercel as the apex fallback, then redirect to `www` only after `www` is valid.
 
-Important: `www.marketflowjournal.com` and `app.marketflowjournal.com` currently return DNS `NXDOMAIN` until records are created. Code cannot fix NXDOMAIN; DNS must be added first.
-
-The deployment intentionally does not redirect `marketflowjournal.com` to `www.marketflowjournal.com` yet. Redirecting before `www` resolves would break the live site again.
+Important: code cannot fix `DNS_PROBE_FINISHED_NXDOMAIN`. If `www` or `app` does not resolve, the DNS records below are missing or not propagated yet.
 
 ## DNS Records To Add
 
-DNS appears to be managed at OVH. Add these records:
+Add these records at the DNS provider that manages `marketflowjournal.com`:
 
 | Type | Name | Value |
-|---|---|---|
+| --- | --- | --- |
 | A | `@` | `216.198.79.1` |
 | CNAME | `www` | `cname.vercel-dns.com` |
 | CNAME | `app` | `cname.vercel-dns.com` |
 
-If Vercel shows a project-specific CNAME target in the Domains screen, use that exact Vercel value instead of the generic CNAME above.
+If Vercel shows a project-specific CNAME target in Project Settings > Domains, use that exact Vercel value instead of the generic CNAME above.
 
-Do not add an `A` record for `www` or `app`; both should be CNAME records.
+Do not add `A` records for `www` or `app`; both should be CNAME records.
 
-## Safe Activation Order
+## Vercel Domains
 
-1. Keep production running on `https://marketflowjournal.com`.
-2. Add `www.marketflowjournal.com` and `app.marketflowjournal.com` to the same Vercel project.
-3. Add the OVH DNS records above.
-4. Wait until both subdomains resolve and Vercel marks them valid.
-5. Add Supabase redirect URLs:
-   - `https://marketflowjournal.com/auth/callback`
-   - `https://www.marketflowjournal.com/auth/callback`
-   - `https://app.marketflowjournal.com/auth/callback`
-6. Only then set the public/app domain values and app-domain flags, then redeploy:
+Add all three domains to the same MarketFlow Vercel project:
+
+- `marketflowjournal.com`
+- `www.marketflowjournal.com`
+- `app.marketflowjournal.com`
+
+Once DNS is valid, make `www.marketflowjournal.com` the primary public domain. Keep `app.marketflowjournal.com` attached to the same deployment for the workspace.
+
+## Production Environment Variables
+
+Use these values in Vercel Production:
 
 ```env
 REACT_APP_PUBLIC_SITE_URL=https://www.marketflowjournal.com
 REACT_APP_APP_URL=https://app.marketflowjournal.com
-REACT_APP_ENABLE_APP_DOMAIN=true
+REACT_APP_ENABLE_APP_DOMAIN=auto
 NEXT_PUBLIC_SITE_URL=https://www.marketflowjournal.com
 NEXT_PUBLIC_APP_URL=https://app.marketflowjournal.com
 APP_URL=https://app.marketflowjournal.com
-ENABLE_APP_DOMAIN=true
+ENABLE_APP_DOMAIN=auto
 SUPPORT_EMAIL=support@marketflowjournal.com
 ```
 
-Before DNS is ready, keep both app-domain flags set to `false`.
+`auto` keeps localhost and Vercel preview deployments safe while enabling the split on the real production domains.
 
-After both subdomains are valid in Vercel, set the Vercel Domains preference so:
+## Supabase Redirect URLs
 
-- `www.marketflowjournal.com` is the primary marketing domain.
-- `app.marketflowjournal.com` is assigned to the same deployment and handled by app routing.
-- `marketflowjournal.com` can redirect to `https://www.marketflowjournal.com` only after `www` is confirmed live.
+Add these URLs to Supabase Auth redirect settings:
 
-## Verification
+- `https://www.marketflowjournal.com/auth/callback`
+- `https://app.marketflowjournal.com/auth/callback`
+- `https://marketflowjournal.com/auth/callback`
 
-Before enabling app mode:
+## Expected Verification
 
-- `https://marketflowjournal.com` loads the landing page.
-- `https://marketflowjournal.com/dashboard` can still load the journal fallback.
-- `https://www.marketflowjournal.com` will not work until the `www` DNS record exists.
-- `https://app.marketflowjournal.com` will not work until the `app` DNS record exists.
-
-After DNS and flags are active:
-
-- `https://www.marketflowjournal.com` loads the landing site.
-- `https://app.marketflowjournal.com/dashboard` loads the app entry and asks for login if needed.
-- Pricing checkout returns to `https://app.marketflowjournal.com/welcome`.
+- `https://www.marketflowjournal.com` loads the landing page.
+- `https://app.marketflowjournal.com/dashboard` opens the journal entry and asks for login if needed.
+- `https://app.marketflowjournal.com/broker-connect` opens Broker Connect after login.
+- Stripe Checkout returns to `https://app.marketflowjournal.com/welcome`.
+- Emails link back to `https://app.marketflowjournal.com/dashboard`.
