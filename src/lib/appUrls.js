@@ -59,6 +59,9 @@ export function getPublicSiteOrigin() {
   if (isLocalAppHost(window.location.hostname) || isPreviewHost(window.location.hostname)) {
     return window.location.origin;
   }
+  if (isPublicSiteHost(window.location.hostname)) {
+    return window.location.origin;
+  }
   return PUBLIC_SITE_URL;
 }
 

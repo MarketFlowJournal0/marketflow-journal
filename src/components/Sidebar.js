@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { hasRouteAccess, normalizePlan } from '../lib/subscription';
 import { MarketFlowMark, MarketFlowWordmark } from './MarketFlowBrand';
+import { publicSiteUrl } from '../lib/appUrls';
 import {
   JOURNAL_THEME_KEY,
   JOURNAL_THEME_CUSTOM_KEY,
@@ -146,6 +147,13 @@ const Ic = {
       <path d="M4.2 10.8H3A1.5 1.5 0 011.5 9.3V7a5.5 5.5 0 1111 0v2.3a1.5 1.5 0 01-1.5 1.5H9.8" />
       <path d="M4.8 12.5h4.4" />
       <path d="M7 12.5v-1.7" />
+    </svg>
+  ),
+  Website: () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="7" r="5.4" />
+      <path d="M1.8 7h10.4" />
+      <path d="M7 1.8c1.4 1.4 2.1 3.1 2.1 5.2S8.4 10.8 7 12.2C5.6 10.8 4.9 9.1 4.9 7S5.6 3.2 7 1.8z" />
     </svg>
   ),
   Logout: () => (
@@ -758,6 +766,9 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
                 </button>
                 <button onClick={() => go('support')} style={actionButtonStyle}>
                   <Ic.Support /> Support
+                </button>
+                <button onClick={() => { setPanelOpen(false); window.location.href = publicSiteUrl('/'); }} style={actionButtonStyle}>
+                  <Ic.Website /> Website
                 </button>
                 <button onClick={() => { setPanelOpen(false); onLogout?.(); }} style={{ ...actionButtonStyle, color: '#FF8A8A', border: '1px solid rgba(255,99,99,0.18)', background: 'rgba(255,77,77,0.04)' }}>
                   <Ic.Logout /> Sign Out

@@ -542,6 +542,9 @@ const ICON = {
 };
 
 function generateToken() {
+  if (typeof window === 'undefined' || !window.crypto?.getRandomValues) {
+    return `mf_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 18)}`;
+  }
   const arr = new Uint8Array(32);
   window.crypto.getRandomValues(arr);
   return Array.from(arr).map((value) => value.toString(16).padStart(2, '0')).join('');
@@ -595,7 +598,7 @@ function downloadJson(payload, filename) {
 }
 
 function copyText(value, successMessage = 'Copied.') {
-  if (navigator?.clipboard?.writeText) {
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     navigator.clipboard.writeText(String(value || '')).catch(() => {});
   } else if (typeof document !== 'undefined') {
     const textarea = document.createElement('textarea');
@@ -625,6 +628,14 @@ function sanitizeBrokerAccounts(accounts = []) {
       status: account.status || account.connection_status || (account.last_sync_at ? 'connected' : 'disconnected'),
       total_trades_synced: Number(account.total_trades_synced || account.synced_trades || 0) || 0,
     }));
+}
+
+function safeUpper(value, fallback = '') {
+  return String(value || fallback).toUpperCase();
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function roleLabel(role) {
@@ -1067,8 +1078,9 @@ function BrokerConnect() {
   const filteredCatalog = useMemo(() => {
     const query = brokerSearch.trim().toLowerCase();
     return BROKER_CATALOG.filter((broker) => {
-      const matchesMarket = marketFilter === 'All Markets' || broker.markets.includes(marketFilter);
-      const matchesSearch = !query || [broker.name, broker.group, ...(broker.markets || [])].join(' ').toLowerCase().includes(query);
+      const brokerMarkets = safeArray(broker.markets);
+      const matchesMarket = marketFilter === 'All Markets' || brokerMarkets.includes(marketFilter);
+      const matchesSearch = !query || [broker.name, broker.group, ...brokerMarkets].join(' ').toLowerCase().includes(query);
       return matchesMarket && matchesSearch;
     }).slice(0, 80);
   }, [brokerSearch, marketFilter]);
@@ -1432,7 +1444,7 @@ function BrokerConnect() {
     setCopierState(result.nextState);
     setDispatchResults(result.results);
     setDispatchSummary(result.activityItem);
-    toast.success(`Dispatch simulation completed for ${result.results.length} follower account(s).`);
+    toast.success(`Dispatch simulation completed for ${safeArray(result.results).length} follower account(s).`);
   }
 
   function handleExportDesk() {
@@ -1632,7 +1644,7 @@ function BrokerConnect() {
                         <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: C.t3 }}>{broker.group}</span>
                       </span>
                       <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                        {broker.markets.slice(0, 3).map((market) => (
+                        {safeArray(broker.markets).slice(0, 3).map((market) => (
                           <span key={market} style={{ padding: '3px 7px', borderRadius: 999, border: `1px solid ${shade(C.t3, 0.12)}`, color: C.t2, fontSize: 10.5 }}>{market}</span>
                         ))}
                       </span>
@@ -1740,7 +1752,7 @@ function BrokerConnect() {
                 </div>
                 <div style={{ fontSize: 30, fontWeight: 950, color: C.t0, letterSpacing: '-0.06em' }}>Broker feed created</div>
                 <div style={{ margin: '10px auto 0', maxWidth: 560, color: C.t2, fontSize: 13, lineHeight: 1.7 }}>
-                  {connectionComplete.accountName} is now linked to {connectionComplete.broker}. Auto Sync accounts can refresh from the connection desk; file and manual accounts stay ready for All Trades.
+                  {connectionComplete?.accountName || 'Your account'} is now linked to {connectionComplete?.broker || 'the selected broker'}. Auto Sync accounts can refresh from the connection desk; file and manual accounts stay ready for All Trades.
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 22 }}>
                   <ActionButton onClick={() => { window.location.href = '/all-trades'; }}>
@@ -1953,7 +1965,7 @@ function BrokerConnect() {
                       </div>
                     </div>
                     <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {broker.features.map((feature) => (
+                      {safeArray(broker.features).map((feature) => (
                         <div key={feature} style={{ padding: '4px 8px', borderRadius: 999, background: shade(broker.color, 0.1), border: `1px solid ${shade(broker.color, 0.16)}`, color: broker.color, fontSize: 10.5, fontWeight: 600 }}>
                           {feature}
                         </div>
@@ -2160,7 +2172,7 @@ function BrokerConnect() {
                     <Field label="Allowed sessions" hint="Multi-select">
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {SESSION_OPTIONS.map((option) => {
-                          const active = copierLinkForm.sessionFilter.includes(option.id);
+                          const active = safeArray(copierLinkForm.sessionFilter).includes(option.id);
                           return (
                             <button
                               key={option.id}
@@ -2462,7 +2474,7 @@ function BrokerConnect() {
                   <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(C.t3, 0.12)}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{dispatchSummary.symbol} · {dispatchSummary.side.toUpperCase()}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{dispatchSummary.symbol} · {safeUpper(dispatchSummary.side)}</div>
                         <div style={{ marginTop: 4, fontSize: 11.5, color: C.t3 }}>{dispatchSummary.masterLabel} · {dispatchSummary.session} session</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.t2, fontSize: 11.5 }}>
@@ -2492,7 +2504,7 @@ function BrokerConnect() {
                               <Pill tone="subtle">{row.symbol}</Pill>
                             </div>
                             <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
-                              <RiskStat label="Side" value={row.side.toUpperCase()} tone={C.cyan} subtle />
+                            <RiskStat label="Side" value={safeUpper(row.side)} tone={C.cyan} subtle />
                               <RiskStat label="Size" value={String(row.recommendedSize)} tone={C.green} subtle />
                               <RiskStat label="Risk" value={moneyExact(row.estimatedRiskCash)} tone={C.gold} subtle />
                               <RiskStat label="Use" value={percentage(row.utilization, 1)} tone={row.utilization > 85 ? C.danger : C.purple} subtle />
@@ -2536,21 +2548,21 @@ function BrokerConnect() {
                     <div key={item.id} style={{ padding: 14, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: `1px solid ${shade(C.t3, 0.12)}` }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                         <div>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1 }}>{item.symbol} · {item.side.toUpperCase()} · {item.masterLabel}</div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1 }}>{item.symbol} · {safeUpper(item.side)} · {item.masterLabel}</div>
                           <div style={{ marginTop: 4, fontSize: 11.5, color: C.t3 }}>{new Date(item.timestamp).toLocaleString('fr-FR')}</div>
                         </div>
                         <div style={{ padding: '6px 10px', borderRadius: 999, background: shade(C.cyan, 0.08), border: `1px solid ${shade(C.cyan, 0.14)}`, color: C.cyan, fontSize: 11 }}>
-                          {item.results.length} follower(s)
+                          {safeArray(item.results).length} follower(s)
                         </div>
                       </div>
                       <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
-                        {item.results.slice(0, 3).map((result) => {
+                        {safeArray(item.results).slice(0, 3).map((result) => {
                           const tone = statusTone(result.state);
                           return (
                             <div key={result.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', borderRadius: 12, background: tone.bg, border: `1px solid ${tone.border}` }}>
                               <div style={{ minWidth: 0 }}>
                                 <div style={{ fontSize: 12, fontWeight: 700, color: tone.color }}>{result.followerLabel}</div>
-                                <div style={{ marginTop: 4, fontSize: 11, color: C.t2 }}>{result.symbol} · {result.side.toUpperCase()}</div>
+                                <div style={{ marginTop: 4, fontSize: 11, color: C.t2 }}>{result.symbol} · {safeUpper(result.side)}</div>
                               </div>
                               <div style={{ textAlign: 'right' }}>
                                 <div style={{ fontSize: 12, fontWeight: 700, color: tone.color }}>{result.recommendedSize}</div>
@@ -2586,7 +2598,7 @@ function BrokerConnect() {
                 <ActionButton tone="subtle" onClick={() => setSetupOpen(false)}>Close</ActionButton>
               </div>
               <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
-                {selectedBroker.setup.map((step, index) => (
+                {safeArray(selectedBroker.setup).map((step, index) => (
                   <div key={step} style={{ display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr)', gap: 12, alignItems: 'start', padding: '12px 0', borderTop: index === 0 ? 'none' : `1px solid ${shade(C.t3, 0.12)}` }}>
                     <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'grid', placeItems: 'center', background: shade(selectedBroker.color, 0.14), border: `1px solid ${shade(selectedBroker.color, 0.2)}`, color: selectedBroker.color, fontSize: 11, fontWeight: 800 }}>
                       {index + 1}
