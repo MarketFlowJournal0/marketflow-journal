@@ -294,7 +294,7 @@ export default function SupportWidget({ onOpenPage }) {
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
         ) : (
-          <img src={LOGO_SIMPLE} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src={LOGO_SIMPLE} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(0.88)', transformOrigin: 'center' }} />
         )}
       </button>
 
@@ -304,7 +304,7 @@ export default function SupportWidget({ onOpenPage }) {
           {/* Header */}
           <div className="mfw-head">
             <div className="mfw-av">
-              <img src={LOGO_FULL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={LOGO_FULL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(0.88)', transformOrigin: 'center' }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>

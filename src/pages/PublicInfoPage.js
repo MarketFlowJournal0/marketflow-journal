@@ -219,7 +219,7 @@ export default function PublicInfoPage({ page = 'docs' }) {
         .pub-wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;}
         .pub-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:72px;}
         .pub-brand{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;font-weight:900;letter-spacing:-.04em;font-family:'Space Grotesk',sans-serif;font-size:20px;}
-        .pub-brand img{width:42px;height:42px;border-radius:13px;object-fit:cover;box-shadow:0 18px 38px rgba(0,0,0,.42),0 0 32px rgba(20,201,229,.14);}
+        .pub-brand img{width:42px;height:42px;border-radius:13px;object-fit:cover;transform:scale(.88);transform-origin:center;box-shadow:0 18px 38px rgba(0,0,0,.42),0 0 32px rgba(20,201,229,.14);}
         .pub-nav a:last-child{color:#9FB1CA;text-decoration:none;font-size:13px;font-weight:800;border:1px solid rgba(220,228,239,.08);border-radius:999px;padding:10px 15px;background:rgba(255,255,255,.025);}
         .pub-card{border:1px solid rgba(220,228,239,.08);background:linear-gradient(145deg,rgba(13,23,38,.72),rgba(4,9,18,.86));border-radius:28px;padding:42px;box-shadow:0 30px 90px rgba(0,0,0,.38);position:relative;overflow:hidden;}
         .pub-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 82% 0%,rgba(20,201,229,.11),transparent 38%);pointer-events:none;}

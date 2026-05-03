@@ -17,8 +17,8 @@ const flowGradient = {
 };
 
 export function MarketFlowMark({
-  size = 38,
-  radius = 11,
+  size = 34,
+  radius = 10,
   padding = 0,
   border = '0',
   background = 'transparent',
@@ -50,6 +50,8 @@ export function MarketFlowMark({
           width: '100%',
           height: '100%',
           objectFit: 'cover',
+          transform: 'scale(0.88)',
+          transformOrigin: 'center',
           padding,
           ...imageStyle,
         }}

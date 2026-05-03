@@ -113,7 +113,7 @@ const STYLES = `
     repeating-linear-gradient(90deg,rgba(148,163,184,0.035) 0 1px,transparent 1px 120px);
     opacity:.26;mix-blend-mode:screen;
   }
-  .lp-logo-img { width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 16px 28px rgba(0,0,0,.42)); }
+  .lp-logo-img { width:100%;height:100%;object-fit:cover;transform:scale(.88);transform-origin:center;filter:drop-shadow(0 16px 28px rgba(0,0,0,.42)); }
 
   /* NAV */
   .lp-nav { position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 48px;height:72px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(2,6,13,0.86),rgba(2,6,13,0.58));backdrop-filter:blur(26px) saturate(160%);border-bottom:1px solid rgba(220,228,239,0.06);transition:all 0.3s; }
