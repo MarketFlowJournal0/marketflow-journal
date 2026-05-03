@@ -259,8 +259,9 @@ function dedupeBrokerCatalog(items = []) {
 }
 
 function resolveCatalogPlatformId(item = {}) {
-  if (item.platformId) return item.platformId;
-  const name = String(item.name || '').toLowerCase();
+  const broker = item && typeof item === 'object' ? item : {};
+  if (broker.platformId) return broker.platformId;
+  const name = String(broker.name || '').toLowerCase();
   if (name.includes('metatrader 4') || name.includes('mt4')) return 'mt4';
   if (name.includes('metatrader 5') || name.includes('mt5')) return 'mt5';
   if (name.includes('ctrader')) return 'ctrader';
@@ -269,23 +270,24 @@ function resolveCatalogPlatformId(item = {}) {
   if (name.includes('ninja')) return 'ninjatrader';
   if (name.includes('interactive')) return 'ibkr';
   if (name.includes('tradingview')) return 'tradingview';
-  return item.autoSync ? 'webhook' : 'webhook';
+  return broker.autoSync ? 'webhook' : 'webhook';
 }
 
 function buildInitialConnectionDraft(item = {}, method = '') {
-  const platformId = resolveCatalogPlatformId(item);
-  const label = item?.name ? `${item.name} Account` : '';
+  const broker = item && typeof item === 'object' ? item : {};
+  const platformId = resolveCatalogPlatformId(broker);
+  const label = broker.name ? `${broker.name} Account` : '';
   return {
     accountLabel: label,
     accountNumber: '',
-    serverName: item?.group || '',
+    serverName: broker.group || '',
     environment: platformId === 'oanda' ? 'practice' : 'live',
     flexToken: '',
     flexQueryId: '',
     apiToken: '',
     apiKey: '',
     accountId: '',
-    sourceName: item?.name || '',
+    sourceName: broker.name || '',
     baseCurrency: 'USD',
     importFormat: method === 'file' ? 'CSV / Excel' : '',
   };
@@ -293,8 +295,10 @@ function buildInitialConnectionDraft(item = {}, method = '') {
 
 function getConnectionBlueprint(item = {}, method = '') {
   if (!item || !method) return null;
-  const platformId = resolveCatalogPlatformId(item);
-  const markets = item.markets || [];
+  const broker = item && typeof item === 'object' ? item : {};
+  const platformId = resolveCatalogPlatformId(broker);
+  const markets = safeArray(broker.markets);
+  const brokerName = broker.name || 'Selected broker';
   const commonSecurity = [
     'MarketFlow never asks for your broker password.',
     'The journal imports execution history only; it cannot place orders or move funds.',
@@ -305,12 +309,12 @@ function getConnectionBlueprint(item = {}, method = '') {
     return {
       key: 'file',
       title: 'File Upload',
-      subtitle: `Create a clean ${item.name} account slot, then import CSV, Excel, or broker exports in All Trades.`,
+      subtitle: `Create a clean ${brokerName} account slot, then import CSV, Excel, or broker exports in All Trades.`,
       connectLabel: 'Create account and open importer',
       status: 'disconnected',
       markets,
       fields: [
-        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Main`, required: true },
+        { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Main`, required: true },
         { id: 'accountNumber', label: 'Account number', placeholder: 'Optional broker account ID' },
         { id: 'importFormat', label: 'Import format', type: 'select', options: ['CSV / Excel', 'Broker statement', 'Generic structured file'], required: true },
       ],
@@ -323,12 +327,12 @@ function getConnectionBlueprint(item = {}, method = '') {
     return {
       key: 'manual',
       title: 'Manual Account',
-      subtitle: `Create a ${item.name} journal account and add trades manually from All Trades.`,
+      subtitle: `Create a ${brokerName} journal account and add trades manually from All Trades.`,
       connectLabel: 'Create manual account',
       status: 'disconnected',
       markets,
       fields: [
-        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Manual`, required: true },
+        { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Manual`, required: true },
         { id: 'accountNumber', label: 'Account number', placeholder: 'Optional broker account ID' },
         { id: 'baseCurrency', label: 'Base currency', type: 'select', options: ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF'], required: true },
       ],
@@ -384,7 +388,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       status: 'ready',
       markets,
       fields: [
-        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Main`, required: true },
+        { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Main`, required: true },
         { id: 'accountNumber', label: 'Account number', placeholder: '50123456', required: true },
         { id: 'serverName', label: 'Server / prop environment', placeholder: 'Broker-Live01', required: true },
       ],
@@ -396,13 +400,13 @@ function getConnectionBlueprint(item = {}, method = '') {
   if (platformId === 'tradovate' || platformId === 'ninjatrader') {
     return {
       key: `${platformId}-api`,
-      title: `${item.name} API / Export Sync`,
+      title: `${brokerName} API / Export Sync`,
       subtitle: 'Use an approved broker token when available, or keep the account ready for file-based futures imports.',
-      connectLabel: `Connect ${item.name}`,
+      connectLabel: `Connect ${brokerName}`,
       status: 'ready',
       markets,
       fields: [
-        { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Futures`, required: true },
+        { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Futures`, required: true },
         { id: 'accountNumber', label: 'Account ID', placeholder: 'Broker account ID', required: true },
         { id: 'apiKey', label: 'API key / access token', placeholder: 'Optional if File Upload only', secret: true },
         { id: 'environment', label: 'Environment', type: 'select', options: ['demo', 'live'], required: true },
@@ -414,16 +418,16 @@ function getConnectionBlueprint(item = {}, method = '') {
 
   return {
     key: 'universal',
-    title: `${item.name} Sync`,
+    title: `${brokerName} Sync`,
     subtitle: 'Create a universal MarketFlow feed for API, webhook, export, or future provider sync.',
-    connectLabel: `Connect ${item.name}`,
+    connectLabel: `Connect ${brokerName}`,
     status: 'ready',
     markets,
     fields: [
-      { id: 'accountLabel', label: 'Account label', placeholder: `${item.name} Main`, required: true },
+      { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Main`, required: true },
       { id: 'accountNumber', label: 'Account number', placeholder: 'Broker account ID' },
       { id: 'apiKey', label: 'API key / provider token', placeholder: 'Optional when supported', secret: true },
-      { id: 'serverName', label: 'Server / platform', placeholder: item.group || item.name },
+      { id: 'serverName', label: 'Server / platform', placeholder: broker.group || brokerName },
     ],
     security: commonSecurity,
     guide: 'Universal feeds are used for brokers with custom exports, provider APIs, or webhook-capable platforms. Unsupported brokers should use File Upload first.',

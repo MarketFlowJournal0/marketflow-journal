@@ -67,8 +67,9 @@ export function chartTooltipStyle(color = 'var(--mf-accent,#14C9E5)') {
 }
 
 export function chartActiveDot(color = 'var(--mf-accent,#14C9E5)', radius = 5, stroke = 'var(--mf-deep,#07090F)') {
+  const safeRadius = Number.isFinite(Number(radius)) ? Number(radius) : 5;
   return {
-    r: radius + 0.5,
+    r: safeRadius + 0.5,
     fill: color,
     stroke,
     strokeWidth: 2.5,
