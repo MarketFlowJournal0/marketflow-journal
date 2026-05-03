@@ -113,6 +113,8 @@ const STYLES = `
   @keyframes mf-bg-rotate { from{transform:rotate(0deg) scale(1)} to{transform:rotate(360deg) scale(1.04)} }
   @keyframes mf-divider-flow { 0%{background-position:0% 50%;opacity:.22} 50%{background-position:100% 50%;opacity:.75} 100%{background-position:0% 50%;opacity:.22} }
   @keyframes mf-section-bloom { 0%,100%{opacity:.22;transform:translateX(-4%) scaleX(.92)} 50%{opacity:.52;transform:translateX(4%) scaleX(1)} }
+  @keyframes mf-bridge-scan { 0%{transform:translateX(-30%);opacity:.18} 50%{opacity:.9} 100%{transform:translateX(30%);opacity:.18} }
+  @keyframes mf-bridge-dot { 0%,100%{transform:scale(.72);opacity:.38} 50%{transform:scale(1);opacity:1} }
   .lp-shell { background:
     radial-gradient(circle at 72% 8%, rgba(20,201,229,0.10), transparent 34%),
     radial-gradient(circle at 8% 92%, rgba(0,210,184,0.07), transparent 30%),
@@ -193,8 +195,31 @@ const STYLES = `
   .lp-section-tag { display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:50px;border:1px solid rgba(6,230,255,0.2);background:rgba(6,230,255,0.05);font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px; }
   .lp-section h2 { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:clamp(32px,4vw,52px);line-height:1.1;color:var(--t0);letter-spacing:-1.5px;margin-bottom:14px; }
   .lp-section-sub { font-size:16px;color:var(--t2);max-width:580px;line-height:1.7; }
+  .lp-section-bridge { padding:28px 48px 8px;position:relative;z-index:3; }
+  .lp-bridge-inner { max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;color:rgba(220,228,239,.78); }
+  .lp-bridge-line { height:1px;background:linear-gradient(90deg,transparent,rgba(20,201,229,.24),rgba(0,210,184,.18),transparent);background-size:180% 100%;animation:mf-bridge-scan 5.8s ease-in-out infinite; }
+  .lp-bridge-copy { display:flex;align-items:center;gap:10px;padding:8px 13px;border:1px solid rgba(220,228,239,.08);border-radius:999px;background:rgba(3,8,16,.64);backdrop-filter:blur(18px);box-shadow:0 18px 46px rgba(0,0,0,.26); }
+  .lp-bridge-dot { width:7px;height:7px;border-radius:999px;background:linear-gradient(135deg,var(--cyan),var(--green));box-shadow:0 0 18px rgba(20,201,229,.48);animation:mf-bridge-dot 2.2s ease-in-out infinite; }
+  .lp-bridge-kicker { font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:900;color:var(--t3); }
+  .lp-bridge-title { font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:900;color:var(--t0); }
 
   /* FEATURES */
+  .lp-product-grid { display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:52px;align-items:stretch; }
+  .lp-product-card { border:1px solid rgba(220,228,239,.08);border-radius:24px;background:linear-gradient(145deg,rgba(13,23,38,.74),rgba(3,8,16,.9));padding:28px;position:relative;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.28); }
+  .lp-product-card::before { content:'';position:absolute;inset:0;background:radial-gradient(circle at 82% 6%,rgba(20,201,229,.14),transparent 34%);pointer-events:none; }
+  .lp-product-code { font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cyan);letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:14px; }
+  .lp-product-title { font-family:'Space Grotesk',sans-serif;font-size:28px;line-height:1.05;font-weight:800;color:var(--t0);letter-spacing:-1px;margin-bottom:12px; }
+  .lp-product-desc { font-size:14px;line-height:1.75;color:var(--t2);max-width:620px; }
+  .lp-product-steps { display:grid;gap:10px;margin-top:20px; }
+  .lp-product-step { display:flex;align-items:flex-start;gap:12px;padding:13px;border-radius:15px;background:rgba(255,255,255,.03);border:1px solid rgba(220,228,239,.06); }
+  .lp-product-step span { width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(20,201,229,.09);border:1px solid rgba(20,201,229,.16);color:var(--cyan);font-size:10px;font-weight:900;flex-shrink:0; }
+  .lp-product-step strong { display:block;color:var(--t0);font-size:13px;margin-bottom:3px; }
+  .lp-product-step em { display:block;color:var(--t2);font-size:12px;line-height:1.5;font-style:normal; }
+  .lp-product-terminal { min-height:100%;border-radius:22px;border:1px solid rgba(20,201,229,.12);background:linear-gradient(160deg,rgba(1,4,10,.96),rgba(4,12,22,.92));padding:18px;position:relative;overflow:hidden; }
+  .lp-terminal-row { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 12px;border-bottom:1px solid rgba(220,228,239,.06);font-size:12px;color:var(--t2); }
+  .lp-terminal-row:last-child { border-bottom:0; }
+  .lp-terminal-row strong { color:var(--t0);font-size:13px; }
+  .lp-terminal-pill { padding:4px 8px;border-radius:999px;background:rgba(0,210,184,.08);border:1px solid rgba(0,210,184,.16);color:var(--green);font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase; }
   .lp-features-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:60px; }
   .lp-feature-card { padding:28px;border-radius:18px;border:1px solid rgba(220,228,239,0.08);background:linear-gradient(145deg,rgba(13,23,38,0.68),rgba(4,9,18,0.82));position:relative;overflow:hidden;transition:all 0.25s; }
   .lp-feature-card::before { content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent,rgba(220,228,239,.045),transparent);transform:translateX(-120%);transition:transform .7s ease; }
@@ -246,6 +271,11 @@ const STYLES = `
 
   /* COMPARE */
   .lp-compare { margin-top:60px;overflow-x:auto; }
+  .lp-access-overview { display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:42px; }
+  .lp-access-card { padding:18px;border-radius:18px;border:1px solid rgba(220,228,239,.08);background:linear-gradient(145deg,rgba(13,23,38,.58),rgba(3,8,16,.82));position:relative;overflow:hidden; }
+  .lp-access-card::after { content:'';position:absolute;left:18px;right:18px;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.35; }
+  .lp-access-card h3 { margin:0 0 8px;color:var(--t0);font-size:16px;font-family:'Space Grotesk',sans-serif; }
+  .lp-access-card p { margin:0;color:var(--t2);font-size:12.5px;line-height:1.6; }
   .lp-compare-table { width:100%;border-collapse:separate;border-spacing:0;min-width:600px; }
   .lp-compare-table th { padding:14px 20px;font-size:10px;font-weight:800;color:var(--t3);letter-spacing:1px;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--brd); }
   .lp-compare-table th.hl { color:var(--cyan); }
@@ -293,6 +323,18 @@ const STYLES = `
 
   /* FAQ */
   .lp-faq-list { margin-top:44px;display:flex;flex-direction:column;gap:8px;max-width:800px; }
+  .lp-timeline-list { display:grid;gap:12px;margin-top:42px; }
+  .lp-timeline-item { display:grid;grid-template-columns:120px 1fr auto;gap:18px;align-items:start;padding:18px;border-radius:18px;border:1px solid rgba(220,228,239,.08);background:rgba(12,20,34,.52); }
+  .lp-timeline-date { color:var(--cyan);font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase; }
+  .lp-timeline-title { color:var(--t0);font-weight:800;font-size:15px;margin-bottom:6px; }
+  .lp-timeline-desc { color:var(--t2);font-size:13px;line-height:1.6; }
+  .lp-timeline-badge { padding:5px 9px;border-radius:999px;background:rgba(0,210,184,.08);border:1px solid rgba(0,210,184,.15);color:var(--green);font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase; }
+  .lp-roadmap-grid,.lp-resource-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px; }
+  .lp-roadmap-card,.lp-resource-card { padding:22px;border-radius:20px;border:1px solid rgba(220,228,239,.08);background:linear-gradient(145deg,rgba(13,23,38,.62),rgba(3,8,16,.86));position:relative;overflow:hidden;transition:all .24s ease; }
+  .lp-roadmap-card:hover,.lp-resource-card:hover { transform:translateY(-3px);border-color:rgba(20,201,229,.22);box-shadow:0 18px 54px rgba(0,0,0,.34); }
+  .lp-roadmap-card small,.lp-resource-card small { color:var(--cyan);font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase; }
+  .lp-roadmap-card h3,.lp-resource-card h3 { margin:12px 0 8px;color:var(--t0);font-size:17px;font-family:'Space Grotesk',sans-serif; }
+  .lp-roadmap-card p,.lp-resource-card p { margin:0;color:var(--t2);font-size:13px;line-height:1.65; }
   .lp-faq-item { border:1px solid var(--brd);border-radius:12px;background:rgba(12,20,34,0.4);overflow:hidden; }
   .lp-faq-q { padding:18px 22px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:14.5px;font-weight:600;color:var(--t1);transition:color 0.2s;user-select:none; }
   .lp-faq-q:hover { color:var(--cyan); }
@@ -338,6 +380,10 @@ const STYLES = `
 
   @media (max-width:900px) {
     .lp-features-grid,.lp-pricing-grid,.lp-testi-grid { grid-template-columns:1fr; }
+    .lp-product-grid,.lp-access-overview,.lp-roadmap-grid,.lp-resource-grid { grid-template-columns:1fr; }
+    .lp-bridge-inner { grid-template-columns:1fr; }
+    .lp-bridge-line { display:none; }
+    .lp-timeline-item { grid-template-columns:1fr; }
     .lp-big-feat { grid-template-columns:1fr; }
     .lp-analytics-console { grid-template-columns:1fr; }
     .lp-module-rail { display:grid;grid-template-columns:repeat(2,1fr); }
@@ -512,6 +558,24 @@ function PageModal({ page, onClose }) {
   );
 }
 
+function SectionBridge({ next }) {
+  return (
+    <Reveal>
+      <div className="lp-section-bridge" aria-hidden="true">
+        <div className="lp-bridge-inner">
+          <div className="lp-bridge-line" />
+          <div className="lp-bridge-copy">
+            <span className="lp-bridge-dot" />
+            <span className="lp-bridge-kicker">Category shift</span>
+            <span className="lp-bridge-title">{next}</span>
+          </div>
+          <div className="lp-bridge-line" />
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
 // --- Main ------------------------------------------------------------------
 export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const [scrolled, setScrolled] = useState(false);
@@ -547,7 +611,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <div className="lp-nav-logo-icon"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div>
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
-        <div className="lp-nav-links"><a href="#features">Product</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="/changelog">Changelog</a><a href="/roadmap">Roadmap</a><a href="/docs">Resources</a></div>
+        <div className="lp-nav-links"><a href="#product">Product</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#changelog">Changelog</a><a href="#roadmap">Roadmap</a><a href="#resources">Resources</a></div>
         <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>Log in</button><button className="btn-primary-nav" onClick={onSignup}>Start 14-day trial</button></div>
       </nav>
 
@@ -595,6 +659,53 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         </div>
       </div>
 
+      <SectionBridge next="Product" />
+
+      {/* PRODUCT */}
+      <section className="lp-section" id="product">
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Product</div></Reveal>
+          <Reveal><h2>The journal is the center.<br/><em>Everything else connects to it.</em></h2></Reveal>
+          <Reveal><p className="lp-section-sub">MarketFlow is built as a connected review system: import trades once, then use the same source of truth across dashboard, calendar, analytics, psychology, equity, reports and plan-gated tools.</p></Reveal>
+          <div className="lp-product-grid">
+            <Reveal delay={0.08}>
+              <div className="lp-product-card">
+                <div className="lp-product-code">Core workflow</div>
+                <div className="lp-product-title">Import, review, score, improve.</div>
+                <div className="lp-product-desc">The product stays sober on purpose. MarketFlow gives traders a clean daily operating room instead of a noisy dashboard, then keeps every useful metric tied to the same trade data.</div>
+                <div className="lp-product-steps">
+                  {[
+                    ['01', 'Centralize trades', 'Manual entries, CSV, Excel, JSON and mapped imports start in All Trades.'],
+                    ['02', 'Read the edge', 'Dashboard, analytics, calendar and equity views update from the same stream.'],
+                    ['03', 'Improve behavior', 'Psychology and development workflows add discipline context to performance.'],
+                  ].map(([id,title,desc]) => (
+                    <div className="lp-product-step" key={id}><span>{id}</span><div><strong>{title}</strong><em>{desc}</em></div></div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={0.16}>
+              <div className="lp-product-terminal">
+                {[
+                  ['All Trades', 'Source of truth', 'LIVE'],
+                  ['Analytics', 'Starter basics / Pro depth / Elite detail', 'PLAN'],
+                  ['Psychology', 'Daily check-in and behavior score', 'PRO'],
+                  ['Backtest', '1 / 5 / 25 sessions by plan', 'GATED'],
+                  ['Reports, alerts, API', 'Export, notify, connect', 'ELITE'],
+                ].map(([label,desc,badge]) => (
+                  <div className="lp-terminal-row" key={label}>
+                    <div><strong>{label}</strong><div>{desc}</div></div>
+                    <span className="lp-terminal-pill">{badge}</span>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      <SectionBridge next="Features" />
+
       {/* FEATURES */}
       <section className="lp-section" id="features">
         <div className="lp-section-inner">
@@ -613,6 +724,8 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           </div>
         </div>
       </section>
+
+      <SectionBridge next="Analytics" />
 
       {/* BIG FEATURES */}
       <section className="lp-section" id="analytics" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
@@ -694,11 +807,28 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         </div>
       </section>
 
+      <SectionBridge next="Access" />
+
       {/* ACCESS MATRIX */}
-      <section className="lp-section" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
+      <section className="lp-section" id="access" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">Access</div></Reveal>
           <Reveal><h2>Choose the depth<br/><em>your workflow needs</em></h2></Reveal>
+          <Reveal><p className="lp-section-sub">Every plan keeps the core journal clean. Higher plans add deeper review, automation and operational surfaces without changing the source of truth.</p></Reveal>
+          <div className="lp-access-overview">
+            {[
+              ['Starter', 'Core journal access: import, dashboard, calendar, competition and one backtest session.'],
+              ['Pro', 'Adds analytics depth, psychology, equity, broker desk, reports and five backtest sessions.'],
+              ['Elite', 'Adds unlimited accounts, advanced tooling, API, alerts and twenty-five backtest sessions.'],
+            ].map(([title, desc], index) => (
+              <Reveal key={title} delay={index * 0.08}>
+                <div className="lp-access-card">
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
           <div className="lp-compare">
             <table className="lp-compare-table">
               <thead><tr><th>Module</th><th className="hl">Starter</th><th>Pro</th><th>Elite</th></tr></thead>
@@ -718,6 +848,9 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           </div>
         </div>
       </section>
+
+      <SectionBridge next="Pricing" />
+
       {/* PRICING */}
       <section className="lp-section" id="pricing" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
         <div className="lp-section-inner">
@@ -750,6 +883,92 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                 </Reveal>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <SectionBridge next="Changelog" />
+
+      {/* CHANGELOG */}
+      <section className="lp-section" id="changelog" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Changelog</div></Reveal>
+          <Reveal><h2>Recent product work,<br/><em>kept transparent</em></h2></Reveal>
+          <Reveal><p className="lp-section-sub">Only shipped or currently wired product areas are described here. No inflated proof, no fake user counters, no imaginary integrations.</p></Reveal>
+          <div className="lp-timeline-list">
+            {[
+              ['V1 closing pass', 'Domain-aware website and app routing', 'www keeps the public site, app opens the journal workspace, and auth returns users to the correct side.'],
+              ['Brand system', 'New MarketFlow identity rollout', 'Favicon, manifest icons, sidebar, public site and metadata share the updated MF mark.'],
+              ['Journal data layer', 'All Trades as source of truth', 'Imports, manual entries, dashboards, analytics and calendar modules are structured around one trade stream.'],
+              ['Access and billing', '14-day trial with plan-gated modules', 'Plan pages, welcome access and Stripe subscription states are aligned with Starter, Pro and Elite.'],
+            ].map(([date, title, desc], index) => (
+              <Reveal key={title} delay={index * 0.06}>
+                <div className="lp-timeline-item">
+                  <div className="lp-timeline-date">{date}</div>
+                  <div>
+                    <div className="lp-timeline-title">{title}</div>
+                    <div className="lp-timeline-desc">{desc}</div>
+                  </div>
+                  <span className="lp-timeline-badge">Live</span>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <SectionBridge next="Roadmap" />
+
+      {/* ROADMAP */}
+      <section className="lp-section" id="roadmap" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Roadmap</div></Reveal>
+          <Reveal><h2>The next upgrades are<br/><em>practical, not theatrical</em></h2></Reveal>
+          <Reveal><p className="lp-section-sub">MarketFlow's roadmap stays focused on things that make the journal more useful: cleaner broker flows, stronger backtest data, deeper Elite analytics and better mobile workflows.</p></Reveal>
+          <div className="lp-roadmap-grid">
+            {[
+              ['Broker sync desk', 'A cleaner broker selection and import flow with clear Auto Sync vs File Upload states by platform.'],
+              ['Backtest replay layer', 'TradingView-style session pages, OHLC provider architecture and saved simulated trades.'],
+              ['Elite analytics depth', 'Hourly, weekly, monthly, account, strategy, setup and behavior analytics from real All Trades data.'],
+              ['Mobile companion', 'A focused mobile journal companion for review, psychology check-ins and quick trade notes.'],
+            ].map(([title, desc], index) => (
+              <Reveal key={title} delay={index * 0.08}>
+                <div className="lp-roadmap-card">
+                  <span className="lp-timeline-badge">{index < 2 ? 'Building' : 'Planned'}</span>
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <SectionBridge next="Resources" />
+
+      {/* RESOURCES */}
+      <section className="lp-section" id="resources" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
+        <div className="lp-section-inner">
+          <Reveal><div className="lp-section-tag">Resources</div></Reveal>
+          <Reveal><h2>Everything needed<br/><em>to use the journal cleanly</em></h2></Reveal>
+          <Reveal><p className="lp-section-sub">Resources are presented directly on the site so visitors understand the product before creating an account.</p></Reveal>
+          <div className="lp-resource-grid">
+            {[
+              ['Documentation', 'Product guide', 'Understand the workspace, plans, core modules and where each workflow lives.'],
+              ['Import Guide', 'CSV / Excel', 'Prepare files, map columns and keep All Trades as the single source of truth.'],
+              ['Security', 'Trust', 'Clear account separation, protected billing flow and support escalation for sensitive access issues.'],
+              ['Tutorials', 'Workflows', 'Practical flows for daily review, psychology check-ins, backtesting and reports.'],
+              ['Support', 'Help desk', `Contact ${SUPPORT_EMAIL} for billing, access, import or technical issues.`],
+              ['Legal', 'Terms and privacy', 'Terms, privacy and refund policy remain available from the legal footer links.'],
+            ].map(([title, badge, desc], index) => (
+              <Reveal key={title} delay={index * 0.05}>
+                <div className="lp-resource-card">
+                  <span className="lp-timeline-badge">{badge}</span>
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
@@ -796,8 +1015,8 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               <div className="lp-footer-brand-row"><div className="lp-footer-mark"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div><span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:17,color:'#fff'}}>Market<span className="flow-text">Flow</span></span></div>
               <p>A structured trading journal for professional execution review, analytics and accountability.</p>
             </div>
-            <div className="lp-footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="/changelog">Changelog</a><a href="/roadmap">Roadmap</a></div>
-            <div className="lp-footer-col"><h4>Resources</h4><a className="lp-resource-link" href="/docs">Documentation <span>Guide</span></a><a className="lp-resource-link" href="/import-guide">Import Guide <span>CSV</span></a><a className="lp-resource-link" href="/tutorials">Tutorials <span>Workflows</span></a><a className="lp-resource-link" href="/contact">Support <span>Help</span></a></div>
+            <div className="lp-footer-col"><h4>Product</h4><a href="#product">Product</a><a href="#features">Features</a><a href="#access">Access</a><a href="#pricing">Pricing</a><a href="#changelog">Changelog</a><a href="#roadmap">Roadmap</a></div>
+            <div className="lp-footer-col"><h4>Resources</h4><a className="lp-resource-link" href="#resources">Documentation <span>Guide</span></a><a className="lp-resource-link" href="#resources">Import Guide <span>CSV</span></a><a className="lp-resource-link" href="#resources">Security <span>Trust</span></a><a className="lp-resource-link" href="#resources">Tutorials <span>Workflows</span></a></div>
             <div className="lp-footer-col"><h4>Legal</h4><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/contact">Contact</a><a href={`mailto:${SUPPORT_EMAIL}`}>Support</a></div>
           </div>
           <div className="lp-footer-bottom">

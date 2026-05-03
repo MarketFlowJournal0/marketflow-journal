@@ -518,7 +518,15 @@ function AppInner() {
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
       setTimeout(() => launchCheckout(pendingPriceId, userData?.email), 800);
+      return;
     }
+
+    if (!shouldRenderApp()) {
+      window.location.href = appUrl(isNewAccount ? '/plan' : '/dashboard');
+      return;
+    }
+
+    navigate(isNewAccount ? '/plan' : '/dashboard', { replace: true });
   };
 
   const handleLogout = async () => {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import MarketFlowBrand from './MarketFlowBrand';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW AUTH — Clean v3
@@ -147,13 +146,17 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
           <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s', zIndex: 10 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}>✕</button>
 
           <div style={{ position: 'relative', zIndex: 1, padding: '28px 26px 24px' }}>
-            <MarketFlowBrand
-              gap={10}
-              subtitle=""
-              style={{ marginBottom: 20 }}
-              markProps={{ size: 32, radius: 9, padding: 3, alt: '' }}
-              wordmarkProps={{ titleSize: 16, titleLetterSpacing: '-0.4px' }}
-            />
+            <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: 999, background: '#14C9E5', boxShadow: '0 0 18px rgba(20,201,229,0.55)' }} />
+                <span style={{ fontSize: 10, color: 'rgba(139,163,204,0.72)', letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 900 }}>
+                  Secure Access
+                </span>
+              </div>
+              <span style={{ fontSize: 10, color: 'rgba(220,228,239,0.42)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 800 }}>
+                Journal
+              </span>
+            </div>
 
             <AnimatePresence mode="wait">
               {success ? (
