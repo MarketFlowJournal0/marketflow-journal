@@ -35,7 +35,7 @@ import WelcomePage from './pages/WelcomePage';
 import { getEntryRoute, hasJournalAccess, hasRouteAccess, normalizePlan } from './lib/subscription';
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
 import { buildOnboardingRecord } from './lib/onboarding';
-import { appUrl, publicSiteUrl, isPublicSiteHost, isDedicatedAppHost, hasDedicatedAppDomain } from './lib/appUrls';
+import { appUrl, publicSiteUrl, shouldRenderApp } from './lib/appUrls';
 import './App.css';
 import './theme.css';
 
@@ -60,28 +60,6 @@ const PUBLIC_INFO_ROUTES = {
   '/contact': 'contact',
 };
 
-const APP_HOST_ROUTE_PREFIXES = [
-  '/dashboard',
-  '/all-trades',
-  '/analytics',
-  '/analytics-pro',
-  '/backtest',
-  '/development',
-  '/calendar',
-  '/equity',
-  '/psychology',
-  '/broker-connect',
-  '/reports',
-  '/alerts',
-  '/api-access',
-  '/competition',
-  '/onboarding-stats',
-  '/subscription',
-  '/account-settings',
-  '/support',
-  '/plan',
-  '/welcome',
-];
 
 const PRICE_PLAN_MAP = {
   price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
@@ -99,11 +77,6 @@ function rememberCheckoutPlan(planId) {
   localStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
 }
 
-function isAppOnlyRoute(pathname) {
-  return APP_HOST_ROUTE_PREFIXES.some((route) => (
-    pathname === route || pathname.startsWith(`${route}/`)
-  ));
-}
 
 function LoadingScreen() {
   return (
@@ -425,7 +398,11 @@ function AppInner() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('payment') === 'success') {
-      navigate('/', { replace: true });
+      if (!shouldRenderApp()) {
+        window.location.replace(appUrl('/dashboard'));
+        return;
+      }
+      navigate('/dashboard', { replace: true });
       const doRefresh = async () => {
         try { await refreshProfile?.(); } catch (_) {}
       };
@@ -436,6 +413,10 @@ function AppInner() {
       }), 500);
     }
     if (params.get('payment') === 'cancelled') {
+      if (!shouldRenderApp()) {
+        window.location.replace(appUrl('/plan'));
+        return;
+      }
       navigate('/plan', { replace: true });
       toast('Payment cancelled.', { style: { background: '#0D1627', color: '#fff', borderRadius: '12px' } });
     }
@@ -453,7 +434,7 @@ function AppInner() {
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
     }
 
-    if (!user && (authMode === 'login' || authMode === 'signup')) {
+    if (!user && shouldRenderApp() && (authMode === 'login' || authMode === 'signup')) {
       setAuthModal(authMode);
     }
 
@@ -463,33 +444,10 @@ function AppInner() {
     navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true });
   }, [location.search, location.pathname, navigate, user]);
 
-  useEffect(() => {
-    const isPublicInfoPage = Boolean(PUBLIC_INFO_ROUTES[location.pathname]);
-    const isMarketingHome = location.pathname === '/';
-    const shouldMoveToApp = user
-      ? (isMarketingHome || isAppOnlyRoute(location.pathname))
-      : isAppOnlyRoute(location.pathname);
-
-    if (!hasDedicatedAppDomain() || !isPublicSiteHost() || isPublicInfoPage || !shouldMoveToApp) return;
-
-    const targetPath = user && isMarketingHome ? '/dashboard' : location.pathname;
-    const target = new URL(appUrl(targetPath));
-    target.search = location.search;
-    target.hash = location.hash;
-    if (!user) target.searchParams.set('auth', 'login');
-    window.location.replace(target.toString());
-  }, [location.pathname, location.search, location.hash, user]);
-
-  useEffect(() => {
-    if (!hasDedicatedAppDomain() || !isDedicatedAppHost() || !PUBLIC_INFO_ROUTES[location.pathname]) return;
-    const target = new URL(publicSiteUrl(location.pathname));
-    target.search = location.search;
-    target.hash = location.hash;
-    window.location.replace(target.toString());
-  }, [location.pathname, location.search, location.hash]);
 
   // Onboarding — uniquement après une nouvelle inscription
   useEffect(() => {
+    if (!shouldRenderApp()) return;
     if (user && profileLoaded && !user.stripeCustomerId) {
       const isNew = sessionStorage.getItem('mfj_new_signup') === '1';
       const done  = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
@@ -508,12 +466,12 @@ function AppInner() {
   };
 
   const openLogin = () => {
-    if (hasDedicatedAppDomain() && isPublicSiteHost()) return routeAuthToApp('login');
-    return setAuthModal('login');
+    if (shouldRenderApp()) return setAuthModal('login');
+    return routeAuthToApp('login');
   };
   const openSignup = () => {
-    if (hasDedicatedAppDomain() && isPublicSiteHost()) return routeAuthToApp('signup');
-    return setAuthModal('signup');
+    if (shouldRenderApp()) return setAuthModal('signup');
+    return routeAuthToApp('signup');
   };
   const closeAuth          = () => setAuthModal(null);
   const openSignupWithPlan = (priceId) => {
@@ -521,8 +479,8 @@ function AppInner() {
       sessionStorage.setItem('pending_price_id', priceId);
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
     }
-    if (hasDedicatedAppDomain() && isPublicSiteHost()) return routeAuthToApp('signup', priceId);
-    setAuthModal('signup');
+    if (shouldRenderApp()) return setAuthModal('signup');
+    return routeAuthToApp('signup', priceId);
   };
 
   const launchCheckout = async (priceId, userEmail) => {
@@ -567,7 +525,7 @@ function AppInner() {
       const dbs = await window.indexedDB.databases();
       dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
     } catch (_) {}
-    window.location.href = publicSiteUrl('/');
+    window.location.href = appUrl('/');
   };
 
   const handleOnboardingComplete = async (answers) => {
@@ -641,9 +599,16 @@ function AppInner() {
   // ── Loading ──
   if (loading && !profileLoaded) return <LoadingScreen />;
 
+  if (!shouldRenderApp() && location.pathname === '/welcome') {
+    const target = new URL(appUrl('/welcome'));
+    target.search = location.search;
+    target.hash = location.hash;
+    window.location.replace(target.toString());
+    return <LoadingScreen />;
+  }
+
   const publicInfoPage = PUBLIC_INFO_ROUTES[location.pathname];
-  if (publicInfoPage) {
-    if (isDedicatedAppHost()) return <LoadingScreen />;
+  if (publicInfoPage && !shouldRenderApp()) {
     return (
       <>
         <PublicInfoPage page={publicInfoPage} />
@@ -654,7 +619,7 @@ function AppInner() {
 
   // ── Non connecté ──
   if (!user) {
-    if (isDedicatedAppHost()) {
+    if (shouldRenderApp()) {
       return (
         <>
           <AppDomainEntry onLogin={openLogin} onSignup={openSignup} />
@@ -676,12 +641,27 @@ function AppInner() {
           } />
         </Routes>
         <SupportWidget onOpenPage={() => { window.location.href = publicSiteUrl('/contact'); }} />
-        {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
       </>
     );
   }
 
   // ── Onboarding ──
+  if (!shouldRenderApp()) {
+    return (
+      <>
+        <Routes>
+          <Route path="*" element={
+            <LandingPage
+              onLogin={openLogin}
+              onSignup={openSignup}
+              onSignupWithPlan={openSignupWithPlan}
+            />
+          } />
+        </Routes>
+        <SupportWidget onOpenPage={() => { window.location.href = publicSiteUrl('/contact'); }} />
+      </>
+    );
+  }
   if (showOnboarding) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
@@ -702,7 +682,7 @@ function AppInner() {
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = publicSiteUrl('/'); }, 300); }}
+              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = appUrl('/'); }, 300); }}
             />
           } />
           <Route path="*" element={<Navigate to="/plan" replace />} />

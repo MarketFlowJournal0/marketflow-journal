@@ -154,23 +154,12 @@ module.exports = async (req, res) => {
 };
 
 function getAppBaseUrl() {
-  const dedicatedAppDomain = String(
-    process.env.ENABLE_APP_DOMAIN
-    || process.env.REACT_APP_ENABLE_APP_DOMAIN
-    || 'false'
-  ).toLowerCase() === 'true';
-  const publicUrl = normalizePublicSiteUrl(
-    process.env.NEXT_PUBLIC_SITE_URL
-    || process.env.PUBLIC_SITE_URL
-    || 'https://marketflowjournal.com'
-  );
-  const appUrl = String(
+  return String(
     process.env.NEXT_PUBLIC_APP_URL
     || process.env.APP_URL
+    || process.env.REACT_APP_APP_URL
     || 'https://app.marketflowjournal.com'
   ).replace(/\/+$/, '');
-
-  return dedicatedAppDomain ? appUrl : publicUrl;
 }
 
 function normalizePublicSiteUrl(url) {

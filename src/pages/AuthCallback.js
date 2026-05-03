@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { appUrl } from '../lib/appUrls';
 
 const C = {
   bg:   '#01040A',
@@ -49,7 +50,7 @@ export default function AuthCallback() {
             setStatus('reset'); // Show reset form
           } else {
             setStatus('success'); // Email confirmation OK
-            setTimeout(() => { window.location.href = '/'; }, 2500);
+            setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
           }
           return;
         }
@@ -67,7 +68,7 @@ export default function AuthCallback() {
             setStatus('reset');
           } else {
             setStatus('success');
-            setTimeout(() => { window.location.href = '/'; }, 2500);
+            setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
           }
           return;
         }
@@ -104,7 +105,7 @@ export default function AuthCallback() {
       setError(error.message);
     } else {
       setStatus('success');
-      setTimeout(() => { window.location.href = '/'; }, 2500);
+      setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
     }
   };
 
@@ -210,7 +211,7 @@ export default function AuthCallback() {
             <div style={s.subtitle}>
               Your account is activated. You will be redirected to MarketFlow Journal…
             </div>
-            <button style={s.btn} onClick={() => window.location.href = '/'}>
+            <button style={s.btn} onClick={() => { window.location.href = appUrl('/dashboard'); }}>
               Go to the app →
             </button>
           </>
@@ -224,7 +225,7 @@ export default function AuthCallback() {
             <div style={s.subtitle}>
               This link has expired or is invalid. Try logging in again or requesting a new email.
             </div>
-            <button style={s.btn} onClick={() => window.location.href = '/'}>
+            <button style={s.btn} onClick={() => { window.location.href = appUrl('/dashboard'); }}>
               Back to home
             </button>
           </>

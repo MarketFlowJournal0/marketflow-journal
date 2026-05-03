@@ -14,6 +14,8 @@ const PUBLIC_SITE_URL = getBaseUrl(
   normalizePublicSiteUrl(
     process.env.NEXT_PUBLIC_SITE_URL
     || process.env.PUBLIC_SITE_URL
+    || process.env.REACT_APP_SITE_URL
+    || process.env.REACT_APP_PUBLIC_SITE_URL
     || 'https://marketflowjournal.com'
   )
 );
@@ -29,18 +31,12 @@ function normalizePublicSiteUrl(url) {
 }
 
 function getAppBaseUrl() {
-  const dedicatedAppDomain = String(
-    process.env.ENABLE_APP_DOMAIN
-    || process.env.REACT_APP_ENABLE_APP_DOMAIN
-    || 'false'
-  ).toLowerCase() === 'true';
-  const appUrl = getBaseUrl(
+  return getBaseUrl(
     process.env.NEXT_PUBLIC_APP_URL
     || process.env.APP_URL
+    || process.env.REACT_APP_APP_URL
     || 'https://app.marketflowjournal.com'
   );
-
-  return dedicatedAppDomain ? appUrl : PUBLIC_SITE_URL;
 }
 
 async function sendEmail(payload) {

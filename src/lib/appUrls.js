@@ -1,67 +1,79 @@
-export const PUBLIC_SITE_URL = stripTrailingSlash(
-  process.env.REACT_APP_PUBLIC_SITE_URL || 'https://marketflowjournal.com'
-);
-export const APP_URL = stripTrailingSlash(
-  process.env.REACT_APP_APP_URL || 'https://app.marketflowjournal.com'
-);
-const APP_DOMAIN_MODE = String(process.env.REACT_APP_ENABLE_APP_DOMAIN || 'false').toLowerCase();
+const DEFAULT_SITE_URL = 'https://marketflowjournal.com';
+const DEFAULT_APP_URL = 'https://app.marketflowjournal.com';
 
-const PUBLIC_HOST = getUrlHost(PUBLIC_SITE_URL);
+export const PUBLIC_SITE_URL = stripTrailingSlash(
+  process.env.REACT_APP_SITE_URL
+  || process.env.REACT_APP_PUBLIC_SITE_URL
+  || DEFAULT_SITE_URL
+);
+export const SITE_URL = PUBLIC_SITE_URL;
+export const APP_URL = stripTrailingSlash(
+  process.env.REACT_APP_APP_URL || DEFAULT_APP_URL
+);
+
+const PUBLIC_HOST = normalizeHostname(getUrlHost(PUBLIC_SITE_URL));
 const PUBLIC_APEX_HOST = PUBLIC_HOST.replace(/^www\./, '');
-const APP_HOST = getUrlHost(APP_URL);
+const APP_HOST = normalizeHostname(getUrlHost(APP_URL));
+
+export const DOMAIN_SURFACES = {
+  APP: 'app',
+  MARKETING: 'marketing',
+};
+
+export function getDomainSurface(hostname = getHostname()) {
+  return isAppHost(hostname) ? DOMAIN_SURFACES.APP : DOMAIN_SURFACES.MARKETING;
+}
+
+export function shouldRenderApp(hostname = getHostname()) {
+  return getDomainSurface(hostname) === DOMAIN_SURFACES.APP;
+}
+
+export function shouldRenderMarketing(hostname = getHostname()) {
+  return getDomainSurface(hostname) === DOMAIN_SURFACES.MARKETING;
+}
 
 export function isLocalAppHost(hostname = getHostname()) {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+  const host = normalizeHostname(hostname);
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '';
 }
 
 export function isPreviewHost(hostname = getHostname()) {
-  return hostname.endsWith('.vercel.app');
+  const host = normalizeHostname(hostname);
+  return host.endsWith('.vercel.app');
+}
+
+export function isConfiguredAppHost(hostname = getHostname()) {
+  const host = normalizeHostname(hostname);
+  return Boolean(host && (host === APP_HOST || host.startsWith('app.')));
 }
 
 export function isAppHost(hostname = getHostname()) {
-  return hostname === APP_HOST || isLocalAppHost(hostname) || isPreviewHost(hostname);
+  return isConfiguredAppHost(hostname) || isLocalAppHost(hostname) || isPreviewHost(hostname);
 }
 
 export function isPublicSiteHost(hostname = getHostname()) {
-  return hostname === PUBLIC_HOST
-    || hostname === PUBLIC_APEX_HOST
-    || hostname === `www.${PUBLIC_APEX_HOST}`;
+  const host = normalizeHostname(hostname);
+  return host === PUBLIC_HOST
+    || host === PUBLIC_APEX_HOST
+    || host === `www.${PUBLIC_APEX_HOST}`;
 }
 
 export function isDedicatedAppHost(hostname = getHostname()) {
-  return Boolean(hasDedicatedAppDomain() && APP_HOST && hostname === APP_HOST);
+  return isAppHost(hostname);
 }
 
 export function hasDedicatedAppDomain() {
-  const hostname = getHostname();
-  const hasSplitDomains = Boolean(APP_HOST && PUBLIC_HOST && APP_HOST !== PUBLIC_HOST);
-  if (!hasSplitDomains) return false;
-  if (isLocalAppHost(hostname) || isPreviewHost(hostname)) return false;
-  if (APP_DOMAIN_MODE === 'true') return true;
-  if (APP_DOMAIN_MODE === 'auto') return hostname === APP_HOST;
-  return false;
+  return Boolean(APP_HOST && PUBLIC_HOST && APP_HOST !== PUBLIC_HOST);
 }
 
 export function getAppOrigin() {
-  if (!hasDedicatedAppDomain()) {
-    if (typeof window !== 'undefined' && (isLocalAppHost(window.location.hostname) || isPreviewHost(window.location.hostname))) {
-      return window.location.origin;
-    }
-    return PUBLIC_SITE_URL;
+  if (typeof window !== 'undefined' && isAppHost(window.location.hostname)) {
+    return window.location.origin;
   }
-  if (typeof window === 'undefined') return APP_URL;
-  if (isAppHost(window.location.hostname)) return window.location.origin;
   return APP_URL;
 }
 
 export function getPublicSiteOrigin() {
-  if (typeof window === 'undefined') return PUBLIC_SITE_URL;
-  if (isLocalAppHost(window.location.hostname) || isPreviewHost(window.location.hostname)) {
-    return window.location.origin;
-  }
-  if (isPublicSiteHost(window.location.hostname)) {
-    return window.location.origin;
-  }
   return PUBLIC_SITE_URL;
 }
 
@@ -93,4 +105,8 @@ function getUrlHost(url) {
   } catch (_) {
     return '';
   }
+}
+
+function normalizeHostname(hostname) {
+  return String(hostname || '').trim().toLowerCase().replace(/^\[|\]$/g, '');
 }

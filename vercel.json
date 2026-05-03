@@ -5,6 +5,14 @@
       "schedule": "0 3 * * *"
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.marketflowjournal.com" }],
+      "destination": "https://marketflowjournal.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/mt-sync", "destination": "/api/broker-sync?mode=mt" },
     { "source": "/api/mt/sync", "destination": "/api/broker-sync?mode=mt" },
