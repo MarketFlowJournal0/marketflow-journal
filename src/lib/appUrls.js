@@ -1,14 +1,14 @@
-const DEFAULT_SITE_URL = 'https://marketflowjournal.com';
+const DEFAULT_SITE_URL = 'https://www.marketflowjournal.com';
 const DEFAULT_APP_URL = 'https://app.marketflowjournal.com';
 
 export const PUBLIC_SITE_URL = stripTrailingSlash(
-  process.env.REACT_APP_SITE_URL
+  normalizePublicSiteUrl(process.env.REACT_APP_SITE_URL
   || process.env.REACT_APP_PUBLIC_SITE_URL
-  || DEFAULT_SITE_URL
+  || DEFAULT_SITE_URL)
 );
 export const SITE_URL = PUBLIC_SITE_URL;
 export const APP_URL = stripTrailingSlash(
-  process.env.REACT_APP_APP_URL || DEFAULT_APP_URL
+  normalizeAppUrl(process.env.REACT_APP_APP_URL || DEFAULT_APP_URL)
 );
 
 const PUBLIC_HOST = normalizeHostname(getUrlHost(PUBLIC_SITE_URL));
@@ -21,6 +21,7 @@ export const DOMAIN_SURFACES = {
 };
 
 export function getDomainSurface(hostname = getHostname()) {
+  if (isPublicSiteHost(hostname)) return DOMAIN_SURFACES.MARKETING;
   return isAppHost(hostname) ? DOMAIN_SURFACES.APP : DOMAIN_SURFACES.MARKETING;
 }
 
@@ -44,6 +45,7 @@ export function isPreviewHost(hostname = getHostname()) {
 
 export function isConfiguredAppHost(hostname = getHostname()) {
   const host = normalizeHostname(hostname);
+  if (isPublicSiteHost(host)) return false;
   return Boolean(host && (host === APP_HOST || host.startsWith('app.')));
 }
 
@@ -74,6 +76,9 @@ export function getAppOrigin() {
 }
 
 export function getPublicSiteOrigin() {
+  if (typeof window !== 'undefined' && isPublicSiteHost(window.location.hostname)) {
+    return window.location.origin;
+  }
   return PUBLIC_SITE_URL;
 }
 
@@ -92,6 +97,30 @@ function normalizePath(path) {
 
 function stripTrailingSlash(url) {
   return String(url || '').replace(/\/+$/, '');
+}
+
+function normalizePublicSiteUrl(url) {
+  try {
+    const parsed = new URL(url || DEFAULT_SITE_URL);
+    const host = normalizeHostname(parsed.hostname);
+    if (host === 'marketflowjournal.com') parsed.hostname = 'www.marketflowjournal.com';
+    return parsed.toString();
+  } catch (_) {
+    return DEFAULT_SITE_URL;
+  }
+}
+
+function normalizeAppUrl(url) {
+  try {
+    const parsed = new URL(url || DEFAULT_APP_URL);
+    const host = normalizeHostname(parsed.hostname);
+    if (host === 'marketflowjournal.com' || host === 'www.marketflowjournal.com') {
+      return DEFAULT_APP_URL;
+    }
+    return parsed.toString();
+  } catch (_) {
+    return DEFAULT_APP_URL;
+  }
 }
 
 function getHostname() {

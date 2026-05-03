@@ -16,7 +16,7 @@ const PUBLIC_SITE_URL = getBaseUrl(
     || process.env.PUBLIC_SITE_URL
     || process.env.REACT_APP_SITE_URL
     || process.env.REACT_APP_PUBLIC_SITE_URL
-    || 'https://marketflowjournal.com'
+    || 'https://www.marketflowjournal.com'
   )
 );
 const APP_URL = getAppBaseUrl();

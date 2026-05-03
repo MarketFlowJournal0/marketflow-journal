@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://marketflowjournal.com/sitemap.xml
+Sitemap: https://www.marketflowjournal.com/sitemap.xml
 
 # Bloquer les pages app (pas utiles pour Google)
 Disallow: /dashboard
