@@ -61,6 +61,65 @@ const QUESTIONS = {
 
 const COLORS = ['#14C9E5', '#00D2B8', '#DCE4EF', '#6885FF', '#D7B36A', '#DF5F7A'];
 
+function downloadTextFile(content, filename, type = 'text/plain') {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function downloadJsonFile(payload, filename) {
+  downloadTextFile(JSON.stringify(payload, null, 2), filename, 'application/json');
+}
+
+function toCsvCell(value) {
+  const text = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function responsesToCsv(responses) {
+  const columns = [
+    'email',
+    'plan',
+    'completedAt',
+    'experience',
+    'markets',
+    'style',
+    'goal',
+    'platforms',
+    'traderSegment',
+    'recommendedPlan',
+    'complexityScore',
+    'professionalSignals',
+  ];
+  const rows = responses.map((response) => {
+    const answers = response.answers || {};
+    return {
+      email: response.email,
+      plan: response.plan,
+      completedAt: response.meta?.completedAt || '',
+      experience: answers.experience,
+      markets: answers.market,
+      style: answers.style,
+      goal: answers.goal,
+      platforms: answers.platform,
+      traderSegment: response.analytics?.traderSegment || '',
+      recommendedPlan: response.recommendations?.initialPlan || response.meta?.summary?.recommendedPlan || '',
+      complexityScore: response.analytics?.complexityScore ?? '',
+      professionalSignals: response.analytics?.professionalSignals ?? '',
+    };
+  });
+  return [
+    columns.join(','),
+    ...rows.map((row) => columns.map((column) => toCsvCell(row[column])).join(',')),
+  ].join('\n');
+}
+
 function BarChart({ data, total, colors }) {
   const max = Math.max(...data.map(d => d.count), 1);
   return (
@@ -104,18 +163,24 @@ export default function OnboardingStats({ onBack }) {
   const [total,   setTotal]   = useState(0);
   const [recentResponses, setRecentResponses] = useState([]);
   const [insights, setInsights] = useState(null);
+  const [rawResponses, setRawResponses] = useState([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('email, plan, onboarding')
-          .not('onboarding', 'is', null);
+        setError('');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) throw new Error('Admin session required.');
 
-        if (error) throw error;
+        const response = await fetch('/api/onboarding', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || 'Unable to load onboarding responses.');
 
-        const responses = data
+        const responses = (payload.responses || [])
           .map((row) => ({
             email: row.email || '',
             plan: row.plan || 'trial',
@@ -124,9 +189,11 @@ export default function OnboardingStats({ onBack }) {
             classified: row.onboarding?.classified || {},
             analytics: row.onboarding?.analytics || {},
             recommendations: row.onboarding?.recommendations || {},
+            record: row.onboarding || null,
           }))
           .filter((row) => Object.values(row.answers || {}).some((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value))));
         setTotal(responses.length);
+        setRawResponses(responses);
         setRecentResponses(
           [...responses]
             .sort((left, right) => new Date(right.meta?.completedAt || 0) - new Date(left.meta?.completedAt || 0))
@@ -193,6 +260,7 @@ export default function OnboardingStats({ onBack }) {
         setStats(computed);
       } catch (err) {
         console.error('Stats error:', err);
+        setError(err.message || 'Unable to load onboarding data.');
       } finally {
         setLoading(false);
       }
@@ -225,24 +293,56 @@ export default function OnboardingStats({ onBack }) {
       `}</style>
 
       {/* Header */}
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 0 36px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button onClick={onBack} style={{
-          background: 'rgba(255,255,255,0.04)', border: '1px solid #142038',
-          borderRadius: 10, color: '#7A90B8', cursor: 'pointer',
-          padding: '8px 16px', fontSize: 13, fontWeight: 600,
-          fontFamily: 'inherit', transition: 'all 0.18s',
-        }}>Back</button>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>Onboarding Data</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#3A5070' }}>
-            {loading ? 'Loading...' : `${total} response${total > 1 ? 's' : ''} collected`}
-          </p>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 0 36px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={onBack} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid #142038',
+            borderRadius: 10, color: '#7A90B8', cursor: 'pointer',
+            padding: '8px 16px', fontSize: 13, fontWeight: 600,
+            fontFamily: 'inherit', transition: 'all 0.18s',
+          }}>Back</button>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>Onboarding Data</h1>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#3A5070' }}>
+              {loading ? 'Loading...' : `${total} response${total > 1 ? 's' : ''} collected`}
+            </p>
+          </div>
         </div>
+        {rawResponses.length > 0 && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => downloadJsonFile({
+                generatedAt: new Date().toISOString(),
+                total: rawResponses.length,
+                responses: rawResponses.map((response) => response.record || response),
+              }, 'marketflow-onboarding-responses.json')}
+              style={{ border: '1px solid rgba(20,201,229,0.22)', borderRadius: 999, background: 'rgba(20,201,229,0.08)', color: '#14C9E5', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, fontSize: 12, padding: '9px 13px' }}
+            >
+              Export JSON
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadTextFile(responsesToCsv(rawResponses), 'marketflow-onboarding-responses.csv', 'text/csv')}
+              style={{ border: '1px solid rgba(220,228,239,0.12)', borderRadius: 999, background: 'rgba(255,255,255,0.035)', color: '#DCE4EF', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, fontSize: 12, padding: '9px 13px' }}
+            >
+              Export CSV
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: '#3A5070' }}>
           Loading data...
+        </div>
+      ) : error ? (
+        <div className="os-card" style={{ maxWidth: 760, margin: '0 auto', color: '#FF8A9C', lineHeight: 1.65 }}>
+          <div style={{ fontSize: 16, color: '#fff', fontWeight: 800 }}>Unable to load onboarding data</div>
+          <div style={{ marginTop: 8, fontSize: 13 }}>{error}</div>
+          <div style={{ marginTop: 10, fontSize: 12, color: '#7A90B8' }}>
+            Make sure the current account is listed in ADMIN_EMAILS and that the profiles.onboarding column exists in Supabase.
+          </div>
         </div>
       ) : total === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: '#3A5070' }}>

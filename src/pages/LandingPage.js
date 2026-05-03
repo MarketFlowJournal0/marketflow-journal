@@ -26,7 +26,8 @@ function AnimatedBg() {
     const ctx = canvas.getContext('2d');
     let animId, w, h;
     const particles = [], lines = [], orbs = [];
-    const PC = 58, LC = 9, OC = 5;
+    const PC = 92, LC = 14, OC = 7;
+    let mouseX = 0.5, mouseY = 0.5;
 
     function resize() {
       w = canvas.width = canvas.offsetWidth * devicePixelRatio;
@@ -36,11 +37,11 @@ function AnimatedBg() {
     function init() {
       resize();
       particles.length = 0; lines.length = 0; orbs.length = 0;
-      for (let i = 0; i < PC; i++) particles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18, r: Math.random() * 1.3 + 0.35, o: Math.random() * 0.13 + 0.025 });
+      for (let i = 0; i < PC; i++) particles.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), vx: (Math.random() - 0.5) * 0.24, vy: (Math.random() - 0.5) * 0.22, r: Math.random() * 1.45 + 0.32, o: Math.random() * 0.16 + 0.025 });
       for (let i = 0; i < LC; i++) {
         const pts = []; let x = Math.random() * (w / devicePixelRatio), y = Math.random() * (h / devicePixelRatio);
         for (let j = 0; j < 7; j++) { pts.push({ x, y }); x += (Math.random() - 0.36) * 150; y += (Math.random() - 0.5) * 94; }
-        lines.push({ pts, o: Math.random() * 0.026 + 0.008, speed: Math.random() * 0.08 + 0.025 });
+        lines.push({ pts, o: Math.random() * 0.034 + 0.01, speed: Math.random() * 0.12 + 0.03 });
       }
       for (let i = 0; i < OC; i++) orbs.push({ x: Math.random() * (w / devicePixelRatio), y: Math.random() * (h / devicePixelRatio), r: 180 + Math.random() * 260, vx: (Math.random() - 0.5) * 0.08, vy: (Math.random() - 0.5) * 0.08, hue: i % 2 ? '0,210,184' : '20,201,229', o: 0.025 + Math.random() * 0.035 });
     }
@@ -51,13 +52,15 @@ function AnimatedBg() {
         o.x += o.vx; o.y += o.vy;
         if (o.x < -o.r || o.x > rw + o.r) o.vx *= -1;
         if (o.y < -o.r || o.y > rh + o.r) o.vy *= -1;
-        const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+        const px = o.x + (mouseX - 0.5) * 32;
+        const py = o.y + (mouseY - 0.5) * 26;
+        const g = ctx.createRadialGradient(px, py, 0, px, py, o.r);
         g.addColorStop(0, `rgba(${o.hue},${o.o})`);
         g.addColorStop(0.48, `rgba(${o.hue},${o.o * 0.28})`);
         g.addColorStop(1, `rgba(${o.hue},0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.arc(px, py, o.r, 0, Math.PI * 2);
         ctx.fill();
       });
       lines.forEach(l => { l.pts.forEach(p => { p.x += l.speed * 0.3; if (p.x > rw + 50) { p.x = -50; p.y = Math.random() * rh; } }); ctx.beginPath(); ctx.moveTo(l.pts[0].x, l.pts[0].y); for (let i = 1; i < l.pts.length; i++) { const pv = l.pts[i - 1], c = l.pts[i]; ctx.quadraticCurveTo(pv.x, pv.y, (pv.x + c.x) / 2, (pv.y + c.y) / 2); } ctx.strokeStyle = `rgba(6,230,255,${l.o})`; ctx.lineWidth = 0.7; ctx.stroke(); });
@@ -67,17 +70,22 @@ function AnimatedBg() {
     }
     init(); draw();
     const onR = () => { ctx.setTransform(1, 0, 0, 1, 0, 0); init(); };
+    const onPointer = (event) => {
+      mouseX = event.clientX / Math.max(window.innerWidth, 1);
+      mouseY = event.clientY / Math.max(window.innerHeight, 1);
+    };
     window.addEventListener('resize', onR);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', onR); };
+    window.addEventListener('pointermove', onPointer, { passive: true });
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', onR); window.removeEventListener('pointermove', onPointer); };
   }, []);
-  return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
+  return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, opacity: 0.9 }} />;
 }
 
 // --- Scroll Reveal ---------------------------------------------------------
 function useReveal() { const ref = useRef(null); const [v, setV] = useState(false); useEffect(() => { const el = ref.current; if (!el) return; const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setV(true); o.disconnect(); } }, { threshold: 0.08 }); o.observe(el); return () => o.disconnect(); }, []); return [ref, v]; }
 function Reveal({ children, delay = 0, style = {} }) {
   const [ref, v] = useReveal();
-  return <div ref={ref} style={{ opacity: v ? 1 : 0, transform: v ? 'translateY(0)' : 'translateY(28px)', transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`, ...style }}>{children}</div>;
+  return <div ref={ref} style={{ opacity: v ? 1 : 0, filter: v ? 'blur(0)' : 'blur(8px)', transform: v ? 'translateY(0) scale(1)' : 'translateY(34px) scale(0.985)', transition: `opacity 0.78s cubic-bezier(.16,1,.3,1) ${delay}s, transform 0.78s cubic-bezier(.16,1,.3,1) ${delay}s, filter 0.78s ease ${delay}s`, ...style }}>{children}</div>;
 }
 
 // --- Counter ---------------------------------------------------------------
@@ -102,6 +110,9 @@ const STYLES = `
   @keyframes mf-float { 0%,100%{transform:translate3d(0,0,0)} 50%{transform:translate3d(0,-10px,0)} }
   @keyframes mf-pulse-line { 0%,100%{opacity:.35;transform:scaleX(.82)} 50%{opacity:1;transform:scaleX(1)} }
   @keyframes mf-scan { 0%{transform:translateY(-20%);opacity:0} 20%,80%{opacity:.55} 100%{transform:translateY(320%);opacity:0} }
+  @keyframes mf-bg-rotate { from{transform:rotate(0deg) scale(1)} to{transform:rotate(360deg) scale(1.04)} }
+  @keyframes mf-divider-flow { 0%{background-position:0% 50%;opacity:.22} 50%{background-position:100% 50%;opacity:.75} 100%{background-position:0% 50%;opacity:.22} }
+  @keyframes mf-section-bloom { 0%,100%{opacity:.22;transform:translateX(-4%) scaleX(.92)} 50%{opacity:.52;transform:translateX(4%) scaleX(1)} }
   .lp-shell { background:
     radial-gradient(circle at 72% 8%, rgba(20,201,229,0.10), transparent 34%),
     radial-gradient(circle at 8% 92%, rgba(0,210,184,0.07), transparent 30%),
@@ -113,6 +124,8 @@ const STYLES = `
     repeating-linear-gradient(90deg,rgba(148,163,184,0.035) 0 1px,transparent 1px 120px);
     opacity:.26;mix-blend-mode:screen;
   }
+  .lp-shell::after { content:'';position:fixed;inset:-24%;pointer-events:none;z-index:0;background:conic-gradient(from 180deg at 50% 50%, transparent 0deg, rgba(20,201,229,.16) 64deg, transparent 118deg, rgba(0,210,184,.12) 196deg, transparent 260deg, rgba(220,228,239,.08) 318deg, transparent 360deg);filter:blur(86px);opacity:.11;animation:mf-bg-rotate 34s linear infinite;mix-blend-mode:screen; }
+  .lp-shell > section, .lp-shell > footer, .lp-shell > div:not(.lp-nav-logo-icon) { position:relative;z-index:2; }
   .lp-logo-img { width:100%;height:100%;object-fit:cover;transform:scale(.88);transform-origin:center;filter:drop-shadow(0 16px 28px rgba(0,0,0,.42)); }
 
   /* NAV */
@@ -173,7 +186,9 @@ const STYLES = `
   .lp-stat-label { font-size:11px;color:var(--t3);font-weight:600;letter-spacing:0.8px;text-transform:uppercase; }
 
   /* SECTIONS */
-  .lp-section { padding:100px 48px; }
+  .lp-section { padding:100px 48px;position:relative;overflow:hidden; }
+  .lp-section::before { content:'';position:absolute;top:0;left:50%;width:min(960px,72vw);height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(220,228,239,.18),rgba(20,201,229,.38),rgba(0,210,184,.24),transparent);background-size:220% 100%;animation:mf-divider-flow 9s ease-in-out infinite; }
+  .lp-section::after { content:'';position:absolute;top:-90px;left:18%;right:18%;height:180px;background:radial-gradient(ellipse,rgba(20,201,229,.07),transparent 68%);filter:blur(24px);opacity:.34;animation:mf-section-bloom 12s ease-in-out infinite;pointer-events:none; }
   .lp-section-inner { max-width:1200px;margin:0 auto; }
   .lp-section-tag { display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:50px;border:1px solid rgba(6,230,255,0.2);background:rgba(6,230,255,0.05);font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px; }
   .lp-section h2 { font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:clamp(32px,4vw,52px);line-height:1.1;color:var(--t0);letter-spacing:-1.5px;margin-bottom:14px; }

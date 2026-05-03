@@ -448,13 +448,22 @@ function AppInner() {
   // Onboarding — uniquement après une nouvelle inscription
   useEffect(() => {
     if (!shouldRenderApp()) return;
-    if (user && profileLoaded && !user.stripeCustomerId) {
-      const isNew = sessionStorage.getItem('mfj_new_signup') === '1';
-      const done  = localStorage.getItem(ONBOARDING_DONE_KEY + '_' + user.id);
-      if (isNew && !done) {
-        sessionStorage.removeItem('mfj_new_signup');
-        setShowOnboarding(true);
-      }
+    if (!user || !profileLoaded) return;
+    if ((user.email || '').toLowerCase() === ADMIN_EMAIL) return;
+
+    const localKey = ONBOARDING_DONE_KEY + '_' + user.id;
+    const pendingSignup = sessionStorage.getItem('mfj_new_signup') === '1';
+
+    if (user.onboardingCompleted) {
+      sessionStorage.removeItem('mfj_new_signup');
+      localStorage.setItem(localKey, '1');
+      setShowOnboarding(false);
+      return;
+    }
+
+    if (pendingSignup || !localStorage.getItem(localKey)) {
+      sessionStorage.removeItem('mfj_new_signup');
+      setShowOnboarding(true);
     }
   }, [user, profileLoaded]);
 
@@ -586,10 +595,11 @@ function AppInner() {
       }
     }
 
+    const nextRoute = hasJournalAccess(user) ? '/dashboard' : '/plan';
     setShowOnboarding(false);
-    navigate('/plan', { replace: true });
+    navigate(nextRoute, { replace: true });
     window.setTimeout(() => {
-      if (window.location.pathname !== '/plan') window.location.assign('/plan');
+      if (window.location.pathname !== nextRoute) window.location.assign(nextRoute);
     }, 120);
   };
 

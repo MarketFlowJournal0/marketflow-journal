@@ -15,6 +15,12 @@ const C = {
   red:  '#FF4D6A',
 };
 
+function markPendingOnboarding() {
+  try {
+    sessionStorage.setItem('mfj_new_signup', '1');
+  } catch (_) {}
+}
+
 export default function AuthCallback() {
   const [status, setStatus] = useState('loading'); // loading | success | error | reset
   const [newPassword, setNewPassword] = useState('');
@@ -49,6 +55,7 @@ export default function AuthCallback() {
           if (type === 'recovery') {
             setStatus('reset'); // Show reset form
           } else {
+            markPendingOnboarding();
             setStatus('success'); // Email confirmation OK
             setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
           }
@@ -67,6 +74,7 @@ export default function AuthCallback() {
           if (hashType === 'recovery') {
             setStatus('reset');
           } else {
+            markPendingOnboarding();
             setStatus('success');
             setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
           }

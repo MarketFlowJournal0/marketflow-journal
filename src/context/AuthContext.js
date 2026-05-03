@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end, email')
+        .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end, email, onboarding')
         .eq('id', userId)
         .maybeSingle();
 
@@ -234,6 +234,8 @@ export function AuthProvider({ children }) {
     trialEnd,
     stripeCustomerId:     profile?.stripe_customer_id     || null,
     stripeSubscriptionId: profile?.stripe_subscription_id || null,
+    onboarding:           profile?.onboarding             || null,
+    onboardingCompleted:  Boolean(profile?.onboarding?.completedAt || profile?.onboarding?.savedAt),
     createdAt:            user.created_at,
   } : null;
 
