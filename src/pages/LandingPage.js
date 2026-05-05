@@ -456,8 +456,6 @@ const TESTIS = [
   {i:'03',name:'Data ownership',role:'Journal standard',pnl:'Exportable',stars:5,grad:'linear-gradient(135deg,#14C9E5,#4D7CFF)',text:'The journal includes backup export, restore flows and full trade deletion controls with confirmation inside the product.'},
 ];
 const PAGE_CONTENT = {
-  changelog:{title:'Changelog',subtitle:'Update history',color:'#14C9E5',items:[{v:'Current',date:'2026',badge:'LIVE',badgeColor:'#00D2B8',items:['Landing page restored to the earlier site structure','New MF logo system across public and app surfaces','Reports, alerts, API access and Elite trade copier surfaces live in the product']}]},
-  roadmap:{title:'Roadmap',subtitle:'Next product priorities',color:'#B06EFF',sections:[{label:'Near term',color:'#00D2B8',items:[{icon:'AI',title:'AI workflows',desc:'Sharper assistant flows inside the MarketFlow chatbot'},{icon:'Mobile',title:'Mobile app',desc:'Dedicated mobile experience beyond the current PWA foundation'},{icon:'Broker',title:'Broker execution bridge',desc:'Real broker connectivity requires platform-specific bridges and secure backend routing'}]}]},
   docs:{title:'Documentation',subtitle:'MarketFlow operating guide',color:'#14C9E5',sections:[{label:'Core workflow',color:'#14C9E5',items:[{icon:'01',title:'Import and map trades',desc:'Use All Trades to import CSV, Excel, JSON or pasted tables, then map symbol, side, date, entry, exit, P&L and custom fields.'},{icon:'02',title:'Review by account',desc:'Use account scope so dashboard, analytics, equity and calendar views stay aligned with the selected trading account.'},{icon:'03',title:'Close the day',desc:'Use the daily workflow, psychology review and calendar context to keep the journal actionable instead of noisy.'}]}]},
   import:{title:'Import Guide',subtitle:'Supported trade data flows',color:'#00D2B8',sections:[{label:'Import sources',color:'#00D2B8',items:[{icon:'CSV',title:'CSV and Excel',desc:'Upload broker exports or spreadsheets and create missing columns during mapping when your file has extra fields.'},{icon:'JSON',title:'JSON and raw tables',desc:'Paste structured rows or use JSON-style exports for flexible journal migration.'},{icon:'SAFE',title:'Validation first',desc:'MarketFlow previews detected rows before saving so bad rows can be corrected instead of silently polluting the journal.'}]}]},
   tutoriels:{title:'Tutorials',subtitle:'Short workflow lessons',color:'#DCE4EF',sections:[{label:'Suggested lessons',color:'#DCE4EF',items:[{icon:'Start',title:'First journal setup',desc:'Create the account, confirm plan access, import the first data sample and verify dashboard metrics.'},{icon:'Review',title:'Weekly review',desc:'Use analytics, calendar, psychology and equity together to identify one process improvement for the next week.'},{icon:'Risk',title:'Prop-style discipline',desc:'Track drawdown, account scope, reports and alerts without implying a direct partnership with any prop firm.'}]}]},
@@ -616,7 +614,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <div className="lp-nav-logo-icon"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div>
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
-        <div className="lp-nav-links"><a href="#product">Product</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#changelog">Changelog</a><a href="#roadmap">Roadmap</a><a href="#resources">Resources</a></div>
+        <div className="lp-nav-links"><a href="#product">Product</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#resources">Resources</a></div>
         <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>Log in</button><button className="btn-primary-nav" onClick={onSignup}>Start 14-day trial</button></div>
       </nav>
 
@@ -892,63 +890,6 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         </div>
       </section>
 
-      <SectionBridge next="Changelog" />
-
-      {/* CHANGELOG */}
-      <section className="lp-section" id="changelog" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
-        <div className="lp-section-inner">
-          <Reveal><div className="lp-section-tag">Changelog</div></Reveal>
-          <Reveal><h2>Recent product work,<br/><em>kept transparent</em></h2></Reveal>
-          <Reveal><p className="lp-section-sub">Only shipped or currently wired product areas are described here. No inflated proof, no fake user counters, no imaginary integrations.</p></Reveal>
-          <div className="lp-timeline-list">
-            {[
-              ['V1 closing pass', 'Domain-aware website and app routing', 'www keeps the public site, app opens the journal workspace, and auth returns users to the correct side.'],
-              ['Brand system', 'New MarketFlow identity rollout', 'Favicon, manifest icons, sidebar, public site and metadata share the updated MF mark.'],
-              ['Journal data layer', 'All Trades as source of truth', 'Imports, manual entries, dashboards, analytics and calendar modules are structured around one trade stream.'],
-              ['Access and billing', '14-day trial with plan-gated modules', 'Plan pages, welcome access and Stripe subscription states are aligned with Starter, Pro and Elite.'],
-            ].map(([date, title, desc], index) => (
-              <Reveal key={title} delay={index * 0.06}>
-                <div className="lp-timeline-item">
-                  <div className="lp-timeline-date">{date}</div>
-                  <div>
-                    <div className="lp-timeline-title">{title}</div>
-                    <div className="lp-timeline-desc">{desc}</div>
-                  </div>
-                  <span className="lp-timeline-badge">Live</span>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <SectionBridge next="Roadmap" />
-
-      {/* ROADMAP */}
-      <section className="lp-section" id="roadmap" style={{borderTop:'1px solid rgba(255,255,255,0.03)'}}>
-        <div className="lp-section-inner">
-          <Reveal><div className="lp-section-tag">Roadmap</div></Reveal>
-          <Reveal><h2>The next upgrades are<br/><em>practical, not theatrical</em></h2></Reveal>
-          <Reveal><p className="lp-section-sub">MarketFlow's roadmap stays focused on things that make the journal more useful: cleaner broker flows, stronger backtest data, deeper Elite analytics and better mobile workflows.</p></Reveal>
-          <div className="lp-roadmap-grid">
-            {[
-              ['Broker sync desk', 'A cleaner broker selection and import flow with clear Auto Sync vs File Upload states by platform.'],
-              ['Backtest replay layer', 'TradingView-style session pages, OHLC provider architecture and saved simulated trades.'],
-              ['Elite analytics depth', 'Hourly, weekly, monthly, account, strategy, setup and behavior analytics from real All Trades data.'],
-              ['Mobile companion', 'A focused mobile journal companion for review, psychology check-ins and quick trade notes.'],
-            ].map(([title, desc], index) => (
-              <Reveal key={title} delay={index * 0.08}>
-                <div className="lp-roadmap-card">
-                  <span className="lp-timeline-badge">{index < 2 ? 'Building' : 'Planned'}</span>
-                  <h3>{title}</h3>
-                  <p>{desc}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <SectionBridge next="Resources" />
 
       {/* RESOURCES */}
@@ -1020,7 +961,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
               <div className="lp-footer-brand-row"><div className="lp-footer-mark"><img className="lp-logo-img" src="/logo-mark.png" alt="" /></div><span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:17,color:'#fff'}}>Market<span className="flow-text">Flow</span></span></div>
               <p>A structured trading journal for professional execution review, analytics and accountability.</p>
             </div>
-            <div className="lp-footer-col"><h4>Product</h4><a href="#product">Product</a><a href="#features">Features</a><a href="#access">Access</a><a href="#pricing">Pricing</a><a href="#changelog">Changelog</a><a href="#roadmap">Roadmap</a></div>
+            <div className="lp-footer-col"><h4>Product</h4><a href="#product">Product</a><a href="#features">Features</a><a href="#access">Access</a><a href="#pricing">Pricing</a></div>
             <div className="lp-footer-col"><h4>Resources</h4><a className="lp-resource-link" href="#resources">Documentation <span>Guide</span></a><a className="lp-resource-link" href="#resources">Import Guide <span>CSV</span></a><a className="lp-resource-link" href="#resources">Security <span>Trust</span></a><a className="lp-resource-link" href="#resources">Tutorials <span>Workflows</span></a></div>
             <div className="lp-footer-col"><h4>Legal</h4><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a><a href="/contact">Contact</a><a href={`mailto:${SUPPORT_EMAIL}`}>Support</a></div>
           </div>

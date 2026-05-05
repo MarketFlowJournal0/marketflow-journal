@@ -55,6 +55,16 @@ async function getOnboardingResponses(req, res, authUser) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
+  const dedicatedResponses = await fetchDedicatedOnboardingResponses();
+  if (dedicatedResponses.ok) {
+    return res.status(200).json({
+      total: dedicatedResponses.responses.length,
+      source: 'onboarding_responses',
+      responses: dedicatedResponses.responses,
+      generatedAt: new Date().toISOString(),
+    });
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('id, email, plan, onboarding')
@@ -78,6 +88,7 @@ async function getOnboardingResponses(req, res, authUser) {
 
   return res.status(200).json({
     total: responses.length,
+    source: 'profiles.onboarding',
     responses,
     generatedAt: new Date().toISOString(),
   });
@@ -124,10 +135,93 @@ async function saveOnboardingResponse(req, res, authUser) {
     return res.status(500).json({ error: error.message });
   }
 
+  const dedicatedStore = await saveDedicatedOnboardingResponse({
+    authUser,
+    onboardingRecord,
+  });
+
   return res.status(200).json({
     saved: true,
+    storedIn: {
+      profiles: true,
+      onboardingResponses: dedicatedStore.ok,
+    },
+    storageWarning: dedicatedStore.ok ? null : dedicatedStore.warning,
     onboarding: data?.onboarding || onboardingRecord,
   });
+}
+
+async function fetchDedicatedOnboardingResponses() {
+  try {
+    const { data, error } = await supabase
+      .from('onboarding_responses')
+      .select('user_id, email, plan, version, answers, classified, analytics, recommendations, summary, onboarding, completed_at, saved_at')
+      .order('completed_at', { ascending: false, nullsFirst: false });
+
+    if (error) {
+      console.warn('onboarding_responses fetch fallback:', error.message);
+      return { ok: false, responses: [], warning: error.message };
+    }
+
+    const responses = (data || []).map((row) => ({
+      id: row.user_id,
+      email: row.email || '',
+      plan: row.plan || 'trial',
+      version: row.version || 1,
+      answers: row.answers || {},
+      classified: row.classified || {},
+      analytics: row.analytics || {},
+      recommendations: row.recommendations || {},
+      summary: row.summary || {},
+      onboarding: row.onboarding || null,
+      completedAt: row.completed_at || row.saved_at || null,
+    }));
+
+    return { ok: true, responses };
+  } catch (error) {
+    console.warn('onboarding_responses fetch exception:', error.message);
+    return { ok: false, responses: [], warning: error.message };
+  }
+}
+
+async function saveDedicatedOnboardingResponse({ authUser, onboardingRecord }) {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    const row = {
+      user_id: authUser.id,
+      email: authUser.email || onboardingRecord?.meta?.email || null,
+      plan: profile?.plan || onboardingRecord?.meta?.plan || 'trial',
+      version: onboardingRecord?.version || 1,
+      answers: onboardingRecord?.answers || {},
+      classified: onboardingRecord?.classified || {},
+      analytics: onboardingRecord?.analytics || {},
+      recommendations: onboardingRecord?.recommendations || {},
+      summary: onboardingRecord?.summary || {},
+      onboarding: onboardingRecord,
+      source: 'marketflow_signup_onboarding',
+      completed_at: onboardingRecord?.completedAt || onboardingRecord?.savedAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('onboarding_responses')
+      .upsert(row, { onConflict: 'user_id' });
+
+    if (error) {
+      console.warn('onboarding_responses store fallback:', error.message);
+      return { ok: false, warning: error.message };
+    }
+
+    return { ok: true, warning: null };
+  } catch (error) {
+    console.warn('onboarding_responses store exception:', error.message);
+    return { ok: false, warning: error.message };
+  }
 }
 
 function isAdmin(user) {

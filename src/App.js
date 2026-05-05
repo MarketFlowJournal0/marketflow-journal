@@ -45,8 +45,6 @@ const POST_AUTH_ROUTE_KEY = 'mfj_post_auth_route';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 const PUBLIC_INFO_ROUTES = {
-  '/changelog': 'changelog',
-  '/roadmap': 'roadmap',
   '/docs': 'docs',
   '/documentation': 'docs',
   '/guide': 'docs',
@@ -389,6 +387,12 @@ function AppInner() {
   );
 
   useEffect(() => {
+    if (window.location.hash === '#') {
+      window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+    }
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     if (forceLoggedOut) {
       sessionStorage.removeItem('mfj_logged_out');
       setForceLoggedOut(false);
@@ -556,6 +560,15 @@ function AppInner() {
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
       sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
+      if (isNewAccount !== true) {
+        const targetRoute = hasJournalAccess(user) ? '/dashboard' : '/plan';
+        if (!shouldRenderApp()) {
+          window.location.href = appUrl(targetRoute);
+          return;
+        }
+        navigate(targetRoute, { replace: true });
+        return;
+      }
       setTimeout(() => launchCheckout(pendingPriceId, userData?.email), 800);
       return;
     }
@@ -665,7 +678,7 @@ function AppInner() {
   if (!shouldRenderApp() && location.pathname === '/welcome') {
     const target = new URL(appUrl('/welcome'));
     target.search = location.search;
-    target.hash = location.hash;
+    if (location.hash && location.hash !== '#') target.hash = location.hash;
     window.location.replace(target.toString());
     return <LoadingScreen />;
   }

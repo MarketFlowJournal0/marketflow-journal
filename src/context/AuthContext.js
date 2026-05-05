@@ -209,9 +209,11 @@ export function AuthProvider({ children }) {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const effectivePlan = profile?.plan || user?.user_metadata?.plan || 'trial';
+  const billingPlan   = profile?.plan || user?.user_metadata?.plan || 'trial';
   const subStatus     = profile?.subscription_status || null;
   const trialEnd      = profile?.trial_end || null;
+  const trialActive   = subStatus === 'trialing' && (!trialEnd || new Date(trialEnd) > new Date());
+  const effectivePlan = trialActive ? 'pro' : billingPlan;
   const trialDaysLeft = trialEnd
     ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
     : 14;
@@ -224,6 +226,9 @@ export function AuthProvider({ children }) {
     fullName:             user.user_metadata?.full_name  || user.email?.split('@')[0],
     avatar:               user.user_metadata?.avatar_url || null,
     plan:                 effectivePlan,
+    billingPlan,
+    selectedPlan:         billingPlan,
+    trialInterfacePlan:   trialActive ? 'pro' : null,
     subStatus,
     isTrialing:           subStatus === 'trialing',
     isActive:             subStatus === 'active',

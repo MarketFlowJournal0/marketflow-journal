@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { publicSiteUrl } from '../lib/appUrls';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW AUTH — Clean v3
@@ -207,7 +208,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                           <button type="submit" disabled={authLoading} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', border: 'none', borderRadius: 10, fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 700, color: '#01040A', cursor: authLoading ? 'not-allowed' : 'pointer', opacity: authLoading ? 0.6 : 1, marginTop: 4 }}>
                             {authLoading ? 'Sending...' : 'Send reset link →'}
                           </button>
-                          <a href="#back" onClick={e => { e.preventDefault(); setForgotMode(false); }} style={{ display: 'block', textAlign: 'center', marginTop: 12, fontSize: 11.5, color: 'rgba(6,230,255,0.6)', textDecoration: 'none' }}>← Back to sign in</a>
+                          <a href="/login" onClick={e => { e.preventDefault(); setForgotMode(false); }} style={{ display: 'block', textAlign: 'center', marginTop: 12, fontSize: 11.5, color: 'rgba(6,230,255,0.6)', textDecoration: 'none' }}>← Back to sign in</a>
                         </>
                       )}
                     </form>
@@ -226,14 +227,14 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                       <Input label="Email" type="email" value={form.email} onChange={set('email')} error={fieldErrors.email} placeholder="trader@example.com" autoComplete="email" autoFocus />
                       <Input label="Password" type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')} error={fieldErrors.password} placeholder="••••••••" autoComplete="current-password" icon={{ el: showPw ? <EyeOpen /> : <EyeClosed />, onClick: () => setShowPw(v => !v) }} />
 
-                      <a href="#forgot" onClick={e => { e.preventDefault(); setForgotMode(true); }} style={{ display: 'block', textAlign: 'right', marginTop: -6, marginBottom: 12, fontSize: 11.5, color: 'rgba(6,230,255,0.55)', textDecoration: 'none' }}>Forgot password?</a>
+                      <a href="/forgot-password" onClick={e => { e.preventDefault(); setForgotMode(true); }} style={{ display: 'block', textAlign: 'right', marginTop: -6, marginBottom: 12, fontSize: 11.5, color: 'rgba(6,230,255,0.55)', textDecoration: 'none' }}>Forgot password?</a>
 
                       <button type="submit" disabled={authLoading} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', border: 'none', borderRadius: 10, fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 700, color: '#01040A', cursor: authLoading ? 'not-allowed' : 'pointer', opacity: authLoading ? 0.6 : 1, transition: 'all 0.22s', boxShadow: '0 0 20px rgba(6,230,255,0.2)' }} onMouseEnter={e => { if (!authLoading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(6,230,255,0.35)'; } }} onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 0 20px rgba(6,230,255,0.2)'; }}>
                         {authLoading ? 'Signing in...' : 'Sign in →'}
                       </button>
 
                       <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
-                        By continuing, you agree to our <a href="#terms" className="auth-link">Terms</a> and <a href="#privacy" className="auth-link">Privacy Policy</a>.
+                        By continuing, you agree to our <a href={publicSiteUrl('/terms')} className="auth-link" target="_blank" rel="noopener noreferrer">Terms</a> and <a href={publicSiteUrl('/privacy')} className="auth-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
                       </p>
                     </form>
                   ) : (
@@ -276,7 +277,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                       </button>
 
                       <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
-                        By creating an account, you agree to our <a href="#terms" className="auth-link">Terms</a> and <a href="#privacy" className="auth-link">Privacy Policy</a>. Billing details are shown before activation.
+                        By creating an account, you agree to our <a href={publicSiteUrl('/terms')} className="auth-link" target="_blank" rel="noopener noreferrer">Terms</a> and <a href={publicSiteUrl('/privacy')} className="auth-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. Billing details are shown before activation.
                       </p>
                     </form>
                   )}
