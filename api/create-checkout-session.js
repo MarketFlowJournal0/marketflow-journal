@@ -1,6 +1,7 @@
 // api/create-checkout-session.js
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
+const { getAppBaseUrl } = require('./lib/url-config');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -152,17 +153,3 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
-
-function getAppBaseUrl() {
-  return String(
-    process.env.NEXT_PUBLIC_APP_URL
-    || process.env.APP_URL
-    || process.env.REACT_APP_APP_URL
-    || 'https://app.marketflowjournal.com'
-  ).replace(/\/+$/, '');
-}
-
-function normalizePublicSiteUrl(url) {
-  const clean = String(url || '').replace(/\/+$/, '');
-  return clean;
-}

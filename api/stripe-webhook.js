@@ -3,6 +3,7 @@
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
+const { getAppBaseUrl, getPublicSiteBaseUrl } = require('./lib/url-config');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -10,34 +11,8 @@ const supabase = createClient(
 );
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@marketflowjournal.com';
-const PUBLIC_SITE_URL = getBaseUrl(
-  normalizePublicSiteUrl(
-    process.env.NEXT_PUBLIC_SITE_URL
-    || process.env.PUBLIC_SITE_URL
-    || process.env.REACT_APP_SITE_URL
-    || process.env.REACT_APP_PUBLIC_SITE_URL
-    || 'https://www.marketflowjournal.com'
-  )
-);
+const PUBLIC_SITE_URL = getPublicSiteBaseUrl();
 const APP_URL = getAppBaseUrl();
-
-function getBaseUrl(url) {
-  return String(url || '').replace(/\/+$/, '');
-}
-
-function normalizePublicSiteUrl(url) {
-  const clean = getBaseUrl(url);
-  return clean;
-}
-
-function getAppBaseUrl() {
-  return getBaseUrl(
-    process.env.NEXT_PUBLIC_APP_URL
-    || process.env.APP_URL
-    || process.env.REACT_APP_APP_URL
-    || 'https://app.marketflowjournal.com'
-  );
-}
 
 async function sendEmail(payload) {
   if (!process.env.RESEND_API_KEY) return null;

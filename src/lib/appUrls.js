@@ -1,5 +1,8 @@
 const DEFAULT_SITE_URL = 'https://www.marketflowjournal.com';
 const DEFAULT_APP_URL = 'https://app.marketflowjournal.com';
+const OFFICIAL_PUBLIC_HOST = 'www.marketflowjournal.com';
+const OFFICIAL_PUBLIC_APEX_HOST = 'marketflowjournal.com';
+const OFFICIAL_APP_HOST = 'app.marketflowjournal.com';
 
 export const PUBLIC_SITE_URL = stripTrailingSlash(
   normalizePublicSiteUrl(process.env.REACT_APP_SITE_URL
@@ -46,7 +49,7 @@ export function isPreviewHost(hostname = getHostname()) {
 export function isConfiguredAppHost(hostname = getHostname()) {
   const host = normalizeHostname(hostname);
   if (isPublicSiteHost(host)) return false;
-  return Boolean(host && (host === APP_HOST || host.startsWith('app.')));
+  return Boolean(host && (host === OFFICIAL_APP_HOST || host === APP_HOST || host.startsWith('app.')));
 }
 
 export function isAppHost(hostname = getHostname()) {
@@ -55,7 +58,9 @@ export function isAppHost(hostname = getHostname()) {
 
 export function isPublicSiteHost(hostname = getHostname()) {
   const host = normalizeHostname(hostname);
-  return host === PUBLIC_HOST
+  return host === OFFICIAL_PUBLIC_HOST
+    || host === OFFICIAL_PUBLIC_APEX_HOST
+    || host === PUBLIC_HOST
     || host === PUBLIC_APEX_HOST
     || host === `www.${PUBLIC_APEX_HOST}`;
 }
@@ -103,7 +108,11 @@ function normalizePublicSiteUrl(url) {
   try {
     const parsed = new URL(url || DEFAULT_SITE_URL);
     const host = normalizeHostname(parsed.hostname);
+    if (host === OFFICIAL_APP_HOST || host.startsWith('app.')) return DEFAULT_SITE_URL;
     if (host === 'marketflowjournal.com') parsed.hostname = 'www.marketflowjournal.com';
+    parsed.pathname = '';
+    parsed.search = '';
+    parsed.hash = '';
     return parsed.toString();
   } catch (_) {
     return DEFAULT_SITE_URL;
@@ -114,9 +123,12 @@ function normalizeAppUrl(url) {
   try {
     const parsed = new URL(url || DEFAULT_APP_URL);
     const host = normalizeHostname(parsed.hostname);
-    if (host === 'marketflowjournal.com' || host === 'www.marketflowjournal.com') {
+    if (host === OFFICIAL_PUBLIC_APEX_HOST || host === OFFICIAL_PUBLIC_HOST) {
       return DEFAULT_APP_URL;
     }
+    parsed.pathname = '';
+    parsed.search = '';
+    parsed.hash = '';
     return parsed.toString();
   } catch (_) {
     return DEFAULT_APP_URL;
