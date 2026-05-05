@@ -586,6 +586,11 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
 
   useEffect(() => { const h = () => setScrolled(window.scrollY > 40); window.addEventListener('scroll', h, { passive: true }); return () => window.removeEventListener('scroll', h); }, []);
   useEffect(() => {
+    if (window.location.hash === '#') {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    }
+  }, []);
+  useEffect(() => {
     const timer = setInterval(() => {
       setActiveModule((current) => (current + 1) % ANALYTICS_SHOWCASE.length);
     }, 3200);

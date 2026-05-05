@@ -41,6 +41,7 @@ import './theme.css';
 
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
+const POST_AUTH_ROUTE_KEY = 'mfj_post_auth_route';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 const PUBLIC_INFO_ROUTES = {
@@ -434,6 +435,9 @@ function AppInner() {
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
     }
 
+    if (authMode === 'login') sessionStorage.setItem(POST_AUTH_ROUTE_KEY, '/dashboard');
+    if (authMode === 'signup') sessionStorage.setItem(POST_AUTH_ROUTE_KEY, '/plan');
+
     if (!user && shouldRenderApp() && (authMode === 'login' || authMode === 'signup')) {
       setAuthModal(authMode);
     }
@@ -443,6 +447,24 @@ function AppInner() {
     const nextSearch = params.toString();
     navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true });
   }, [location.search, location.pathname, navigate, user]);
+
+  useEffect(() => {
+    if (!user || !profileLoaded) return;
+    const pendingRoute = sessionStorage.getItem(POST_AUTH_ROUTE_KEY);
+    if (!pendingRoute || sessionStorage.getItem('pending_price_id')) return;
+
+    sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
+    const targetRoute = pendingRoute.startsWith('/') ? pendingRoute : `/${pendingRoute}`;
+
+    if (!shouldRenderApp()) {
+      window.location.replace(appUrl(targetRoute));
+      return;
+    }
+
+    if (location.pathname !== targetRoute) {
+      navigate(targetRoute, { replace: true });
+    }
+  }, [user, profileLoaded, location.pathname, navigate]);
 
 
   // Onboarding — uniquement après une nouvelle inscription
@@ -467,7 +489,12 @@ function AppInner() {
     }
   }, [user, profileLoaded]);
 
+  const rememberPostAuthRoute = (authMode) => {
+    sessionStorage.setItem(POST_AUTH_ROUTE_KEY, authMode === 'signup' ? '/plan' : '/dashboard');
+  };
+
   const routeAuthToApp = (authMode, priceId = '') => {
+    rememberPostAuthRoute(authMode);
     const target = new URL(appUrl('/'));
     target.searchParams.set('auth', authMode);
     if (priceId) target.searchParams.set('price_id', priceId);
@@ -475,10 +502,12 @@ function AppInner() {
   };
 
   const openLogin = () => {
+    rememberPostAuthRoute('login');
     if (shouldRenderApp()) return setAuthModal('login');
     return routeAuthToApp('login');
   };
   const openSignup = () => {
+    rememberPostAuthRoute('signup');
     if (shouldRenderApp()) return setAuthModal('signup');
     return routeAuthToApp('signup');
   };
@@ -488,6 +517,7 @@ function AppInner() {
       sessionStorage.setItem('pending_price_id', priceId);
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
     }
+    rememberPostAuthRoute('signup');
     if (shouldRenderApp()) return setAuthModal('signup');
     return routeAuthToApp('signup', priceId);
   };
@@ -517,16 +547,21 @@ function AppInner() {
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
+      sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
       setTimeout(() => launchCheckout(pendingPriceId, userData?.email), 800);
       return;
     }
 
+    const pendingRoute = sessionStorage.getItem(POST_AUTH_ROUTE_KEY);
+    sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
+    const targetRoute = pendingRoute || (isNewAccount ? '/plan' : '/dashboard');
+
     if (!shouldRenderApp()) {
-      window.location.href = appUrl(isNewAccount ? '/plan' : '/dashboard');
+      window.location.href = appUrl(targetRoute);
       return;
     }
 
-    navigate(isNewAccount ? '/plan' : '/dashboard', { replace: true });
+    navigate(targetRoute, { replace: true });
   };
 
   const handleLogout = async () => {
