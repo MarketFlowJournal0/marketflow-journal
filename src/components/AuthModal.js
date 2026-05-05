@@ -116,6 +116,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
   const [fieldErrors, setFieldErrors] = useState({});
 
+  useEffect(() => { setTab(defaultTab); }, [defaultTab]);
   useEffect(() => { clearError(); setFieldErrors({}); setSuccess(false); }, [tab]); // eslint-disable-line
   useEffect(() => { const h = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
 

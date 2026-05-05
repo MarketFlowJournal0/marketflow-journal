@@ -92,6 +92,14 @@ export default function AuthCallback() {
         }
 
         // No token found
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user) {
+          await markOnboardingIfNewAccount();
+          setStatus('success');
+          setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 1200);
+          return;
+        }
+
         setStatus('error');
       } catch (err) {
         console.error('AuthCallback error:', err);

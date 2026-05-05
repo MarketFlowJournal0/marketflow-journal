@@ -42,6 +42,7 @@ import './theme.css';
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
 const POST_AUTH_ROUTE_KEY = 'mfj_post_auth_route';
+const AUTO_CHECKOUT_KEY = 'mfj_auto_checkout_after_auth';
 const PENDING_SIGNUP_EMAIL_KEY = 'mfj_pending_new_account_email';
 const PENDING_SIGNUP_AT_KEY = 'mfj_pending_new_account_at';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
@@ -311,6 +312,7 @@ function AppInner() {
 
   const [authModal,      setAuthModal]      = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [authTransitioning, setAuthTransitioning] = useState(false);
   const [forceLoggedOut, setForceLoggedOut] = useState(
     () => sessionStorage.getItem('mfj_logged_out') === '1'
   );
@@ -327,6 +329,10 @@ function AppInner() {
       setForceLoggedOut(false);
     }
   }, [forceLoggedOut]);
+
+  useEffect(() => {
+    if (user) setAuthTransitioning(false);
+  }, [user]);
 
   // Gestion payment=success / cancelled depuis Stripe
   useEffect(() => {
@@ -506,7 +512,25 @@ function AppInner() {
     } catch (err) { console.error('Checkout error:', err); }
   };
 
+  useEffect(() => {
+    if (!user || !profileLoaded || showOnboarding) return;
+    if (sessionStorage.getItem('mfj_new_signup') === '1') return;
+    if (sessionStorage.getItem(AUTO_CHECKOUT_KEY) !== '1') return;
+
+    const pendingPriceId = sessionStorage.getItem('pending_price_id');
+    if (!pendingPriceId) {
+      sessionStorage.removeItem(AUTO_CHECKOUT_KEY);
+      return;
+    }
+
+    sessionStorage.removeItem(AUTO_CHECKOUT_KEY);
+    sessionStorage.removeItem('pending_price_id');
+    sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
+    launchCheckout(pendingPriceId, user.email);
+  }, [user, profileLoaded, showOnboarding]); // eslint-disable-line
+
   const handleAuthSuccess = async (userData, isNewAccount = false) => {
+    setAuthTransitioning(true);
     setAuthModal(null);
     // Flag posé uniquement pour une vraie inscription (pas une connexion)
     if (isNewAccount === true) {
@@ -521,9 +545,13 @@ function AppInner() {
     }
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
-      sessionStorage.removeItem('pending_price_id');
-      sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
-      setTimeout(() => launchCheckout(pendingPriceId, userData?.email), 800);
+      sessionStorage.setItem(AUTO_CHECKOUT_KEY, '1');
+      sessionStorage.setItem(POST_AUTH_ROUTE_KEY, '/plan');
+      if (!shouldRenderApp()) {
+        window.location.href = appUrl('/plan');
+        return;
+      }
+      navigate('/plan', { replace: true });
       return;
     }
 
@@ -653,6 +681,10 @@ function AppInner() {
       const pendingAuthMode = new URLSearchParams(location.search).get('auth');
       const appAuthTab = authModal || (pendingAuthMode === 'signup' ? 'signup' : 'login');
 
+      if (authTransitioning) {
+        return <LoadingScreen />;
+      }
+
       if (location.pathname === '/plan' || location.pathname === '/subscription') {
         return (
           <>
@@ -668,7 +700,10 @@ function AppInner() {
 
       return (
         <>
-          <LoadingScreen />
+          <div style={{
+            minHeight: '100vh',
+            background: 'radial-gradient(circle at 18% 18%, rgba(20,201,229,.10), transparent 34%), radial-gradient(circle at 84% 72%, rgba(0,210,184,.07), transparent 36%), #01040A',
+          }} />
           <SupportWidget onOpenPage={() => { window.location.href = publicSiteUrl('/contact'); }} />
           <AuthModal
             defaultTab={appAuthTab}
