@@ -21,6 +21,16 @@ function markPendingOnboarding() {
   } catch (_) {}
 }
 
+async function markOnboardingIfNewAccount() {
+  try {
+    const { data } = await supabase.auth.getUser();
+    const createdAt = data?.user?.created_at ? new Date(data.user.created_at).getTime() : 0;
+    if (createdAt && Date.now() - createdAt < 60000) {
+      markPendingOnboarding();
+    }
+  } catch (_) {}
+}
+
 export default function AuthCallback() {
   const [status, setStatus] = useState('loading'); // loading | success | error | reset
   const [newPassword, setNewPassword] = useState('');
@@ -55,7 +65,7 @@ export default function AuthCallback() {
           if (type === 'recovery') {
             setStatus('reset'); // Show reset form
           } else {
-            markPendingOnboarding();
+            await markOnboardingIfNewAccount();
             setStatus('success'); // Email confirmation OK
             setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
           }
@@ -74,7 +84,7 @@ export default function AuthCallback() {
           if (hashType === 'recovery') {
             setStatus('reset');
           } else {
-            markPendingOnboarding();
+            await markOnboardingIfNewAccount();
             setStatus('success');
             setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
           }

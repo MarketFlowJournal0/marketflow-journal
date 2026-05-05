@@ -161,7 +161,7 @@ export function AuthProvider({ children }) {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: appUrl('/') },
+      options: { redirectTo: appUrl('/auth/callback') },
     });
     if (error) setError(translateError(error.message));
   }, []);
@@ -170,7 +170,7 @@ export function AuthProvider({ children }) {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
-      options: { redirectTo: appUrl('/') },
+      options: { redirectTo: appUrl('/auth/callback') },
     });
     if (error) setError(translateError(error.message));
   }, []);

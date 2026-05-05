@@ -560,15 +560,6 @@ function AppInner() {
     if (pendingPriceId) {
       sessionStorage.removeItem('pending_price_id');
       sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
-      if (isNewAccount !== true) {
-        const targetRoute = hasJournalAccess(user) ? '/dashboard' : '/plan';
-        if (!shouldRenderApp()) {
-          window.location.href = appUrl(targetRoute);
-          return;
-        }
-        navigate(targetRoute, { replace: true });
-        return;
-      }
       setTimeout(() => launchCheckout(pendingPriceId, userData?.email), 800);
       return;
     }
@@ -723,6 +714,20 @@ function AppInner() {
 
   // ── Onboarding ──
   if (!shouldRenderApp()) {
+    const isAuthHash = /access_token|refresh_token|token_hash|type=/.test(location.hash || '');
+    const hasPostAuthIntent = Boolean(sessionStorage.getItem(POST_AUTH_ROUTE_KEY) || sessionStorage.getItem('mfj_new_signup'));
+    const isEmptyHashAfterAuth = location.pathname === '/' && location.hash === '#' && (user.isTrialing || user.isActive || user.needsPayment);
+
+    if (isAuthHash || hasPostAuthIntent || isEmptyHashAfterAuth) {
+      const targetRoute = sessionStorage.getItem('mfj_new_signup') === '1'
+        ? '/'
+        : hasJournalAccess(user)
+          ? '/dashboard'
+          : '/plan';
+      window.location.replace(appUrl(targetRoute));
+      return <LoadingScreen />;
+    }
+
     return (
       <>
         <Routes>
