@@ -65,7 +65,7 @@ export default function AuthCallback() {
           if (type === 'recovery') {
             setStatus('reset'); // Show reset form
           } else {
-            await markOnboardingIfNewAccount();
+            markPendingOnboarding();
             setStatus('success'); // Email confirmation OK
             setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
           }

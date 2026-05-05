@@ -117,18 +117,36 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
     }
   }, []); // eslint-disable-line
 
-  const currentPlan = user?.user_metadata?.plan || user?.plan || 'trial';
-  const subStatus = user?.user_metadata?.subStatus || user?.subStatus || 'trialing';
-  const isTrialing = user?.user_metadata?.isTrialing ?? user?.isTrialing ?? (currentPlan === 'trial');
+  const currentPlan = user?.billingPlan || user?.selectedPlan || user?.user_metadata?.plan || user?.plan || 'trial';
+  const subStatus = user?.user_metadata?.subStatus || user?.subStatus || null;
+  const isTrialing = Boolean(user) && (user?.user_metadata?.isTrialing ?? user?.isTrialing ?? subStatus === 'trialing');
   const daysLeft = user?.user_metadata?.trialDaysLeft ?? user?.trialDaysLeft ?? 14;
   const needsPayment = user?.user_metadata?.needsPayment || user?.needsPayment || false;
-  const trialUsed = Boolean(user?.user_metadata?.trialEnd || user?.trialEnd);
+  const paymentBlockedStatus = ['past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired'].includes(String(subStatus || '').toLowerCase());
+  const trialUsed = Boolean(
+    user?.user_metadata?.trialEnd
+    || user?.trialEnd
+    || user?.user_metadata?.stripeSubscriptionId
+    || user?.stripeSubscriptionId
+    || paymentBlockedStatus
+    || needsPayment
+  );
   const backAction = onSkip || onLogout;
 
   const handleSelect = async (plan) => {
     const priceId = billing === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
     sessionStorage.setItem(CHECKOUT_PLAN_KEY, plan.id);
     localStorage.setItem(CHECKOUT_PLAN_KEY, plan.id);
+
+    if (!user?.id) {
+      sessionStorage.setItem('pending_price_id', priceId);
+      const target = new URL(appUrl('/'));
+      target.searchParams.set('auth', 'signup');
+      target.searchParams.set('price_id', priceId);
+      window.location.href = target.toString();
+      return;
+    }
+
     setLoading(plan.id);
     try {
       const res = await fetch('/api/create-checkout-session', {
@@ -211,12 +229,12 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
             <>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 50, padding: '5px 14px', marginBottom: 16, fontSize: 11, fontWeight: 600, color: '#00D2B8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00D2B8', boxShadow: '0 0 6px #00D2B8', animation: 'pulse 2s ease-in-out infinite' }} />
-                Step 2 of 2 - Choose your plan
+                Choose your plan
               </div>
               <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-1px' }}>
-                Start your <span style={{ background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>free trial</span><br />of 14 days
+                Choose your <span style={{ background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>MarketFlow</span><br />access
               </h1>
-              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Start with 14 days to test the journal. Billing starts after the trial unless cancelled. One free trial per account.</p>
+              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Create your account after choosing a plan. New accounts get one 14-day trial before billing starts unless cancelled.</p>
             </>
           ) : (
             <>

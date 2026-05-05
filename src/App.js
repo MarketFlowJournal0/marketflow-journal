@@ -129,7 +129,7 @@ function LoadingScreen() {
 
 }
 
-function AppDomainEntry({ onLogin, onSignup }) {
+function AppDomainEntry({ onLogin, onStartTrial }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -184,7 +184,7 @@ function AppDomainEntry({ onLogin, onSignup }) {
           </button>
           <button
             type="button"
-            onClick={onSignup}
+            onClick={onStartTrial}
             style={{ border: '1px solid rgba(220,228,239,.14)', borderRadius: 999, padding: '13px 20px', background: 'rgba(255,255,255,.035)', color: '#E8EEFF', fontWeight: 900, cursor: 'pointer' }}
           >
             Start 14-day trial
@@ -488,10 +488,12 @@ function AppInner() {
       return;
     }
 
-    if (pendingSignup || !localStorage.getItem(localKey)) {
+    if (pendingSignup) {
       sessionStorage.removeItem('mfj_new_signup');
       setShowOnboarding(true);
+      return;
     }
+    setShowOnboarding(false);
   }, [user, profileLoaded]);
 
   const rememberPostAuthRoute = (authMode) => {
@@ -687,9 +689,22 @@ function AppInner() {
   // ── Non connecté ──
   if (!user) {
     if (shouldRenderApp()) {
+      if (location.pathname === '/plan' || location.pathname === '/subscription') {
+        return (
+          <>
+            <PlanSelection
+              user={null}
+              onLogout={() => { navigate('/', { replace: true }); }}
+            />
+            <SupportWidget onOpenPage={() => { window.location.href = publicSiteUrl('/contact'); }} />
+            {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
+          </>
+        );
+      }
+
       return (
         <>
-          <AppDomainEntry onLogin={openLogin} onSignup={openSignup} />
+          <AppDomainEntry onLogin={openLogin} onStartTrial={() => { navigate('/plan', { replace: false }); }} />
           <SupportWidget onOpenPage={() => { window.location.href = publicSiteUrl('/contact'); }} />
           {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
         </>
