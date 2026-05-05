@@ -3,6 +3,16 @@ import { supabase } from '../lib/supabase';
 import { appUrl } from '../lib/appUrls';
 
 const AuthContext = createContext(null);
+const PENDING_SIGNUP_EMAIL_KEY = 'mfj_pending_new_account_email';
+const PENDING_SIGNUP_AT_KEY = 'mfj_pending_new_account_at';
+
+function rememberPendingSignup(email) {
+  try {
+    if (email) localStorage.setItem(PENDING_SIGNUP_EMAIL_KEY, String(email).trim().toLowerCase());
+    localStorage.setItem(PENDING_SIGNUP_AT_KEY, String(Date.now()));
+    sessionStorage.setItem('mfj_new_signup', '1');
+  } catch (_) {}
+}
 
 function shouldSyncSubscription(profile) {
   if (!profile) return true;
@@ -146,6 +156,7 @@ export function AuthProvider({ children }) {
       setError('An account already exists with this email.');
       return { success: false };
     }
+    rememberPendingSignup(email);
     return { success: true, needsConfirmation: !data.session };
   }, []);
 

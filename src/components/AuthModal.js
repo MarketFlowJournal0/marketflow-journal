@@ -126,6 +126,16 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
   const handleLogin = async (e) => { e.preventDefault(); if (!validateLogin()) return; const ok = await login({ email: form.email, password: form.password }); if (ok) { setSuccess(true); setTimeout(() => onSuccess({ email: form.email }, false), 900); } };
   const handleForgot = async (e) => { e.preventDefault(); if (!forgotEmail) return; const ok = await resetPassword(forgotEmail); if (ok) setForgotSent(true); };
   const handleSignup = async (e) => { e.preventDefault(); if (!validateSignup()) return; const r = await signup({ firstName: form.firstName, lastName: form.lastName, email: form.email, password: form.password }); if (r?.success) { setSuccess(true); if (!r.needsConfirmation) setTimeout(() => onSuccess({ email: form.email }, true), 900); } };
+  const handleGoogleAccess = () => {
+    if (tab === 'signup') {
+      try {
+        sessionStorage.setItem('mfj_new_signup', '1');
+        localStorage.setItem('mfj_pending_new_account_email', '');
+        localStorage.setItem('mfj_pending_new_account_at', String(Date.now()));
+      } catch (_) {}
+    }
+    loginWithGoogle();
+  };
 
   const strength = getStrength(form.password);
 
@@ -214,7 +224,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                     </form>
                   ) : tab === 'login' ? (
                     <form onSubmit={handleLogin} noValidate>
-                      <button type="button" onClick={loginWithGoogle} style={{ width: '100%', padding: '10px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.55)', transition: 'all 0.18s', fontFamily: "'Inter',sans-serif", marginBottom: 14 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
+                      <button type="button" onClick={handleGoogleAccess} style={{ width: '100%', padding: '10px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.55)', transition: 'all 0.18s', fontFamily: "'Inter',sans-serif", marginBottom: 14 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
                         <GoogleIcon /> Continue with Google
                       </button>
 
@@ -239,7 +249,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
                     </form>
                   ) : (
                     <form onSubmit={handleSignup} noValidate>
-                      <button type="button" onClick={loginWithGoogle} style={{ width: '100%', padding: '10px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.55)', transition: 'all 0.18s', fontFamily: "'Inter',sans-serif", marginBottom: 14 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
+                      <button type="button" onClick={handleGoogleAccess} style={{ width: '100%', padding: '10px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.55)', transition: 'all 0.18s', fontFamily: "'Inter',sans-serif", marginBottom: 14 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
                         <GoogleIcon /> Continue with Google
                       </button>
 

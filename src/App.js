@@ -42,6 +42,8 @@ import './theme.css';
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
 const POST_AUTH_ROUTE_KEY = 'mfj_post_auth_route';
+const PENDING_SIGNUP_EMAIL_KEY = 'mfj_pending_new_account_email';
+const PENDING_SIGNUP_AT_KEY = 'mfj_pending_new_account_at';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 
 const PUBLIC_INFO_ROUTES = {
@@ -480,16 +482,48 @@ function AppInner() {
 
     const localKey = ONBOARDING_DONE_KEY + '_' + user.id;
     const pendingSignup = sessionStorage.getItem('mfj_new_signup') === '1';
+    const pendingSignupEmail = String(localStorage.getItem(PENDING_SIGNUP_EMAIL_KEY) || '').trim().toLowerCase();
+    const pendingSignupAt = Number(localStorage.getItem(PENDING_SIGNUP_AT_KEY) || 0);
+    const currentEmail = String(user.email || '').trim().toLowerCase();
+    const pendingSignupMatchesUser = Boolean(
+      pendingSignupAt
+      && (!pendingSignupEmail || pendingSignupEmail === currentEmail)
+      && Date.now() - pendingSignupAt < 30 * 24 * 60 * 60 * 1000
+    );
+    const hasBillingFootprint = Boolean(
+      user.stripeCustomerId
+      || user.stripeSubscriptionId
+      || user.trialEnd
+      || user.subStatus
+      || user.needsPayment
+      || hasJournalAccess(user)
+    );
 
     if (user.onboardingCompleted) {
       sessionStorage.removeItem('mfj_new_signup');
+      localStorage.removeItem(PENDING_SIGNUP_EMAIL_KEY);
+      localStorage.removeItem(PENDING_SIGNUP_AT_KEY);
       localStorage.setItem(localKey, '1');
       setShowOnboarding(false);
       return;
     }
 
-    if (pendingSignup) {
+    if (hasBillingFootprint) {
       sessionStorage.removeItem('mfj_new_signup');
+      if (!pendingSignupEmail || pendingSignupEmail === currentEmail) {
+        localStorage.removeItem(PENDING_SIGNUP_EMAIL_KEY);
+        localStorage.removeItem(PENDING_SIGNUP_AT_KEY);
+      }
+      setShowOnboarding(false);
+      return;
+    }
+
+    if (pendingSignup || pendingSignupMatchesUser || !localStorage.getItem(localKey)) {
+      sessionStorage.removeItem('mfj_new_signup');
+      if (!pendingSignupEmail || pendingSignupEmail === currentEmail) {
+        localStorage.removeItem(PENDING_SIGNUP_EMAIL_KEY);
+        localStorage.removeItem(PENDING_SIGNUP_AT_KEY);
+      }
       setShowOnboarding(true);
       return;
     }
