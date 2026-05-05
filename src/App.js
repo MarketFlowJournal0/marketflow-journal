@@ -450,6 +450,7 @@ function AppInner() {
 
   useEffect(() => {
     if (!user || !profileLoaded) return;
+    if (sessionStorage.getItem('mfj_new_signup') === '1') return;
     const pendingRoute = sessionStorage.getItem(POST_AUTH_ROUTE_KEY);
     if (!pendingRoute || sessionStorage.getItem('pending_price_id')) return;
 
@@ -543,6 +544,13 @@ function AppInner() {
     // Flag posé uniquement pour une vraie inscription (pas une connexion)
     if (isNewAccount === true) {
       sessionStorage.setItem('mfj_new_signup', '1');
+      sessionStorage.setItem(POST_AUTH_ROUTE_KEY, '/plan');
+      setShowOnboarding(true);
+
+      if (!shouldRenderApp()) {
+        window.location.href = appUrl('/');
+      }
+      return;
     }
     const pendingPriceId = sessionStorage.getItem('pending_price_id');
     if (pendingPriceId) {
@@ -638,6 +646,8 @@ function AppInner() {
       }
     }
 
+    sessionStorage.removeItem('pending_price_id');
+    sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
     const nextRoute = hasJournalAccess(user) ? '/dashboard' : '/plan';
     setShowOnboarding(false);
     navigate(nextRoute, { replace: true });
