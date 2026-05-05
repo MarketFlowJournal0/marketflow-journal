@@ -131,79 +131,6 @@ function LoadingScreen() {
 
 }
 
-function AppDomainEntry({ onLogin, onStartTrial }) {
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at 18% 18%, rgba(20,201,229,.16), transparent 34%), radial-gradient(circle at 84% 72%, rgba(0,210,184,.10), transparent 36%), linear-gradient(135deg, #01040A 0%, #030711 44%, #050A12 100%)',
-      color: '#E8EEFF',
-      display: 'grid',
-      placeItems: 'center',
-      padding: 24,
-      fontFamily: "'Inter', sans-serif",
-    }}>
-      <div style={{
-        width: 'min(560px, 100%)',
-        border: '1px solid rgba(220,228,239,.12)',
-        borderRadius: 28,
-        background: 'linear-gradient(145deg, rgba(8,14,25,.88), rgba(3,7,14,.94))',
-        boxShadow: '0 32px 90px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05)',
-        padding: '34px 30px',
-        textAlign: 'center',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
-          <MarketFlowMark
-            size={72}
-            radius={22}
-            padding={0}
-            border="0"
-            background="transparent"
-            shadow="0 18px 44px rgba(0,0,0,.38), 0 0 42px rgba(20,201,229,.18)"
-          />
-        </div>
-        <MarketFlowWordmark
-          align="center"
-          subtitle="Journal workspace"
-          titleFamily="'Inter',sans-serif"
-          titleSize={26}
-          titleLetterSpacing="-0.7px"
-          subtitleSize={10.5}
-          subtitleLetterSpacing="0.16em"
-        />
-        <div style={{ marginTop: 26, fontSize: 34, lineHeight: 1.05, letterSpacing: '-0.06em', fontWeight: 950 }}>
-          Access your trading journal.
-        </div>
-        <p style={{ margin: '14px auto 0', maxWidth: 430, color: '#8EA4C8', lineHeight: 1.7, fontSize: 14 }}>
-          This subdomain is reserved for the connected MarketFlow workspace: dashboard, trades, analytics, backtest, broker sync, reports, and account tools.
-        </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 28 }}>
-          <button
-            type="button"
-            onClick={onLogin}
-            style={{ border: 0, borderRadius: 999, padding: '13px 20px', background: 'linear-gradient(135deg, #DCE4EF, #14C9E5 45%, #00D2B8)', color: '#01040A', fontWeight: 950, cursor: 'pointer' }}
-          >
-            Sign in to Journal
-          </button>
-          <button
-            type="button"
-            onClick={onStartTrial}
-            style={{ border: '1px solid rgba(220,228,239,.14)', borderRadius: 999, padding: '13px 20px', background: 'rgba(255,255,255,.035)', color: '#E8EEFF', fontWeight: 900, cursor: 'pointer' }}
-          >
-            Start 14-day trial
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={() => { window.location.href = publicSiteUrl('/'); }}
-          style={{ marginTop: 18, border: 0, background: 'transparent', color: '#7A90B8', fontWeight: 800, cursor: 'pointer' }}
-        >
-          Back to public site
-        </button>
-      </div>
-    </div>
-  );
-}
-
 class BacktestSafetyBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -723,6 +650,9 @@ function AppInner() {
   // ── Non connecté ──
   if (!user) {
     if (shouldRenderApp()) {
+      const pendingAuthMode = new URLSearchParams(location.search).get('auth');
+      const appAuthTab = authModal || (pendingAuthMode === 'signup' ? 'signup' : 'login');
+
       if (location.pathname === '/plan' || location.pathname === '/subscription') {
         return (
           <>
@@ -738,9 +668,13 @@ function AppInner() {
 
       return (
         <>
-          <AppDomainEntry onLogin={openLogin} onStartTrial={() => { navigate('/plan', { replace: false }); }} />
+          <LoadingScreen />
           <SupportWidget onOpenPage={() => { window.location.href = publicSiteUrl('/contact'); }} />
-          {authModal && <AuthModal defaultTab={authModal} onClose={closeAuth} onSuccess={handleAuthSuccess} />}
+          <AuthModal
+            defaultTab={appAuthTab}
+            onClose={() => { window.location.href = publicSiteUrl('/'); }}
+            onSuccess={handleAuthSuccess}
+          />
         </>
       );
     }
