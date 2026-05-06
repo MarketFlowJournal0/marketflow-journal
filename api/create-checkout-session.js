@@ -101,7 +101,8 @@ module.exports = async (req, res) => {
     }
 
     // One free trial per account/customer. If it was ever started, future checkouts are paid immediately.
-    let trialDays = profile?.trial_end || customerMetadata?.mfj_trial_used === 'true' ? 0 : TRIAL_DAYS;
+    const profileTrialUsed = Boolean(profile?.stripe_customer_id && profile?.trial_end);
+    let trialDays = profileTrialUsed || customerMetadata?.mfj_trial_used === 'true' ? 0 : TRIAL_DAYS;
 
     if (customerId) {
       try {

@@ -132,6 +132,21 @@ export function hasJournalAccess(user) {
   if (!user) return false;
 
   const status = String(user.subStatus || user.subscription_status || '').toLowerCase();
+  const hasStripeSubscription = Boolean(
+    user.stripeSubscriptionId
+    || user.stripe_subscription_id
+    || user.subscriptionId
+    || user.subscription_id
+  );
+  const hasStripeCustomer = Boolean(
+    user.stripeCustomerId
+    || user.stripe_customer_id
+    || user.customerId
+    || user.customer_id
+  );
+
+  if (!hasStripeSubscription || !hasStripeCustomer) return false;
+
   if (status === 'active') return true;
 
   if (status === 'trialing') {

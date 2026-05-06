@@ -451,13 +451,12 @@ function AppInner() {
       && (!pendingSignupEmail || pendingSignupEmail === currentEmail)
       && Date.now() - pendingSignupAt < 30 * 24 * 60 * 60 * 1000
     );
-    const hasBillingFootprint = Boolean(
+    const isPendingNewSignup = pendingSignup || pendingSignupMatchesUser;
+    const hasRealBillingFootprint = Boolean(
       user.stripeCustomerId
       || user.stripeSubscriptionId
-      || user.trialEnd
-      || user.subStatus
-      || user.needsPayment
       || hasJournalAccess(user)
+      || user.needsPayment
     );
 
     if (user.onboardingCompleted) {
@@ -469,7 +468,12 @@ function AppInner() {
       return;
     }
 
-    if (hasBillingFootprint) {
+    if (isPendingNewSignup) {
+      setShowOnboarding(true);
+      return;
+    }
+
+    if (hasRealBillingFootprint) {
       sessionStorage.removeItem('mfj_new_signup');
       if (!pendingSignupEmail || pendingSignupEmail === currentEmail) {
         localStorage.removeItem(PENDING_SIGNUP_EMAIL_KEY);
@@ -671,6 +675,9 @@ function AppInner() {
 
     sessionStorage.removeItem('pending_price_id');
     sessionStorage.removeItem(POST_AUTH_ROUTE_KEY);
+    sessionStorage.removeItem('mfj_new_signup');
+    localStorage.removeItem(PENDING_SIGNUP_EMAIL_KEY);
+    localStorage.removeItem(PENDING_SIGNUP_AT_KEY);
     const nextRoute = hasJournalAccess(user) ? '/dashboard' : '/plan';
     setShowOnboarding(false);
     navigate(nextRoute, { replace: true });

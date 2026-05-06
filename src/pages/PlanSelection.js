@@ -123,11 +123,12 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const daysLeft = user?.user_metadata?.trialDaysLeft ?? user?.trialDaysLeft ?? 14;
   const needsPayment = user?.user_metadata?.needsPayment || user?.needsPayment || false;
   const paymentBlockedStatus = ['past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired'].includes(String(subStatus || '').toLowerCase());
+  const hasStripeCustomer = Boolean(user?.user_metadata?.stripeCustomerId || user?.stripeCustomerId);
+  const hasStripeSubscription = Boolean(user?.user_metadata?.stripeSubscriptionId || user?.stripeSubscriptionId);
+  const hasStripeTrialRecord = Boolean(hasStripeCustomer && (user?.user_metadata?.trialEnd || user?.trialEnd));
   const trialUsed = Boolean(
-    user?.user_metadata?.trialEnd
-    || user?.trialEnd
-    || user?.user_metadata?.stripeSubscriptionId
-    || user?.stripeSubscriptionId
+    hasStripeTrialRecord
+    || hasStripeSubscription
     || paymentBlockedStatus
     || needsPayment
   );
