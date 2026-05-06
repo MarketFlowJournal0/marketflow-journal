@@ -1,6 +1,7 @@
 {
   "short_name": "MF Journal",
   "name": "MarketFlow Journal",
+  "id": "/",
   "icons": [
     {
       "src": "favicon.ico",
@@ -11,13 +12,13 @@
       "src": "favicon-48.png",
       "type": "image/png",
       "sizes": "48x48",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "favicon-96.png",
       "type": "image/png",
       "sizes": "96x96",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "logo192.png",
@@ -39,7 +40,9 @@
     }
   ],
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "orientation": "portrait-primary",
   "theme_color": "#01040A",
   "background_color": "#01040A",

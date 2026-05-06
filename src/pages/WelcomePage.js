@@ -12,7 +12,7 @@ function FeatureTile({ text, accent, index }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.28 + index * 0.05, duration: 0.4 }}
+      transition={{ duration: 0.22 }}
       style={{
         background: 'linear-gradient(180deg, rgba(12,20,34,0.9), rgba(6,10,18,0.88))',
         border: '1px solid rgba(255,255,255,0.06)',
@@ -161,7 +161,7 @@ export default function WelcomePage() {
 
     const timer = window.setTimeout(() => {
       if (!isActivated) setSyncHint(true);
-    }, 4500);
+    }, 1200);
 
     return () => window.clearTimeout(timer);
   }, [hasSessionId, isActivated]);
@@ -195,13 +195,13 @@ export default function WelcomePage() {
         }
         await refreshProfile?.();
       } catch (_) {}
-      if (!cancelled && attempts >= 4 && !isActivated) {
+      if (!cancelled && attempts >= 2 && !isActivated) {
         setSyncHint(true);
       }
     };
 
     runSync();
-    const timer = window.setInterval(runSync, 2500);
+    const timer = window.setInterval(runSync, 1000);
 
     return () => {
       cancelled = true;
@@ -359,7 +359,7 @@ export default function WelcomePage() {
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.06, duration: 0.4 }}
+            transition={{ duration: 0.22 }}
             className="mf-welcome-main"
             style={{
               background: 'linear-gradient(168deg, rgba(8,18,40,0.92) 0%, rgba(4,10,22,0.95) 50%, rgba(4,8,18,0.96) 100%)',
@@ -505,7 +505,7 @@ export default function WelcomePage() {
                 <motion.button
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.18, duration: 0.34 }}
+                  transition={{ duration: 0.22 }}
                   onClick={() => navigate('/broker-connect?setup=1')}
                   style={{
                     border: '1px solid rgba(20,201,229,0.32)',
@@ -550,7 +550,7 @@ export default function WelcomePage() {
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
+            transition={{ duration: 0.22 }}
             style={{ display: 'grid', gap: 16 }}
           >
             <div
@@ -623,7 +623,7 @@ export default function WelcomePage() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.16, duration: 0.4 }}
+          transition={{ duration: 0.22 }}
           style={{ marginTop: 24 }}
         >
           <div

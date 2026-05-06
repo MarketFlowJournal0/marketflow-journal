@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { appUrl } from '../lib/appUrls';
+import { STRIPE_PRICE_IDS } from '../lib/stripePriceConfig';
 
 /* ═══════════════════════════════════════════════════════════════
    MARKETFLOW PLAN SELECTION — Premium v2
@@ -65,8 +66,8 @@ const PLANS = [
     id: 'starter', name: 'Starter',
     monthly: 15, annual: 11,
     noAnnualDiscount: true,
-    priceMonthly: 'price_1T9t9L2Ouddv7uendIMAR6IP',
-    priceAnnual: 'price_1TDQ7w2Ouddv7ueno5CuaNTH',
+    priceMonthly: STRIPE_PRICE_IDS.starter.monthly,
+    priceAnnual: STRIPE_PRICE_IDS.starter.annual,
     accent: '#00D2B8',
     desc: 'Perfect to start tracking your trades',
     features: ['Unlimited trading journal', 'Dashboard & basic statistics', 'CSV import', 'Performance calendar', '1 trading account'],
@@ -75,8 +76,8 @@ const PLANS = [
   {
     id: 'pro', name: 'Pro', popular: true,
     monthly: 22, annual: 15,
-    priceMonthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
-    priceAnnual: 'price_1T9t9U2Ouddv7uenK6oT1O13',
+    priceMonthly: STRIPE_PRICE_IDS.pro.monthly,
+    priceAnnual: STRIPE_PRICE_IDS.pro.annual,
     accent: '#14C9E5',
     desc: 'For serious traders who want to improve',
     features: ['Everything in Starter plan', 'Advanced Pro analytics', 'Psychology & mental tracking', 'Equity curve & drawdown', 'Strategy backtesting', '3 trading accounts', 'PDF report export'],
@@ -85,8 +86,8 @@ const PLANS = [
   {
     id: 'elite', name: 'Elite',
     monthly: 38, annual: 27,
-    priceMonthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
-    priceAnnual: 'price_1T9t9K2Ouddv7uennnWOJ44p',
+    priceMonthly: STRIPE_PRICE_IDS.elite.monthly,
+    priceAnnual: STRIPE_PRICE_IDS.elite.annual,
     accent: '#D7B36A',
     desc: 'For pros who want the best tool',
     features: ['Everything in Pro plan', 'AI Trading Coach (GPT-4)', 'Unlimited accounts', 'Alerts & notifications', 'API access', '24/7 priority support', 'Beta features access'],
@@ -105,15 +106,18 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const [loading, setLoading] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
-      setSuccessMsg('Subscription activated! Redirecting...');
-      const doRefresh = async () => { try { await refreshProfile?.(); } catch (_) {} };
+      setSuccessMsg('Subscription activated. Opening workspace...');
+      const doRefresh = async () => {
+        try { await refreshProfile?.(); } catch (_) {}
+        window.location.href = appUrl('/dashboard');
+      };
       doRefresh();
-      setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 1500);
     }
   }, []); // eslint-disable-line
 
@@ -149,6 +153,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
     }
 
     setLoading(plan.id);
+    setCheckoutError('');
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -157,8 +162,16 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       });
       const { url, error } = await res.json();
       if (url) window.location.href = url;
-      else console.error('Checkout error:', error);
-    } catch (err) { console.error('Checkout error:', err); }
+      else {
+        const message = error || 'Checkout could not be started. Please try again.';
+        setCheckoutError(message);
+        console.error('Checkout error:', message);
+      }
+    } catch (err) {
+      const message = err?.message || 'Checkout could not be started. Please try again.';
+      setCheckoutError(message);
+      console.error('Checkout error:', err);
+    }
     finally { setLoading(null); }
   };
 
@@ -189,7 +202,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
 
       {/* Back button */}
       {backAction && (
-        <motion.button initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} onClick={backAction} style={{ position: 'fixed', top: 24, left: 24, zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: '#7A90B8', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(6,230,255,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#7A90B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
+        <motion.button initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.18 }} onClick={backAction} style={{ position: 'fixed', top: 24, left: 24, zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: '#7A90B8', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(6,230,255,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#7A90B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3L5 8L10 13"/></svg>
           Back to site
         </motion.button>
@@ -200,6 +213,9 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         {/* Success */}
         {successMsg && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(6,230,255,0.06))', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: '12px 20px', color: '#00D2B8', fontSize: 13.5, fontWeight: 600, textAlign: 'center', marginBottom: 20 }}>{successMsg}</motion.div>
+        )}
+        {checkoutError && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'rgba(255,61,87,0.08)', border: '1px solid rgba(255,61,87,0.2)', borderRadius: 12, padding: '12px 20px', color: '#FF7A8F', fontSize: 13.5, fontWeight: 600, textAlign: 'center', marginBottom: 20 }}>{checkoutError}</motion.div>
         )}
 
         {/* Trial banner */}
@@ -225,7 +241,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         )}
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={{ textAlign: 'center', marginBottom: 40 }}>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} style={{ textAlign: 'center', marginBottom: 40 }}>
           {!user ? (
             <>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 50, padding: '5px 14px', marginBottom: 16, fontSize: 11, fontWeight: 600, color: '#00D2B8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
@@ -250,7 +266,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         </motion.div>
 
         {/* Billing Toggle */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 50, padding: 3 }}>
             {['monthly', 'annual'].map(t => (
               <button key={t} onClick={() => setBilling(t)} style={{ padding: '7px 18px', borderRadius: 50, border: 'none', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: 12.5, fontWeight: 600, transition: 'all 0.2s', background: billing === t ? '#14C9E5' : 'transparent', color: billing === t ? '#01040A' : '#7A90B8' }}>
@@ -272,7 +288,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                 key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 + i * 0.08 }}
+                transition={{ duration: 0.22 }}
                 whileHover={{ y: -3 }}
                 style={{
                   background: plan.popular && !isCurrent ? 'linear-gradient(160deg, rgba(6,230,255,0.04), rgba(0,255,136,0.02), rgba(12,20,34,0.98))' : 'rgba(12,20,34,0.5)',
@@ -361,7 +377,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
         </div>
 
         {/* Footer note */}
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: '#334566' }}>
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: '#334566' }}>
           <span style={{ color: '#7A90B8' }}>100% secure payment by Stripe</span>
           {' - '}Manage or cancel online
           {' - '}{trialUsed ? 'Trial already used on this account' : '14-day free trial - one per account'}

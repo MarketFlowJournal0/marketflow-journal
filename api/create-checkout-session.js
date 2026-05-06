@@ -2,19 +2,11 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 const { getAppBaseUrl } = require('./lib/url-config');
+const { PRICE_PLAN_MAP, validateStripePrice } = require('./lib/stripe-price-config');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-const PRICE_PLAN_MAP = {
-  price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
-  price_1TDQ7w2Ouddv7ueno5CuaNTH: 'starter',
-  price_1T9t9U2Ouddv7uenfg38PRZ2: 'pro',
-  price_1T9t9U2Ouddv7uenK6oT1O13: 'pro',
-  price_1T9t9L2Ouddv7uen4DXuOatj: 'elite',
-  price_1T9t9K2Ouddv7uennnWOJ44p: 'elite',
-};
 
 const VALID_PLAN_IDS = new Set(['starter', 'pro', 'elite']);
 const TRIAL_DAYS = 14;
@@ -30,15 +22,21 @@ module.exports = async (req, res) => {
   if (!priceId) return res.status(400).json({ error: 'priceId required' });
 
   const BASE_URL = getAppBaseUrl();
-  const requestedPlanId = VALID_PLAN_IDS.has(planId) ? planId : '';
-  const finalPlanId = requestedPlanId || PRICE_PLAN_MAP[priceId] || '';
-  const planParam = finalPlanId ? `&plan_id=${encodeURIComponent(finalPlanId)}` : '';
-  const sessionMetadata = {
-    supabase_user_id: userId || '',
-    plan_id: finalPlanId,
-  };
 
   try {
+    const { config: priceConfig } = await validateStripePrice({ stripe, priceId });
+    const requestedPlanId = VALID_PLAN_IDS.has(planId) ? planId : '';
+    const finalPlanId = requestedPlanId && requestedPlanId === priceConfig.planId
+      ? requestedPlanId
+      : priceConfig.planId || PRICE_PLAN_MAP[priceId] || '';
+    const planParam = finalPlanId ? `&plan_id=${encodeURIComponent(finalPlanId)}` : '';
+    const sessionMetadata = {
+      supabase_user_id: userId || '',
+      plan_id: finalPlanId,
+      billing_interval: priceConfig.billing,
+      stripe_price_id: priceId,
+    };
+
     let customerId = null;
     let profile = null;
     let customerMetadata = {};
@@ -151,6 +149,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ url: session.url });
   } catch (err) {
     console.error('Stripe checkout error:', err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(err.statusCode || 500).json({ error: err.message });
   }
 };

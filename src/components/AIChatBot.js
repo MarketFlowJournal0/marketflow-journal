@@ -169,9 +169,6 @@ export default function AIChatBot() {
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setTyping(true);
 
-    /* Simulate thinking delay */
-    await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
-
     const response = getSmartResponse(userMsg, user, trades, profile);
     setTyping(false);
     setMessages(prev => [...prev, { role: 'bot', text: response }]);

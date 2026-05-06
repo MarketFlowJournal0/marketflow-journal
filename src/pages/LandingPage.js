@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { STRIPE_PRICE_IDS } from '../lib/stripePriceConfig';
 
 /* ===============================================================
    MARKETFLOW JOURNAL - Landing Page v5
@@ -598,9 +599,9 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
   const activeShowcase = ANALYTICS_SHOWCASE[activeModule];
 
   const PLANS = [
-    { id:'starter', name:'Starter', monthly:15, annual:11, priceMonthly:'price_1T9t9L2Ouddv7uendIMAR6IP', priceAnnual:'price_1TDQ7w2Ouddv7ueno5CuaNTH', desc:'Core journal and review workflow', features:['Unlimited trade journal','Dashboard and daily workflow','CSV, Excel and JSON import','Performance calendar','1 backtest session'] },
-    { id:'pro', name:'Pro', monthly:22, annual:15, priceMonthly:'price_1T9t9U2Ouddv7uenfg38PRZ2', priceAnnual:'price_1T9t9U2Ouddv7uenK6oT1O13', desc:'Deeper review stack for active traders', features:['Everything in Starter','Advanced Pro analytics','Psychology tracker','Equity curve and drawdown','Broker desk access','5 backtest sessions','Report exports'], popular:true },
-    { id:'elite', name:'Elite', monthly:38, annual:27, priceMonthly:'price_1T9t9L2Ouddv7uen4DXuOatj', priceAnnual:'price_1T9t9K2Ouddv7uennnWOJ44p', desc:'Highest-access MarketFlow workspace', features:['Everything in Pro','AI assistant access','Unlimited accounts','Alerts and notifications','API access','25 backtest sessions','Elite trade copier desk'] },
+    { id:'starter', name:'Starter', monthly:15, annual:11, priceMonthly:STRIPE_PRICE_IDS.starter.monthly, priceAnnual:STRIPE_PRICE_IDS.starter.annual, desc:'Core journal and review workflow', features:['Unlimited trade journal','Dashboard and daily workflow','CSV, Excel and JSON import','Performance calendar','1 backtest session'] },
+    { id:'pro', name:'Pro', monthly:22, annual:15, priceMonthly:STRIPE_PRICE_IDS.pro.monthly, priceAnnual:STRIPE_PRICE_IDS.pro.annual, desc:'Deeper review stack for active traders', features:['Everything in Starter','Advanced Pro analytics','Psychology tracker','Equity curve and drawdown','Broker desk access','5 backtest sessions','Report exports'], popular:true },
+    { id:'elite', name:'Elite', monthly:38, annual:27, priceMonthly:STRIPE_PRICE_IDS.elite.monthly, priceAnnual:STRIPE_PRICE_IDS.elite.annual, desc:'Highest-access MarketFlow workspace', features:['Everything in Pro','AI assistant access','Unlimited accounts','Alerts and notifications','API access','25 backtest sessions','Elite trade copier desk'] },
   ];
 
   return (

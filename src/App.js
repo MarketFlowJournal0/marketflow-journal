@@ -36,6 +36,7 @@ import { getEntryRoute, hasJournalAccess, hasRouteAccess, normalizePlan } from '
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
 import { buildOnboardingRecord } from './lib/onboarding';
 import { appUrl, publicSiteUrl, shouldRenderApp } from './lib/appUrls';
+import { PRICE_PLAN_MAP } from './lib/stripePriceConfig';
 import './App.css';
 import './theme.css';
 
@@ -60,16 +61,6 @@ const PUBLIC_INFO_ROUTES = {
   '/privacy': 'privacy',
   '/privacy-policy': 'privacy',
   '/contact': 'contact',
-};
-
-
-const PRICE_PLAN_MAP = {
-  price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
-  price_1TDQ7w2Ouddv7ueno5CuaNTH: 'starter',
-  price_1T9t9U2Ouddv7uenfg38PRZ2: 'pro',
-  price_1T9t9U2Ouddv7uenK6oT1O13: 'pro',
-  price_1T9t9L2Ouddv7uen4DXuOatj: 'elite',
-  price_1T9t9K2Ouddv7uennnWOJ44p: 'elite',
 };
 
 function rememberCheckoutPlan(planId) {

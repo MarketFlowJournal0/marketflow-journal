@@ -173,7 +173,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
             <AnimatePresence mode="wait">
               {success ? (
                 <motion.div key="success" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }} style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.1 }} style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(6,230,255,0.12), rgba(0,255,136,0.08))', border: '1px solid rgba(0,255,136,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: 24, color: '#00D2B8' }}>✓</motion.div>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 14 }} style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(6,230,255,0.12), rgba(0,255,136,0.08))', border: '1px solid rgba(0,255,136,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: 24, color: '#00D2B8' }}>✓</motion.div>
                   <h3 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{tab === 'login' ? 'Welcome back!' : 'Welcome to MarketFlow!'}</h3>
                   <p style={{ fontSize: 13, color: 'rgba(139,163,204,0.9)' }}>{tab === 'login' ? 'Signed in successfully. Redirecting...' : 'Check your email to confirm your account, then sign in!'}</p>
                 </motion.div>

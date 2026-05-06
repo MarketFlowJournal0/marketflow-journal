@@ -1,19 +1,11 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
+const { PRICE_PLAN_MAP } = require('./lib/stripe-price-config');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-const PRICE_PLAN_MAP = {
-  price_1T9t9L2Ouddv7uendIMAR6IP: 'starter',
-  price_1TDQ7w2Ouddv7ueno5CuaNTH: 'starter',
-  price_1T9t9U2Ouddv7uenfg38PRZ2: 'pro',
-  price_1T9t9U2Ouddv7uenK6oT1O13: 'pro',
-  price_1T9t9L2Ouddv7uen4DXuOatj: 'elite',
-  price_1T9t9K2Ouddv7uennnWOJ44p: 'elite',
-};
 
 const ACTIVE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid'];
 const SUBSCRIPTION_PRIORITY = {

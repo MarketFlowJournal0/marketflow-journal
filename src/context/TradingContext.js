@@ -138,7 +138,7 @@ export function TradingProvider({ children }) {
       return;
     }
     setLoading(true);
-    const t = setTimeout(() => setLoading(false), 5000);
+    const t = setTimeout(() => setLoading(false), 2500);
     fetchTrades({ preserveOnError: false }).finally(() => clearTimeout(t));
   }, [activeUserId, fetchTrades]);
 
@@ -455,7 +455,7 @@ export function TradingProvider({ children }) {
 
       const quickResult = await Promise.race([
         cloudDeletePromise,
-        new Promise((resolve) => setTimeout(() => resolve({ pending: true }), 1400)),
+        new Promise((resolve) => setTimeout(() => resolve({ pending: true }), 250)),
       ]);
 
       if (quickResult?.success === false) {

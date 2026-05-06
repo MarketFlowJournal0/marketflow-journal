@@ -249,11 +249,9 @@ Some things I can help with:
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = generateResponse(input, stats || {}, trades || []);
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-      setIsTyping(false);
-    }, 800 + Math.random() * 700);
+    const response = generateResponse(input, stats || {}, trades || []);
+    setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    setIsTyping(false);
   }, [input, stats, trades]);
 
   const quickQuestions = [
