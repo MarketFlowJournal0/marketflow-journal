@@ -1,10 +1,9 @@
 User-agent: *
 Allow: /
 
-# Sitemap
 Sitemap: https://www.marketflowjournal.com/sitemap.xml
 
-# Bloquer les pages app (pas utiles pour Google)
+# Private app routes are not useful search landing pages.
 Disallow: /dashboard
 Disallow: /all-trades
 Disallow: /analytics
@@ -12,3 +11,11 @@ Disallow: /backtest
 Disallow: /psychology
 Disallow: /equity
 Disallow: /ai-chat
+Disallow: /broker-connect
+Disallow: /reports
+Disallow: /alerts
+Disallow: /api-access
+Disallow: /account
+Disallow: /welcome
+Disallow: /plan
+Disallow: /auth

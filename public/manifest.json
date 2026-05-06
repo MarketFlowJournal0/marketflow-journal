@@ -1,6 +1,7 @@
 {
   "short_name": "MF Journal",
   "name": "MarketFlow Journal",
+  "description": "Premium trading journal for execution review, analytics, psychology, backtesting, broker workflows, reports, and disciplined performance improvement.",
   "id": "/",
   "icons": [
     {
@@ -21,16 +22,22 @@
       "purpose": "any maskable"
     },
     {
-      "src": "logo192.png",
+      "src": "app/icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "app/icon.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
+    },
+    {
+      "src": "app/icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     },
     {
       "src": "apple-touch-icon.png",
@@ -46,5 +53,6 @@
   "orientation": "portrait-primary",
   "theme_color": "#01040A",
   "background_color": "#01040A",
+  "prefer_related_applications": false,
   "categories": ["finance", "productivity", "business"]
 }

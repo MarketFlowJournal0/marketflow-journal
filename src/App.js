@@ -47,6 +47,27 @@ const AUTO_CHECKOUT_KEY = 'mfj_auto_checkout_after_auth';
 const PENDING_SIGNUP_EMAIL_KEY = 'mfj_pending_new_account_email';
 const PENDING_SIGNUP_AT_KEY = 'mfj_pending_new_account_at';
 const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
+const SEO_SITE_NAME = 'MarketFlow Journal';
+const SEO_TITLE_TEMPLATE = '%s | MarketFlow Journal';
+const SEO_ROUTE_TITLES = {
+  '/': 'Professional Trading Journal & Analytics',
+  '/dashboard': 'Dashboard',
+  '/all-trades': 'All Trades',
+  '/analytics': 'Analytics',
+  '/backtest': 'Backtest',
+  '/development': 'Development Workspace',
+  '/psychology': 'Psychology Tracker',
+  '/equity': 'Equity Curve',
+  '/broker-connect': 'Broker Connect',
+  '/reports': 'Reports',
+  '/alerts': 'Alerts',
+  '/api-access': 'API Access',
+  '/competition': 'Competition',
+  '/plan': 'Plans',
+  '/welcome': 'Welcome',
+  '/support': 'Support',
+};
+const SEO_DESCRIPTION = 'MarketFlow Journal is a premium trading journal for trade review, execution tracking, analytics, psychology, backtesting, broker workflows, reports, and disciplined performance improvement.';
 
 const PUBLIC_INFO_ROUTES = {
   '/docs': 'docs',
@@ -68,6 +89,17 @@ function rememberCheckoutPlan(planId) {
   if (normalizedPlan === 'trial') return;
   sessionStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
   localStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
+}
+
+function formatSeoTitle(pathname = '/') {
+  const title = SEO_ROUTE_TITLES[pathname] || SEO_ROUTE_TITLES['/'];
+  return pathname === '/' ? `${SEO_SITE_NAME} | ${title}` : SEO_TITLE_TEMPLATE.replace('%s', title);
+}
+
+function updateMetaTag(selector, attr, value) {
+  if (typeof document === 'undefined' || !value) return;
+  const tag = document.head.querySelector(selector);
+  if (tag) tag.setAttribute(attr, value);
 }
 
 
@@ -341,6 +373,26 @@ function AppInner() {
       window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
     }
   }, [location.pathname, location.search, user]);
+
+  useEffect(() => {
+    const title = formatSeoTitle(location.pathname);
+    const canonicalPath = shouldRenderApp() ? location.pathname : '/';
+    const canonicalUrl = shouldRenderApp()
+      ? appUrl(canonicalPath)
+      : publicSiteUrl('/');
+
+    document.title = title;
+    updateMetaTag('meta[name="description"]', 'content', SEO_DESCRIPTION);
+    updateMetaTag('meta[property="og:title"]', 'content', title);
+    updateMetaTag('meta[property="og:description"]', 'content', SEO_DESCRIPTION);
+    updateMetaTag('meta[property="og:url"]', 'content', canonicalUrl);
+    updateMetaTag('meta[name="twitter:title"]', 'content', title);
+    updateMetaTag('meta[name="twitter:description"]', 'content', SEO_DESCRIPTION);
+    updateMetaTag('meta[name="twitter:url"]', 'content', canonicalUrl);
+
+    const canonical = document.head.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', canonicalUrl);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (forceLoggedOut) {
