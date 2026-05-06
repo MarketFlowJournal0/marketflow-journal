@@ -329,12 +329,12 @@ const STYLES = `
   .lp-timeline-title { color:var(--t0);font-weight:800;font-size:15px;margin-bottom:6px; }
   .lp-timeline-desc { color:var(--t2);font-size:13px;line-height:1.6; }
   .lp-timeline-badge { padding:5px 9px;border-radius:999px;background:rgba(0,210,184,.08);border:1px solid rgba(0,210,184,.15);color:var(--green);font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase; }
-  .lp-roadmap-grid,.lp-resource-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px; }
-  .lp-roadmap-card,.lp-resource-card { padding:22px;border-radius:20px;border:1px solid rgba(220,228,239,.08);background:linear-gradient(145deg,rgba(13,23,38,.62),rgba(3,8,16,.86));position:relative;overflow:hidden;transition:all .24s ease; }
-  .lp-roadmap-card:hover,.lp-resource-card:hover { transform:translateY(-3px);border-color:rgba(20,201,229,.22);box-shadow:0 18px 54px rgba(0,0,0,.34); }
-  .lp-roadmap-card small,.lp-resource-card small { color:var(--cyan);font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase; }
-  .lp-roadmap-card h3,.lp-resource-card h3 { margin:12px 0 8px;color:var(--t0);font-size:17px;font-family:'Space Grotesk',sans-serif; }
-  .lp-roadmap-card p,.lp-resource-card p { margin:0;color:var(--t2);font-size:13px;line-height:1.65; }
+  .lp-resource-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px; }
+  .lp-resource-card { padding:22px;border-radius:20px;border:1px solid rgba(220,228,239,.08);background:linear-gradient(145deg,rgba(13,23,38,.62),rgba(3,8,16,.86));position:relative;overflow:hidden;transition:all .24s ease; }
+  .lp-resource-card:hover { transform:translateY(-3px);border-color:rgba(20,201,229,.22);box-shadow:0 18px 54px rgba(0,0,0,.34); }
+  .lp-resource-card small { color:var(--cyan);font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase; }
+  .lp-resource-card h3 { margin:12px 0 8px;color:var(--t0);font-size:17px;font-family:'Space Grotesk',sans-serif; }
+  .lp-resource-card p { margin:0;color:var(--t2);font-size:13px;line-height:1.65; }
   .lp-faq-item { border:1px solid var(--brd);border-radius:12px;background:rgba(12,20,34,0.4);overflow:hidden; }
   .lp-faq-q { padding:18px 22px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:14.5px;font-weight:600;color:var(--t1);transition:color 0.2s;user-select:none; }
   .lp-faq-q:hover { color:var(--cyan); }
@@ -380,7 +380,7 @@ const STYLES = `
 
   @media (max-width:900px) {
     .lp-features-grid,.lp-pricing-grid,.lp-testi-grid { grid-template-columns:1fr; }
-    .lp-product-grid,.lp-access-overview,.lp-roadmap-grid,.lp-resource-grid { grid-template-columns:1fr; }
+    .lp-product-grid,.lp-access-overview,.lp-resource-grid { grid-template-columns:1fr; }
     .lp-bridge-inner { grid-template-columns:1fr; }
     .lp-bridge-line { display:none; }
     .lp-timeline-item { grid-template-columns:1fr; }

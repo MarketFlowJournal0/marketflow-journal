@@ -3,50 +3,6 @@ import React, { useState } from 'react';
 const SUPPORT_EMAIL = 'support@marketflowjournal.com';
 
 const PAGE_DATA = {
-  changelog: {
-    eyebrow: 'Product',
-    title: 'Changelog',
-    subtitle: 'A clear record of what is live in MarketFlow Journal.',
-    sections: [
-      {
-        title: 'Current release',
-        items: [
-          'Landing page restored to a calmer professional structure.',
-          'New MF branding applied across public and journal surfaces.',
-          'Reports, alerts, API access, backtest sessions and Elite tooling are represented according to current product access.',
-        ],
-      },
-      {
-        title: 'Quality standard',
-        items: [
-          'No fake client counters, invented volume, false ratings or unsupported competitor claims.',
-          'Plan descriptions must match actual journal routing and access.',
-        ],
-      },
-    ],
-  },
-  roadmap: {
-    eyebrow: 'Product',
-    title: 'Roadmap',
-    subtitle: 'The next MarketFlow priorities, written without overpromising.',
-    sections: [
-      {
-        title: 'Near term',
-        items: [
-          'Sharper import reliability across broker CSV, Excel and raw table formats.',
-          'More polished backtest sessions with replay-style review and stronger session history.',
-          'Deeper analytics and psychology links so every chart is tied to the same trade stream.',
-        ],
-      },
-      {
-        title: 'Exploration',
-        items: [
-          'Mobile app experience beyond the current web/PWA foundation.',
-          'Broker connectivity improvements where secure integrations are technically available.',
-        ],
-      },
-    ],
-  },
   docs: {
     eyebrow: 'Resources',
     title: 'Documentation',

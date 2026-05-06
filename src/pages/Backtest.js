@@ -859,12 +859,232 @@ function BacktestDataTable({ title, rows = [], tone = C.accent }) {
   );
 }
 
+function getOhlcVisibleCount(candles = [], revealPct = 100) {
+  if (!Array.isArray(candles) || !candles.length) return 0;
+  return Math.max(12, Math.min(candles.length, Math.ceil(candles.length * (Math.max(2, revealPct) / 100))));
+}
+
+function getReplayCandle(state, revealPct = 100) {
+  const candles = Array.isArray(state?.candles) ? state.candles : [];
+  if (state?.status !== 'ready' || !candles.length) return null;
+  const visibleCount = getOhlcVisibleCount(candles, revealPct);
+  return candles[Math.max(0, visibleCount - 1)] || null;
+}
+
+function formatReplayPrice(value, symbol = '') {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '';
+  if (Math.abs(numeric) >= 1000) return numeric.toFixed(2);
+  return numeric.toFixed(symbol?.includes('JPY') ? 3 : 5);
+}
+
+function buildDefaultBacktestTicket(price = 1, side = 'Long') {
+  const entry = Number.isFinite(Number(price)) && Number(price) > 0 ? Number(price) : 1;
+  const distance = Math.max(entry * 0.002, entry >= 100 ? 0.5 : 0.001);
+  const isShort = side === 'Short';
+  return {
+    side,
+    entry: Number(entry.toFixed(6)),
+    stopLoss: Number((entry + (isShort ? distance : -distance)).toFixed(6)),
+    takeProfit: Number((entry + (isShort ? -distance * 2 : distance * 2)).toFixed(6)),
+    size: 1,
+    outcome: 'TP',
+  };
+}
+
+function BacktestOrderTicket({ selectedSession, symbol, candle, accountScope, addTrade }) {
+  const basePrice = Number(candle?.close || candle?.open || selectedSession?.accountBalance || 1);
+  const [ticket, setTicket] = useState(() => buildDefaultBacktestTicket(basePrice, 'Long'));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setTicket((current) => buildDefaultBacktestTicket(basePrice, current.side || 'Long'));
+  }, [basePrice, symbol]);
+
+  const metrics = useMemo(() => {
+    const entry = Number(ticket.entry);
+    const stop = Number(ticket.stopLoss);
+    const target = Number(ticket.takeProfit);
+    const size = Math.max(0, Number(ticket.size) || 0);
+    const riskPerUnit = Math.abs(entry - stop);
+    const rewardPerUnit = Math.abs(target - entry);
+    const rr = riskPerUnit > 0 ? rewardPerUnit / riskPerUnit : 0;
+    const isShort = ticket.side === 'Short';
+    const exit = ticket.outcome === 'SL' ? stop : ticket.outcome === 'BE' ? entry : target;
+    const signedMove = isShort ? entry - exit : exit - entry;
+    const pnl = ticket.outcome === 'BE' ? 0 : signedMove * size;
+    return { entry, stop, target, size, riskPerUnit, rewardPerUnit, rr, exit, pnl };
+  }, [ticket]);
+
+  const update = (key) => (event) => {
+    const value = ['entry', 'stopLoss', 'takeProfit', 'size'].includes(key)
+      ? Number(event.target.value)
+      : event.target.value;
+    setTicket((current) => ({ ...current, [key]: value }));
+  };
+
+  const setSide = (side) => {
+    setTicket(buildDefaultBacktestTicket(Number(ticket.entry) || basePrice, side));
+  };
+
+  const saveSimulation = async () => {
+    if (!addTrade) {
+      toast.error('All Trades is not ready yet.');
+      return;
+    }
+    if (!Number.isFinite(metrics.entry) || !Number.isFinite(metrics.stop) || !Number.isFinite(metrics.target) || metrics.riskPerUnit <= 0) {
+      toast.error('Entry, stop loss and take profit must be valid.');
+      return;
+    }
+
+    const stamp = candle?.time ? new Date(candle.time) : new Date(selectedSession?.startDate || Date.now());
+    const openDate = Number.isNaN(stamp.getTime()) ? new Date() : stamp;
+    const direction = ticket.side === 'Short' ? 'Short' : 'Long';
+    setSaving(true);
+    try {
+      const saved = await addTrade({
+        symbol: symbol || selectedSession?.assets?.[0] || 'EURUSD',
+        direction,
+        type: direction,
+        entry_price: metrics.entry,
+        entry: metrics.entry,
+        exit_price: metrics.exit,
+        exit: metrics.exit,
+        stop_loss: metrics.stop,
+        sl: metrics.stop,
+        take_profit: metrics.target,
+        tp: metrics.target,
+        quantity: metrics.size,
+        size: metrics.size,
+        profit_loss: Number(metrics.pnl.toFixed(2)),
+        pnl: Number(metrics.pnl.toFixed(2)),
+        status: ticket.outcome === 'SL' ? 'Loss' : ticket.outcome === 'BE' ? 'BE' : 'Win',
+        result: ticket.outcome,
+        open_date: openDate.toISOString(),
+        date: openDate.toISOString().slice(0, 10),
+        time: openDate.toTimeString().slice(0, 5),
+        session: 'Backtest',
+        setup: 'Backtest simulation',
+        notes: `Backtest session: ${selectedSession?.name || 'Replay session'}. Outcome: ${ticket.outcome}. RR: ${metrics.rr.toFixed(2)}R.`,
+        extra: {
+          source: 'marketflow_backtest',
+          backtestSessionId: selectedSession?.id || null,
+          account: accountScope && accountScope !== 'all' ? accountScope : selectedSession?.accountScope || 'Backtest',
+          rrActual: Number(metrics.rr.toFixed(2)),
+          result: ticket.outcome,
+        },
+      });
+
+      if (saved) toast.success('Backtest trade saved to All Trades.');
+      else toast.error('Trade could not be saved.');
+    } catch (error) {
+      console.error('Backtest save simulation failed:', error);
+      toast.error(error?.message || 'Unable to save this simulated trade.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card tone={C.accent} index={15} style={{ padding: '16px 16px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 900, color: C.text0 }}>Simulated order</div>
+          <div style={{ marginTop: 4, fontSize: 10.5, color: C.text3 }}>Save the result into All Trades.</div>
+        </div>
+        <div style={{ fontSize: 10, fontWeight: 900, color: C.accent, border: `1px solid ${shade(C.accent, 0.2)}`, borderRadius: 999, padding: '5px 8px', background: shade(C.accent, 0.09) }}>
+          {formatAnalyticsRR(metrics.rr || 0)}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+        {['Long', 'Short'].map((side) => (
+          <button
+            key={side}
+            type="button"
+            onClick={() => setSide(side)}
+            style={{
+              height: 34,
+              borderRadius: 12,
+              border: `1px solid ${ticket.side === side ? shade(C.accent, 0.32) : shade(C.borderHi, 0.72)}`,
+              background: ticket.side === side ? shade(C.accent, 0.12) : 'rgba(255,255,255,0.025)',
+              color: ticket.side === side ? C.accent : C.text2,
+              fontWeight: 900,
+              cursor: 'pointer',
+            }}
+          >
+            {side}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {[
+          ['entry', 'Entry'],
+          ['stopLoss', 'Stop loss'],
+          ['takeProfit', 'Take profit'],
+          ['size', 'Size'],
+        ].map(([key, label]) => (
+          <label key={key} style={{ display: 'grid', gap: 5, fontSize: 10.5, color: C.text3, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {label}
+            <input
+              type="number"
+              value={ticket[key]}
+              step={key === 'size' ? '0.01' : '0.00001'}
+              onChange={update(key)}
+              style={{
+                height: 34,
+                borderRadius: 12,
+                border: `1px solid ${C.border}`,
+                background: 'rgba(255,255,255,0.035)',
+                color: C.text1,
+                padding: '0 10px',
+                outline: 'none',
+                fontFamily: 'inherit',
+                fontWeight: 800,
+              }}
+            />
+          </label>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, margin: '10px 0' }}>
+        {['TP', 'SL', 'BE'].map((outcome) => (
+          <button
+            key={outcome}
+            type="button"
+            onClick={() => setTicket((current) => ({ ...current, outcome }))}
+            style={{
+              height: 32,
+              borderRadius: 11,
+              border: `1px solid ${ticket.outcome === outcome ? shade(outcome === 'SL' ? C.danger : outcome === 'BE' ? C.warn : C.green, 0.3) : shade(C.borderHi, 0.7)}`,
+              background: ticket.outcome === outcome ? shade(outcome === 'SL' ? C.danger : outcome === 'BE' ? C.warn : C.green, 0.1) : 'rgba(255,255,255,0.025)',
+              color: ticket.outcome === outcome ? (outcome === 'SL' ? C.danger : outcome === 'BE' ? C.warn : C.green) : C.text2,
+              fontWeight: 900,
+              cursor: 'pointer',
+            }}
+          >
+            {outcome}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+        <MiniStat label="Current price" value={formatReplayPrice(candle?.close, symbol) || 'No candle'} tone={C.text0} />
+        <MiniStat label="Projected P&L" value={formatCompactMoney(metrics.pnl || 0)} tone={(metrics.pnl || 0) >= 0 ? C.green : C.danger} />
+      </div>
+
+      <GhostButton onClick={saveSimulation} disabled={saving || !candle} icon={<Ic.Plus />} tone={C.accent}>
+        {saving ? 'Saving...' : candle ? 'Save to All Trades' : 'Load OHLC first'}
+      </GhostButton>
+    </Card>
+  );
+}
+
 function OhlcReplayChart({ state, symbol, interval, revealPct = 100 }) {
   const candles = Array.isArray(state?.candles) ? state.candles : [];
   const ready = state?.status === 'ready' && candles.length > 0;
-  const visibleCount = ready
-    ? Math.max(12, Math.min(candles.length, Math.ceil(candles.length * (Math.max(2, revealPct) / 100))))
-    : 0;
+  const visibleCount = ready ? getOhlcVisibleCount(candles, revealPct) : 0;
   const visible = ready ? candles.slice(0, visibleCount).slice(-120) : [];
   const minLow = visible.length ? Math.min(...visible.map((candle) => Number(candle.low))) : 0;
   const maxHigh = visible.length ? Math.max(...visible.map((candle) => Number(candle.high))) : 1;
@@ -1379,7 +1599,7 @@ function CreateSessionModal({
 
 export default function Backtest({ ignoreSavedSessions = false }) {
   const { user } = useAuth();
-  const { allTrades = [], accountOptions = [], activeAccount = 'all' } = useTradingContext();
+  const { allTrades = [], accountOptions = [], activeAccount = 'all', addTrade } = useTradingContext();
   const plan = String(user?.plan || 'trial').toLowerCase();
   const sessionLimit = getBacktestSessionLimit(plan);
   const userId = user?.id || 'guest';
@@ -1530,6 +1750,10 @@ export default function Backtest({ ignoreSavedSessions = false }) {
   const replayWinRate = useMemo(() => buildRollingWinRateSeries(visibleReplayTrades, Math.max(4, Math.min(12, visibleReplayTrades.length || 4))), [visibleReplayTrades]);
   const replayTape = useMemo(() => [...visibleReplayTrades].slice(-8).reverse(), [visibleReplayTrades]);
   const progressPct = replayTrades.length ? Math.round(((clampedReplayIndex + 1) / replayTrades.length) * 100) : 0;
+  const currentReplayCandle = useMemo(
+    () => getReplayCandle(ohlcState, replayTrades.length ? progressPct : 100),
+    [ohlcState, progressPct, replayTrades.length]
+  );
 
   useEffect(() => {
     if (!selectedSession) return;
@@ -2286,6 +2510,14 @@ export default function Backtest({ ignoreSavedSessions = false }) {
                   </div>
                 )}
               </Card>
+
+              <BacktestOrderTicket
+                selectedSession={selectedSession}
+                symbol={currentAsset || selectedSession?.assets?.[0] || 'EURUSD'}
+                candle={currentReplayCandle}
+                accountScope={activeAccount}
+                addTrade={addTrade}
+              />
 
               <Card tone={C.accent} index={15} style={{ padding: '16px 16px 14px' }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: C.text0, marginBottom: 12 }}>Session notes</div>

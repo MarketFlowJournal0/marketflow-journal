@@ -16,12 +16,21 @@ function rememberPendingSignup(email) {
 
 function shouldSyncSubscription(profile) {
   if (!profile) return true;
-  if (!profile.stripe_customer_id || !profile.stripe_subscription_id || !profile.subscription_status) return true;
+  const status = String(profile.subscription_status || '').toLowerCase();
+  if (!profile.stripe_customer_id || !profile.stripe_subscription_id || !status) return true;
   if (!profile.plan) return true;
-  if (profile.subscription_status === 'trialing' && profile.trial_end) {
+  if (status === 'trialing' && profile.trial_end) {
     return new Date(profile.trial_end) <= new Date();
   }
+  if (['past_due', 'unpaid', 'incomplete', 'incomplete_expired', 'canceled', 'paused'].includes(status)) {
+    return true;
+  }
   return false;
+}
+
+function authCallbackUrl(flow = '') {
+  const query = flow ? `?flow=${encodeURIComponent(flow)}` : '';
+  return appUrl(`/auth/callback${query}`);
 }
 
 export function AuthProvider({ children }) {
@@ -147,7 +156,7 @@ export function AuthProvider({ children }) {
       email, password,
       options: {
         data: { first_name: firstName.trim(), last_name: lastName.trim(), full_name: `${firstName.trim()} ${lastName.trim()}`, plan: 'trial' },
-        emailRedirectTo: appUrl('/auth/callback'),
+        emailRedirectTo: authCallbackUrl('signup'),
       },
     });
     setAuthLoading(false);
@@ -168,20 +177,22 @@ export function AuthProvider({ children }) {
     return true;
   }, []);
 
-  const loginWithGoogle = useCallback(async () => {
+  const loginWithGoogle = useCallback(async (options = {}) => {
     setError(null);
+    const flow = options?.flow === 'signup' ? 'signup' : '';
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: appUrl('/auth/callback') },
+      options: { redirectTo: authCallbackUrl(flow) },
     });
     if (error) setError(translateError(error.message));
   }, []);
 
-  const loginWithGitHub = useCallback(async () => {
+  const loginWithGitHub = useCallback(async (options = {}) => {
     setError(null);
+    const flow = options?.flow === 'signup' ? 'signup' : '';
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
-      options: { redirectTo: appUrl('/auth/callback') },
+      options: { redirectTo: authCallbackUrl(flow) },
     });
     if (error) setError(translateError(error.message));
   }, []);

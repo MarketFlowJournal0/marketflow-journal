@@ -15,9 +15,14 @@ const C = {
   red:  '#FF4D6A',
 };
 
-function markPendingOnboarding() {
+const PENDING_SIGNUP_EMAIL_KEY = 'mfj_pending_new_account_email';
+const PENDING_SIGNUP_AT_KEY = 'mfj_pending_new_account_at';
+
+function markPendingOnboarding(email = '') {
   try {
     sessionStorage.setItem('mfj_new_signup', '1');
+    localStorage.setItem(PENDING_SIGNUP_AT_KEY, String(Date.now()));
+    if (email) localStorage.setItem(PENDING_SIGNUP_EMAIL_KEY, String(email).trim().toLowerCase());
   } catch (_) {}
 }
 
@@ -29,6 +34,12 @@ async function markOnboardingIfNewAccount() {
       markPendingOnboarding();
     }
   } catch (_) {}
+}
+
+function redirectToApp(path = '/', delay = 900) {
+  window.setTimeout(() => {
+    window.location.replace(appUrl(path));
+  }, delay);
 }
 
 export default function AuthCallback() {
@@ -48,6 +59,9 @@ export default function AuthCallback() {
         const type       = params.get('type')       || hash.get('type');
         const accessToken = hash.get('access_token');
         const refreshToken = hash.get('refresh_token');
+        const flow = String(params.get('flow') || hash.get('flow') || '').toLowerCase();
+        const callbackEmail = params.get('email') || hash.get('email') || '';
+        const isSignupFlow = flow === 'signup';
 
         // ── Case 1: token_hash (new Supabase flow) ────────────────────
         if (token_hash && type) {
@@ -65,9 +79,9 @@ export default function AuthCallback() {
           if (type === 'recovery') {
             setStatus('reset'); // Show reset form
           } else {
-            markPendingOnboarding();
+            markPendingOnboarding(callbackEmail);
             setStatus('success'); // Email confirmation OK
-            setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
+            redirectToApp('/', 900);
           }
           return;
         }
@@ -84,9 +98,10 @@ export default function AuthCallback() {
           if (hashType === 'recovery') {
             setStatus('reset');
           } else {
-            await markOnboardingIfNewAccount();
+            if (isSignupFlow) markPendingOnboarding(callbackEmail);
+            else await markOnboardingIfNewAccount();
             setStatus('success');
-            setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
+            redirectToApp('/', 900);
           }
           return;
         }
@@ -94,9 +109,10 @@ export default function AuthCallback() {
         // No token found
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData?.session?.user) {
-          await markOnboardingIfNewAccount();
+          if (isSignupFlow) markPendingOnboarding(sessionData.session.user.email || callbackEmail);
+          else await markOnboardingIfNewAccount();
           setStatus('success');
-          setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 1200);
+          redirectToApp('/', 700);
           return;
         }
 
@@ -131,7 +147,7 @@ export default function AuthCallback() {
       setError(error.message);
     } else {
       setStatus('success');
-      setTimeout(() => { window.location.href = appUrl('/dashboard'); }, 2500);
+      redirectToApp('/dashboard', 900);
     }
   };
 

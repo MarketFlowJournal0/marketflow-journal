@@ -135,7 +135,7 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
         localStorage.setItem('mfj_pending_new_account_at', String(Date.now()));
       } catch (_) {}
     }
-    loginWithGoogle();
+    loginWithGoogle({ flow: tab === 'signup' ? 'signup' : 'login' });
   };
 
   const strength = getStrength(form.password);

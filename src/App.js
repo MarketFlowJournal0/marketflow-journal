@@ -155,48 +155,74 @@ class BacktestSafetyBoundary extends React.Component {
     this.setState((current) => ({ error: null, resetKey: current.resetKey + 1 }));
   };
 
+  retryWithoutClearing = () => {
+    this.setState((current) => ({ error: null, resetKey: current.resetKey + 1 }));
+  };
+
   render() {
     if (!this.state.error) {
       return React.cloneElement(this.props.children, { key: this.state.resetKey });
     }
 
     return (
-      <div>
-        <div style={{ padding: '18px 30px 0', color: 'var(--mf-text-1,#E8EEFF)' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg,#01040A)', padding: '28px', color: 'var(--mf-text-1,#E8EEFF)' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{
             border: '1px solid rgba(255,179,26,0.22)',
-            borderRadius: 18,
-            padding: '14px 16px',
+            borderRadius: 24,
+            padding: '22px 24px',
             background: 'linear-gradient(135deg, rgba(255,179,26,0.10), rgba(7,11,19,0.84))',
-            fontSize: 12.5,
+            boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+            fontSize: 13,
             lineHeight: 1.65,
           }}>
-            Backtest opened in clean mode because a saved local replay session caused a render failure. Your All Trades data is untouched.
+            <div style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--mf-warn,#FFB31A)', fontWeight: 900, marginBottom: 8 }}>
+              Backtest module recovered
+            </div>
+            <h2 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.04em' }}>A local Backtest state crashed before render.</h2>
+            <p style={{ margin: '0 0 14px', color: 'var(--mf-text-2,#8EA4C8)' }}>
+              The journal is still alive and your All Trades data is untouched. Retry first; if the same saved replay crashes again, reset only the local Backtest sessions.
+            </p>
             {this.state.error?.message ? (
               <details style={{ marginTop: 8, color: 'var(--mf-text-2,#8EA4C8)' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 800 }}>Technical detail</summary>
                 <span>{this.state.error.message}</span>
               </details>
             ) : null}
-            <button
-              type="button"
-              onClick={this.resetSavedSessions}
-              style={{
-                marginLeft: 12,
-                border: '1px solid rgba(255,179,26,0.28)',
-                borderRadius: 999,
-                padding: '7px 11px',
-                background: 'rgba(255,179,26,0.12)',
-                color: 'var(--mf-warn,#FFB31A)',
-                fontWeight: 900,
-                cursor: 'pointer',
-              }}
-            >
-              Reset saved Backtest sessions
-            </button>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 18 }}>
+              <button
+                type="button"
+                onClick={this.retryWithoutClearing}
+                style={{
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 999,
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'var(--mf-text-1,#E8EEFF)',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                }}
+              >
+                Retry module
+              </button>
+              <button
+                type="button"
+                onClick={this.resetSavedSessions}
+                style={{
+                  border: '1px solid rgba(255,179,26,0.28)',
+                  borderRadius: 999,
+                  padding: '10px 14px',
+                  background: 'rgba(255,179,26,0.12)',
+                  color: 'var(--mf-warn,#FFB31A)',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                }}
+              >
+                Reset local Backtest sessions
+              </button>
+            </div>
           </div>
         </div>
-        <Backtest ignoreSavedSessions />
       </div>
     );
   }
@@ -318,10 +344,12 @@ function AppInner() {
   );
 
   useEffect(() => {
-    if (window.location.hash === '#') {
+    const hash = window.location.hash || '';
+    const authHash = /access_token|refresh_token|token_hash|type=/.test(hash);
+    if (hash === '#' || (user && authHash && location.pathname !== '/auth/callback')) {
       window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, user]);
 
   useEffect(() => {
     if (forceLoggedOut) {

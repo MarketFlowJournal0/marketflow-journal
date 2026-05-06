@@ -10,6 +10,58 @@ const DEFAULT_ADMIN_EMAILS = [
   'support@marketflowjournal.com',
 ];
 
+const QUESTION_DEFINITIONS = {
+  experience: {
+    label: 'What is your trading level?',
+    options: {
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced',
+      professional: 'Professional',
+    },
+  },
+  market: {
+    label: 'Which markets do you trade?',
+    options: {
+      forex: 'Forex',
+      indices: 'Indices',
+      crypto: 'Crypto',
+      stocks: 'Stocks',
+      futures: 'Futures',
+      options: 'Options',
+    },
+  },
+  style: {
+    label: 'What is your trading style?',
+    options: {
+      scalping: 'Scalping',
+      daytrading: 'Day Trading',
+      swing: 'Swing Trading',
+      position: 'Position',
+    },
+  },
+  goal: {
+    label: 'What is your main goal?',
+    options: {
+      improve: 'Improve my performance',
+      prop: 'Pass a prop firm challenge',
+      consistent: 'Become consistent',
+      manage: 'Manage multiple accounts',
+    },
+  },
+  platform: {
+    label: 'Which platform do you use?',
+    options: {
+      mt4: 'MetaTrader 4',
+      mt5: 'MetaTrader 5',
+      ctrader: 'cTrader',
+      tradingview: 'TradingView',
+      ninjatrader: 'NinjaTrader',
+      other: 'Other',
+    },
+  },
+};
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -139,14 +191,19 @@ async function saveOnboardingResponse(req, res, authUser) {
     authUser,
     onboardingRecord,
   });
+  const normalizedStore = await saveNormalizedOnboardingAnswers({
+    authUser,
+    onboardingRecord,
+  });
 
   return res.status(200).json({
     saved: true,
     storedIn: {
       profiles: true,
       onboardingResponses: dedicatedStore.ok,
+      onboardingAnswers: normalizedStore.ok,
     },
-    storageWarning: dedicatedStore.ok ? null : dedicatedStore.warning,
+    storageWarning: [dedicatedStore.warning, normalizedStore.warning].filter(Boolean).join(' | ') || null,
     onboarding: data?.onboarding || onboardingRecord,
   });
 }
@@ -220,6 +277,49 @@ async function saveDedicatedOnboardingResponse({ authUser, onboardingRecord }) {
     return { ok: true, warning: null };
   } catch (error) {
     console.warn('onboarding_responses store exception:', error.message);
+    return { ok: false, warning: error.message };
+  }
+}
+
+async function saveNormalizedOnboardingAnswers({ authUser, onboardingRecord }) {
+  try {
+    const answers = onboardingRecord?.answers || {};
+    const timestamp = new Date().toISOString();
+    const rows = Object.entries(QUESTION_DEFINITIONS).map(([questionKey, meta]) => {
+      const rawAnswer = answers[questionKey];
+      const answerArray = Array.isArray(rawAnswer)
+        ? rawAnswer
+        : rawAnswer == null || rawAnswer === ''
+          ? []
+          : [rawAnswer];
+      const labels = answerArray
+        .map((answerId) => meta.options?.[answerId] || String(answerId))
+        .filter(Boolean);
+
+      return {
+        user_id: authUser.id,
+        question_key: questionKey,
+        question_label: meta.label,
+        answer: rawAnswer == null ? null : rawAnswer,
+        answer_label: labels[0] || null,
+        answer_labels: labels,
+        created_at: onboardingRecord?.completedAt || onboardingRecord?.savedAt || timestamp,
+        updated_at: timestamp,
+      };
+    });
+
+    const { error } = await supabase
+      .from('user_onboarding_answers')
+      .upsert(rows, { onConflict: 'user_id,question_key' });
+
+    if (error) {
+      console.warn('user_onboarding_answers store fallback:', error.message);
+      return { ok: false, warning: error.message };
+    }
+
+    return { ok: true, warning: null };
+  } catch (error) {
+    console.warn('user_onboarding_answers store exception:', error.message);
     return { ok: false, warning: error.message };
   }
 }
