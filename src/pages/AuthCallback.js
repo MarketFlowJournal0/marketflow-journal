@@ -36,10 +36,48 @@ async function markOnboardingIfNewAccount() {
   } catch (_) {}
 }
 
-function redirectToApp(path = '/', delay = 900) {
-  window.setTimeout(() => {
-    window.location.replace(appUrl(path));
-  }, delay);
+function redirectToApp(path = '/') {
+  window.location.replace(appUrl(path));
+}
+
+function clearEmptyHash() {
+  if (window.location.hash === '#') {
+    window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+  }
+}
+
+function withTimeout(promise, ms = 600) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => {
+      window.setTimeout(() => resolve({ data: { session: null }, timeout: true }), ms);
+    }),
+  ]);
+}
+
+function parseCallbackHash() {
+  const rawHash = window.location.hash || '';
+  if (!rawHash || rawHash === '#') return new URLSearchParams();
+  return new URLSearchParams(rawHash.replace(/^#/, '?'));
+}
+
+function isRecoverableCallbackError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('expired') || message.includes('invalid') || message.includes('already');
+}
+
+async function waitForSession() {
+  const sessionResult = await withTimeout(supabase.auth.getSession(), 600);
+  return sessionResult?.data?.session || null;
+}
+
+async function redirectWithCurrentSession({ isSignupFlow, callbackEmail }) {
+  const session = await waitForSession();
+  if (session?.user) {
+    if (isSignupFlow) markPendingOnboarding(session.user.email || callbackEmail);
+    else await markOnboardingIfNewAccount();
+  }
+  redirectToApp('/');
 }
 
 export default function AuthCallback() {
@@ -52,8 +90,9 @@ export default function AuthCallback() {
   useEffect(() => {
     const handle = async () => {
       try {
+        clearEmptyHash();
         const params  = new URLSearchParams(window.location.search);
-        const hash    = new URLSearchParams(window.location.hash.replace('#', '?'));
+        const hash    = parseCallbackHash();
 
         const token_hash = params.get('token_hash') || hash.get('token_hash');
         const type       = params.get('type')       || hash.get('type');
@@ -72,7 +111,11 @@ export default function AuthCallback() {
 
           if (error) {
             console.error('OTP error:', error);
-            setStatus('error');
+            if (isRecoverableCallbackError(error)) {
+              await redirectWithCurrentSession({ isSignupFlow: true, callbackEmail });
+            } else {
+              setStatus('error');
+            }
             return;
           }
 
@@ -81,7 +124,7 @@ export default function AuthCallback() {
           } else {
             markPendingOnboarding(callbackEmail);
             setStatus('success'); // Email confirmation OK
-            redirectToApp('/', 900);
+            redirectToApp('/');
           }
           return;
         }
@@ -101,25 +144,25 @@ export default function AuthCallback() {
             if (isSignupFlow) markPendingOnboarding(callbackEmail);
             else await markOnboardingIfNewAccount();
             setStatus('success');
-            redirectToApp('/', 900);
+            redirectToApp('/');
           }
           return;
         }
 
         // No token found
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.user) {
-          if (isSignupFlow) markPendingOnboarding(sessionData.session.user.email || callbackEmail);
+        const session = await waitForSession();
+        if (session?.user) {
+          if (isSignupFlow) markPendingOnboarding(session.user.email || callbackEmail);
           else await markOnboardingIfNewAccount();
           setStatus('success');
-          redirectToApp('/', 700);
+          redirectToApp('/');
           return;
         }
 
-        setStatus('error');
+        redirectToApp('/');
       } catch (err) {
         console.error('AuthCallback error:', err);
-        setStatus('error');
+        redirectToApp('/');
       }
     };
 
@@ -147,7 +190,7 @@ export default function AuthCallback() {
       setError(error.message);
     } else {
       setStatus('success');
-      redirectToApp('/dashboard', 900);
+      redirectToApp('/dashboard');
     }
   };
 
@@ -240,8 +283,8 @@ export default function AuthCallback() {
         {status === 'loading' && (
           <>
             <div style={s.spinner} />
-            <div style={s.title}>Verifying…</div>
-            <div style={s.subtitle}>Please wait a few seconds.</div>
+            <div style={s.title}>Opening workspace…</div>
+            <div style={s.subtitle}>Securing your session.</div>
           </>
         )}
 

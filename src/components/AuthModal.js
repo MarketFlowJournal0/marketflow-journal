@@ -124,9 +124,9 @@ export default function AuthModal({ onClose, onSuccess, defaultTab = 'login' }) 
   const validateLogin = () => { const e = {}; if (!form.email) e.email = 'Email required'; if (!form.password) e.password = 'Password required'; setFieldErrors(e); return !Object.keys(e).length; };
   const validateSignup = () => { const e = {}; if (!form.firstName.trim()) e.firstName = 'Required'; if (!form.lastName.trim()) e.lastName = 'Required'; if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email'; if (!form.password || form.password.length < 8) e.password = '8 characters minimum'; if (form.confirm !== form.password) e.confirm = 'Passwords do not match'; setFieldErrors(e); return !Object.keys(e).length; };
 
-  const handleLogin = async (e) => { e.preventDefault(); if (!validateLogin()) return; const ok = await login({ email: form.email, password: form.password }); if (ok) { setSuccess(true); setTimeout(() => onSuccess({ email: form.email }, false), 900); } };
+  const handleLogin = async (e) => { e.preventDefault(); if (!validateLogin()) return; const ok = await login({ email: form.email, password: form.password }); if (ok) { setSuccess(true); onSuccess({ email: form.email }, false); } };
   const handleForgot = async (e) => { e.preventDefault(); if (!forgotEmail) return; const ok = await resetPassword(forgotEmail); if (ok) setForgotSent(true); };
-  const handleSignup = async (e) => { e.preventDefault(); if (!validateSignup()) return; const r = await signup({ firstName: form.firstName, lastName: form.lastName, email: form.email, password: form.password }); if (r?.success) { setSuccess(true); if (!r.needsConfirmation) setTimeout(() => onSuccess({ email: form.email }, true), 900); } };
+  const handleSignup = async (e) => { e.preventDefault(); if (!validateSignup()) return; const r = await signup({ firstName: form.firstName, lastName: form.lastName, email: form.email, password: form.password }); if (r?.success) { setSuccess(true); if (!r.needsConfirmation) onSuccess({ email: form.email }, true); } };
   const handleGoogleAccess = () => {
     if (tab === 'signup') {
       try {

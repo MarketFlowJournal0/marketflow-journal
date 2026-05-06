@@ -375,10 +375,10 @@ function AppInner() {
         try { await refreshProfile?.(); } catch (_) {}
       };
       doRefresh();
-      setTimeout(() => toast.success('Welcome to MarketFlow Journal. Your access is active.', {
+      toast.success('Welcome to MarketFlow Journal. Your access is active.', {
         duration: 8000,
         style: { background: '#0D1627', color: '#00D2B8', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', fontSize: '15px' },
-      }), 500);
+      });
     }
     if (params.get('payment') === 'cancelled') {
       if (!shouldRenderApp()) {
@@ -674,9 +674,6 @@ function AppInner() {
     const nextRoute = hasJournalAccess(user) ? '/dashboard' : '/plan';
     setShowOnboarding(false);
     navigate(nextRoute, { replace: true });
-    window.setTimeout(() => {
-      if (window.location.pathname !== nextRoute) window.location.assign(nextRoute);
-    }, 120);
   };
 
   // ── Auth callback ──
@@ -809,7 +806,7 @@ function AppInner() {
           <Route path="/plan" element={
             <PlanSelection
               user={user}
-              onLogout={() => { logout().catch(() => {}); setTimeout(() => { window.location.href = appUrl('/'); }, 300); }}
+              onLogout={async () => { await logout().catch(() => {}); window.location.href = appUrl('/'); }}
             />
           } />
           <Route path="*" element={<Navigate to="/plan" replace />} />
