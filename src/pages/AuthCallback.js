@@ -71,13 +71,13 @@ async function waitForSession() {
   return sessionResult?.data?.session || null;
 }
 
-async function redirectWithCurrentSession({ isSignupFlow, callbackEmail }) {
+async function redirectWithCurrentSession({ isSignupFlow, callbackEmail, onRedirect = redirectToApp }) {
   const session = await waitForSession();
   if (session?.user) {
     if (isSignupFlow) markPendingOnboarding(session.user.email || callbackEmail);
     else await markOnboardingIfNewAccount();
   }
-  redirectToApp('/');
+  onRedirect('/');
 }
 
 export default function AuthCallback() {
@@ -88,6 +88,20 @@ export default function AuthCallback() {
   const [error, setError]             = useState('');
 
   useEffect(() => {
+    let redirected = false;
+    let watchdog = null;
+
+    const safeRedirect = (path = '/') => {
+      if (redirected) return;
+      redirected = true;
+      if (watchdog) window.clearTimeout(watchdog);
+      window.location.replace(appUrl(path));
+    };
+
+    watchdog = window.setTimeout(() => {
+      safeRedirect('/');
+    }, 2800);
+
     const handle = async () => {
       try {
         clearEmptyHash();
@@ -98,53 +112,79 @@ export default function AuthCallback() {
         const type       = params.get('type')       || hash.get('type');
         const accessToken = hash.get('access_token');
         const refreshToken = hash.get('refresh_token');
+        const code = params.get('code');
         const flow = String(params.get('flow') || hash.get('flow') || '').toLowerCase();
         const callbackEmail = params.get('email') || hash.get('email') || '';
         const isSignupFlow = flow === 'signup';
+        const hasCallbackPayload = Boolean(token_hash || accessToken || refreshToken || code || type || params.get('error') || hash.get('error'));
+
+        if (!hasCallbackPayload || params.get('error') || hash.get('error')) {
+          safeRedirect('/');
+          return;
+        }
+
+        if (code) {
+          const result = await withTimeout(supabase.auth.exchangeCodeForSession(code), 1800);
+          if (result?.timeout || (result?.error && !isRecoverableCallbackError(result.error))) {
+            safeRedirect('/');
+            return;
+          }
+          if (isSignupFlow) markPendingOnboarding(callbackEmail);
+          else await markOnboardingIfNewAccount();
+          safeRedirect('/');
+          return;
+        }
 
         // ── Case 1: token_hash (new Supabase flow) ────────────────────
         if (token_hash && type) {
-          const { error } = await supabase.auth.verifyOtp({
+          const { error, timeout } = await withTimeout(supabase.auth.verifyOtp({
             token_hash,
             type: type === 'recovery' ? 'recovery' : type,
-          });
+          }), 1800);
+
+          if (timeout) {
+            safeRedirect('/');
+            return;
+          }
 
           if (error) {
             console.error('OTP error:', error);
             if (isRecoverableCallbackError(error)) {
-              await redirectWithCurrentSession({ isSignupFlow: true, callbackEmail });
+              await redirectWithCurrentSession({ isSignupFlow: true, callbackEmail, onRedirect: safeRedirect });
             } else {
-              setStatus('error');
+              safeRedirect('/');
             }
             return;
           }
 
           if (type === 'recovery') {
+            if (watchdog) window.clearTimeout(watchdog);
             setStatus('reset'); // Show reset form
           } else {
             markPendingOnboarding(callbackEmail);
             setStatus('success'); // Email confirmation OK
-            redirectToApp('/');
+            safeRedirect('/');
           }
           return;
         }
 
         // ── Case 2: access_token in hash (old flow) ───────────────
         if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
+          const { error, timeout } = await withTimeout(supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
-          });
-          if (error) { setStatus('error'); return; }
+          }), 1800);
+          if (timeout || error) { safeRedirect('/'); return; }
 
           const hashType = hash.get('type');
           if (hashType === 'recovery') {
+            if (watchdog) window.clearTimeout(watchdog);
             setStatus('reset');
           } else {
             if (isSignupFlow) markPendingOnboarding(callbackEmail);
             else await markOnboardingIfNewAccount();
             setStatus('success');
-            redirectToApp('/');
+            safeRedirect('/');
           }
           return;
         }
@@ -155,18 +195,22 @@ export default function AuthCallback() {
           if (isSignupFlow) markPendingOnboarding(session.user.email || callbackEmail);
           else await markOnboardingIfNewAccount();
           setStatus('success');
-          redirectToApp('/');
+          safeRedirect('/');
           return;
         }
 
-        redirectToApp('/');
+        safeRedirect('/');
       } catch (err) {
         console.error('AuthCallback error:', err);
-        redirectToApp('/');
+        safeRedirect('/');
       }
     };
 
     handle();
+
+    return () => {
+      if (watchdog) window.clearTimeout(watchdog);
+    };
   }, []);
 
   const handleResetPassword = async (e) => {
