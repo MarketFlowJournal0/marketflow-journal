@@ -96,6 +96,7 @@ const PLANS = [
 ];
 
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
+const CHECKOUT_BILLING_KEY = 'mfj_checkout_billing';
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
@@ -130,6 +131,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const hasStripeCustomer = Boolean(user?.user_metadata?.stripeCustomerId || user?.stripeCustomerId);
   const hasStripeSubscription = Boolean(user?.user_metadata?.stripeSubscriptionId || user?.stripeSubscriptionId);
   const hasStripeTrialRecord = Boolean(hasStripeCustomer && (user?.user_metadata?.trialEnd || user?.trialEnd));
+  const hasBillableAccess = Boolean(hasStripeSubscription || subStatus === 'active' || subStatus === 'trialing');
   const trialUsed = Boolean(
     hasStripeTrialRecord
     || hasStripeSubscription
@@ -141,13 +143,17 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const handleSelect = async (plan) => {
     const priceId = billing === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
     sessionStorage.setItem(CHECKOUT_PLAN_KEY, plan.id);
+    sessionStorage.setItem(CHECKOUT_BILLING_KEY, billing);
     localStorage.setItem(CHECKOUT_PLAN_KEY, plan.id);
+    localStorage.setItem(CHECKOUT_BILLING_KEY, billing);
 
     if (!user?.id) {
       sessionStorage.setItem('pending_price_id', priceId);
       const target = new URL(appUrl('/'));
       target.searchParams.set('auth', 'signup');
       target.searchParams.set('price_id', priceId);
+      target.searchParams.set('plan_id', plan.id);
+      target.searchParams.set('billing', billing);
       window.location.href = target.toString();
       return;
     }
@@ -158,7 +164,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, email: user?.email, userId: user?.id, planId: plan.id }),
+        body: JSON.stringify({ priceId, email: user?.email, userId: user?.id, planId: plan.id, billing }),
       });
       const { url, error } = await res.json();
       if (url) window.location.href = url;
@@ -190,7 +196,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
     finally { setPortalLoading(false); }
   };
 
-  const isCurrentPlan = (planId) => currentPlan === planId;
+  const isCurrentPlan = (planId) => hasBillableAccess && currentPlan === planId;
   const planLabel = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
 
   return (

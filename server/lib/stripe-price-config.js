@@ -5,7 +5,7 @@ const DEFAULT_STRIPE_PRICE_IDS = {
   },
   pro: {
     monthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
-    annual: 'price_1T9t9U2Ouddv7uenK6oT1O13',
+    annual: '',
   },
   elite: {
     monthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
@@ -18,6 +18,20 @@ const BILLING_INTERVALS = ['monthly', 'annual'];
 const STRIPE_INTERVAL_BY_BILLING = {
   monthly: 'month',
   annual: 'year',
+};
+const EXPECTED_PRICE_TARGETS = {
+  starter: {
+    monthly: { unitAmount: 1500, currency: 'usd' },
+    annual: { unitAmount: 13200, currency: 'usd' },
+  },
+  pro: {
+    monthly: { unitAmount: 2200, currency: 'usd' },
+    annual: { unitAmount: 18000, currency: 'usd' },
+  },
+  elite: {
+    monthly: { unitAmount: 3800, currency: 'usd' },
+    annual: { unitAmount: 32400, currency: 'usd' },
+  },
 };
 
 function envKey(planId, billing) {
@@ -56,10 +70,39 @@ function getPriceConfig(priceId) {
   return STRIPE_PRICE_CONFIG[priceId] || null;
 }
 
-async function validateStripePrice({ stripe, priceId }) {
-  const config = getPriceConfig(priceId);
+function normalizePlanId(planId) {
+  const normalized = String(planId || '').toLowerCase();
+  return PLAN_IDS.includes(normalized) ? normalized : '';
+}
+
+function normalizeBilling(billing) {
+  const normalized = String(billing || '').toLowerCase();
+  if (normalized === 'yearly') return 'annual';
+  return BILLING_INTERVALS.includes(normalized) ? normalized : '';
+}
+
+function buildConfigFor(planId, billing, priceId = '') {
+  const normalizedPlanId = normalizePlanId(planId);
+  const normalizedBilling = normalizeBilling(billing);
+  if (!normalizedPlanId || !normalizedBilling) return null;
+
+  return {
+    planId: normalizedPlanId,
+    billing: normalizedBilling,
+    expectedStripeInterval: STRIPE_INTERVAL_BY_BILLING[normalizedBilling],
+    envKey: envKey(normalizedPlanId, normalizedBilling),
+    priceId,
+  };
+}
+
+function getCheckoutConfig({ priceId, planId, billing }) {
+  const knownConfig = getPriceConfig(priceId);
+  return knownConfig || buildConfigFor(planId, billing, priceId);
+}
+
+async function validateResolvedStripePrice({ stripe, priceId, config }) {
   if (!config) {
-    const error = new Error(`Unknown Stripe priceId "${priceId}". Use one of the configured MarketFlow price IDs.`);
+    const error = new Error(`Unknown Stripe priceId "${priceId}". Use a configured MarketFlow plan and billing interval.`);
     error.statusCode = 400;
     throw error;
   }
@@ -102,12 +145,140 @@ async function validateStripePrice({ stripe, priceId }) {
   return { price, config };
 }
 
+async function validateStripePrice({ stripe, priceId }) {
+  return validateResolvedStripePrice({ stripe, priceId, config: getPriceConfig(priceId) });
+}
+
+function getCandidateLookupKeys(planId, billing) {
+  const normalizedBilling = normalizeBilling(billing);
+  const intervalAlias = normalizedBilling === 'annual' ? 'yearly' : 'monthly';
+
+  return [
+    `marketflow_${planId}_${normalizedBilling}`,
+    `marketflow_${planId}_${intervalAlias}`,
+    `mfj_${planId}_${normalizedBilling}`,
+    `mfj_${planId}_${intervalAlias}`,
+    `${planId}_${normalizedBilling}`,
+    `${planId}_${intervalAlias}`,
+  ];
+}
+
+function priceMatchesPlan(price, config) {
+  const product = price?.product && typeof price.product === 'object' ? price.product : {};
+  const target = EXPECTED_PRICE_TARGETS[config.planId]?.[config.billing];
+  const searchable = [
+    price?.lookup_key,
+    price?.nickname,
+    price?.metadata?.plan,
+    price?.metadata?.marketflow_plan,
+    price?.metadata?.mfj_plan,
+    product?.name,
+    product?.metadata?.plan,
+    product?.metadata?.marketflow_plan,
+    product?.metadata?.mfj_plan,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  const planMatch = searchable.includes(config.planId);
+  const amountMatch = target
+    ? price.unit_amount === target.unitAmount && String(price.currency || '').toLowerCase() === target.currency
+    : true;
+
+  return planMatch && amountMatch;
+}
+
+async function findStripePriceByLookupKeys({ stripe, config }) {
+  const lookupKeys = getCandidateLookupKeys(config.planId, config.billing);
+  const result = await stripe.prices.list({
+    active: true,
+    lookup_keys: lookupKeys,
+    limit: 10,
+    expand: ['data.product'],
+  });
+
+  return result.data.find((price) => price.recurring?.interval === config.expectedStripeInterval) || null;
+}
+
+async function findStripePriceByCatalog({ stripe, config }) {
+  const result = await stripe.prices.list({
+    active: true,
+    type: 'recurring',
+    limit: 100,
+    expand: ['data.product'],
+  });
+
+  const matches = result.data.filter((price) => (
+    price.recurring?.interval === config.expectedStripeInterval
+    && priceMatchesPlan(price, config)
+  ));
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
+async function resolveStripePriceForCheckout({ stripe, priceId, planId, billing }) {
+  const config = getCheckoutConfig({ priceId, planId, billing });
+  if (!config) {
+    const error = new Error('Stripe checkout requires a valid planId and billing interval.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const configuredPriceId = getConfiguredPriceId(config.planId, config.billing);
+  const candidateIds = [...new Set([priceId, configuredPriceId].filter(Boolean))];
+  const errors = [];
+
+  for (const candidatePriceId of candidateIds) {
+    try {
+      return await validateResolvedStripePrice({
+        stripe,
+        priceId: candidatePriceId,
+        config: { ...config, priceId: candidatePriceId },
+      });
+    } catch (err) {
+      errors.push(err.message);
+    }
+  }
+
+  try {
+    const lookupPrice = await findStripePriceByLookupKeys({ stripe, config });
+    if (lookupPrice) {
+      return await validateResolvedStripePrice({
+        stripe,
+        priceId: lookupPrice.id,
+        config: { ...config, priceId: lookupPrice.id, envKey: `${config.envKey} or Stripe lookup_key` },
+      });
+    }
+  } catch (err) {
+    errors.push(err.message);
+  }
+
+  try {
+    const catalogPrice = await findStripePriceByCatalog({ stripe, config });
+    if (catalogPrice) {
+      return await validateResolvedStripePrice({
+        stripe,
+        priceId: catalogPrice.id,
+        config: { ...config, priceId: catalogPrice.id, envKey: `${config.envKey} or Stripe catalog metadata` },
+      });
+    }
+  } catch (err) {
+    errors.push(err.message);
+  }
+
+  const error = new Error(
+    `Stripe ${config.planId} ${config.billing} price is not configured. Set ${config.envKey} in Vercel to an active recurring ${config.expectedStripeInterval} Price ID. Last checks: ${errors.join(' | ')}`
+  );
+  error.statusCode = 400;
+  throw error;
+}
+
 module.exports = {
   DEFAULT_STRIPE_PRICE_IDS,
+  EXPECTED_PRICE_TARGETS,
   PLAN_IDS,
   PRICE_PLAN_MAP,
   STRIPE_PRICE_CONFIG,
   getConfiguredPriceId,
   getPriceConfig,
   validateStripePrice,
+  resolveStripePriceForCheckout,
 };

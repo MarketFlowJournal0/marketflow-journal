@@ -889,7 +889,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                     {billing==='monthly' && <div className="lp-save">14-day trial</div>}
                     <div className="lp-divider"/>
                     <ul className="lp-price-feats">{plan.features.map((f,j)=><li key={j}><span style={{color:'#00D2B8',fontWeight:800,fontSize:11}}>+</span>{f}</li>)}</ul>
-                    <button className={`btn-plan ${plan.popular?'filled btn-trial-animate':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan(priceId):onSignup?.()}><span>{plan.popular?'Start 14-day trial':'Start '+plan.name}</span></button>
+                    <button className={`btn-plan ${plan.popular?'filled btn-trial-animate':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan(priceId, plan.id, billing):onSignup?.()}><span>{plan.popular?'Start 14-day trial':'Start '+plan.name}</span></button>
                   </div>
                 </Reveal>
               );

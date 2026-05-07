@@ -2,7 +2,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 const { getAppBaseUrl } = require('../server/lib/url-config');
-const { PRICE_PLAN_MAP, validateStripePrice } = require('../server/lib/stripe-price-config');
+const { PRICE_PLAN_MAP, resolveStripePriceForCheckout } = require('../server/lib/stripe-price-config');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -18,23 +18,24 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { priceId, email, userId, planId } = req.body;
-  if (!priceId) return res.status(400).json({ error: 'priceId required' });
+  const { priceId, email, userId, planId, billing } = req.body;
+  if (!priceId && !planId) return res.status(400).json({ error: 'priceId or planId required' });
 
   const BASE_URL = getAppBaseUrl();
 
   try {
-    const { config: priceConfig } = await validateStripePrice({ stripe, priceId });
+    const { price, config: priceConfig } = await resolveStripePriceForCheckout({ stripe, priceId, planId, billing });
+    const resolvedPriceId = price.id;
     const requestedPlanId = VALID_PLAN_IDS.has(planId) ? planId : '';
     const finalPlanId = requestedPlanId && requestedPlanId === priceConfig.planId
       ? requestedPlanId
-      : priceConfig.planId || PRICE_PLAN_MAP[priceId] || '';
+      : priceConfig.planId || PRICE_PLAN_MAP[resolvedPriceId] || PRICE_PLAN_MAP[priceId] || '';
     const planParam = finalPlanId ? `&plan_id=${encodeURIComponent(finalPlanId)}` : '';
     const sessionMetadata = {
       supabase_user_id: userId || '',
       plan_id: finalPlanId,
       billing_interval: priceConfig.billing,
-      stripe_price_id: priceId,
+      stripe_price_id: resolvedPriceId,
     };
 
     let customerId = null;
@@ -134,7 +135,7 @@ module.exports = async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: resolvedPriceId, quantity: 1 }],
       ...(customerId ? { customer: customerId } : email ? { customer_email: email } : {}),
       metadata: sessionMetadata,
       subscription_data: subscriptionData,

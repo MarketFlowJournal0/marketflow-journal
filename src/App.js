@@ -36,12 +36,13 @@ import { getEntryRoute, hasJournalAccess, hasRouteAccess, normalizePlan } from '
 import { JOURNAL_THEME_KEY, JOURNAL_THEME_CUSTOM_KEY, getJournalTheme, applyJournalTheme } from './lib/journalTheme';
 import { buildOnboardingRecord } from './lib/onboarding';
 import { appUrl, publicSiteUrl, shouldRenderApp } from './lib/appUrls';
-import { PRICE_PLAN_MAP } from './lib/stripePriceConfig';
+import { PRICE_BILLING_MAP, PRICE_PLAN_MAP } from './lib/stripePriceConfig';
 import './App.css';
 import './theme.css';
 
 const ONBOARDING_DONE_KEY = 'mfj_onboarding_done';
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
+const CHECKOUT_BILLING_KEY = 'mfj_checkout_billing';
 const POST_AUTH_ROUTE_KEY = 'mfj_post_auth_route';
 const AUTO_CHECKOUT_KEY = 'mfj_auto_checkout_after_auth';
 const PENDING_SIGNUP_EMAIL_KEY = 'mfj_pending_new_account_email';
@@ -89,6 +90,13 @@ function rememberCheckoutPlan(planId) {
   if (normalizedPlan === 'trial') return;
   sessionStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
   localStorage.setItem(CHECKOUT_PLAN_KEY, normalizedPlan);
+}
+
+function rememberCheckoutBilling(billing) {
+  const normalizedBilling = String(billing || '').toLowerCase();
+  if (!['monthly', 'annual'].includes(normalizedBilling)) return;
+  sessionStorage.setItem(CHECKOUT_BILLING_KEY, normalizedBilling);
+  localStorage.setItem(CHECKOUT_BILLING_KEY, normalizedBilling);
 }
 
 function formatSeoTitle(pathname = '/') {
@@ -437,13 +445,18 @@ function AppInner() {
     const params = new URLSearchParams(location.search);
     const authMode = params.get('auth');
     const priceId = params.get('price_id');
+    const planId = params.get('plan_id');
+    const billing = params.get('billing');
 
-    if (!authMode && !priceId) return;
+    if (!authMode && !priceId && !planId && !billing) return;
 
     if (priceId && PRICE_PLAN_MAP[priceId]) {
       sessionStorage.setItem('pending_price_id', priceId);
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
+      rememberCheckoutBilling(PRICE_BILLING_MAP[priceId]);
     }
+    if (planId) rememberCheckoutPlan(planId);
+    if (billing) rememberCheckoutBilling(billing);
 
     if (authMode === 'login') sessionStorage.setItem(POST_AUTH_ROUTE_KEY, '/dashboard');
     if (authMode === 'signup') sessionStorage.setItem(POST_AUTH_ROUTE_KEY, '/plan');
@@ -454,6 +467,8 @@ function AppInner() {
 
     params.delete('auth');
     params.delete('price_id');
+    params.delete('plan_id');
+    params.delete('billing');
     const nextSearch = params.toString();
     navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true });
   }, [location.search, location.pathname, navigate, user]);
@@ -542,11 +557,13 @@ function AppInner() {
     sessionStorage.setItem(POST_AUTH_ROUTE_KEY, authMode === 'signup' ? '/plan' : '/dashboard');
   };
 
-  const routeAuthToApp = (authMode, priceId = '') => {
+  const routeAuthToApp = (authMode, priceId = '', planId = '', billing = '') => {
     rememberPostAuthRoute(authMode);
     const target = new URL(appUrl('/'));
     target.searchParams.set('auth', authMode);
     if (priceId) target.searchParams.set('price_id', priceId);
+    if (planId) target.searchParams.set('plan_id', planId);
+    if (billing) target.searchParams.set('billing', billing);
     window.location.href = target.toString();
   };
 
@@ -561,26 +578,34 @@ function AppInner() {
     return routeAuthToApp('signup');
   };
   const closeAuth          = () => setAuthModal(null);
-  const openSignupWithPlan = (priceId) => {
+  const openSignupWithPlan = (priceId, planId = '', billing = '') => {
     if (priceId) {
       sessionStorage.setItem('pending_price_id', priceId);
       rememberCheckoutPlan(PRICE_PLAN_MAP[priceId]);
+      rememberCheckoutBilling(PRICE_BILLING_MAP[priceId]);
     }
+    if (planId) rememberCheckoutPlan(planId);
+    if (billing) rememberCheckoutBilling(billing);
     rememberPostAuthRoute('signup');
     if (shouldRenderApp()) return setAuthModal('signup');
-    return routeAuthToApp('signup', priceId);
+    return routeAuthToApp('signup', priceId, planId, billing);
   };
 
   const launchCheckout = async (priceId, userEmail) => {
     const rawPlanId = PRICE_PLAN_MAP[priceId] || sessionStorage.getItem(CHECKOUT_PLAN_KEY) || localStorage.getItem(CHECKOUT_PLAN_KEY);
     const planId = rawPlanId ? normalizePlan(rawPlanId) : '';
     if (planId && planId !== 'trial') rememberCheckoutPlan(planId);
+    const billing = PRICE_BILLING_MAP[priceId]
+      || sessionStorage.getItem(CHECKOUT_BILLING_KEY)
+      || localStorage.getItem(CHECKOUT_BILLING_KEY)
+      || '';
+    if (billing) rememberCheckoutBilling(billing);
 
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, email: userEmail, userId: user?.id, planId }),
+        body: JSON.stringify({ priceId, email: userEmail, userId: user?.id, planId, billing }),
       });
       const { url } = await res.json();
       if (url) window.location.href = url;

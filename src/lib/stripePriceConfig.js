@@ -5,7 +5,7 @@ const DEFAULT_STRIPE_PRICE_IDS = {
   },
   pro: {
     monthly: 'price_1T9t9U2Ouddv7uenfg38PRZ2',
-    annual: 'price_1T9t9U2Ouddv7uenK6oT1O13',
+    annual: '',
   },
   elite: {
     monthly: 'price_1T9t9L2Ouddv7uen4DXuOatj',
@@ -35,5 +35,11 @@ export const STRIPE_PRICE_IDS = PLAN_IDS.reduce((plans, planId) => {
 export const PRICE_PLAN_MAP = Object.fromEntries(
   PLAN_IDS.flatMap((planId) => (
     BILLING_INTERVALS.map((billing) => [STRIPE_PRICE_IDS[planId][billing], planId])
+  )).filter(([priceId]) => Boolean(priceId))
+);
+
+export const PRICE_BILLING_MAP = Object.fromEntries(
+  PLAN_IDS.flatMap((planId) => (
+    BILLING_INTERVALS.map((billing) => [STRIPE_PRICE_IDS[planId][billing], billing])
   )).filter(([priceId]) => Boolean(priceId))
 );
