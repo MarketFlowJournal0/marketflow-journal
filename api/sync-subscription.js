@@ -1,6 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
-const { PRICE_PLAN_MAP } = require('./lib/stripe-price-config');
+const { PRICE_PLAN_MAP } = require('../server/lib/stripe-price-config');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

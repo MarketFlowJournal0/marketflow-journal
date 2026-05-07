@@ -3,7 +3,7 @@
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
-const { getAppBaseUrl } = require('./lib/url-config');
+const { getAppBaseUrl } = require('../server/lib/url-config');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

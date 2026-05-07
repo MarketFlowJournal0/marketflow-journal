@@ -1,8 +1,8 @@
 // api/create-checkout-session.js
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
-const { getAppBaseUrl } = require('./lib/url-config');
-const { PRICE_PLAN_MAP, validateStripePrice } = require('./lib/stripe-price-config');
+const { getAppBaseUrl } = require('../server/lib/url-config');
+const { PRICE_PLAN_MAP, validateStripePrice } = require('../server/lib/stripe-price-config');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
