@@ -659,61 +659,11 @@ function AppInner() {
   };
 
   const handleOnboardingComplete = async (answers) => {
-    if (user?.id) {
-      const onboardingRecord = buildOnboardingRecord({ answers, user });
+    const onboardingRecord = user?.id ? buildOnboardingRecord({ answers, user }) : null;
+
+    if (user?.id && onboardingRecord) {
       localStorage.setItem(ONBOARDING_DONE_KEY + '_' + user.id, '1');
       localStorage.setItem(`mfj_onboarding_backup_${user.id}`, JSON.stringify(onboardingRecord));
-
-      try {
-        const { supabase } = await import('./lib/supabase');
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
-        let savedThroughApi = false;
-
-        if (accessToken) {
-          const response = await fetch('/api/onboarding', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ onboarding: onboardingRecord }),
-          });
-
-          if (!response.ok) {
-            const payload = await response.json().catch(() => ({}));
-            throw new Error(payload?.error || 'Unable to save onboarding.');
-          }
-
-          savedThroughApi = true;
-        }
-
-        if (!savedThroughApi) {
-          await supabase
-            .from('profiles')
-            .upsert({
-              id: user.id,
-              email: user.email || null,
-              onboarding: onboardingRecord,
-            }, { onConflict: 'id' });
-        }
-
-        try { await refreshProfile?.(); } catch (_) {}
-      } catch (error) {
-        console.error('Onboarding save error:', error);
-        try {
-          const { supabase } = await import('./lib/supabase');
-          await supabase
-            .from('profiles')
-            .upsert({
-              id: user.id,
-              email: user.email || null,
-              onboarding: onboardingRecord,
-            }, { onConflict: 'id' });
-        } catch (fallbackError) {
-          console.error('Onboarding fallback save error:', fallbackError);
-        }
-      }
     }
 
     sessionStorage.removeItem('pending_price_id');
@@ -721,9 +671,62 @@ function AppInner() {
     sessionStorage.removeItem('mfj_new_signup');
     localStorage.removeItem(PENDING_SIGNUP_EMAIL_KEY);
     localStorage.removeItem(PENDING_SIGNUP_AT_KEY);
-    const nextRoute = hasJournalAccess(user) ? '/dashboard' : '/plan';
     setShowOnboarding(false);
-    navigate(nextRoute, { replace: true });
+    navigate('/plan', { replace: true });
+
+    // Keep the signup flow instant; Supabase persistence continues after plans open.
+    if (!user?.id || !onboardingRecord) return;
+
+    void (async () => {
+      const { supabase } = await import('./lib/supabase');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      let savedThroughApi = false;
+
+      if (accessToken) {
+        const response = await fetch('/api/onboarding', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ onboarding: onboardingRecord }),
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error || 'Unable to save onboarding.');
+        }
+
+        savedThroughApi = true;
+      }
+
+      if (!savedThroughApi) {
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email || null,
+            onboarding: onboardingRecord,
+          }, { onConflict: 'id' });
+      }
+
+      try { await refreshProfile?.(); } catch (_) {}
+    })().catch(async (error) => {
+      console.error('Onboarding save error:', error);
+      try {
+        const { supabase } = await import('./lib/supabase');
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email || null,
+            onboarding: onboardingRecord,
+          }, { onConflict: 'id' });
+      } catch (fallbackError) {
+        console.error('Onboarding fallback save error:', fallbackError);
+      }
+    });
   };
 
   // ── Auth callback ──

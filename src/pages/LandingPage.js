@@ -116,6 +116,13 @@ const STYLES = `
   @keyframes mf-section-bloom { 0%,100%{opacity:.22;transform:translateX(-4%) scaleX(.92)} 50%{opacity:.52;transform:translateX(4%) scaleX(1)} }
   @keyframes mf-bridge-scan { 0%{transform:translateX(-30%);opacity:.18} 50%{opacity:.9} 100%{transform:translateX(30%);opacity:.18} }
   @keyframes mf-bridge-dot { 0%,100%{transform:scale(.72);opacity:.38} 50%{transform:scale(1);opacity:1} }
+  @keyframes mf-trial-breathe { 0%,100%{box-shadow:0 0 28px rgba(20,201,229,.26),0 0 0 0 rgba(0,210,184,.24)} 50%{box-shadow:0 0 54px rgba(20,201,229,.46),0 0 0 7px rgba(0,210,184,.06)} }
+  @keyframes mf-trial-gradient { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+  @keyframes mf-trial-edge { 0%{transform:translateX(-110%) skewX(-18deg);opacity:0} 18%{opacity:.55} 58%,100%{transform:translateX(210%) skewX(-18deg);opacity:0} }
+  .btn-trial-animate { position:relative;isolation:isolate;overflow:hidden;background-size:220% 220%!important;animation:mf-trial-gradient 5.6s ease-in-out infinite,mf-trial-breathe 3.2s ease-in-out infinite; }
+  .btn-trial-animate::before { content:'';position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(100deg,transparent,rgba(255,255,255,.34),transparent);transform:translateX(-110%) skewX(-18deg);animation:mf-trial-edge 3.4s ease-in-out infinite;pointer-events:none;z-index:1; }
+  .btn-trial-animate > span { position:relative;z-index:2;display:inline-flex;align-items:center;gap:8px; }
+  .btn-trial-animate:hover { transform:translateY(-3px) scale(1.01);filter:saturate(1.08); }
   .lp-shell { background:
     radial-gradient(circle at 72% 8%, rgba(20,201,229,0.10), transparent 34%),
     radial-gradient(circle at 8% 92%, rgba(0,210,184,0.07), transparent 30%),
@@ -144,7 +151,7 @@ const STYLES = `
   .lp-nav-cta { display:flex;align-items:center;gap:10px; }
   .btn-ghost { padding:8px 18px;border-radius:9px;border:1px solid var(--brd);background:transparent;color:var(--t1);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.18s; }
   .btn-ghost:hover { border-color:var(--cyan);color:var(--cyan); }
-  .btn-primary-nav { padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--green));border:none;color:#01040A;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 20px rgba(6,230,255,0.25); }
+  .btn-primary-nav { padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,#DCE4EF 0%,var(--cyan) 48%,var(--green) 100%);border:none;color:#01040A;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 20px rgba(6,230,255,0.25); }
   .btn-primary-nav:hover { transform:translateY(-1px);box-shadow:0 4px 30px rgba(6,230,255,0.4); }
 
   /* TICKER */
@@ -175,7 +182,7 @@ const STYLES = `
   .lp-hero-sub { font-size:18px;color:var(--t2);max-width:640px;line-height:1.7;margin-bottom:36px; }
   .lp-hero-actions { display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:14px; }
   .btn-hero-primary { padding:15px 32px;border-radius:12px;background:linear-gradient(135deg,#DCE4EF 0%,#14C9E5 46%,#00D2B8 100%);border:none;color:#02060D;font-size:15px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 0 42px rgba(20,201,229,0.28);display:flex;align-items:center;gap:8px;position:relative;overflow:hidden; }
-  .btn-hero-primary::after { content:'';position:absolute;inset:0;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);animation:mf-shimmer 5s ease-in-out infinite; }
+  .btn-hero-primary::after { content:'';position:absolute;inset:0;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);animation:mf-shimmer 5s ease-in-out infinite;z-index:0;pointer-events:none; }
   .btn-hero-primary:hover { transform:translateY(-2px);box-shadow:0 8px 55px rgba(20,201,229,0.42); }
   .btn-hero-secondary { padding:15px 30px;border-radius:12px;border:1px solid var(--brd);background:rgba(255,255,255,0.03);color:var(--t1);font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:8px; }
   .btn-hero-secondary:hover { border-color:var(--cyan);color:var(--cyan);background:rgba(6,230,255,0.04); }
@@ -616,7 +623,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
           <span className="lp-nav-logo-text">Market<span className="flow-text">Flow</span></span>
         </div>
         <div className="lp-nav-links"><a href="#product">Product</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#resources">Resources</a></div>
-        <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>Log in</button><button className="btn-primary-nav" onClick={onSignup}>Start 14-day trial</button></div>
+        <div className="lp-nav-cta"><button className="btn-ghost" onClick={onLogin}>Log in</button><button className="btn-primary-nav btn-trial-animate" onClick={onSignup}><span>Start 14-day trial</span></button></div>
       </nav>
 
       <LiveTickerBar />
@@ -628,7 +635,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <Reveal delay={0.1}><p className="lp-hero-sub">A premium trading workspace built to make every import, review, psychology check, equity read and report feel connected, serious and repeatable.</p></Reveal>
         <Reveal delay={0.2}>
           <div className="lp-hero-actions">
-            <button className="btn-hero-primary" onClick={onSignup}>Start your 14-day trial</button>
+            <button className="btn-hero-primary btn-trial-animate" onClick={onSignup}><span>Start your 14-day trial</span></button>
             <button className="btn-hero-secondary" onClick={()=>document.getElementById('features')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
           </div>
         </Reveal>
@@ -882,7 +889,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                     {billing==='monthly' && <div className="lp-save">14-day trial</div>}
                     <div className="lp-divider"/>
                     <ul className="lp-price-feats">{plan.features.map((f,j)=><li key={j}><span style={{color:'#00D2B8',fontWeight:800,fontSize:11}}>+</span>{f}</li>)}</ul>
-                    <button className={`btn-plan ${plan.popular?'filled':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan(priceId):onSignup?.()}>{plan.popular?'Start 14-day trial':'Start '+plan.name}</button>
+                    <button className={`btn-plan ${plan.popular?'filled btn-trial-animate':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan(priceId):onSignup?.()}><span>{plan.popular?'Start 14-day trial':'Start '+plan.name}</span></button>
                   </div>
                 </Reveal>
               );
@@ -947,7 +954,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <Reveal delay={0.1}><p>Build a daily review system that stays connected to your trades, accounts and discipline.</p></Reveal>
         <Reveal delay={0.2}>
           <div className="lp-cta-actions">
-            <button className="btn-hero-primary" onClick={onSignup}>Start your 14-day trial</button>
+            <button className="btn-hero-primary btn-trial-animate" onClick={onSignup}><span>Start your 14-day trial</span></button>
             <button className="btn-hero-secondary" onClick={onLogin}>Log in</button>
           </div>
         </Reveal>
