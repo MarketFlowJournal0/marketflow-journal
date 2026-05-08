@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTradingContext } from '../context/TradingContext';
 import { supabase } from '../lib/supabase';
 import { shade } from '../lib/colorAlpha';
-import { createBrokerAccount, fetchBrokerAccounts, markBrokerAccountConnected } from '../lib/brokerAccounts';
+import { createBrokerAccount, fetchBrokerAccounts } from '../lib/brokerAccounts';
 import {
   ACCOUNT_ROLE_OPTIONS,
   COPY_SIZING_MODES,
@@ -347,7 +347,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       title: 'Interactive Brokers Flex Sync',
       subtitle: 'Connect an IBKR activity feed with Flex Token and Activity Flex Query ID, directly inside MarketFlow.',
       connectLabel: 'Connect IBKR feed',
-      status: 'ready',
+      status: 'waiting',
       markets,
       fields: [
         { id: 'accountLabel', label: 'Account label', placeholder: 'IBKR Main', required: true },
@@ -366,7 +366,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       title: 'Oanda REST Sync',
       subtitle: 'Connect an Oanda practice or live account with scoped REST credentials.',
       connectLabel: 'Connect Oanda feed',
-      status: 'ready',
+      status: 'waiting',
       markets,
       fields: [
         { id: 'accountLabel', label: 'Account label', placeholder: 'Oanda London', required: true },
@@ -385,7 +385,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       title: `${platformId.toUpperCase()} MarketFlow Bridge`,
       subtitle: `Create the ${platformId.toUpperCase()} feed in MarketFlow. If live bridge is unavailable, keep the same account for File Upload.`,
       connectLabel: 'Create bridge feed',
-      status: 'ready',
+      status: 'waiting',
       markets,
       fields: [
         { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Main`, required: true },
@@ -403,7 +403,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       title: `${brokerName} API / Export Sync`,
       subtitle: 'Use an approved broker token when available, or keep the account ready for file-based futures imports.',
       connectLabel: `Connect ${brokerName}`,
-      status: 'ready',
+      status: 'waiting',
       markets,
       fields: [
         { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Futures`, required: true },
@@ -421,7 +421,7 @@ function getConnectionBlueprint(item = {}, method = '') {
     title: `${brokerName} Sync`,
     subtitle: 'Create a universal MarketFlow feed for API, webhook, export, or future provider sync.',
     connectLabel: `Connect ${brokerName}`,
-    status: 'ready',
+    status: 'waiting',
     markets,
     fields: [
       { id: 'accountLabel', label: 'Account label', placeholder: `${brokerName} Main`, required: true },
@@ -617,6 +617,42 @@ function copyText(value, successMessage = 'Copied.') {
   toast.success(successMessage);
 }
 
+function notifyBrokerAccountsChanged() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('mfj:broker-accounts-changed'));
+}
+
+function brokerHealth(account = {}) {
+  const status = String(account.status || '').toLowerCase();
+  const synced = Number(account.total_trades_synced || 0);
+  if (status === 'connected' && synced > 0) {
+    return {
+      label: 'Live feed synced',
+      detail: `${synced.toLocaleString()} trade${synced === 1 ? '' : 's'} delivered to All Trades.`,
+      tone: 'connected',
+    };
+  }
+  if (status === 'connected') {
+    return {
+      label: 'Feed verified',
+      detail: 'The endpoint responded. Waiting for the first trade payload to populate P&L.',
+      tone: 'waiting',
+    };
+  }
+  if (status === 'waiting' || status === 'ready' || status === 'pending') {
+    return {
+      label: 'Waiting for first sync',
+      detail: 'The account is saved. It becomes connected only after broker trades are received.',
+      tone: 'waiting',
+    };
+  }
+  return {
+    label: 'Account saved',
+    detail: 'Use Auto Sync when the provider feed is available, or import this account from All Trades.',
+    tone: 'disconnected',
+  };
+}
+
 function sanitizeBrokerAccounts(accounts = []) {
   if (!Array.isArray(accounts)) return [];
   return accounts
@@ -651,8 +687,8 @@ function sizingModeLabel(value) {
 }
 
 function statusTone(status) {
-  if (status === 'connected' || status === 'ready' || status === 'active') return { color: C.green, bg: shade(C.green, 0.12), border: shade(C.green, 0.22) };
-  if (status === 'pending' || status === 'queued') return { color: C.cyan, bg: shade(C.cyan, 0.1), border: shade(C.cyan, 0.18) };
+  if (status === 'connected' || status === 'active') return { color: C.green, bg: shade(C.green, 0.12), border: shade(C.green, 0.22) };
+  if (status === 'pending' || status === 'queued' || status === 'ready' || status === 'waiting') return { color: C.cyan, bg: shade(C.cyan, 0.1), border: shade(C.cyan, 0.18) };
   if (status === 'warning' || status === 'watch') return { color: C.warn, bg: shade(C.warn, 0.12), border: shade(C.warn, 0.22) };
   if (status === 'blocked' || status === 'offline') return { color: C.danger, bg: shade(C.danger, 0.12), border: shade(C.danger, 0.22) };
   return { color: C.t2, bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.06)' };
@@ -1040,7 +1076,7 @@ function BrokerConnect() {
   const { accountOptions, downloadBackup } = useTradingContext();
   const isElite = String(user?.plan || '').toLowerCase() === 'elite';
   const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showBrokerForm, setShowBrokerForm] = useState(false);
   const [selectedBroker, setSelectedBroker] = useState(null);
   const [setupOpen, setSetupOpen] = useState(false);
@@ -1103,7 +1139,6 @@ function BrokerConnect() {
       return;
     }
 
-    setLoading(true);
     try {
       const data = await fetchBrokerAccounts(supabase, user.id);
       setAccounts(sanitizeBrokerAccounts(data));
@@ -1111,7 +1146,6 @@ function BrokerConnect() {
       toast.error(error.message);
       setAccounts([]);
     }
-    setLoading(false);
   }, [user?.id]);
 
   useEffect(() => {
@@ -1186,6 +1220,7 @@ function BrokerConnect() {
     toast.success('Broker account created. MarketFlow generated a scoped journal token.');
     setBrokerForm(initialBrokerForm());
     setShowBrokerForm(false);
+    notifyBrokerAccountsChanged();
     fetchAccounts();
   }
 
@@ -1254,7 +1289,7 @@ function BrokerConnect() {
 
       toast.success(selectedImportMethod === 'file'
         ? 'Account created. Open All Trades to import the broker file.'
-        : 'Connection created inside MarketFlow. First broker data sync will update this feed automatically.');
+        : 'Account saved. It will show connected after the first real broker payload is received.');
       setConnectionComplete({
         broker: selectedCatalogBroker.name,
         method: selectedImportMethod,
@@ -1263,6 +1298,7 @@ function BrokerConnect() {
         status: connectionBlueprint.status || 'pending',
       });
       setShowBrokerForm(false);
+      notifyBrokerAccountsChanged();
       fetchAccounts();
     } catch (error) {
       toast.error(error.message);
@@ -1280,6 +1316,7 @@ function BrokerConnect() {
       return;
     }
     toast.success('Broker connection removed.');
+    notifyBrokerAccountsChanged();
     fetchAccounts();
   }
 
@@ -1305,9 +1342,15 @@ function BrokerConnect() {
         return;
       }
 
-      await markBrokerAccountConnected(supabase, id);
-
-      toast.success(`${payload.inserted || 0} trade(s) synced.`);
+      const inserted = Number(payload.inserted || 0);
+      if (inserted > 0) {
+        toast.success(`${inserted} trade(s) synced to All Trades.`);
+      } else {
+        toast('No broker trades received yet. The account is saved and waiting for the first live payload.', {
+          style: { background: '#0D1627', color: '#B5C7E6', border: '1px solid rgba(20,201,229,0.18)', borderRadius: '12px' },
+        });
+      }
+      notifyBrokerAccountsChanged();
       fetchAccounts();
     } catch {
       toast.error('Connection failed. Re-check the broker feed and try again.');
@@ -1520,14 +1563,14 @@ function BrokerConnect() {
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '7px 12px', borderRadius: 999, border: `1px solid ${shade(C.cyan, 0.18)}`, background: shade(C.cyan, 0.08), color: C.cyan, fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               <ICON.Network />
-              Broker Sync / Elite Copier
+              Broker Connect
             </div>
             <h1 style={{ margin: '18px 0 0', fontSize: 42, lineHeight: 1.02, letterSpacing: '-0.07em', color: C.t0 }}>
-              MarketFlow
-              <span style={{ color: C.cyan }}> execution infrastructure</span>
+              Connect accounts
+              <span style={{ color: C.cyan }}> without noise.</span>
             </h1>
             <p style={{ margin: '18px 0 0', maxWidth: 760, fontSize: 15, lineHeight: 1.8, color: C.t2 }}>
-              Connect live broker feeds, structure master and follower accounts, protect each account with risk-aware copy rules, and rehearse a full copier dispatch before it ever touches the market. The sync layer stays available to Pro. The copier desk is unlocked only for Elite.
+              One clean flow: choose a broker, choose the method, create the account feed, then let real imports or broker payloads populate All Trades. No fake connected state.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
               {[
@@ -1543,10 +1586,10 @@ function BrokerConnect() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
-            <MetricCard label="Connected feeds" value={String(connectedCount)} detail="Accounts already online and eligible to drive sync." tone={C.green} icon={ICON.Plug} />
-            <MetricCard label="Trades synced" value={totalSynced.toLocaleString()} detail="Recorded trade rows delivered through broker or API sync." tone={C.cyan} icon={ICON.Network} />
-            <MetricCard label="Elite copy links" value={String(copierOverview.activeLinks)} detail="Active master to follower relationships inside the copier desk." tone={C.purple} icon={ICON.Link} />
-            <MetricCard label="Protected capital" value={money(copierOverview.capital)} detail="Follower and master capital currently modeled by the risk engine." tone={C.gold} icon={ICON.Shield} />
+            <MetricCard label="Live feeds" value={String(connectedCount)} detail="Feeds with real broker payloads received." tone={C.green} icon={ICON.Plug} />
+            <MetricCard label="Trades synced" value={totalSynced.toLocaleString()} detail="Rows delivered to All Trades." tone={C.cyan} icon={ICON.Network} />
+            <MetricCard label="Copy links" value={String(copierOverview.activeLinks)} detail="Elite master to follower links." tone={C.purple} icon={ICON.Link} />
+            <MetricCard label="Protected capital" value={money(copierOverview.capital)} detail="Capital modeled by the risk desk." tone={C.gold} icon={ICON.Shield} />
           </div>
         </div>
       </div>
@@ -1555,7 +1598,7 @@ function BrokerConnect() {
         <SectionHeader
           eyebrow="Add trades"
           title={wizardStep === 1 ? 'Choose Broker, Prop Firm or Trading Platform' : wizardStep === 2 ? 'Select Import Method' : wizardStep === 3 ? 'Broker Sync' : 'Connection ready'}
-          description="A clean broker connection flow: choose the platform, choose the import method, then connect the feed or create the account slot. MarketFlow never asks for broker passwords."
+          description="Four clear steps. MarketFlow saves the account first, then marks it connected only when real broker data arrives."
           actions={(
             <div style={{ padding: '7px 10px', borderRadius: 999, border: `1px solid ${shade(C.green, 0.18)}`, background: shade(C.green, 0.08), color: C.green, fontSize: 10.5, fontWeight: 800 }}>
               {BROKER_CATALOG.length}+ integrations indexed
@@ -1756,7 +1799,7 @@ function BrokerConnect() {
                 </div>
                 <div style={{ fontSize: 30, fontWeight: 950, color: C.t0, letterSpacing: '-0.06em' }}>Broker feed created</div>
                 <div style={{ margin: '10px auto 0', maxWidth: 560, color: C.t2, fontSize: 13, lineHeight: 1.7 }}>
-                  {connectionComplete?.accountName || 'Your account'} is now linked to {connectionComplete?.broker || 'the selected broker'}. Auto Sync accounts can refresh from the connection desk; file and manual accounts stay ready for All Trades.
+                  {connectionComplete?.accountName || 'Your account'} is saved for {connectionComplete?.broker || 'the selected broker'}. It becomes a connected feed only after MarketFlow receives real broker trades.
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 22 }}>
                   <ActionButton onClick={() => { window.location.href = '/all-trades'; }}>
@@ -1893,6 +1936,8 @@ function BrokerConnect() {
             ) : brokerAccounts.map((account) => {
               const broker = BROKERS.find((item) => item.id === account.broker_type) || BROKERS[0];
               const tone = statusTone(account.status);
+              const health = brokerHealth(account);
+              const healthTone = statusTone(health.tone);
 
               return (
                 <motion.div key={account.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -2 }} style={{ ...pageCardStyle({ padding: 20, borderRadius: 18, border: `1px solid ${tone.border}` }) }}>
@@ -1909,6 +1954,11 @@ function BrokerConnect() {
                         <div style={{ padding: '6px 10px', borderRadius: 999, background: tone.bg, border: `1px solid ${tone.border}`, color: tone.color, fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                           {account.status || 'Disconnected'}
                         </div>
+                      </div>
+
+                      <div style={{ marginTop: 14, padding: '11px 12px', borderRadius: 14, background: healthTone.bg, border: `1px solid ${healthTone.border}` }}>
+                        <div style={{ color: healthTone.color, fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{health.label}</div>
+                        <div style={{ marginTop: 5, color: C.t2, fontSize: 12, lineHeight: 1.55 }}>{health.detail}</div>
                       </div>
 
                       <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 10, alignItems: 'center' }}>
@@ -1935,7 +1985,7 @@ function BrokerConnect() {
                       {(account.broker_type === 'mt4' || account.broker_type === 'mt5') ? (
                         <ActionButton tone="subtle" onClick={() => handleSyncBroker(account.id)} disabled={syncingId === account.id} style={{ minWidth: 130, justifyContent: 'center' }}>
                           <ICON.Network />
-                          {syncingId === account.id ? 'Syncing...' : 'Sync now'}
+                          {syncingId === account.id ? 'Checking...' : 'Check feed'}
                         </ActionButton>
                       ) : null}
                       <ActionButton tone="subtle" onClick={() => openSetup(broker)} style={{ minWidth: 130, justifyContent: 'center' }}>

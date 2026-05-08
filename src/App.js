@@ -308,7 +308,7 @@ function AppLayout({ user, onLogout }) {
         )}
         <div className="mf-main" style={{ marginLeft: sidebarWidth, flex: 1, minHeight: '100vh', transition: 'margin-left 0.30s cubic-bezier(0.4,0,0.2,1)', backgroundColor: 'var(--bg)', overflow: 'auto', position: 'relative', zIndex: 1 }}>
           <JournalAmbientBackground />
-          <div className="mf-main-content">
+          <div key={location.pathname} className="mf-main-content">
             <Routes>
               <Route path="/dashboard" element={renderProtectedRoute('dashboard', <Dashboard />)} />
               <Route path="/all-trades" element={renderProtectedRoute('all-trades', <AllTrades />)} />
@@ -413,6 +413,12 @@ function AppInner() {
   useEffect(() => {
     if (user) setAuthTransitioning(false);
   }, [user]);
+
+  useEffect(() => {
+    if (!authTransitioning) return undefined;
+    const timer = window.setTimeout(() => setAuthTransitioning(false), 1200);
+    return () => window.clearTimeout(timer);
+  }, [authTransitioning]);
 
   // Gestion payment=success / cancelled depuis Stripe
   useEffect(() => {

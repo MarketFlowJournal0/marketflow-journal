@@ -9,6 +9,7 @@ import {
   sortTradesChronologically,
   summarizeTradeSet,
 } from '../lib/marketflowAnalytics';
+import { fetchBrokerAccounts } from '../lib/brokerAccounts';
 
 const TradingContext = createContext(null);
 const REQUEST_TIMEOUT_MS = 12000;
@@ -21,6 +22,7 @@ const LOCAL_TRADE_PREFIX = 'local-trade-';
 export function TradingProvider({ children }) {
   const { session, user } = useAuth();
   const [trades,  setTrades]  = useState([]);
+  const [brokerAccounts, setBrokerAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const importSyncQueueRef = useRef(Promise.resolve());
   const [activeAccount, setActiveAccountState] = useState(() => {
@@ -134,13 +136,41 @@ export function TradingProvider({ children }) {
   useEffect(() => {
     if (!activeUserId) {
       setTrades([]);
+      setBrokerAccounts([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    const t = setTimeout(() => setLoading(false), 2500);
+    const t = setTimeout(() => setLoading(false), 650);
     fetchTrades({ preserveOnError: false }).finally(() => clearTimeout(t));
   }, [activeUserId, fetchTrades]);
+
+  const refreshBrokerAccounts = useCallback(async () => {
+    const userId = await getActiveUserId();
+    if (!userId) {
+      setBrokerAccounts([]);
+      return [];
+    }
+    try {
+      const rows = await fetchBrokerAccounts(supabase, userId);
+      setBrokerAccounts(rows || []);
+      return rows || [];
+    } catch (error) {
+      console.warn('broker accounts unavailable:', error?.message || error);
+      setBrokerAccounts([]);
+      return [];
+    }
+  }, [getActiveUserId]);
+
+  useEffect(() => {
+    if (!activeUserId) return;
+    refreshBrokerAccounts();
+    const handleBrokerAccountsChanged = () => {
+      refreshBrokerAccounts();
+    };
+    window.addEventListener('mfj:broker-accounts-changed', handleBrokerAccountsChanged);
+    return () => window.removeEventListener('mfj:broker-accounts-changed', handleBrokerAccountsChanged);
+  }, [activeUserId, refreshBrokerAccounts]);
 
   // ── addTrade — maps all fields to Supabase columns ──────
   const addTrade = useCallback(async (tradeData) => {
@@ -365,7 +395,7 @@ export function TradingProvider({ children }) {
     return !error;
   }, [trades]);
 
-  const accountOptions = useMemo(() => buildAccountOptions(trades), [trades]);
+  const accountOptions = useMemo(() => buildAccountOptions(trades, brokerAccounts), [trades, brokerAccounts]);
   const scopedTrades = useMemo(() => filterTradesByAccount(trades, activeAccount), [trades, activeAccount]);
 
   useEffect(() => {
@@ -654,6 +684,8 @@ export function TradingProvider({ children }) {
       activeAccount,
       setActiveAccount,
       accountOptions,
+      brokerAccounts,
+      refreshBrokerAccounts,
       addTrade,
       importTrades,
       updateTrade,
@@ -676,6 +708,8 @@ export function useTradingContext() {
     activeAccount: 'all',
     setActiveAccount: () => null,
     accountOptions: [{ id: 'all', label: 'All Accounts', count: 0, pnl: 0 }],
+    brokerAccounts: [],
+    refreshBrokerAccounts: async () => [],
     addTrade: () => null,
     importTrades: async () => ({ imported: 0, skipped: 0, trades: [] }),
     updateTrade: () => null,
@@ -1429,7 +1463,24 @@ function filterTradesByAccount(trades = [], activeAccount = 'all') {
   return (trades || []).filter((trade) => getTradeAccountMeta(trade).id === activeAccount);
 }
 
-function buildAccountOptions(trades = []) {
+function getBrokerAccountMeta(account = {}) {
+  const label = String(
+    account.account_name
+    || account.account_number
+    || account.server_name
+    || account.broker_type
+    || 'Broker account'
+  ).trim() || 'Broker account';
+
+  return {
+    id: `account:${normalizeAccountId(label)}`,
+    label,
+    brokerType: account.broker_type || '',
+    brokerAccountId: account.id || null,
+  };
+}
+
+function buildAccountOptions(trades = [], brokerAccounts = []) {
   const scoped = Array.isArray(trades) ? trades : [];
   const items = scoped.reduce((map, trade) => {
     const account = getTradeAccountMeta(trade);
@@ -1441,6 +1492,29 @@ function buildAccountOptions(trades = []) {
     current.pnl += finiteNumber(trade.profit_loss ?? trade.pnl ?? 0);
     return map;
   }, new Map());
+
+  (Array.isArray(brokerAccounts) ? brokerAccounts : []).forEach((account) => {
+    const brokerAccount = getBrokerAccountMeta(account);
+    if (!items.has(brokerAccount.id)) {
+      items.set(brokerAccount.id, {
+        id: brokerAccount.id,
+        label: brokerAccount.label,
+        count: 0,
+        pnl: 0,
+        brokerType: brokerAccount.brokerType,
+        brokerAccountId: brokerAccount.brokerAccountId,
+        source: 'broker',
+      });
+      return;
+    }
+    const existing = items.get(brokerAccount.id);
+    items.set(brokerAccount.id, {
+      ...existing,
+      brokerType: brokerAccount.brokerType || existing.brokerType,
+      brokerAccountId: brokerAccount.brokerAccountId || existing.brokerAccountId,
+      source: existing.source || 'broker',
+    });
+  });
 
   return [
     {

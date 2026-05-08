@@ -34,8 +34,6 @@ export default function CustomCursor() {
 
     let targetX = window.innerWidth / 2;
     let targetY = window.innerHeight / 2;
-    let ringX = targetX;
-    let ringY = targetY;
     let isDown = false;
     let frameId = 0;
     let clickTimer = 0;
@@ -43,11 +41,8 @@ export default function CustomCursor() {
     root.classList.add(CURSOR_CLASS);
 
     const render = () => {
-      ringX += (targetX - ringX) * 0.22;
-      ringY += (targetY - ringY) * 0.22;
-
       dot.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%) scale(${isDown ? 0.72 : 1})`;
-      ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${isDown ? 0.82 : 1})`;
+      ring.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%) scale(${isDown ? 0.82 : 1})`;
       frameId = window.requestAnimationFrame(render);
     };
 

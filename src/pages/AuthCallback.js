@@ -100,7 +100,7 @@ export default function AuthCallback() {
 
     watchdog = window.setTimeout(() => {
       safeRedirect('/');
-    }, 2800);
+    }, 2200);
 
     const handle = async () => {
       try {

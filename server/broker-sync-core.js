@@ -45,7 +45,7 @@ async function handleBrokerSync(req, res, options = {}) {
     if (account.is_active === false) return res.status(403).json({ error: 'Account is disabled' });
 
     if (trades.length === 0) {
-      await updateBrokerAccount(supabase, account, 0);
+      await updateBrokerAccount(supabase, account, 0, { heartbeatOnly: true });
       return res.status(200).json({ inserted: 0, skipped: 0, message: 'No trades to sync' });
     }
 
@@ -54,7 +54,7 @@ async function handleBrokerSync(req, res, options = {}) {
       .filter((trade) => trade.ticket && trade.symbol);
 
     if (!prepared.length) {
-      await updateBrokerAccount(supabase, account, 0);
+      await updateBrokerAccount(supabase, account, 0, { heartbeatOnly: true });
       return res.status(200).json({
         inserted: 0,
         skipped: trades.length,
@@ -73,7 +73,7 @@ async function handleBrokerSync(req, res, options = {}) {
     const newTrades = prepared.filter((trade) => !existingTickets.has(trade.ticket));
 
     if (!newTrades.length) {
-      await updateBrokerAccount(supabase, account, 0);
+      await updateBrokerAccount(supabase, account, 0, { heartbeatOnly: true });
       return res.status(200).json({
         inserted: 0,
         skipped: prepared.length,
@@ -141,7 +141,7 @@ function normalizeIncomingTrade(input = {}, index = 0, account = {}) {
   const commission = parseNumber(input.commission ?? input.comm ?? input.fees ?? input.fee);
   const swap = parseNumber(input.swap ?? input.overnight ?? input.financing);
   const extra = buildExtra(input, account, {
-    account: input.account || input.account_name || input.accountNumber || input.account_number,
+    account: input.account || input.account_name || input.accountNumber || input.account_number || account.account_name || account.account_number,
     broker: input.broker || input.platform || account.broker_type,
     rr: input.rr || input.r_multiple || input.rMultiple,
     rawStatus: input.status,
@@ -211,11 +211,15 @@ async function insertTradesWithFallback(supabase, modernRows, legacyRows) {
   return { error: legacy.error, storage: 'legacy' };
 }
 
-async function updateBrokerAccount(supabase, account, insertedCount = 0) {
+async function updateBrokerAccount(supabase, account, insertedCount = 0, options = {}) {
   const nextTotal = Number(account.total_trades_synced || 0) + Number(insertedCount || 0);
   const syncedAt = new Date().toISOString();
+  const nextStatus = options.heartbeatOnly
+    ? (account.status || account.connection_status || 'waiting')
+    : 'connected';
   const candidates = [
-    { last_sync_at: syncedAt, total_trades_synced: nextTotal, status: 'connected' },
+    { last_sync_at: syncedAt, total_trades_synced: nextTotal, status: nextStatus },
+    { last_sync_at: syncedAt, total_trades_synced: nextTotal, connection_status: nextStatus },
     { last_sync_at: syncedAt, total_trades_synced: nextTotal },
     { last_sync_at: syncedAt },
     { total_trades_synced: nextTotal },
@@ -239,8 +243,9 @@ async function updateBrokerAccount(supabase, account, insertedCount = 0) {
 
 async function selectBrokerAccountByToken(supabase, token) {
   const selects = [
-    'id, user_id, broker_type, is_active, total_trades_synced',
-    'id, user_id, broker_type, is_active',
+    'id, user_id, broker_type, account_name, account_number, server_name, status, connection_status, is_active, total_trades_synced',
+    'id, user_id, broker_type, account_name, account_number, server_name, is_active, total_trades_synced',
+    'id, user_id, broker_type, account_name, account_number, server_name, is_active',
     'id, user_id, broker_type',
     '*',
   ];
@@ -259,6 +264,7 @@ async function selectBrokerAccountByToken(supabase, token) {
           ...data,
           is_active: data?.is_active !== false,
           total_trades_synced: Number(data?.total_trades_synced || 0),
+          status: data?.status || data?.connection_status || 'waiting',
         },
         error: null,
       };

@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
 
     const t = setTimeout(() => {
       if (mounted) { setProfileLoaded(true); setLoading(false); }
-    }, 900);
+    }, 350);
 
     const init = async () => {
       try {
