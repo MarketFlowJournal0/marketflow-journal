@@ -26,6 +26,7 @@ import AuthCallback from './pages/AuthCallback';
 import BrokerConnect from './pages/BrokerConnect';
 import AIChatBot from './components/AIChatBot';
 import DailyPsychologyCheckIn from './components/DailyPsychologyCheckIn';
+import CustomCursor from './components/CustomCursor';
 import JournalAmbientBackground from './components/JournalAmbientBackground';
 import ReportsPage from './pages/Reports';
 import AlertsPage from './pages/Alerts';
@@ -903,6 +904,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Toaster position="top-right" />
+        <CustomCursor />
         <AppInner />
       </AuthProvider>
     </BrowserRouter>
