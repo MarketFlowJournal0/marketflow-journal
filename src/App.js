@@ -52,7 +52,7 @@ const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 const SEO_SITE_NAME = 'MarketFlow Journal';
 const SEO_TITLE_TEMPLATE = '%s | MarketFlow Journal';
 const SEO_ROUTE_TITLES = {
-  '/': 'Professional Trading Journal & Analytics',
+  '/': 'Trading Journal, Analytics & Backtesting',
   '/dashboard': 'Dashboard',
   '/all-trades': 'All Trades',
   '/analytics': 'Analytics',
@@ -68,8 +68,20 @@ const SEO_ROUTE_TITLES = {
   '/plan': 'Plans',
   '/welcome': 'Welcome',
   '/support': 'Support',
+  '/docs': 'Documentation',
+  '/documentation': 'Documentation',
+  '/guide': 'Guide',
+  '/import-guide': 'Import Guide',
+  '/csv': 'CSV Import Guide',
+  '/tutorials': 'Tutorials',
+  '/workflows': 'Workflows',
+  '/terms': 'Terms of Service',
+  '/terms-of-service': 'Terms of Service',
+  '/privacy': 'Privacy Policy',
+  '/privacy-policy': 'Privacy Policy',
+  '/contact': 'Contact',
 };
-const SEO_DESCRIPTION = 'MarketFlow Journal is a premium trading journal for trade review, execution tracking, analytics, psychology, backtesting, broker workflows, reports, and disciplined performance improvement.';
+const SEO_DESCRIPTION = 'MarketFlow Journal is a professional trading journal for execution review, trade import, analytics, psychology tracking, backtesting, reports, alerts, and broker-connected workflows.';
 
 const PUBLIC_INFO_ROUTES = {
   '/docs': 'docs',
@@ -385,19 +397,26 @@ function AppInner() {
 
   useEffect(() => {
     const title = formatSeoTitle(location.pathname);
-    const canonicalPath = shouldRenderApp() ? location.pathname : '/';
-    const canonicalUrl = shouldRenderApp()
+    const isAppSurface = shouldRenderApp();
+    const publicCanonicalPath = PUBLIC_INFO_ROUTES[location.pathname] ? location.pathname : '/';
+    const canonicalPath = isAppSurface ? location.pathname : publicCanonicalPath;
+    const canonicalUrl = isAppSurface
       ? appUrl(canonicalPath)
-      : publicSiteUrl('/');
+      : publicSiteUrl(canonicalPath);
 
     document.title = title;
     updateMetaTag('meta[name="description"]', 'content', SEO_DESCRIPTION);
+    updateMetaTag('meta[name="application-name"]', 'content', SEO_SITE_NAME);
+    updateMetaTag('meta[property="og:site_name"]', 'content', SEO_SITE_NAME);
     updateMetaTag('meta[property="og:title"]', 'content', title);
     updateMetaTag('meta[property="og:description"]', 'content', SEO_DESCRIPTION);
     updateMetaTag('meta[property="og:url"]', 'content', canonicalUrl);
+    updateMetaTag('meta[property="og:image"]', 'content', publicSiteUrl('/og-image.png'));
+    updateMetaTag('meta[property="og:image:secure_url"]', 'content', publicSiteUrl('/og-image.png'));
     updateMetaTag('meta[name="twitter:title"]', 'content', title);
     updateMetaTag('meta[name="twitter:description"]', 'content', SEO_DESCRIPTION);
     updateMetaTag('meta[name="twitter:url"]', 'content', canonicalUrl);
+    updateMetaTag('meta[name="twitter:image"]', 'content', publicSiteUrl('/og-image.png'));
 
     const canonical = document.head.querySelector('link[rel="canonical"]');
     if (canonical) canonical.setAttribute('href', canonicalUrl);
