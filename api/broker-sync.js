@@ -6,6 +6,6 @@ module.exports = async function handler(req, res) {
 
 function resolveMode(req = {}) {
   const mode = String(req.query?.mode || '').toLowerCase();
-  if (mode === 'webhook') return 'webhook';
+  if (['webhook', 'file', 'mt4', 'mt5', 'mt'].includes(mode)) return mode;
   return 'mt';
 }

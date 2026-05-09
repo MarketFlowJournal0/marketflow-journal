@@ -346,7 +346,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       key: 'ibkr-flex',
       title: 'Interactive Brokers Flex Sync',
       subtitle: 'Connect an IBKR activity feed with Flex Token and Activity Flex Query ID, directly inside MarketFlow.',
-      connectLabel: 'Connect IBKR feed',
+      connectLabel: 'Create IBKR feed',
       status: 'waiting',
       markets,
       fields: [
@@ -365,7 +365,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       key: 'oanda-rest',
       title: 'Oanda REST Sync',
       subtitle: 'Connect an Oanda practice or live account with scoped REST credentials.',
-      connectLabel: 'Connect Oanda feed',
+      connectLabel: 'Create Oanda feed',
       status: 'waiting',
       markets,
       fields: [
@@ -402,7 +402,7 @@ function getConnectionBlueprint(item = {}, method = '') {
       key: `${platformId}-api`,
       title: `${brokerName} API / Export Sync`,
       subtitle: 'Use an approved broker token when available, or keep the account ready for file-based futures imports.',
-      connectLabel: `Connect ${brokerName}`,
+      connectLabel: `Create ${brokerName} feed`,
       status: 'waiting',
       markets,
       fields: [
@@ -420,7 +420,7 @@ function getConnectionBlueprint(item = {}, method = '') {
     key: 'universal',
     title: `${brokerName} Sync`,
     subtitle: 'Create a universal MarketFlow feed for API, webhook, export, or future provider sync.',
-    connectLabel: `Connect ${brokerName}`,
+    connectLabel: `Create ${brokerName} feed`,
     status: 'waiting',
     markets,
     fields: [
@@ -625,25 +625,32 @@ function notifyBrokerAccountsChanged() {
 function brokerHealth(account = {}) {
   const status = String(account.status || '').toLowerCase();
   const synced = Number(account.total_trades_synced || 0);
-  if (status === 'connected' && synced > 0) {
+  if ((status === 'synced' || status === 'connected' || status === 'partially_synced') && synced > 0) {
     return {
       label: 'Live feed synced',
       detail: `${synced.toLocaleString()} trade${synced === 1 ? '' : 's'} delivered to All Trades.`,
-      tone: 'connected',
+      tone: 'synced',
     };
   }
-  if (status === 'connected') {
+  if (status === 'syncing') {
     return {
-      label: 'Feed verified',
-      detail: 'The endpoint responded. Waiting for the first trade payload to populate P&L.',
+      label: 'Sync in progress',
+      detail: 'MarketFlow is ingesting broker payloads and reconciling duplicates.',
+      tone: 'syncing',
+    };
+  }
+  if (status === 'waiting_for_payload' || status === 'waiting' || status === 'ready' || status === 'pending') {
+    return {
+      label: 'Waiting for real broker data',
+      detail: 'The feed is saved, but it is not connected yet. It becomes live only after a valid trade or bridge heartbeat is received.',
       tone: 'waiting',
     };
   }
-  if (status === 'waiting' || status === 'ready' || status === 'pending') {
+  if (status === 'failed' || status === 'reconnect_required' || status === 'expired' || status === 'rate_limited') {
     return {
-      label: 'Waiting for first sync',
-      detail: 'The account is saved. It becomes connected only after broker trades are received.',
-      tone: 'waiting',
+      label: 'Action required',
+      detail: account.last_error || 'The last sync failed. Check the provider token, bridge heartbeat, or import file and retry.',
+      tone: 'failed',
     };
   }
   return {
@@ -665,9 +672,15 @@ function sanitizeBrokerAccounts(accounts = []) {
       account_number: account.account_number || '',
       server_name: account.server_name || '',
       api_token: account.api_token || '',
-      status: account.status || account.connection_status || (account.last_sync_at ? 'connected' : 'disconnected'),
+      status: account.sync_status || account.status || account.connection_status || (account.last_sync_at ? 'synced' : 'disconnected'),
+      last_heartbeat_at: account.last_heartbeat_at || null,
+      last_error: account.last_error || '',
       total_trades_synced: Number(account.total_trades_synced || account.synced_trades || 0) || 0,
     }));
+}
+
+function isLiveBrokerStatus(status) {
+  return ['synced', 'connected', 'partially_synced'].includes(String(status || '').toLowerCase());
 }
 
 function safeUpper(value, fallback = '') {
@@ -687,10 +700,13 @@ function sizingModeLabel(value) {
 }
 
 function statusTone(status) {
-  if (status === 'connected' || status === 'active') return { color: C.green, bg: shade(C.green, 0.12), border: shade(C.green, 0.22) };
-  if (status === 'pending' || status === 'queued' || status === 'ready' || status === 'waiting') return { color: C.cyan, bg: shade(C.cyan, 0.1), border: shade(C.cyan, 0.18) };
-  if (status === 'warning' || status === 'watch') return { color: C.warn, bg: shade(C.warn, 0.12), border: shade(C.warn, 0.22) };
-  if (status === 'blocked' || status === 'offline') return { color: C.danger, bg: shade(C.danger, 0.12), border: shade(C.danger, 0.22) };
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'synced' || normalized === 'connected' || normalized === 'active') return { color: C.green, bg: shade(C.green, 0.12), border: shade(C.green, 0.22) };
+  if (normalized === 'partially_synced') return { color: C.gold, bg: shade(C.gold, 0.12), border: shade(C.gold, 0.22) };
+  if (normalized === 'syncing') return { color: C.cyan, bg: shade(C.cyan, 0.12), border: shade(C.cyan, 0.24) };
+  if (normalized === 'pending' || normalized === 'queued' || normalized === 'ready' || normalized === 'waiting' || normalized === 'waiting_for_payload') return { color: C.cyan, bg: shade(C.cyan, 0.1), border: shade(C.cyan, 0.18) };
+  if (normalized === 'warning' || normalized === 'watch' || normalized === 'rate_limited') return { color: C.warn, bg: shade(C.warn, 0.12), border: shade(C.warn, 0.22) };
+  if (normalized === 'blocked' || normalized === 'offline' || normalized === 'failed' || normalized === 'reconnect_required' || normalized === 'expired' || normalized === 'disabled') return { color: C.danger, bg: shade(C.danger, 0.12), border: shade(C.danger, 0.22) };
   return { color: C.t2, bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.06)' };
 }
 
@@ -1113,7 +1129,7 @@ function BrokerConnect() {
   const masterAccounts = useMemo(() => copierAccounts.filter((account) => account.role === 'master'), [copierAccounts]);
   const followerAccounts = useMemo(() => copierAccounts.filter((account) => account.role === 'follower'), [copierAccounts]);
   const totalSynced = useMemo(() => brokerAccounts.reduce((sum, account) => sum + (account.total_trades_synced || 0), 0), [brokerAccounts]);
-  const connectedCount = useMemo(() => brokerAccounts.filter((account) => account.status === 'connected').length, [brokerAccounts]);
+  const connectedCount = useMemo(() => brokerAccounts.filter((account) => isLiveBrokerStatus(account.status)).length, [brokerAccounts]);
   const journalAccounts = useMemo(() => (accountOptions || []).filter((item) => item.id !== 'all'), [accountOptions]);
   const filteredCatalog = useMemo(() => {
     const query = brokerSearch.trim().toLowerCase();
@@ -1201,6 +1217,11 @@ function BrokerConnect() {
     }
 
     const token = generateToken();
+    const initialStatus = selectedImportMethod === 'auto'
+      ? 'waiting_for_payload'
+      : selectedImportMethod === 'file'
+        ? 'disconnected'
+        : 'disconnected';
 
     try {
       await createBrokerAccount(supabase, {
@@ -1267,7 +1288,19 @@ function BrokerConnect() {
         account_name: accountName,
         server_name: serverName,
         api_token: token,
-        status: connectionBlueprint.status || 'pending',
+        status: initialStatus,
+        sync_status: initialStatus,
+        connection_method: selectedImportMethod,
+        provider: selectedCatalogBroker.name,
+        metadata: {
+          broker: selectedCatalogBroker.name,
+          brokerId: selectedCatalogBroker.id,
+          platformId,
+          method: selectedImportMethod,
+          blueprint: connectionBlueprint.key,
+          markets: selectedCatalogBroker.markets || [],
+          createdFrom: 'broker_connect_wizard',
+        },
       });
 
       if (typeof window !== 'undefined') {
@@ -1295,7 +1328,7 @@ function BrokerConnect() {
         method: selectedImportMethod,
         accountName,
         accountNumber,
-        status: connectionBlueprint.status || 'pending',
+        status: initialStatus,
       });
       setShowBrokerForm(false);
       notifyBrokerAccountsChanged();
@@ -1329,10 +1362,9 @@ function BrokerConnect() {
     }
 
     try {
-      const response = await fetch('/api/broker-sync?mode=mt', {
-        method: 'POST',
+      const response = await fetch(`/api/broker-sync?mode=mt&token=${encodeURIComponent(account.api_token)}`, {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_token: account.api_token, trades: [] }),
       });
       const payload = await response.json();
 
@@ -1342,14 +1374,12 @@ function BrokerConnect() {
         return;
       }
 
-      const inserted = Number(payload.inserted || 0);
-      if (inserted > 0) {
-        toast.success(`${inserted} trade(s) synced to All Trades.`);
-      } else {
-        toast('No broker trades received yet. The account is saved and waiting for the first live payload.', {
-          style: { background: '#0D1627', color: '#B5C7E6', border: '1px solid rgba(20,201,229,0.18)', borderRadius: '12px' },
-        });
-      }
+      const synced = Number(payload.account?.total_trades_synced || account.total_trades_synced || 0);
+      toast(synced > 0
+        ? `${synced} trade(s) already synced to All Trades.`
+        : 'Feed is valid, but no broker payload has arrived yet. It is not marked connected until real data is received.', {
+        style: { background: '#0D1627', color: '#B5C7E6', border: '1px solid rgba(20,201,229,0.18)', borderRadius: '12px' },
+      });
       notifyBrokerAccountsChanged();
       fetchAccounts();
     } catch {
@@ -1760,7 +1790,7 @@ function BrokerConnect() {
 
                     <ActionButton type="submit" disabled={connectionSubmitting} style={{ justifyContent: 'center', opacity: connectionSubmitting ? 0.72 : 1 }}>
                       <ICON.Plug />
-                      {connectionSubmitting ? 'Connecting...' : connectionBlueprint.connectLabel}
+                      {connectionSubmitting ? 'Creating feed...' : connectionBlueprint.connectLabel}
                     </ActionButton>
                   </form>
                 </div>
@@ -1973,6 +2003,7 @@ function BrokerConnect() {
 
                       <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 14 }}>
                         <MetaItem label="Last sync" value={timeAgo(account.last_sync_at)} />
+                        <MetaItem label="Heartbeat" value={timeAgo(account.last_heartbeat_at)} />
                         <MetaItem label="Trades" value={String(account.total_trades_synced || 0)} />
                         <MetaItem label="Created" value={safeDateLabel(account.created_at)} />
                       </div>
