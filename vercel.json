@@ -10,7 +10,7 @@
       "source": "/:path*",
       "has": [{ "type": "host", "value": "marketflowjournal.com" }],
       "destination": "https://www.marketflowjournal.com/:path*",
-      "permanent": true
+      "statusCode": 301
     }
   ],
   "rewrites": [
