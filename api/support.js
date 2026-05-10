@@ -1,4 +1,5 @@
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@marketflowjournal.com';
+const { applyRateLimit, handleCors, sendServerError } = require('../server/lib/api-security');
 
 async function sendEmail(payload) {
   const response = await fetch('https://api.resend.com/emails', {
@@ -22,11 +23,8 @@ function clean(value, max = 2000) {
 }
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, { methods: 'POST, OPTIONS' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'support', limit: 8, windowMs: 60_000 })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (!process.env.RESEND_API_KEY) {
@@ -78,6 +76,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ ok: true, id: data?.id || null });
   } catch (error) {
     console.error('Support API error:', error);
-    return res.status(500).json({ error: error.message || 'Unable to send support request.' });
+    return sendServerError(res, 'Unable to send support request.');
   }
 };

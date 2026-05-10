@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const { resolveToken } = require('./security/token');
 const { TradeSyncEngine } = require('./sync-engine/trade-sync-engine');
+const { applyRateLimit, handleCors } = require('../lib/api-security');
 
 function createSupabaseClient() {
   const url = process.env.SUPABASE_URL;
@@ -9,16 +10,9 @@ function createSupabaseClient() {
   return createClient(url, key);
 }
 
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-}
-
 async function handleBrokerSync(req, res, options = {}) {
-  setCors(res);
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, { methods: 'GET, POST, OPTIONS' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'broker-sync', limit: 120, windowMs: 60_000 })) return;
   if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -43,8 +37,7 @@ async function handleBrokerSync(req, res, options = {}) {
   } catch (error) {
     console.error('broker-sync error:', error);
     return res.status(500).json({
-      error: 'Internal server error',
-      detail: error.message,
+      error: 'Broker sync failed.',
     });
   }
 }

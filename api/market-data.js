@@ -1,12 +1,14 @@
 // api/market-data.js
+const { applyRateLimit, handleCors, sendServerError } = require('../server/lib/api-security');
 // Proxy serverless Vercel — résout les problèmes CORS pour forex et indices
 // GET /api/market-data?type=forex   → taux forex
 // GET /api/market-data?type=indices → indices US
 
 module.exports = async (req, res) => {
-  // Headers CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  if (handleCors(req, res, { methods: 'GET, OPTIONS' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'market-data', limit: 80, windowMs: 60_000 })) return;
   res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { type } = req.query;
 
@@ -94,6 +96,6 @@ module.exports = async (req, res) => {
 
   } catch (err) {
     console.error('market-data error:', err);
-    return res.status(500).json({ error: err.message });
+    return sendServerError(res, 'Unable to load market data.');
   }
 };

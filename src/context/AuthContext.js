@@ -17,7 +17,7 @@ function rememberPendingSignup(email) {
 function shouldSyncSubscription(profile) {
   if (!profile) return true;
   const status = String(profile.subscription_status || '').toLowerCase();
-  if (!profile.stripe_customer_id || !profile.stripe_subscription_id || !status) return true;
+  if (!status) return true;
   if (!profile.plan) return true;
   if (status === 'trialing' && profile.trial_end) {
     return new Date(profile.trial_end) <= new Date();
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, trial_end, email, onboarding')
+        .select('plan, subscription_status, trial_end, email, onboarding')
         .eq('id', userId)
         .maybeSingle();
 
@@ -232,10 +232,11 @@ export function AuthProvider({ children }) {
   const clearError = useCallback(() => setError(null), []);
 
   const billingPlan   = profile?.plan || user?.user_metadata?.plan || 'trial';
-  const hasStripeSubscription = Boolean(profile?.stripe_customer_id && profile?.stripe_subscription_id);
   const subStatus     = profile?.subscription_status || null;
   const trialEnd      = profile?.trial_end || null;
-  const trialActive   = hasStripeSubscription && subStatus === 'trialing' && (!trialEnd || new Date(trialEnd) > new Date());
+  const statusValue    = String(subStatus || '').toLowerCase();
+  const hasBillingRecord = ['active', 'trialing', 'past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired', 'paused'].includes(statusValue);
+  const trialActive   = statusValue === 'trialing' && (!trialEnd || new Date(trialEnd) > new Date());
   const effectivePlan = trialActive ? 'pro' : billingPlan;
   const trialDaysLeft = trialEnd
     ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
@@ -254,17 +255,16 @@ export function AuthProvider({ children }) {
     trialInterfacePlan:   trialActive ? 'pro' : null,
     subStatus,
     isTrialing:           trialActive,
-    isActive:             hasStripeSubscription && subStatus === 'active',
-    isPastDue:            subStatus === 'past_due',
-    isCanceled:           subStatus === 'canceled',
-    needsPayment:         ['past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired'].includes(subStatus),
+    isActive:             statusValue === 'active',
+    isPastDue:            statusValue === 'past_due',
+    isCanceled:           statusValue === 'canceled',
+    needsPayment:         ['past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired'].includes(statusValue),
     trialDaysLeft,
     trialEnd,
-    stripeCustomerId:     profile?.stripe_customer_id     || null,
-    stripeSubscriptionId: profile?.stripe_subscription_id || null,
-    hasStripeSubscription,
+    hasStripeSubscription: hasBillingRecord,
     onboarding:           profile?.onboarding             || null,
     onboardingCompleted:  Boolean(profile?.onboarding?.completedAt || profile?.onboarding?.savedAt),
+    isAdmin:              user.app_metadata?.role === 'admin' || user.app_metadata?.marketflow_role === 'admin',
     createdAt:            user.created_at,
   } : null;
 

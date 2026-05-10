@@ -100,7 +100,7 @@ const CHECKOUT_BILLING_KEY = 'mfj_checkout_billing';
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
-  const { user: authUser, refreshProfile } = useAuth();
+  const { user: authUser, session, refreshProfile } = useAuth();
   const user = authUser || userProp;
 
   const [billing, setBilling] = useState('monthly');
@@ -128,13 +128,11 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
   const daysLeft = user?.user_metadata?.trialDaysLeft ?? user?.trialDaysLeft ?? 14;
   const needsPayment = user?.user_metadata?.needsPayment || user?.needsPayment || false;
   const paymentBlockedStatus = ['past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired'].includes(String(subStatus || '').toLowerCase());
-  const hasStripeCustomer = Boolean(user?.user_metadata?.stripeCustomerId || user?.stripeCustomerId);
-  const hasStripeSubscription = Boolean(user?.user_metadata?.stripeSubscriptionId || user?.stripeSubscriptionId);
-  const hasStripeTrialRecord = Boolean(hasStripeCustomer && (user?.user_metadata?.trialEnd || user?.trialEnd));
-  const hasBillableAccess = Boolean(hasStripeSubscription || subStatus === 'active' || subStatus === 'trialing');
+  const hasBillableAccess = Boolean(user?.hasStripeSubscription || subStatus === 'active' || subStatus === 'trialing');
+  const hasStripeTrialRecord = Boolean(user?.user_metadata?.trialEnd || user?.trialEnd);
   const trialUsed = Boolean(
     hasStripeTrialRecord
-    || hasStripeSubscription
+    || hasBillableAccess
     || paymentBlockedStatus
     || needsPayment
   );
@@ -163,7 +161,10 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ priceId, email: user?.email, userId: user?.id, planId: plan.id, billing }),
       });
       const { url, error } = await res.json();
@@ -186,7 +187,10 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
     try {
       const res = await fetch('/api/create-billing-portal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ userId: user?.id }),
       });
       const { url, error } = await res.json();
@@ -232,7 +236,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
               <strong style={{ color: '#D7B36A' }}>Free trial - {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
               <span style={{ color: 'rgba(255,255,255,0.5)' }}> - Billing starts after the trial unless cancelled</span>
             </div>
-            {user.stripeCustomerId && (
+            {hasBillableAccess && (
               <button onClick={handleManage} disabled={portalLoading} style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 7, color: '#D7B36A', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{portalLoading ? '...' : 'Manage card'}</button>
             )}
           </motion.div>
@@ -364,7 +368,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                 </ul>
 
                 {/* CTA */}
-                {isCurrent && user?.stripeCustomerId ? (
+                {isCurrent && hasBillableAccess ? (
                   <button onClick={handleManage} disabled={portalLoading} style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, cursor: portalLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }}>
                     {portalLoading ? 'Loading...' : 'Manage subscription'}
                   </button>

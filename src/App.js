@@ -48,7 +48,6 @@ const POST_AUTH_ROUTE_KEY = 'mfj_post_auth_route';
 const AUTO_CHECKOUT_KEY = 'mfj_auto_checkout_after_auth';
 const PENDING_SIGNUP_EMAIL_KEY = 'mfj_pending_new_account_email';
 const PENDING_SIGNUP_AT_KEY = 'mfj_pending_new_account_at';
-const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
 const SEO_SITE_NAME = 'MarketFlow Journal';
 const SEO_TITLE_TEMPLATE = '%s | MarketFlow Journal';
 const SEO_ROUTE_TITLES = {
@@ -283,7 +282,7 @@ function AppLayout({ user, onLogout }) {
   const effectiveUser = user ? { ...user, plan } : user;
   const entryRoute = getEntryRoute(plan);
   const fallbackRoute = '/' + entryRoute;
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = Boolean(user?.isAdmin);
 
   const currentPage = location.pathname.replace('/', '') || entryRoute;
   const setCurrentPage = (page) => navigate('/' + page);
@@ -376,7 +375,7 @@ function AppLayout({ user, onLogout }) {
 }
 
 function AppInner() {
-  const { user, loading, profileLoaded, logout, refreshProfile } = useAuth();
+  const { user, session, loading, profileLoaded, logout, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -523,7 +522,7 @@ function AppInner() {
   useEffect(() => {
     if (!shouldRenderApp()) return;
     if (!user || !profileLoaded) return;
-    if ((user.email || '').toLowerCase() === ADMIN_EMAIL) return;
+    if (user.isAdmin) return;
 
     const localKey = ONBOARDING_DONE_KEY + '_' + user.id;
     const pendingSignup = sessionStorage.getItem('mfj_new_signup') === '1';
@@ -537,8 +536,7 @@ function AppInner() {
     );
     const isPendingNewSignup = pendingSignup || pendingSignupMatchesUser;
     const hasRealBillingFootprint = Boolean(
-      user.stripeCustomerId
-      || user.stripeSubscriptionId
+      user.hasStripeSubscription
       || hasJournalAccess(user)
       || user.needsPayment
     );
@@ -630,7 +628,10 @@ function AppInner() {
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ priceId, email: userEmail, userId: user?.id, planId, billing }),
       });
       const { url } = await res.json();

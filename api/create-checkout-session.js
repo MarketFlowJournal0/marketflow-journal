@@ -3,6 +3,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 const { getAppBaseUrl } = require('../server/lib/url-config');
 const { PRICE_PLAN_MAP, resolveStripePriceForCheckout } = require('../server/lib/stripe-price-config');
+const { applyRateLimit, handleCors, requireSupabaseUser, sendServerError } = require('../server/lib/api-security');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -12,13 +13,21 @@ const VALID_PLAN_IDS = new Set(['starter', 'pro', 'elite']);
 const TRIAL_DAYS = 14;
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, { methods: 'POST, OPTIONS' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'checkout', limit: 20, windowMs: 60_000 })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { priceId, email, userId, planId, billing } = req.body;
+  const auth = await requireSupabaseUser(supabase, req, {
+    requireConfirmedEmail: process.env.REQUIRE_CONFIRMED_EMAIL === 'true',
+  });
+  if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+
+  const { priceId, userId: requestedUserId, planId, billing } = req.body || {};
+  const userId = auth.user.id;
+  const email = auth.user.email || null;
+  if (requestedUserId && requestedUserId !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   if (!priceId && !planId) return res.status(400).json({ error: 'priceId or planId required' });
 
   const BASE_URL = getAppBaseUrl();
@@ -150,6 +159,9 @@ module.exports = async (req, res) => {
     return res.status(200).json({ url: session.url });
   } catch (err) {
     console.error('Stripe checkout error:', err.message);
-    return res.status(err.statusCode || 500).json({ error: err.message });
+    if (err.statusCode && err.statusCode < 500) {
+      return res.status(err.statusCode).json({ error: 'Checkout could not be started for this plan.' });
+    }
+    return sendServerError(res, 'Checkout could not be started.');
   }
 };

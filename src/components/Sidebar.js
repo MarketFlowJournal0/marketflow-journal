@@ -14,8 +14,6 @@ import {
   applyJournalTheme,
 } from '../lib/journalTheme';
 
-const ADMIN_EMAIL = 'marketflowjournal0@gmail.com';
-
 const Ic = {
   Dashboard: () => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
@@ -479,7 +477,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, user, o
   const initials = firstName.slice(0, 2).toUpperCase();
   const email = user?.email || '';
   const plan = normalizePlan(user?.plan || user?.user_metadata?.plan);
-  const isAdmin = email === ADMIN_EMAIL;
+  const isAdmin = Boolean(user?.isAdmin);
   const activeTheme = getJournalTheme(plan, toneChoice, customAccent);
   const planInfo = {
     ...getPlanInfo(plan),

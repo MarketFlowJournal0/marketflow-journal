@@ -1,6 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 const { PRICE_PLAN_MAP } = require('../server/lib/stripe-price-config');
+const { applyRateLimit, handleCors, requireSupabaseUser, sanitizeProfile, sendServerError } = require('../server/lib/api-security');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -20,26 +21,19 @@ const SUBSCRIPTION_PRIORITY = {
 };
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, { methods: 'POST, OPTIONS' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'sync-subscription', limit: 30, windowMs: 60_000 })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { userId, email, sessionId } = req.body || {};
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
-  const authHeader = req.headers.authorization || '';
-  const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!accessToken) return res.status(401).json({ error: 'Authorization required' });
-
   try {
-    const { data: authData, error: authError } = await supabase.auth.getUser(accessToken);
-    if (authError || !authData?.user?.id) {
-      return res.status(401).json({ error: 'Invalid session' });
-    }
-    if (authData.user.id !== userId) {
+    const auth = await requireSupabaseUser(supabase, req, {
+      requireConfirmedEmail: process.env.REQUIRE_CONFIRMED_EMAIL === 'true',
+    });
+    if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+    if (auth.user.id !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
@@ -81,7 +75,7 @@ module.exports = async (req, res) => {
     if (!profilePatch) {
       return res.status(200).json({
         synced: false,
-        profile: currentProfile || null,
+        profile: sanitizeProfile(currentProfile || null),
       });
     }
 
@@ -98,11 +92,11 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       synced: true,
-      profile: savedProfile,
+      profile: sanitizeProfile(savedProfile),
     });
   } catch (error) {
     console.error('sync-subscription error:', error);
-    return res.status(500).json({ error: error.message || 'Failed to sync subscription' });
+    return sendServerError(res, 'Failed to sync subscription.');
   }
 };
 

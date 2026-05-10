@@ -184,7 +184,7 @@ function FactorBar({ factor }) {
 }
 
 function Competition() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { trades, stats, activeAccount, accountOptions, setActiveAccount } = useTradingContext();
   const [remoteBoard, setRemoteBoard] = useState([]);
   const [remoteStatus, setRemoteStatus] = useState('idle');
@@ -213,7 +213,11 @@ function Competition() {
   useEffect(() => {
     let mounted = true;
     setRemoteStatus('loading');
-    fetch('/api/leaderboard')
+    fetch('/api/leaderboard', {
+      headers: {
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+    })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Leaderboard unavailable')))
       .then((payload) => {
         if (!mounted) return;
@@ -227,7 +231,7 @@ function Competition() {
         setRemoteStatus('fallback');
       });
     return () => { mounted = false; };
-  }, []);
+  }, [session?.access_token]);
 
   const board = remoteBoard.length
     ? remoteBoard.map((row, index) => ({

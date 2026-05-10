@@ -46,6 +46,7 @@ const DUKASCOPY_INTERVALS = {
   D: { api: '1DAY', ms: 24 * 60 * 60 * 1000 },
   W: { api: '1WEEK', ms: 7 * 24 * 60 * 60 * 1000 },
 };
+const { applyRateLimit, handleCors, sendServerError } = require('../server/lib/api-security');
 
 const PROVIDER_ORDER = ['oanda', 'dukascopy', 'twelvedata', 'alphavantage'];
 const KNOWN_PROVIDERS = ['auto', ...PROVIDER_ORDER];
@@ -59,7 +60,8 @@ class ProviderUnavailableError extends Error {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  if (handleCors(req, res, { methods: 'GET, OPTIONS' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'market-ohlc', limit: 80, windowMs: 60_000 })) return;
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
   if (req.method !== 'GET') {

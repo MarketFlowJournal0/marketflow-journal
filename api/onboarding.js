@@ -1,14 +1,10 @@
 const { createClient } = require('@supabase/supabase-js');
+const { applyRateLimit, handleCors, requireSupabaseUser, sendServerError } = require('../server/lib/api-security');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-const DEFAULT_ADMIN_EMAILS = [
-  'marketflowjournal0@gmail.com',
-  'support@marketflowjournal.com',
-];
 
 const QUESTION_DEFINITIONS = {
   experience: {
@@ -63,44 +59,28 @@ const QUESTION_DEFINITIONS = {
 };
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, { methods: 'GET, POST, OPTIONS' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'onboarding', limit: 40, windowMs: 60_000 })) return;
   if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const authHeader = req.headers.authorization || '';
-  const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  if (!accessToken) {
-    return res.status(401).json({ error: 'Authorization required' });
-  }
-
   try {
-    const authUser = await getAuthUser(accessToken);
-    if (!authUser?.id) {
-      return res.status(401).json({ error: 'Invalid session' });
-    }
+    const auth = await requireSupabaseUser(supabase, req, {
+      requireConfirmedEmail: process.env.REQUIRE_CONFIRMED_EMAIL === 'true',
+    });
+    if (!auth.user) return res.status(auth.status).json({ error: auth.error });
 
     if (req.method === 'GET') {
-      return getOnboardingResponses(req, res, authUser);
+      return getOnboardingResponses(req, res, auth.user);
     }
 
-    return saveOnboardingResponse(req, res, authUser);
+    return saveOnboardingResponse(req, res, auth.user);
   } catch (error) {
     console.error('onboarding endpoint error:', error);
-    return res.status(500).json({ error: error.message || 'Unable to process onboarding request' });
+    return sendServerError(res, 'Unable to process onboarding request.');
   }
 };
-
-async function getAuthUser(accessToken) {
-  const { data, error } = await supabase.auth.getUser(accessToken);
-  if (error) throw error;
-  return data?.user || null;
-}
 
 async function getOnboardingResponses(req, res, authUser) {
   if (!isAdmin(authUser)) {
@@ -124,7 +104,7 @@ async function getOnboardingResponses(req, res, authUser) {
 
   if (error) {
     console.error('onboarding admin fetch error:', error);
-    return res.status(500).json({ error: error.message });
+    return sendServerError(res, 'Unable to load onboarding responses.');
   }
 
   const responses = (data || [])
@@ -338,7 +318,7 @@ function getAdminEmails() {
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
 
-  return Array.from(new Set([...configured, ...DEFAULT_ADMIN_EMAILS]));
+  return Array.from(new Set(configured));
 }
 
 function parseBody(body) {

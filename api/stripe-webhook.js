@@ -5,6 +5,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 const { getAppBaseUrl, getPublicSiteBaseUrl } = require('../server/lib/url-config');
 const { PRICE_PLAN_MAP } = require('../server/lib/stripe-price-config');
+const { applyRateLimit, handleCors } = require('../server/lib/api-security');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -85,11 +86,8 @@ async function findProfileUserId({ userId, customerId, email }) {
 }
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, stripe-signature');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, stripe-signature' })) return;
+  if (!applyRateLimit(req, res, { keyPrefix: 'stripe-webhook', limit: 180, windowMs: 60_000 })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const sig = req.headers['stripe-signature'];

@@ -1,6 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
+const { applyRateLimit, sendServerError } = require('../../server/lib/api-security');
 
 module.exports = async function handler(req, res) {
+  if (!applyRateLimit(req, res, { keyPrefix: 'cron-leaderboard', limit: 6, windowMs: 60_000 })) return;
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -63,7 +65,7 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     console.error('leaderboard refresh error:', error);
-    return res.status(500).json({ error: 'Leaderboard refresh failed', detail: error.message });
+    return sendServerError(res, 'Leaderboard refresh failed.');
   }
 };
 
