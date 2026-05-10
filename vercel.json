@@ -34,7 +34,7 @@
     { "source": "/api/mt-sync", "destination": "/api/broker-sync?mode=mt" },
     { "source": "/api/mt/sync", "destination": "/api/broker-sync?mode=mt" },
     { "source": "/api/webhook-sync", "destination": "/api/broker-sync?mode=webhook" },
-    { "source": "^/(?!api/|.*\\.[^/]+$).*$", "destination": "/index.html" }
+    { "source": "/((?!api/|.*\\.[^/]+$).*)", "destination": "/index.html" }
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "build",
