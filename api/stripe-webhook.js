@@ -87,7 +87,7 @@ async function findProfileUserId({ userId, customerId, email }) {
 
 module.exports = async (req, res) => {
   if (handleCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, stripe-signature' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'stripe-webhook', limit: 180, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'webhook', keyPrefix: 'stripe-webhook' }))) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const sig = req.headers['stripe-signature'];

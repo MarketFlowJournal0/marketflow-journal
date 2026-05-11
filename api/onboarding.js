@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const { applyRateLimit, handleCors, requireSupabaseUser, sendServerError } = require('../server/lib/api-security');
+const { applyRateLimit, applyUserRateLimit, handleCors, requireSupabaseUser, sendServerError } = require('../server/lib/api-security');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -60,7 +60,7 @@ const QUESTION_DEFINITIONS = {
 
 module.exports = async (req, res) => {
   if (handleCors(req, res, { methods: 'GET, POST, OPTIONS' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'onboarding', limit: 40, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'auth', keyPrefix: 'onboarding' }))) return;
   if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -70,6 +70,7 @@ module.exports = async (req, res) => {
       requireConfirmedEmail: process.env.REQUIRE_CONFIRMED_EMAIL === 'true',
     });
     if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+    if (!(await applyUserRateLimit(req, res, auth.user, { category: 'auth', keyPrefix: 'onboarding-user' }))) return;
 
     if (req.method === 'GET') {
       return getOnboardingResponses(req, res, auth.user);

@@ -1,7 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 const { PRICE_PLAN_MAP } = require('../server/lib/stripe-price-config');
-const { applyRateLimit, handleCors, requireSupabaseUser, sanitizeProfile, sendServerError } = require('../server/lib/api-security');
+const { applyRateLimit, applyUserRateLimit, handleCors, requireSupabaseUser, sanitizeProfile, sendServerError } = require('../server/lib/api-security');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -22,7 +22,7 @@ const SUBSCRIPTION_PRIORITY = {
 
 module.exports = async (req, res) => {
   if (handleCors(req, res, { methods: 'POST, OPTIONS' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'sync-subscription', limit: 30, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'stripe', keyPrefix: 'sync-subscription' }))) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { userId, email, sessionId } = req.body || {};
@@ -33,6 +33,7 @@ module.exports = async (req, res) => {
       requireConfirmedEmail: process.env.REQUIRE_CONFIRMED_EMAIL === 'true',
     });
     if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+    if (!(await applyUserRateLimit(req, res, auth.user, { category: 'stripe', keyPrefix: 'sync-subscription-user' }))) return;
     if (auth.user.id !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }

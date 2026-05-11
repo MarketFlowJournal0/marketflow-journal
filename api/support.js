@@ -24,7 +24,7 @@ function clean(value, max = 2000) {
 
 module.exports = async (req, res) => {
   if (handleCors(req, res, { methods: 'POST, OPTIONS' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'support', limit: 8, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'support', keyPrefix: 'support' }))) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (!process.env.RESEND_API_KEY) {

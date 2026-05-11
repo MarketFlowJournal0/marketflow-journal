@@ -61,7 +61,7 @@ class ProviderUnavailableError extends Error {
 
 module.exports = async function handler(req, res) {
   if (handleCors(req, res, { methods: 'GET, OPTIONS' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'market-ohlc', limit: 80, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'market', keyPrefix: 'market-ohlc' }))) return;
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
   if (req.method !== 'GET') {

@@ -1,9 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
-const { applyRateLimit, handleCors, requireSupabaseUser, sendServerError } = require('../server/lib/api-security');
+const { applyRateLimit, applyUserRateLimit, handleCors, requireSupabaseUser, sendServerError } = require('../server/lib/api-security');
 
 module.exports = async function handler(req, res) {
   if (handleCors(req, res, { methods: 'GET, OPTIONS' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'leaderboard', limit: 60, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'leaderboard', keyPrefix: 'leaderboard' }))) return;
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -17,6 +17,7 @@ module.exports = async function handler(req, res) {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const auth = await requireSupabaseUser(supabase, req);
   if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+  if (!(await applyUserRateLimit(req, res, auth.user, { category: 'leaderboard', keyPrefix: 'leaderboard-user' }))) return;
   const requestedDay = typeof req.query.day === 'string' ? req.query.day : '';
 
   try {

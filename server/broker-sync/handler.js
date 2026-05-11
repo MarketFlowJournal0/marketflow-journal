@@ -12,7 +12,7 @@ function createSupabaseClient() {
 
 async function handleBrokerSync(req, res, options = {}) {
   if (handleCors(req, res, { methods: 'GET, POST, OPTIONS' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'broker-sync', limit: 120, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'brokerSync', keyPrefix: 'broker-sync' }))) return;
   if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }

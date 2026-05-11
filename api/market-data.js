@@ -6,7 +6,7 @@ const { applyRateLimit, handleCors, sendServerError } = require('../server/lib/a
 
 module.exports = async (req, res) => {
   if (handleCors(req, res, { methods: 'GET, OPTIONS' })) return;
-  if (!applyRateLimit(req, res, { keyPrefix: 'market-data', limit: 80, windowMs: 60_000 })) return;
+  if (!(await applyRateLimit(req, res, { category: 'market', keyPrefix: 'market-data' }))) return;
   res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 

@@ -1,0 +1,70 @@
+[
+  {
+    "name": "MarketFlow API sustained rate limit",
+    "description": "Deny excessive API traffic per IP before it reaches serverless functions.",
+    "active": true,
+    "conditionGroup": [
+      {
+        "conditions": [
+          { "type": "path", "op": "pre", "value": "/api/" }
+        ]
+      }
+    ],
+    "action": {
+      "mitigate": {
+        "action": "rate_limit",
+        "rateLimit": {
+          "algo": "fixed_window",
+          "window": 60,
+          "limit": 100,
+          "keys": ["ip"],
+          "action": "deny"
+        }
+      }
+    }
+  },
+  {
+    "name": "MarketFlow strict auth and billing limit",
+    "description": "Strictly limit authentication, onboarding, checkout, billing portal, and subscription sync traffic.",
+    "active": true,
+    "conditionGroup": [
+      {
+        "conditions": [
+          { "type": "path", "op": "re", "value": "^/api/(onboarding|create-checkout-session|create-billing-portal|sync-subscription)$" },
+          { "type": "method", "op": "neq", "value": "OPTIONS" }
+        ]
+      }
+    ],
+    "action": {
+      "mitigate": {
+        "action": "rate_limit",
+        "rateLimit": {
+          "algo": "fixed_window",
+          "window": 60,
+          "limit": 20,
+          "keys": ["ip"],
+          "action": "deny"
+        }
+      }
+    }
+  },
+  {
+    "name": "MarketFlow block scanner user agents",
+    "description": "Block obvious automated scanners and exploit frameworks.",
+    "active": true,
+    "conditionGroup": [
+      {
+        "conditions": [
+          { "type": "user_agent", "op": "re", "value": "(sqlmap|nikto|acunetix|nessus|wpscan|dirbuster|gobuster|masscan|zgrab|nmap|hydra|libwww-perl|havij|netsparker|jaeles)" }
+        ]
+      }
+    ],
+    "action": {
+      "mitigate": {
+        "action": "deny",
+        "actionDuration": "1h",
+        "logHeaders": ["user-agent", "x-forwarded-for"]
+      }
+    }
+  }
+]
