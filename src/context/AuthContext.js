@@ -237,7 +237,7 @@ export function AuthProvider({ children }) {
   const statusValue    = String(subStatus || '').toLowerCase();
   const hasBillingRecord = ['active', 'trialing', 'past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired', 'paused'].includes(statusValue);
   const trialActive   = statusValue === 'trialing' && (!trialEnd || new Date(trialEnd) > new Date());
-  const effectivePlan = trialActive ? 'pro' : billingPlan;
+  const effectivePlan = trialActive ? 'elite' : billingPlan;
   const trialDaysLeft = trialEnd
     ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date()) / 86400000))
     : 14;
@@ -252,7 +252,7 @@ export function AuthProvider({ children }) {
     plan:                 effectivePlan,
     billingPlan,
     selectedPlan:         billingPlan,
-    trialInterfacePlan:   trialActive ? 'pro' : null,
+    trialInterfacePlan:   trialActive ? 'elite' : null,
     subStatus,
     isTrialing:           trialActive,
     isActive:             statusValue === 'active',

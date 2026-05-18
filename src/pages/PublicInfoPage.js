@@ -80,7 +80,7 @@ const PAGE_DATA = {
         title: 'Billing and access',
         items: [
           'Subscriptions, trials and payment methods are handled by Stripe.',
-          'Billing starts after the 14-day trial unless cancelled.',
+          'Trial access opens the Elite workspace. Billing starts on the selected plan after the 14-day trial unless cancelled.',
           'Access depends on active Stripe subscription status. Failed, cancelled or unpaid subscriptions may lose journal access.',
         ],
       },

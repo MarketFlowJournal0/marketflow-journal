@@ -18,7 +18,7 @@ function AIOrbIcon({ size = 28, stroke = 'rgba(6,230,255,0.85)' }) {
 const KNOWLEDGE = {
   pricing: {
     keywords: ['price', 'cost', 'how much', 'plan', 'starter', 'pro', 'elite', 'subscription', 'pay', 'pricing', 'fee', 'fees'],
-    response: "MarketFlow Journal offers 3 plans:\n\n\u2022 Starter: $15/mo or $11/mo annually\n\u2022 Pro: $22/mo or $15/mo annually\n\u2022 Elite: $38/mo or $27/mo annually\n\nAll plans include a free trial. You can manage your subscription in Account Settings.",
+    response: "MarketFlow Journal offers 3 plans:\n\n\u2022 Starter: $15/mo or $11/mo annually\n\u2022 Pro: $22/mo or $15/mo annually\n\u2022 Elite: $38/mo or $27/mo annually\n\nAll plans include a 14-day Elite trial, then billing continues on the selected plan unless cancelled. You can manage your subscription in Account Settings.",
   },
   import: {
     keywords: ['import', 'csv', 'upload', 'upload', 'broker', 'mt4', 'mt5', 'metatrader', 'export', 'trades', 'load'],
@@ -46,7 +46,7 @@ const KNOWLEDGE = {
   },
   features: {
     keywords: ['feature', 'functionality', 'what can', 'capable', 'offer', 'offers'],
-    response: "MarketFlow Journal features:\n\n\u2022 Complete trade journal with analytics\n\u2022 Universal CSV import from any broker\n\u2022 MT4/MT5 auto-sync\n\u2022 AI Trade Coach & Psychology analysis\n\u2022 Visual backtesting\n\u2022 Equity curve tracking\n\u2022 Calendar view\n\u2022 Multi-account support\n\u2022 Prop firm tracking\n\u2022 PDF report exports",
+    response: "MarketFlow Journal features:\n\n\u2022 Complete trade journal with analytics\n\u2022 Universal CSV, Excel and structured import\n\u2022 MT4/MT5 import and broker sync workspace\n\u2022 AI Trade Coach & Psychology analysis\n\u2022 Visual backtesting\n\u2022 Equity curve tracking\n\u2022 Calendar view\n\u2022 Multi-account support\n\u2022 Prop firm tracking\n\u2022 PDF report exports",
   },
   account: {
     keywords: ['account', 'login', 'signin', 'register', 'signup', 'sign in', 'sign up'],

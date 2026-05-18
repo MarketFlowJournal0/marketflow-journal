@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 const SUPPORT_EMAIL = 'support@marketflowjournal.com';
 
@@ -32,7 +33,7 @@ function ContactForm({ user }) {
     message: '',
   });
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(null);
   const [error, setError] = useState('');
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -42,15 +43,24 @@ function ContactForm({ user }) {
     if (!form.message.trim()) { setError('Message is required.'); return; }
     setSending(true); setError('');
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/support', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...form, plan: user?.plan || user?.user_metadata?.plan || 'unknown' }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          ...form,
+          plan: user?.plan || user?.billingPlan || user?.user_metadata?.plan || 'unknown',
+          source: 'journal_support_center',
+        }),
       });
-      if (!res.ok) throw new Error();
-      setSent(true);
-    } catch {
-      setError('Error sending message. Try again or email us directly.');
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || 'Support request could not be saved.');
+      setSent(payload);
+    } catch (err) {
+      setError(err?.message || 'Error sending message. Please try again in a moment.');
     } finally {
       setSending(false);
     }
@@ -65,9 +75,18 @@ function ContactForm({ user }) {
         fontSize: 28, margin: '0 auto 20px',
         boxShadow: '0 0 30px rgba(0,255,136,0.4)',
       }}>OK</div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Message sent!</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
+        {sent?.queued ? 'Request saved' : 'Message sent'}
+      </div>
       <div style={{ fontSize: 14, color: 'var(--mf-text-2,#7A90B8)', lineHeight: 1.7 }}>
-        Thank you! We\'ll get back to you within 24h at <span style={{ color: 'var(--mf-accent,#14C9E5)' }}>{form.email}</span>.
+        {sent?.queued
+          ? 'Your request is safely stored in MarketFlow. Email delivery is still being configured, but the ticket is not lost.'
+          : <>Thank you. We&apos;ll get back to you at <span style={{ color: 'var(--mf-accent,#14C9E5)' }}>{form.email}</span>.</>}
+        {sent?.ticketId && (
+          <div style={{ marginTop: 12, color: 'var(--mf-accent,#14C9E5)', fontWeight: 800 }}>
+            Ticket {sent.ticketId}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -114,7 +133,7 @@ function ContactForm({ user }) {
           padding: '10px 14px', borderRadius: 8,
           background: 'rgba(255,61,87,0.08)', border: '1px solid rgba(255,61,87,0.25)',
           color: '#FF5570', fontSize: 13,
-        }}>Error: {error}</div>
+        }}>{error}</div>
       )}
       <button
         type="submit"
@@ -216,6 +235,13 @@ export default function SupportPage({ user, onBack }) {
               fontSize: 12, color: 'var(--mf-text-2,#7A90B8)', lineHeight: 1.6,
             }}>
               Estimated response: <strong style={{ color: 'var(--mf-green,#00D2B8)' }}>{responseTime}</strong> - <strong style={{ color: '#fff', textTransform: 'capitalize' }}>{plan}</strong> plan
+            </div>
+            <div style={{
+              marginTop: 10, padding: '10px 14px', borderRadius: 10,
+              background: 'rgba(20,201,229,0.05)', border: '1px solid rgba(20,201,229,0.14)',
+              fontSize: 12, color: '#8BA3CC', lineHeight: 1.6,
+            }}>
+              If direct email bounces while DNS is being configured, use this form. It creates a saved MarketFlow support ticket.
             </div>
           </div>
 

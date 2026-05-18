@@ -6,6 +6,7 @@ import MarketFlowBrand from '../components/MarketFlowBrand';
 import { getEntryRoute, getPlanDetails, hasJournalAccess, normalizePlan } from '../lib/subscription';
 
 const CHECKOUT_PLAN_KEY = 'mfj_checkout_plan_id';
+const MAX_SYNC_ATTEMPTS = 5;
 
 function FeatureTile({ text, accent, index }) {
   return (
@@ -175,6 +176,7 @@ export default function WelcomePage() {
 
     let cancelled = false;
     let attempts = 0;
+    let timer = null;
 
     const runSync = async () => {
       attempts += 1;
@@ -198,14 +200,17 @@ export default function WelcomePage() {
       if (!cancelled && attempts >= 2 && !isActivated) {
         setSyncHint(true);
       }
+      if (!cancelled && attempts >= MAX_SYNC_ATTEMPTS && !isActivated) {
+        if (timer) window.clearInterval(timer);
+      }
     };
 
     runSync();
-    const timer = window.setInterval(runSync, 1000);
+    timer = window.setInterval(runSync, 1000);
 
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      if (timer) window.clearInterval(timer);
     };
   }, [hasSessionId, isActivated, refreshProfile, session, sessionId, user]);
 
@@ -464,7 +469,7 @@ export default function WelcomePage() {
             >
               {ready
                 ? `Your ${plan.label} access for ${email} is confirmed. You can open the journal now.`
-                : `Your 14-day trial for ${email} is being confirmed with Stripe. The journal opens as soon as the subscription is synced.`}
+                : `Your 14-day Elite trial for ${email} is being confirmed with Stripe. The journal opens as soon as the subscription is synced.`}
             </p>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>

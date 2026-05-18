@@ -11,7 +11,7 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['price', 'pricing', 'subscription', 'plan', 'starter', 'pro', 'elite', 'cost', 'how much'],
-    answer: "**Plans**\n\nStarter is $15/month, Pro is $22/month, and Elite is $38/month. Annual billing is available from the pricing page. Every plan starts with a 14-day trial through Stripe.",
+    answer: "**Plans**\n\nStarter is $15/month, Pro is $22/month, and Elite is $38/month. Annual billing is available from the pricing page. Every plan starts with a 14-day Elite trial through Stripe, then continues on the selected plan unless cancelled.",
   },
   {
     keywords: ['ai', 'coach', 'intelligence', 'artificial', 'analysis'],
@@ -35,15 +35,15 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['trial', 'free', 'test'],
-    answer: "**Trial**\n\nAll plans use a 14-day trial window through Stripe. Billing starts after the trial unless cancelled, and access follows the plan you selected.",
+    answer: "**Trial**\n\nAll plans use a 14-day Elite trial window through Stripe. Billing starts on the plan you selected after the trial unless cancelled.",
   },
   {
     keywords: ['bug', 'problem', 'error', 'not working'],
-    answer: `**Report a Bug**\n\nSend the issue, steps to reproduce, browser, operating system and screenshots if possible to **${SUPPORT_EMAIL}**.`,
+    answer: `**Report a Bug**\n\nOpen the full support page and send the issue, steps to reproduce, browser, operating system and screenshots if possible. If direct email bounces while DNS is being configured, the support form still creates a saved ticket.`,
   },
   {
     keywords: ['received', 'receive', 'journal', 'email', 'mail', 'newsletter', 'send', 'sent'],
-    answer: `**Email or Access Issue**\n\nCheck spam, confirm the email used at checkout, then contact **${SUPPORT_EMAIL}** if access still does not restore.`,
+    answer: `**Email or Access Issue**\n\nCheck spam, confirm the email used at checkout, then open the full support page if access still does not restore. The support form saves a ticket even if email delivery is temporarily misconfigured.`,
   },
   {
     keywords: ['account', 'password', 'login', 'connect', 'access', 'forgotten'],
@@ -51,7 +51,7 @@ const FAQ_ANSWERS = [
   },
   {
     keywords: ['payment', 'invoice', 'card', 'credit card', 'billing', 'charge'],
-    answer: `**Payment and Billing**\n\nPayments are processed by Stripe. For invoice, trial or refund questions, contact **${SUPPORT_EMAIL}**.`,
+    answer: `**Payment and Billing**\n\nPayments are processed by Stripe. For invoice, trial or refund questions, open the full support page or write to **${SUPPORT_EMAIL}** once domain email is fully configured.`,
   },
 ];
 
@@ -92,7 +92,7 @@ function getBotAnswer(input) {
       return faq.answer;
     }
   }
-  return `I don't have a precise answer to that question yet. Send us an email at **${SUPPORT_EMAIL}** and we will help you.`;
+  return `I don't have a precise answer to that question yet. Open the full support page and we will help you. Direct email is **${SUPPORT_EMAIL}**, but the support form is safer while DNS email is being configured.`;
 }
 
 export default function SupportWidget({ onOpenPage }) {

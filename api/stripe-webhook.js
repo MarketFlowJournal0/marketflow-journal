@@ -13,6 +13,8 @@ const supabase = createClient(
 );
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@marketflowjournal.com';
+const SUPPORT_FROM_EMAIL = process.env.SUPPORT_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || SUPPORT_EMAIL;
+const SUPPORT_FROM_NAME = process.env.SUPPORT_FROM_NAME || 'MarketFlow Support';
 const PUBLIC_SITE_URL = getPublicSiteBaseUrl();
 const APP_URL = getAppBaseUrl();
 
@@ -169,7 +171,7 @@ module.exports = async (req, res) => {
           // Send welcome email
           try {
             await sendEmail({
-              from: `MarketFlow Support <${SUPPORT_EMAIL}>`,
+              from: `${SUPPORT_FROM_NAME} <${SUPPORT_FROM_EMAIL}>`,
               to: customerEmail,
               subject: `Welcome to MarketFlow Journal, ${customerName}`,
               html: `
@@ -208,7 +210,7 @@ module.exports = async (req, res) => {
           // Send marketing email (delayed)
           try {
             await sendEmail({
-              from: `MarketFlow Support <${SUPPORT_EMAIL}>`,
+              from: `${SUPPORT_FROM_NAME} <${SUPPORT_FROM_EMAIL}>`,
               to: customerEmail,
               subject: '3 tips to get the most out of MarketFlow Journal',
               html: `
@@ -363,7 +365,7 @@ module.exports = async (req, res) => {
 
           try {
             await sendEmail({
-              from: `MarketFlow Support <${SUPPORT_EMAIL}>`,
+              from: `${SUPPORT_FROM_NAME} <${SUPPORT_FROM_EMAIL}>`,
               to: profile.email,
               subject: 'Payment Failed - Your MarketFlow Journal Subscription',
               html: `

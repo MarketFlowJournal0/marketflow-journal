@@ -233,8 +233,8 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 12, padding: '12px 18px', marginBottom: 20, fontSize: 13 }}>
             <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.08em', color: '#D7B36A' }}>TRIAL</span>
             <div style={{ flex: 1 }}>
-              <strong style={{ color: '#D7B36A' }}>Free trial - {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
-              <span style={{ color: 'rgba(255,255,255,0.5)' }}> - Billing starts after the trial unless cancelled</span>
+              <strong style={{ color: '#D7B36A' }}>Elite trial - {daysLeft} day{daysLeft > 1 ? 's' : ''} remaining</strong>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}> - Billing starts after the trial on your selected plan unless cancelled</span>
             </div>
             {hasBillableAccess && (
               <button onClick={handleManage} disabled={portalLoading} style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 7, color: '#D7B36A', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{portalLoading ? '...' : 'Manage card'}</button>
@@ -261,7 +261,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
               <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-1px' }}>
                 Choose your <span style={{ background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>MarketFlow</span><br />access
               </h1>
-              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Create your account after choosing a plan. New accounts get one 14-day trial before billing starts unless cancelled.</p>
+              <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>Create your account after choosing a plan. New accounts get one 14-day Elite trial, then billing starts on the selected plan unless cancelled.</p>
             </>
           ) : (
             <>
@@ -269,7 +269,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                 {needsPayment ? 'Choose your plan' : <>Your <span style={{ background: 'linear-gradient(135deg, #14C9E5, #00D2B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>subscription</span></>}
               </h1>
               <p style={{ fontSize: 15, color: '#7A90B8', margin: 0, lineHeight: 1.6 }}>
-                {subStatus === 'active' ? `Active plan · ${planLabel}` : isTrialing ? `Free trial in progress · ${daysLeft}d remaining` : subStatus === 'canceled' ? 'Subscription canceled — Reactivate a plan' : 'Manage or change your subscription below'}
+                {subStatus === 'active' ? `Active plan · ${planLabel}` : isTrialing ? `Elite trial in progress · ${daysLeft}d remaining` : subStatus === 'canceled' ? 'Subscription canceled — Reactivate a plan' : 'Manage or change your subscription below'}
               </p>
             </>
           )}
@@ -319,7 +319,7 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
                 {/* Badges */}
                 {isCurrent && (
                   <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 50, background: `${plan.accent}15`, border: `1px solid ${plan.accent}30`, fontSize: 9, fontWeight: 700, color: plan.accent, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                    {isTrialing ? `Trial · ${daysLeft}d left` : 'Current plan'}
+                    {isTrialing ? `Elite trial · ${daysLeft}d left` : 'Current plan'}
                   </div>
                 )}
                 {!isCurrent && !trialUsed && (
@@ -388,10 +388,10 @@ export default function PlanSelection({ user: userProp, onSkip, onLogout }) {
 
         {/* Footer note */}
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: '#334566' }}>
-          <span style={{ color: '#7A90B8' }}>100% secure payment by Stripe</span>
+          <span style={{ color: '#7A90B8' }}>Secure payment by Stripe</span>
           {' - '}Manage or cancel online
-          {' - '}{trialUsed ? 'Trial already used on this account' : '14-day free trial - one per account'}
-          {' - '}Billing starts after trial unless cancelled
+          {' - '}{trialUsed ? 'Trial already used on this account' : '14-day Elite trial - one per account'}
+          {' - '}Billing starts on the selected plan after trial unless cancelled
         </motion.p>
       </div>
     </div>

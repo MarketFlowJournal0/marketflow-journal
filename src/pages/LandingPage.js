@@ -458,7 +458,7 @@ const PROP_ENVIRONMENTS = [
 
 const FAQS = [
   {q:'How do I import trades?',a:'MarketFlow currently supports CSV, Excel, JSON and pasted tables with column mapping, custom columns and account-aware storage.'},
-  {q:'How does the 14-day trial work?',a:'Choose a plan, start the 14-day trial through Stripe, and keep access while your subscription status is trialing or active. Billing starts after the trial unless cancelled.'},
+  {q:'How does the 14-day trial work?',a:'Choose a plan, start the 14-day trial through Stripe, and use the Elite workspace during the trial. After 14 days, billing starts on the plan you selected unless cancelled.'},
   {q:'Can I use MarketFlow with a prop firm?',a:'Yes. MarketFlow is built for prop-style review workflows, account tracking, reports, alerts and risk discipline. Firm names shown are examples, not partnerships.'},
   {q:'Are my data secure?',a:'Your journal data stays attached to your authenticated account. You can export backups and delete your trades from the journal.'},
   {q:'What is actually available today?',a:'The public page describes live product modules only: journal, dashboard, analytics, psychology, equity, backtest sessions, reports, alerts, API access and Elite broker tooling.'},
@@ -474,7 +474,7 @@ const PAGE_CONTENT = {
   docs:{title:'Documentation',subtitle:'MarketFlow operating guide',color:'#14C9E5',sections:[{label:'Core workflow',color:'#14C9E5',items:[{icon:'01',title:'Import and map trades',desc:'Use All Trades to import CSV, Excel, JSON or pasted tables, then map symbol, side, date, entry, exit, P&L and custom fields.'},{icon:'02',title:'Review by account',desc:'Use account scope so dashboard, analytics, equity and calendar views stay aligned with the selected trading account.'},{icon:'03',title:'Close the day',desc:'Use the daily workflow, psychology review and calendar context to keep the journal actionable instead of noisy.'}]}]},
   import:{title:'Import Guide',subtitle:'Supported trade data flows',color:'#00D2B8',sections:[{label:'Import sources',color:'#00D2B8',items:[{icon:'CSV',title:'CSV and Excel',desc:'Upload broker exports or spreadsheets and create missing columns during mapping when your file has extra fields.'},{icon:'JSON',title:'JSON and raw tables',desc:'Paste structured rows or use JSON-style exports for flexible journal migration.'},{icon:'SAFE',title:'Validation first',desc:'MarketFlow previews detected rows before saving so bad rows can be corrected instead of silently polluting the journal.'}]}]},
   tutoriels:{title:'Tutorials',subtitle:'Short workflow lessons',color:'#DCE4EF',sections:[{label:'Suggested lessons',color:'#DCE4EF',items:[{icon:'Start',title:'First journal setup',desc:'Create the account, confirm plan access, import the first data sample and verify dashboard metrics.'},{icon:'Review',title:'Weekly review',desc:'Use analytics, calendar, psychology and equity together to identify one process improvement for the next week.'},{icon:'Risk',title:'Prop-style discipline',desc:'Track drawdown, account scope, reports and alerts without implying a direct partnership with any prop firm.'}]}]},
-  cgu:{title:'Terms of Service',subtitle:'Effective 2026',color:'#8BA3CC',articles:[{title:'Purpose',text:'These terms describe access to MarketFlow Journal, a SaaS trading journal for tracking, reviewing and improving trading activity.'},{title:'Billing',text:'Payments and trials are handled by Stripe. Subscription access depends on the active plan and payment status. Billing starts after the 14-day trial unless cancelled.'},{title:'Refunds',text:'Refund requests are handled by support within a 7-day window after the first paid charge.'},{title:'Trading disclaimer',text:'MarketFlow is a journaling and analytics product. It does not provide financial advice or guarantee trading results.'}]},
+  cgu:{title:'Terms of Service',subtitle:'Effective 2026',color:'#8BA3CC',articles:[{title:'Purpose',text:'These terms describe access to MarketFlow Journal, a SaaS trading journal for tracking, reviewing and improving trading activity.'},{title:'Billing',text:'Payments and trials are handled by Stripe. Trial access opens the Elite workspace. Billing starts on the selected plan after the 14-day trial unless cancelled.'},{title:'Refunds',text:'Refund requests are handled by support within a 7-day window after the first paid charge.'},{title:'Trading disclaimer',text:'MarketFlow is a journaling and analytics product. It does not provide financial advice or guarantee trading results.'}]},
   rgpd:{title:'Privacy Policy',subtitle:'Data and privacy',color:'#00D2B8',articles:[{title:'Collected data',text:'Account details, journal data and technical data may be stored to operate the service. Payment data is processed by Stripe.'},{title:'User control',text:'Users can export backups and delete journal trades through the product.'},{title:'Contact',text:`For privacy requests, contact ${SUPPORT_EMAIL}.`}]},
   contact:{title:'Contact',subtitle:'Get in touch',color:'#4D7CFF',content:`Email: ${SUPPORT_EMAIL}\n\nFor support, use the journal support page or the support widget.`},
 };
@@ -646,7 +646,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <button className="btn-hero-secondary" onClick={()=>document.getElementById('features')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
           </div>
         </Reveal>
-        <Reveal delay={0.3}><p className="lp-hero-note">14-day trial - billing starts after the trial unless cancelled</p></Reveal>
+        <Reveal delay={0.3}><p className="lp-hero-note">14-day Elite trial - billing starts on your selected plan unless cancelled</p></Reveal>
         <Reveal delay={0.4}>
           <div className="lp-hero-stats">
             <div className="lp-hero-stat"><div className="lp-stat-val">14</div><div className="lp-stat-label">Trial days</div></div>
@@ -874,7 +874,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
         <div className="lp-section-inner">
           <Reveal><div className="lp-section-tag">MarketFlow Pricing</div></Reveal>
           <Reveal><h2>Start with a trial. Scale<br/><em>when you're ready</em></h2></Reveal>
-          <Reveal><p className="lp-section-sub">14-day trial on every plan. Billing starts after the trial unless cancelled. Refund requests are handled by support within 7 days after the first paid charge.</p></Reveal>
+          <Reveal><p className="lp-section-sub">14-day Elite trial on every plan. Billing starts on the selected plan after the trial unless cancelled. Refund requests are handled by support within 7 days after the first paid charge.</p></Reveal>
           <div className="lp-pricing-toggle">
             <button className={`lp-toggle-btn ${billing==='monthly'?'active':''}`} onClick={()=>setBilling('monthly')}>Monthly</button>
             <button className={`lp-toggle-btn ${billing==='annual'?'active':''}`} onClick={()=>setBilling('annual')}>Annual</button>
@@ -893,7 +893,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
                     <div className="lp-price"><sup>$</sup>{price}</div>
                     <div className="lp-period">per month{billing==='annual'?', billed annually':''}</div>
                     {billing==='annual' && <div className="lp-save">Save ${annualSave}/year</div>}
-                    {billing==='monthly' && <div className="lp-save">14-day trial</div>}
+                    {billing==='monthly' && <div className="lp-save">14-day Elite trial</div>}
                     <div className="lp-divider"/>
                     <ul className="lp-price-feats">{plan.features.map((f,j)=><li key={j}><span style={{color:'#00D2B8',fontWeight:800,fontSize:11}}>+</span>{f}</li>)}</ul>
                     <button className={`btn-plan ${plan.popular?'filled btn-trial-animate':'outline'}`} onClick={()=>onSignupWithPlan?onSignupWithPlan(priceId, plan.id, billing):onSignup?.()}><span>{plan.popular?'Start 14-day trial':'Start '+plan.name}</span></button>
@@ -965,7 +965,7 @@ export default function LandingPage({ onLogin, onSignup, onSignupWithPlan }) {
             <button className="btn-hero-secondary" onClick={onLogin}>Log in</button>
           </div>
         </Reveal>
-        <Reveal delay={0.3}><p className="lp-cta-note">14-day trial - billing starts after the trial unless cancelled</p></Reveal>
+        <Reveal delay={0.3}><p className="lp-cta-note">14-day Elite trial - billing starts on the selected plan unless cancelled</p></Reveal>
       </section>
 
       {/* FOOTER */}
